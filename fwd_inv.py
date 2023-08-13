@@ -9,7 +9,7 @@ Preprocessing for vMMR. Need to have events file from evtag.py
 
 ###### Import library 
 import mne
-import mnefunos.environ["SUBJECTS_DIR"] ='/media/tzcheng/storage/subjects'
+import mnefun
 import matplotlib
 from mne.preprocessing import maxwell_filter
 import numpy as np
@@ -18,23 +18,26 @@ from mne.io.constants import FIFF
 import os
 
 ########################################
-root_path='/media/tzcheng/storage/vmmr/'
+root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
 ## parameters 
-runs = ['_1','_2','_3','_4']
+runs = ['_01','_02']
 
 subj = [] 
 for file in os.listdir():
-    if file.startswith('vMMR_'):
+    if file.startswith('cbs_A'):
         subj.append(file)
 
-fname = root_path + subj + '/sss_fif/' + subj + '_' + run[0] 
-fname_erm =  root_path + subj + '/sss_fif/' + subj + '_' + run[1] 
+run = runs[0]
+s = subj[0]
+
+fname = root_path + s + '/sss_fif/' + s + run
+fname_erm =  root_path + s + '/sss_fif/' + s + run[1] 
 raw_fname = fname + '_raw_sss_clean_fil50.fif'
 clean_sss_raw = mne.io.read_raw_fif(raw_fname,allow_maxshield=True,preload=True)
 cov = mne.read_cov(fname_erm + '_raw_sss_clean_fil50-cov.fif')
-trans = mne.read_trans(root_path + subj + '/source/' + subj + '_1'  + '_raw-trans.fif')
+trans = mne.read_trans(root_path + s + '/source/' + s + '_1'  + '_raw-trans.fif')
 info = mne.io.read_info(raw_fname)
 #%% Forward modeling 
 

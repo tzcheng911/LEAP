@@ -9,35 +9,33 @@ Created on Wed Aug  9 17:57:34 2023
 import mne
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
-def plot_err(group_stc,color):
+def plot_err(group_stc,color,t):
     group_avg=np.mean(group_stc,axis=0)
    #plt.figure()
     err=np.std(group_stc,axis=0)/np.sqrt(group_stc.shape[0])
     up=group_avg+err
     lw=group_avg-err
-    t=np.linspace(-100,600,700)
+    t=np.linspace(-100,600,3501)
     plt.plot(t,group_avg,color=color)
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
     
-########################################
+#%%########################################
 root_path='/media/tzcheng/storage/CBS/'
+subjects_dir = '/media/tzcheng/storage2/subjects/'
+
 os.chdir(root_path)
 
 ## parameters 
-runs = ['_01','_02']
-st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
-int_order = 8 # 8 for adults and 6 for infants
-lp = 50 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
     if file.startswith('cbs_A'):
         subj.append(file)
 
 runs = ['01','02']
-
-
 run = runs [1]
+
 #%%
 group_mmr1=[]
 group_mmr2=[]
@@ -45,14 +43,17 @@ group_mmr1_roi=[]
 group_mmr2_roi=[]
 
 for s in subj:
-    stc_mmr1=mne.read_source_estimate('/mnt/CBS/'+str(s)+'/sss_fif/'+str(s)+'_dev1_mmr-vl.stc')
-    stc_mmr2=mne.read_source_estimate('/mnt/CBS/'+str(s)+'/sss_fif/'+str(s)+'_dev2_mmr-vl.stc')
+    file_in = root_path + '/' + s + '/sss_fif/' + s
+    
+
+    stc_mmr1=mne.read_source_estimate(file_in+'_dev1_mmr-vl.stc')
+    stc_mmr2=mne.read_source_estimate(file_in+'_dev2_mmr-vl.stc')
    
     group_mmr1.append(stc_mmr1.data)
     group_mmr2.append(stc_mmr2.data)
     # #extract ROIS
-    src = mne.read_source_spaces('/mnt/subjects/' + str(s) + '/bem/' + str(s) +'-vol-5-src.fif')
-    labels = '/mnt/subjects/' + str(s) + '/mri/aparc+aseg.mgz'
+    src = mne.read_source_spaces(file_in +'_src')
+    labels = subjects_dir + s + '/mri/aparc+aseg.mgz'
     mmr1_roi=mne.extract_label_time_course(stc_mmr1,labels,src,mode='mean',allow_empty=True)
     mmr2_roi=mne.extract_label_time_course(stc_mmr2,labels,src,mode='mean',allow_empty=True)
     
@@ -66,22 +67,29 @@ group_mmr2=np.asarray(group_mmr2)
 group_mmr1_roi=np.asarray(group_mmr1_roi)
 group_mmr2_roi=np.asarray(group_mmr2_roi)
 
-np.save('/mnt/CBS/meg_mmr_analysis/group_dev1.npy',group_mmr1)
-np.save('/mnt/CBS/meg_mmr_analysis/group_dev2.npy',group_mmr2)
-np.save('/mnt/CBS/meg_mmr_analysis/group_dev1_roi.npy',group_mmr1_roi)
-np.save('/mnt/CBS/meg_mmr_analysis/group_dev2_roi.npy',group_mmr2_roi)
+np.save(root_path + 'meg_mmr_analysis/group_dev1.npy',group_mmr1)
+np.save(root_path + 'meg_mmr_analysis/group_dev2.npy',group_mmr2)
+np.save(root_path + 'meg_mmr_analysis/group_dev1_roi.npy',group_mmr1_roi)
+np.save(root_path + 'meg_mmr_analysis/group_dev2_roi.npy',group_mmr2_roi)
 
 #%%
 #averaged acrossed fsaverage
-mmr1=np.load('/mnt/CBS/meg_mmr_analysis/group_dev1.npy')
-mmr2=np.load('/mnt/CBS/meg_mmr_analysis/group_dev2.npy')
+group_mmr1=np.load(root_path + 'meg_mmr_analysis/group_dev1.npy')
+group_mmr2=np.load(root_path + 'meg_mmr_analysis/group_dev2.npy')
+t = np.shape(group_mmr1)[-1]
 
 # whole brain mmr plot
-plot_err(np.mean(mmr1,1),'b')
-plot_err(np.mean(mmr2,1),'r')
+plot_err(np.mean(group_mmr1,1),'b')
+plot_err(np.mean(group_mmr2,1),'r')
 plt.xlabel('Time (ms)', fontsize=18)
 plt.ylabel('dSPM value', fontsize=18)
 plt.title('MMR wholebrain',fontsize=18)
+plt.legend(['','nonnative','','native'])
+
+#%%
+# get the label name
+atlas = 'aparc' # aparc, aparc.a2009s
+label_names = mne.get_volume_labels_from_aseg(fname_aseg)
 
 #%% 200-600ms average
 t=np.linspace(-100,600,700)
@@ -92,7 +100,6 @@ mmr2_average=np.mean(np.mean(np.squeeze(mmr2[:,:,idx]),2),1)
 #%% whole brain stats
 X = mmr1-mmr2
 Xt=np.transpose(X,[0,2,1])
-
 
 from mne import spatial_src_adjacency
 from mne.stats import spatio_temporal_cluster_1samp_test
@@ -117,7 +124,6 @@ np.save('/mnt/CBS/meg_mmr_analysis/tfce_p_values',cluster_p_values)
 np.save('/mnt/CBS/meg_mmr_analysis/tfce_t',T_obs)
 np.save('/mnt/CBS/meg_mmr_analysis/tfce_h0',H0)
 #%% visualize clusters
-
 stc=mne.read_source_estimate('/mnt/CBS/cbs_101/sss_fif/cbs_A101_mmr1-vl.stc')
 cluster_p_values=-np.log10(cluster_p_values)
 
