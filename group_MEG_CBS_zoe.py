@@ -72,6 +72,35 @@ np.save(root_path + 'meg_mmr_analysis/group_dev2.npy',group_mmr2)
 np.save(root_path + 'meg_mmr_analysis/group_dev1_roi.npy',group_mmr1_roi)
 np.save(root_path + 'meg_mmr_analysis/group_dev2_roi.npy',group_mmr2_roi)
 
+# visualize the averaged 
+stc = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr1-vl.stc')
+mmr = np.load(root_path + 'meg_mmr_analysis/group_dev1.npy')
+stc.data = mmr.mean(axis=0)
+
+################## is this right?? need to morph the data to the template first
+## # from MNE Read the source space we are morphing to
+# src = mne.read_source_spaces(src_fname)
+# fsave_vertices = [s["vertno"] for s in src]
+# morph_mat = mne.compute_source_morph(
+#     src=inverse_operator["src"],
+#     subject_to="fsaverage",
+#     spacing=fsave_vertices,
+#     subjects_dir=subjects_dir,
+# ).morph_mat
+
+# n_vertices_fsave = morph_mat.shape[0]
+
+# # We have to change the shape for the dot() to work properly
+# X = X.reshape(n_vertices_sample, n_times * n_subjects * 2)
+# print("Morphing data.")
+# X = morph_mat.dot(X)  # morph_mat is a sparse matrix
+X = X.reshape(n_vertices_fsave, n_times, n_subjects, 2)
+
+subject = 'fsaverage'
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+
+stc.plot(src,subject=subject, subjects_dir=subjects_dir)
+
 #%%
 #averaged acrossed fsaverage
 group_mmr1=np.load(root_path + 'meg_mmr_analysis/group_dev1.npy')

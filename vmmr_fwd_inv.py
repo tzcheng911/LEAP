@@ -33,11 +33,13 @@ run = runs[0]
 s = subj[0]
 
 fname = root_path + s + '/sss_fif/' + s + run
-fname_erm =  root_path + s + '/sss_fif/' + s + run[1] 
-raw_fname = fname + '_raw_sss_clean_fil50.fif'
+fname_erm =  root_path + s + '/sss_fif/' + s + '_erm'
+raw_fname = fname + '_otp_raw_sss.fif'
 clean_sss_raw = mne.io.read_raw_fif(raw_fname,allow_maxshield=True,preload=True)
+
 cov = mne.read_cov(fname_erm + '_raw_sss_clean_fil50-cov.fif')
 trans = mne.read_trans(root_path + s + '/source/' + s + '_1'  + '_raw-trans.fif')
+
 info = mne.io.read_info(raw_fname)
 #%% Forward modeling 
 
@@ -53,8 +55,8 @@ info = mne.io.read_info(raw_fname)
 # mne make_scalp_surfaces --subject=$my_subject --overwrite # can use -f to Force creation of the surface even if it has some topological defects.
 
 ## visualize freesurfer output
-subject = "sample"
-subjects_dir = '/media/tzcheng/storage/vmmr/vMMR_901/'
+subject = s
+subjects_dir = '/media/tzcheng/storage2/subjects'
 # Brain = mne.viz.get_brain_class()
 # brain = Brain(
 #     "sample", hemi="lh", surf="pial", subjects_dir=subjects_dir, size=(800, 600))
@@ -67,6 +69,7 @@ mne.gui.coregistration(subject=subject, subjects_dir=subjects_dir)
 
 #%%
 ## BEM
+# this requires precomputation using watershed
 conductivity = (0.3,)  # for single layer
 # conductivity = (0.3, 0.006, 0.3)  # for three layers
 model = mne.make_bem_model(
@@ -134,7 +137,7 @@ print(fwd)
 leadfield = fwd["sol"]["data"]
 mne.write_forward_solution(fname + '_fwd.fif', fwd)
 
-#%% Iverse modeling
+#%% Inverse modeling
 ## Load the evoked responses (1,2,3,4) of interest
 fwd = mne.read_forward_solution('/media/tzcheng/storage/vmmr/vMMR_901/source/vMMR_901_1_fwd.fif')
 evoked_s = mne.read_evokeds('/media/tzcheng/storage/vmmr/vMMR_901/sss_fif/vMMR_901_4_raw_sss_clean_fil50_evoked_s.fif')[0]

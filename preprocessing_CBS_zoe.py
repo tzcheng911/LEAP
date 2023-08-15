@@ -8,7 +8,7 @@ Need to manually enter bad channels for sss from the experiment notes.
 Need to change parameters st_correlation and int_order in sss for adult/infants
 Didn't save the product from ecg, eog project and filtering to save some space
 
-@author: zcheng
+@author: tzcheng
 """
 
 ###### Import library 
@@ -23,7 +23,7 @@ def do_otp(subject):
     root_path='/media/tzcheng/storage/CBS/'+ subject +'/raw_fif/'
     os.chdir(root_path)
     #find all the raw files
-    runs=['01','02'] # with movecomp or no movecomp; A104 has run1,2 and 3 need to preprocess differently
+    runs=['01'] # with movecomp or no movecomp; A104 has run1,2 and 3 need to preprocess differently
     for run in runs:
         # file_in=root_path+'cbs'+str(subj)+'_'+str(run)+'_raw.fif'
         # file_out=root_path+'cbs'+str(subj)+'_'+str(run)+'_otp_raw.fif'
@@ -42,7 +42,7 @@ def do_sss(subject,st_correlation,int_order):
     params.subjects = [subject]
 
     params.work_dir = '/media/tzcheng/storage/CBS/'
-    params.run_names = ['%s_02_otp','%s_03_otp'] # A104 has run1,2 and 3 need to preprocess differently
+    params.run_names = ['%s_01_otp','%s_02_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
     params.runs_empty = ['%s_erm_otp']
     params.subject_indices = [0] #to run individual participants
     #params.subject_indices = np.arange(0,len(params.subjects)) #to run all subjects
@@ -83,7 +83,20 @@ def do_sss(subject,st_correlation,int_order):
     'cbs_A119': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
     'cbs_A121': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG2622'],
     'cbs_A122': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A123': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643']
+    'cbs_A123': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
+    'cbs_b101': ['MEG0312', 'MEG1712', 'MEG1831', 'MEG1841', 'MEG2021', 'MEG2231'],
+    'cbs_b102': ['MEG0312', 'MEG1712'],
+    'cbs_b103': ['MEG0312', 'MEG1712'],
+    'cbs_b106': ['MEG0312', 'MEG1712'],
+    'cbs_b107': ['MEG0312', 'MEG1712', 'MEG0441'],
+    'cbs_b110': ['MEG0312', 'MEG1712', 'MEG1942'],
+    'cbs_b111': ['MEG0312', 'MEG1712'],
+    'cbs_b112': ['MEG0312', 'MEG1712'],
+    'cbs_b113': ['MEG0312', 'MEG1712'],
+    'cbs_b114': ['MEG0312', 'MEG1712', 'MEG2612'],
+    'cbs_b116': ['MEG0312', 'MEG1712'],
+    'cbs_b117': ['MEG0312', 'MEG1712', 'MEG2011', 'MEG2241'],
+    'cbs_b118': ['MEG0312', 'MEG1712']
     }
     # make sure you cd to the working directory that have ct and cal files
     mnefun.do_processing(
@@ -185,20 +198,20 @@ root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
 ## parameters 
-runs = ['_01','_02']
-st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
-int_order = 8 # 8 for adults and 6 for infants
+runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
+st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
+int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 
 ###### do the jobs
 for s in subj:
     print(s)
-    # do_otp
-    # do_sss(s,st_correlation,int_order)
+    do_otp(s)
+    do_sss(s,st_correlation,int_order)
     for run in runs:
         print ('Doing ECG/EOG projection...')
         [raw,raw_erm] = do_projection(s,run)
