@@ -15,7 +15,6 @@ import os
 root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
-## Visualize epochs
 runs = ['_01','_02']
 
 subj = [] 
@@ -38,6 +37,15 @@ evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_subs
 evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]
 evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0]
 
+## Visualize sensor level
+mne.viz.plot_compare_evokeds(evoked_s, picks=["MEG0721"], combine="mean")
+mne.viz.plot_compare_evokeds(evoked_s, picks="meg", axes="topo") # plot all of them
+epoch.plot_sensors(kind='3d', ch_type='mag', ch_groups='position')
+chs = ["MEG0721","MEG0631","MEG0741","MEG1821"]
+mne.viz.plot_compare_evokeds(evoked_s, picks=chs, combine="mean", show_sensors="upper right")
+
+
+## Visualize source level
 inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
 stc_std = mne.minimum_norm.apply_inverse((evoked_s), inverse_operator)
 stc_dev1 = mne.minimum_norm.apply_inverse((evoked_d1), inverse_operator)

@@ -17,11 +17,7 @@ import os
 root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
-
-
-## visualize MEG source activity
 runs = ['_01','_02']
-
 subj = [] 
 for file in os.listdir():
     if file.startswith('cbs_A'):
