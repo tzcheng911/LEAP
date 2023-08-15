@@ -12,6 +12,80 @@ import mne
 import matplotlib
 import numpy as np
 import os
+import nibabel as nib
+from mne.datasets import sample, fetch_fsaverage
+
+def do_foward(s):
+    root_path='/media/tzcheng/storage/CBS/'
+    subjects_dir = '/media/tzcheng/storage2/subjects/'
+
+    file_in = root_path + '/' + s + '/sss_fif/' + s
+    raw_file = mne.read_raw_fif(file_in + '/' + s + '_01_otp_raw_sss.fif')
+    trans=mne.read_trans(file_in + '-trans.fif')
+    src=mne.read_source_spaces(subjects_dir + '/' + s + '/bem/' + s + '-vol5-src.fif')
+    bem=mne.read_bem_solution(subjects_dir + '/' + s + '/bem/' + s + '-5120-5120-5120-bem-sol.fif')
+    fwd=mne.make_forward_solution(raw_file.info,trans,src,bem,meg=True,eeg=False)
+    mne.write_forward_solution(file_in + '-fwd.fif',fwd,overwrite=True)
+
+    return fwd, src
+
+
+def do_inverse(s):
+    root_path='/media/tzcheng/storage/CBS/'
+    subject = s
+    subjects_dir = '/media/tzcheng/storage2/subjects/'
+
+    file_in = root_path + '/' + s + '/sss_fif/' + s
+    fwd = mne.read_forward_solution(file_in + '-fwd.fif')
+    trans = mne.read_trans(file_in +'-trans.fif')
+    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50-cov.fif')
+    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mmr_e.fif')
+   
+    evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
+    evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]        evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0]
+        
+    inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
+    standard = mne.minimum_norm.apply_inverse((evoked_s), inverse_operator)
+    dev1 = mne.minimum_norm.apply_inverse((evoked_d1), inverse_operator)
+    dev2 = mne.minimum_norm.apply_inverse((evoked_d2), inverse_operator)
+    mmr1 = dev1 - standard
+    mmr2 = dev2 - standard
+
+    src = inverse_operator['src']
+        
+    standard.save(file_in + '_substd_mmr', overwrite=True)
+    dev1.save(file_in + '_dev1_mmr', overwrite=True)
+    dev2.save(file_in + '_dev2_mmr', overwrite=True)
+    mmr1.save(file_in + '_mmr1', overwrite=True)
+    mmr2.save(file_in + '_mmr2', overwrite=True)
+    src.save(file_in + '_src', overwrite=True)
+    
+    return mmr1, mmr2, src, inverse_operator
+
+def do_morphing(s, mmr1, mmr2, inverse_operator):
+    root_path='/media/tzcheng/storage/CBS/'
+    subject = s
+    subjects_dir = '/media/tzcheng/storage2/subjects/'
+
+    file_in = root_path + '/' + s + '/sss_fif/' + s
+    fetch_fsaverage(subjects_dir)  # ensure fsaverage src exists
+    fname_src_fsaverage = subjects_dir + "/fsaverage/bem/fsaverage-vol-5-src.fif"
+    inverse_operator = inverse_operator
+    src_fs = mne.read_source_spaces(fname_src_fsaverage)
+    morph = mne.compute_source_morph(
+        inverse_operator["src"],
+        subject_from=s,
+        subjects_dir=subjects_dir,
+        niter_affine=[10, 10, 5],
+        niter_sdr=[10, 10, 5],  # just for speed
+        src_to=src_fs,
+        verbose=True,
+    )
+    mmr1_fsaverage = morph.apply(mmr1)
+    mmr2_fsaverage = morph.apply(mmr2)
+
+    mmr1_fsaverage.save(file_in + '_mmr1_morph', overwrite=True)
+    mmr2_fsaverage.save(file_in + '_mmr2_morph', overwrite=True)
 
 ########################################
 root_path='/media/tzcheng/storage/CBS/'
@@ -26,44 +100,7 @@ for file in os.listdir():
 for s in subj:
     for run in runs:
         print(s)
-        file_in = root_path + '/' + s + '/sss_fif/' + s
-        fwd = mne.read_forward_solution(file_in + '-fwd.fif')
-        trans = mne.read_trans(file_in +'-trans.fif')
-        cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50-cov.fif')
-        epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mmr_e.fif')
-         
-        subject = s
-        subjects_dir = '/media/tzcheng/storage2/subjects/'
+        do_foward(s)
+        do_inverse(s)
+        do_morphing(s, mmr1, mmr2, inverse_operator)
         
-        evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
-        evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]
-        evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0]
-        
-        # mne.viz.plot_compare_evokeds(evoked_s, picks=["MEG0721"], combine="mean")
-        # mne.viz.plot_compare_evokeds(evoked_s, picks="meg", axes="topo") # plot all of them
-        # epoch.plot_sensors(kind='3d', ch_type='mag', ch_groups='position')
-        # chs = ["MEG0721","MEG0631","MEG0741","MEG1821"]
-        # mne.viz.plot_compare_evokeds(evoked_s, picks=chs, combine="mean", show_sensors="upper right")
-        
-        inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
-        standard = mne.minimum_norm.apply_inverse((evoked_s), inverse_operator)
-        dev1 = mne.minimum_norm.apply_inverse((evoked_d1), inverse_operator)
-        dev2 = mne.minimum_norm.apply_inverse((evoked_d2), inverse_operator)
-        src = inverse_operator['src']
-        
-        standard.save(file_in + '_substd_mmr', overwrite=True)
-        dev1.save(file_in + '_dev1_mmr', overwrite=True)
-        dev2.save(file_in + '_dev2_mmr', overwrite=True)
-        src.save(file_in + '_src', overwrite=True)
-      
-        mmr1 = dev1 - standard
-        mmr2 = dev2 - standard
-        mmr1.save(file_in + '_mmr1', overwrite=True)
-        mmr2.save(file_in + '_mmr2', overwrite=True)
-    
-    
-    # mmr1.plot(src,subject=subject, subjects_dir=subjects_dir)
-    # mmr2.plot(src,subject=subject, subjects_dir=subjects_dir)
-
-# deviant.plot(subject=subject, subjects_dir=subjects_dir, hemi='both')
-# mmr.plot(subject=subject, subjects_dir=subjects_dir, hemi='both')
