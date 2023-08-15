@@ -42,7 +42,7 @@ def do_sss(subject,st_correlation,int_order):
     params.subjects = [subject]
 
     params.work_dir = '/media/tzcheng/storage/CBS/'
-    params.run_names = ['%s_01_otp','%s_02_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
+    params.run_names = ['%s_01_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
     params.runs_empty = ['%s_erm_otp']
     params.subject_indices = [0] #to run individual participants
     #params.subject_indices = np.arange(0,len(params.subjects)) #to run all subjects
@@ -206,6 +206,8 @@ subj = [] # A104 got some technical issue
 for file in os.listdir():
     if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
+
+subj = subj[:2]
 
 ###### do the jobs
 for s in subj:

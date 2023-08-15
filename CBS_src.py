@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Aug  9 15:01:42 2023
-
+Used for looping subjects to save their fwd and stc + morphed data
+BEM, src and trans files should be saved from the coreg process done manually
 @author: tzcheng
 """
 
@@ -15,6 +16,8 @@ import os
 ########################################
 root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
+
+
 
 ## visualize MEG source activity
 runs = ['_01','_02']
