@@ -23,7 +23,7 @@ def do_otp(subject):
     root_path='/media/tzcheng/storage/CBS/'+ subject +'/raw_fif/'
     os.chdir(root_path)
     #find all the raw files
-    runs=['01','erm'] # ['01','02','erm'] for the adults and ['01','erm'] for the infants
+    runs=['01','02','erm'] # ['01','02','erm'] for the adults and ['01','erm'] for the infants
     for run in runs:
         # file_in=root_path+'cbs'+str(subj)+'_'+str(run)+'_raw.fif'
         # file_out=root_path+'cbs'+str(subj)+'_'+str(run)+'_otp_raw.fif'
@@ -43,7 +43,7 @@ def do_sss(subject,st_correlation,int_order):
     params.subjects = [subject]
 
     params.work_dir = '/media/tzcheng/storage/CBS/'
-    params.run_names = ['%s_01_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
+    params.run_names = ['%s_01_otp','%s_02_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
     params.runs_empty = ['%s_erm_otp']
     params.subject_indices = [0] #to run individual participants
     #params.subject_indices = np.arange(0,len(params.subjects)) #to run all subjects
@@ -197,12 +197,12 @@ os.chdir(root_path)
 
 ## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
-int_order = 6 # 8 for adults and 6 for infants
+st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
+int_order = 8 # 8 for adults and 6 for infants
 lp = 50 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
+    if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 
 ###### do the jobs

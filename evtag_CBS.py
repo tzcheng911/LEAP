@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Nov  9 14:51:27 2021
+Modified by Zoe Cheng on Thurs Aug 17 10:55:59 2023
 
-This script is for CBS EEG channel analysis
+This script is for CBS event processing for both adult and infant 
+for the new presentation code where there is only an event stamp 
+at the beginning of the string
 
-These are new functions for CBS event processing for the new presentation code
-where there is only an event stamp at the beginning of the string
 the code needs to recover for the alternate sound
 
 The correspondance between event tage and sound are
@@ -23,22 +24,17 @@ import numpy as np
 import itertools
 import random
 
-def find_eeg(raw_file,subj,block):
-    raw_file.pick_channels(['BIO004','STI101'])
-    raw_file.save('/mnt/CBS/' + str(subj) +'/eeg/' + str(subj) + '_' + str(block) + '_raw.fif')
-    return raw_file
-
 def find_events(raw_file,subj,block):
     #find events
-    events = mne.find_events(raw_file,stim_channel='STI101')
-    root_path='/mnt/CBS/'+str(subj)+'/events/'
+    events = mne.find_events(raw_file,stim_channel='STI101') # change the shortest_event from 2 to 1 zoe 08/17/2023
+    root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
     file_name_raw=root_path + str(subj)+ '_' + str(block) +'_events_raw-eve.fif'
     mne.write_events(file_name_raw,events)  ###write out raw events for double checking
     
     
 def process_events(subj,block):
      #find events
-    root_path='/mnt/CBS/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
     file_name_raw=root_path + str(subj) + '_' + str(block) +'_events_raw-eve.fif'
     events=mne.read_events(file_name_raw)  ###write out raw events for double checking
     
@@ -98,7 +94,7 @@ def process_events(subj,block):
             for m in i:
                 events[ind1[m]][2]=7 
        
-    root_path='/mnt/CBS/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
     file_name_new=root_path + str(subj) + '_' + block +'_events_processed-eve.fif'
     mne.write_events(file_name_new,events)  ###read in raw events
     return events
@@ -117,7 +113,7 @@ def check_events(events,condition):  ## processed events
             e2.append(3)
             
            
-    path='/mnt/CBS/'
+    path='/media/tzcheng/storage/CBS/'
     seq_file=path + 'seq'+ condition+'_200.npy'
     seq=np.load(seq_file)
     
@@ -172,7 +168,7 @@ def select_mmr_events(events,subj,block): ## load the processed events
     
     mmr_event=np.concatenate((substd,dev1,dev2),axis=0)
     
-    root_path='/mnt/CBS/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
     file_name_new=root_path + str(subj) + '_' + block + '_events_mmr-eve.fif'
     mne.write_events(file_name_new,mmr_event)
     return mmr_event
@@ -211,45 +207,43 @@ def select_cabr_events(events,subj,block): ## load the processed events
     
     cabr_event=np.concatenate((substd1,substd2,dev1,dev2),axis=0)
     
-    root_path='/mnt/CBS/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
     file_name_new=root_path + str(subj) + '_' + block + '_events_cabr-eve.fif'
     mne.write_events(file_name_new, cabr_event)
     return cabr_event
 
-def average_mmr_trials(raw_file,mmr_event):    
-    event_id = {'Standard':1,'Deviant1':3,'Deviant2':6}
-    
-    reject=dict(bio=100e-6)
-    epochs = mne.Epochs(raw_file, mmr_event, event_id,tmin =-0.1, tmax=0.6,baseline=(-0.1,0),reject=reject)
+#%% 
+########################################
+root_path='/media/tzcheng/storage/CBS/'
+os.chdir(root_path)
 
-    evoked_substd=epochs['Standard'].average(picks=('bio'))
-    evoked_dev1=epochs['Deviant1'].average(picks=('bio'))
-    evoked_dev2=epochs['Deviant2'].average(picks=('bio'))
-    return evoked_substd,evoked_dev1,evoked_dev2, epochs
+## parameters 
+runs = ['_01'] # ['_01','_02'] for adults and ['_01'] for infants
+conditions = ['1', '1'] # for each individuals following the order in subj
+subj = [] 
+for file in os.listdir():
+    if file.startswith('cbs_b'):
+        subj.append(file)
 
-def average_cabr_trials(raw_file,cabr_events):    
-    event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
-    
-    reject=dict(bio=35e-6)
-    epochs = mne.Epochs(raw_file, cabr_event, event_id,tmin =-0.02, tmax=0.20,baseline=(-0.02,0),reject=reject)
-
-    evoked_substd=epochs['Standardp','Standardn'].average(picks=('bio'))
-    evoked_dev1=epochs['Deviant1p','Deviant1n'].average(picks=('bio'))
-    evoked_dev2=epochs['Deviant2p','Deviant2n'].average(picks=('bio'))
-    return evoked_substd,evoked_dev1,evoked_dev2, epochs
-
-#%% main
-subj='cbs_A123'
-block='02'
-#condition='4'
+###### do the jobs
+for s in subj:
+    for run in runs:
+        raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+s+'/raw_fif/'+s+'_'+ run+'_raw.fif',allow_maxshield=True,preload=True)
+        find_events(raw_file, s,run)
+        events=process_events(s,run)
+        check=check_events(events,condition)
+        mmr_event=select_mmr_events(events, s, run)
+        cabr_event=select_cabr_events(events, s, run)                  
+    #condition='4'
 #%%
-raw_file=mne.io.Raw('/mnt/CBS/'+subj+'/raw_fif/'+subj+'_'+ block+'_raw.fif',allow_maxshield=True,preload=True)
-raw_file=find_eeg(raw_file,subj,block)
-find_events(raw_file, subj,block)
-events=process_events(subj,block)
+subj = 'cbs_b117'
+raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+subj+'/raw_fif/'+subj+ run+'_raw.fif',allow_maxshield=True,preload=True)
+
+find_events(raw_file, subj,run)
+events=process_events(subj,run)
 check=check_events(events,condition)
-mmr_event=select_mmr_events(events, subj, block)
-cabr_event=select_cabr_events(events, subj, block)
+mmr_event=select_mmr_events(events, subj, run)
+cabr_event=select_cabr_events(events, subj, run)
 
 #%% check the sound presentation
 raw_file.pick_channels(['MISC001'])
@@ -266,46 +260,3 @@ event_id = {'Standard':1,'Deviant1':3,'Deviant2':6}
 epochs = mne.Epochs(raw_file, mmr_event, event_id,tmin =-0.05, tmax=0.15,baseline=(-0.05,0))
 evoked_substd=epochs['Standard'].average(picks=('misc'))
 evoked_substd.plot()
-#%% analyze cabr data
-cabr_event=mne.read_events('/mnt/CBS/'+subj+'/events/'+subj+'_'+block+'_events_cabr-eve.fif')
-
-raw_file=mne.io.Raw('/mnt/CBS/'+subj+'/eeg/'+subj+'_'+block+'_raw.fif',allow_maxshield=True,preload=True)
-raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('bio'))
-raw_file.filter(l_freq=80,h_freq=2000,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
-raw_file.pick_channels(['BIO004'])
-
-evoked_substd,evoked_dev1,evoked_dev2,epochs_subc=average_cabr_trials(raw_file,cabr_event)  
-evoked_substd.plot()
-evoked_dev1.plot()
-evoked_dev2.plot()
-
-evoked_substd.save('/mnt/CBS/'+subj+'/eeg/cbs_' +str(subj)+'_' + str(block) + '_evoked_substd_cabr.fif')
-evoked_dev1.save('/mnt/CBS/'+subj+'/eeg/cbs_' +str(subj)+'_' + str(block) + '_evoked_dev1_cabr.fif')
-evoked_dev2.save('/mnt/CBS/'+subj+'/eeg/cbs_' +str(subj)+'_' + str(block) + '_evoked_dev2_cabr.fif')
-epochs_subc.save('/mnt/CBS/'+subj+'/eeg/cbs_' +str(subj)+'_' + str(block) + '_epochs_subcortical.fif')
-
-#%% analyze mmr data
-mmr_event=mne.read_events('/mnt/CBS/'+subj+'/events/'+subj+'_'+block+'_events_mmr-eve.fif')
-
-raw_file=mne.io.Raw('/mnt/CBS/'+subj+'/eeg/'+subj+'_'+block+'_raw.fif',allow_maxshield=True,preload=True)
-raw_file.filter(l_freq=0,h_freq=50,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
-raw_file.pick_channels(['BIO004'])
-
-evoked_substd,evoked_dev1,evoked_dev2,epochs_cortical=average_mmr_trials(raw_file,mmr_event)  
-evoked_substd.plot()
-evoked_dev1.plot()
-evoked_dev2.plot()
-
-evoked_substd.save('/mnt/CBS/'+subj+'/eeg/cbs_' +str(subj)+'_' + str(block) + '_evoked_substd_mmr.fif')
-evoked_dev1.save('/mnt/CBS/'+subj+'/eeg/cbs_' +str(subj)+'_' + str(block) + '_evoked_dev1_mmr.fif')
-evoked_dev2.save('/mnt/CBS/'+subj+'/eeg/cbs_' +str(subj)+'_' + str(block) + '_evoked_dev2_mmr.fif')
-epochs_cortical.save('/mnt/CBS/'+subj+'/eeg/cbs_' +str(subj)+'_' + str(block) + '_epochs_cortical.fif')
-
-#%%
-import matplotlib.pyplot as plt
-mmr1=evoked_dev1.data-evoked_substd.data
-mmr2=evoked_dev2.data-evoked_substd.data
-time=evoked_substd.times
-plt.plot(time,mmr1[0,:],label='mmr1')
-plt.plot(time,mmr2[0,:],label='mmr2')
-plt.legend()

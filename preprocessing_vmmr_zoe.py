@@ -238,7 +238,7 @@ def do_projection(subject, run):
     raw_erm = mne.io.read_raw_fif(fname_erm + '.fif',allow_maxshield=True,preload=True)
         
     ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='ECG001', n_grad=1, n_mag=1, reject=None)
-    ecg_epochs = mne.preprocessing.creatcondae_ecg_epochs(raw,ch_name='ECG001').average() # don't really need to assign the ch_name
+    ecg_epochs = mne.preprocessing.create_ecg_epochs(raw,ch_name='ECG001').average() # don't really need to assign the ch_name
     eog_projs, eog_events = mne.preprocessing.compute_proj_eog(raw, ch_name=['EOG002','EOG003'], n_grad=1, n_mag=1, reject=None)
     eog_epochs = mne.preprocessing.create_eog_epochs(raw,ch_name=['EOG002','EOG003']).average() ## 
 
@@ -247,8 +247,8 @@ def do_projection(subject, run):
     raw_erm.add_proj(ecg_projs)
     raw_erm.add_proj(eog_projs)
 
-    raw.save(file_out + '.fif')
-    raw_erm.save(fname_erm_out + '.fif')
+    raw.save(file_out + '.fif',overwrite=True)
+    raw_erm.save(fname_erm_out + '.fif',overwrite=True)
 
 def do_filtering(subject, run, lp):
     ###### filtering
@@ -263,8 +263,8 @@ def do_filtering(subject, run, lp):
     raw.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     raw_erm.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     
-    raw.save(file_out + '.fif')
-    raw_erm.save(fname_erm_out + '.fif')
+    raw.save(file_out + '.fif',overwrite=True)
+    raw_erm.save(fname_erm_out + '.fif',overwrite=True)
 
 def do_cov(subject, run):
     ###### noise covariance
@@ -273,12 +273,12 @@ def do_cov(subject, run):
     raw_erm = mne.io.read_raw_fif(fname_erm + '.fif',allow_maxshield=True,preload=True)
     fname_erm_out = fname_erm + '-cov'
     noise_cov = mne.compute_raw_covariance(raw_erm, tmin=0, tmax=None)
-    mne.write_cov(fname_erm_out, noise_cov)
+    mne.write_cov(fname_erm_out, noise_cov,overwrite=True)
 
 def do_epoch(subject, run):
     ###### Read the event files (generated from evtag.py)
     root_path = os.getcwd()
-    mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + '_1_mmr-eve.fif')
+    mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_mmr-eve.fif')
     events_dict = {
     "standard": 6,
     "deviant": 4,

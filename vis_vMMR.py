@@ -11,15 +11,18 @@ import matplotlib
 import numpy as np
 
 ## Visualize epochs
-run = '4'
-fwd = mne.read_forward_solution('/media/tzcheng/storage/vmmr/vMMR_901/source/vMMR_901_1_fwd.fif')
-cov = mne.read_cov('/media/tzcheng/storage/vmmr/vMMR_901/sss_fif/vMMR_901_erm_raw_sss_' + run + '_clean_fil50-cov.fif')
-epoch = mne.read_epochs('/media/tzcheng/storage/vmmr/vMMR_901/sss_fif/vMMR_901_' + run + '_raw_sss_clean_fil50_e.fif')
-subject = 'sample'
-subjects_dir = '/media/tzcheng/storage/vmmr/vMMR_901/'
+subjects_dir = '/media/tzcheng/storage2/subjects/'
 
-evoked_s = mne.read_evokeds('/media/tzcheng/storage/vmmr/vMMR_901/sss_fif/vMMR_901_' + run + '_raw_sss_clean_fil50_evoked_s.fif')[0]
-evoked_d = mne.read_evokeds('/media/tzcheng/storage/vmmr/vMMR_901/sss_fif/vMMR_901_' + run + '_raw_sss_clean_fil50_evoked_d.fif')[0]
+subject = 'vMMR_901'
+run = '_3'
+
+root_path = '/media/tzcheng/storage/vmmr/'
+fwd = mne.read_forward_solution(root_path + subject + '/source/'+ subject + '_1_fwd.fif')
+cov = mne.read_cov(root_path + subject + '/sss_fif/' + subject + run + '_erm_raw_sss_proj_fil50-cov')
+epoch = mne.read_epochs(root_path + subject + '/sss_fif/' + subject + run + '_raw_sss_proj_fil50_e.fif')
+
+evoked_s = mne.read_evokeds(root_path + subject + '/sss_fif/' + subject + run + '_raw_sss_proj_fil50_evoked_s.fif')[0]
+evoked_d = mne.read_evokeds(root_path + subject + '/sss_fif/' + subject + run + '_raw_sss_proj_fil50_evoked_d.fif')[0]
 
 # mne.viz.plot_compare_evokeds(evoked_s, picks=["MEG0721"], combine="mean")
 # mne.viz.plot_compare_evokeds(evoked_s, picks="meg", axes="topo") # plot all of them
@@ -33,6 +36,6 @@ deviant = mne.minimum_norm.apply_inverse((evoked_d), inverse_operator)
 
 mmr = deviant - standard
 
-standard.plot(subject=subject, subjects_dir=subjects_dir, hemi='both')
+# standard.plot(subject=subject, subjects_dir=subjects_dir, hemi='both')
 # deviant.plot(subject=subject, subjects_dir=subjects_dir, hemi='both')
-# mmr.plot(subject=subject, subjects_dir=subjects_dir, hemi='both')
+mmr.plot(subject='sample', subjects_dir=subjects_dir, hemi='both')
