@@ -23,7 +23,7 @@ def do_otp(subject):
     root_path='/media/tzcheng/storage/CBS/'+ subject +'/raw_fif/'
     os.chdir(root_path)
     #find all the raw files
-    runs=['01'] # with movecomp or no movecomp; A104 has run1,2 and 3 need to preprocess differently
+    runs=['01','erm'] # ['01','02','erm'] for the adults and ['01','erm'] for the infants
     for run in runs:
         # file_in=root_path+'cbs'+str(subj)+'_'+str(run)+'_raw.fif'
         # file_out=root_path+'cbs'+str(subj)+'_'+str(run)+'_otp_raw.fif'
@@ -32,10 +32,11 @@ def do_otp(subject):
         raw=mne.io.Raw(file_in,allow_maxshield=True)
         picks=mne.pick_types(raw.info,meg=True,eeg=False,eog=False, ecg=False,exclude='bads')
         raw_otp=mne.preprocessing.oversampled_temporal_projection(raw,duration=1,picks=picks)
-        raw_otp.save(file_out)
+        raw_otp.save(file_out,overwrite=True)
 
 def do_sss(subject,st_correlation,int_order):
-
+    root_path='/media/tzcheng/storage/CBS/'
+    os.chdir(root_path)
     params = mnefun.Params(n_jobs=6, n_jobs_mkl=1, proj_sfreq=200, n_jobs_fir='cuda',
                        n_jobs_resample='cuda', filter_length='auto')
 
@@ -74,10 +75,7 @@ def do_sss(subject,st_correlation,int_order):
     'cbs_A108': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG0911'],
     'cbs_A109': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG0313'],
     'cbs_A110': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A111': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG0522'],
-    'cbs_A114': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A115': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A116': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG2012'],
+    'cbs_A111': ['MEG0122', 'MEG0333', 'MrunsMEG1612', 'MEG1643', 'MEG2012'],
     'cbs_A117': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
     'cbs_A118': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG2012'],
     'cbs_A119': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
@@ -207,8 +205,6 @@ for file in os.listdir():
     if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 
-subj = subj[:2]
-
 ###### do the jobs
 for s in subj:
     print(s)
@@ -225,3 +221,4 @@ for s in subj:
         print ('Doing epoch...')
         do_epoch_mmr(raw_filt, s, run)
         do_epoch_cabr(raw_filt, s, run)
+
