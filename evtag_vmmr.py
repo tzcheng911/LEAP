@@ -6,10 +6,10 @@ import itertools
 import matplotlib
 
 ###### Load data
-SOA = np.load('/media/tzcheng/storage/vmmr/vMMR_901/exp/soas1_900.npy')
-seq = np.load('/media/tzcheng/storage/vmmr/vMMR_901/exp/full_seq1_900.npy')
-change = np.load('/media/tzcheng/storage/vmmr/vMMR_901/exp/change_ind1_900.npy')
-root_path='/media/tzcheng/storage/vmmr/vMMR_901/'
+SOA = np.load('/media/tzcheng/storage/vmmr/exp/soas1_900.npy')
+seq = np.load('/media/tzcheng/storage/vmmr/exp/full_seq1_900.npy')
+change = np.load('/media/tzcheng/storage/vmmr/exp/change_ind1_900.npy')
+root_path='/media/tzcheng/storage/vmmr/'
 
 root_path='/media/tzcheng/storage/vmmr/'
 os.chdir(root_path)

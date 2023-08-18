@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Aug 8 13:50:12 2023
+For the subjects who have individual MRI
 
-Preprocessing for vMMR. Need to have events file from evtag.py
-
-@author: zcheng
+@author: tzcheng
 """
 
 ###### Import library 
@@ -159,3 +158,4 @@ def do_forward(subj,raw):
 
     mne.write_forward_solution('/mnt/storage/ATP/'+subj+'/sss_fif/'+subj+'_fwd.fif', fwd)
     return fwd
+

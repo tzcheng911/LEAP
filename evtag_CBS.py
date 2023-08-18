@@ -9,8 +9,10 @@ see eeg_preprocessing_final.py for adults
 for the new presentation code where there is only an event stamp 
 at the beginning of the string
 
-the code needs to recover for the alternate sound
-
+Notes:
+1. cbs_b113 has very short recording, cbs_b115 has no recording
+2. had to change the cbs_b102 (was coded as cbs_902)
+    
 The correspondance between event tage and sound are
 
                         TTl                  event code
@@ -27,7 +29,7 @@ import random
 import os
 
 def find_events(raw_file,subj,block):
-    #find events: need to fix the STI011 issue by recreating STI101
+    #find events: fix the STI011 issue by recreating STI101
     STI1 = mne.find_events(raw_file,stim_channel='STI001') 
     STI3 = mne.find_events(raw_file,stim_channel='STI003')
     STI4 = mne.find_events(raw_file,stim_channel='STI004')
@@ -37,13 +39,13 @@ def find_events(raw_file,subj,block):
     events = np.concatenate((STI1,STI3,STI4),axis=0)
     events = events[events[:,0].argsort()] # sort by the latency
     root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-    file_name_raw=root_path + str(subj)+ '_' + str(block) +'_events_raw-eve.fif'
-    mne.write_events(file_name_raw,events)  ###write out raw events for double checking
+    file_name_raw=root_path + str(subj) + str(block) +'_events_raw-eve.fif'
+    mne.write_events(file_name_raw,events,overwrite=True)  ###write out raw events for double checking
     
 def process_events(subj,block):
      #find events
     root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-    file_name_raw=root_path + str(subj) + '_' + str(block) +'_events_raw-eve.fif'
+    file_name_raw=root_path + str(subj) + str(block) +'_events_raw-eve.fif'
     events=mne.read_events(file_name_raw)  ###write out raw events for double checking
     
     ###
@@ -103,8 +105,8 @@ def process_events(subj,block):
                 events[ind1[m]][2]=7 
        
     root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-    file_name_new=root_path + str(subj) + '_' + block +'_events_processed-eve.fif'
-    mne.write_events(file_name_new,events)  ###read in raw events
+    file_name_new=root_path + str(subj) + block +'_events_processed-eve.fif'
+    mne.write_events(file_name_new,events,overwrite=True)  ###read in raw events
     return events
 
 
@@ -140,10 +142,10 @@ def check_events(events,condition):  ## processed events
     
     check=[]
     if np.array_equal(e2,echeck[0:len(e2)]):
-        print('all events are correct')
+        print('-------------------------all events are correct-----------------------------------')
         check.append('correct')
     else:
-        print ('something wrong with the event file!!!')
+        print('-------------------------something wrong with the event file!!!-----------------------------------')
         check.append('incorrect')
     ####   
     return check
@@ -175,8 +177,8 @@ def select_mmr_events(events,subj,block): ## load the processed events
     mmr_event=np.concatenate((substd,dev1,dev2),axis=0)
     
     root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-    file_name_new=root_path + str(subj) + '_' + block + '_events_mmr-eve.fif'
-    mne.write_events(file_name_new,mmr_event)
+    file_name_new=root_path + str(subj) + block + '_events_mmr-eve.fif'
+    mne.write_events(file_name_new,mmr_event,overwrite=True)
     return mmr_event
 
 
@@ -214,8 +216,8 @@ def select_cabr_events(events,subj,block): ## load the processed events
     cabr_event=np.concatenate((substd1,substd2,dev1,dev2),axis=0)
     
     root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-    file_name_new=root_path + str(subj) + '_' + block + '_events_cabr-eve.fif'
-    mne.write_events(file_name_new, cabr_event)
+    file_name_new=root_path + str(subj) + block + '_events_cabr-eve.fif'
+    mne.write_events(file_name_new, cabr_event,overwrite=True)
     return cabr_event
 
 #%% 
@@ -224,8 +226,8 @@ root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
 ## parameters 
-run = ['_01'] # ['_01','_02'] for adults and ['_01'] for infants
-conditions = ['2', '1','5','3','1','1','1','1','3','1','5','1','5','2','1'] # for each individuals following the order in subj
+run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
+conditions = ['2','1','3','1','1','1','1','3','1','5','1','5','2','1'] # for each individuals following the order in subj
 subj = [] 
 for file in os.listdir():
     if file.startswith('cbs_b'):
@@ -234,13 +236,17 @@ for file in os.listdir():
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]
-    raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+s+'/raw_fif/'+s+'_'+ run+'_raw.fif',allow_maxshield=True,preload=True)
+    
+    isExist = os.path.exists(root_path + s + '/events')
+    if not isExist:
+        os.makedirs(root_path + s + '/events')
+        
+    raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/' + s + '/raw_fif/' + s + run +'_raw.fif',allow_maxshield=True,preload=True)
     find_events(raw_file, s,run)
     events=process_events(s,run)
     check=check_events(events,condition)
     mmr_event=select_mmr_events(events, s, run)
     cabr_event=select_cabr_events(events, s, run)                  
-    #condition='4'
 
 #%% check the sound presentation
 raw_file.pick_channels(['MISC001'])

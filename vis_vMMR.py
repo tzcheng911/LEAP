@@ -7,17 +7,15 @@ Created on Thu Jul 27 16:47:33 2023
 """
 ## Import library  
 import mne
-import matplotlib
-import numpy as np
 
 ## Visualize epochs
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
-subject = 'vMMR_901'
-run = '_3'
+subject = 'vMMR_902'
+run = '_2'
 
 root_path = '/media/tzcheng/storage/vmmr/'
-fwd = mne.read_forward_solution(root_path + subject + '/source/'+ subject + '_1_fwd.fif')
+fwd = mne.read_forward_solution(root_path + subject + '/sss_fif/'+ subject + '_fwd.fif')
 cov = mne.read_cov(root_path + subject + '/sss_fif/' + subject + run + '_erm_raw_sss_proj_fil50-cov')
 epoch = mne.read_epochs(root_path + subject + '/sss_fif/' + subject + run + '_raw_sss_proj_fil50_e.fif')
 
@@ -36,6 +34,6 @@ deviant = mne.minimum_norm.apply_inverse((evoked_d), inverse_operator)
 
 mmr = deviant - standard
 
-standard.plot(subject='sample', subjects_dir=subjects_dir, hemi='both')
-# deviant.plot(subject=subject, subjects_dir=subjects_dir, hemi='both')
-# mmr.plot(subject='sample', subjects_dir=subjects_dir, hemi='both')
+standard.plot(subject='vMMR_902', subjects_dir=subjects_dir, hemi='both')
+deviant.plot(subject='vMMR_902', subjects_dir=subjects_dir, hemi='both')
+mmr.plot(subject='vMMR_902', subjects_dir=subjects_dir, hemi='both')
