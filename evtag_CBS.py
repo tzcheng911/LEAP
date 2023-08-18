@@ -125,8 +125,7 @@ def check_events(events,condition):  ## processed events
     path='/media/tzcheng/storage/CBS/'
     seq_file=path + 'seq'+ condition+'_200.npy'
     seq=np.load(seq_file)
-    
-    soa_file=path + 'soas' + condition + '_200.npy'
+    soa_file=path + 'soas' + condition + '_cbsb_200.npy'
     soa=np.load(soa_file, allow_pickle=True)
     
     length=[]
