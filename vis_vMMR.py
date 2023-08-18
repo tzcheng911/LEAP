@@ -36,6 +36,6 @@ deviant = mne.minimum_norm.apply_inverse((evoked_d), inverse_operator)
 
 mmr = deviant - standard
 
-# standard.plot(subject=subject, subjects_dir=subjects_dir, hemi='both')
+standard.plot(subject='sample', subjects_dir=subjects_dir, hemi='both')
 # deviant.plot(subject=subject, subjects_dir=subjects_dir, hemi='both')
-mmr.plot(subject='sample', subjects_dir=subjects_dir, hemi='both')
+# mmr.plot(subject='sample', subjects_dir=subjects_dir, hemi='both')

@@ -210,7 +210,8 @@ def do_sss(subject):
     params.st_correlation = st_correlation # 0.98 for adults and 0.9 for infants
     params.int_order = int_order # 8 for adults and 6 for infants
     params.movecomp = 'inter'
-    params.mf_prebad = {'vMMR_901': ['MEG0312','MEG2241','MEG1712']
+    params.mf_prebad = {'vMMR_901': ['MEG0312','MEG2241','MEG1712'],
+                        'vMMR_902': ['MEG0312','MEG1712']
     }
     mnefun.do_processing(
         params,
