@@ -4,7 +4,8 @@
 Created on Tue Nov  9 14:51:27 2021
 Modified by Zoe Cheng on Thurs Aug 17 10:55:59 2023
 
-This script is for CBS event processing for both adult and infant 
+This script is for CBS event processing FOR INFANTS ONLY 
+see eeg_preprocessing_final.py for adults
 for the new presentation code where there is only an event stamp 
 at the beginning of the string
 
@@ -17,20 +18,27 @@ standard                448                  1 and 2 (alt)
 dev1                    484                  3 and 5 (alt)
 dev2                    488                  6 and 7 (alt)
 
-@author: zhaotc
+@author: tzcheng
 """
 import mne
 import numpy as np
 import itertools
 import random
+import os
 
 def find_events(raw_file,subj,block):
-    #find events
-    events = mne.find_events(raw_file,stim_channel='STI101') # change the shortest_event from 2 to 1 zoe 08/17/2023
+    #find events: need to fix the STI011 issue by recreating STI101
+    STI1 = mne.find_events(raw_file,stim_channel='STI001') 
+    STI3 = mne.find_events(raw_file,stim_channel='STI003')
+    STI4 = mne.find_events(raw_file,stim_channel='STI004')
+    STI1[:,2] = 1
+    STI3[:,2] = 4
+    STI4[:,2] = 8
+    events = np.concatenate((STI1,STI3,STI4),axis=0)
+    events = events[events[:,0].argsort()] # sort by the latency
     root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
     file_name_raw=root_path + str(subj)+ '_' + str(block) +'_events_raw-eve.fif'
     mne.write_events(file_name_raw,events)  ###write out raw events for double checking
-    
     
 def process_events(subj,block):
      #find events
@@ -67,7 +75,7 @@ def process_events(subj,block):
     # figure out the beginning and the end of the trials
     ind2=[0]
     for i in range(len(ind1))[1:]:
-        if ind1[i]-ind1[i-1]>1: ## looking at if they are consecutive
+        if ind1[i]-ind1[i-1]>1: ## looking at if they are consecutive#%% 
             ind2.append(i-1)
             ind2.append(i)
     
@@ -90,7 +98,7 @@ def process_events(subj,block):
         elif events[ind1[i[0]]][2] == 3:
             for m in i:
                 events[ind1[m]][2]=5
-        elif events[ind1[i[0]]][2] == 6:
+        elif events[ind1[i[0]]][2] == 6:#%% 
             for m in i:
                 events[ind1[m]][2]=7 
        
@@ -112,7 +120,6 @@ def check_events(events,condition):  ## processed events
         elif event[2]==6 or event[2]==7:
             e2.append(3)
             
-           
     path='/media/tzcheng/storage/CBS/'
     seq_file=path + 'seq'+ condition+'_200.npy'
     seq=np.load(seq_file)
@@ -160,7 +167,6 @@ def select_mmr_events(events,subj,block): ## load the processed events
             dev2.append(e[i])
             std.append(e[i-1])
     
-        ###
     #randomly select standard trials from the ones that precedes deviants#
     ###
     sample_size = int(len(std)/2)
@@ -190,7 +196,7 @@ def select_cabr_events(events,subj,block): ## load the processed events
     dev1=[]
     for i in range(len(e)):
         if e[i][2] == 5:
-            dev1.append(e[i-1])
+            dev1.append(e[i-1])#%% 
             dev1.append(e[i])
     
     dev2=[]
@@ -218,32 +224,23 @@ root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
 ## parameters 
-runs = ['_01'] # ['_01','_02'] for adults and ['_01'] for infants
-conditions = ['1', '1'] # for each individuals following the order in subj
+run = ['_01'] # ['_01','_02'] for adults and ['_01'] for infants
+conditions = ['2', '1','5','3','1','1','1','1','3','1','5','1','5','2','1'] # for each individuals following the order in subj
 subj = [] 
 for file in os.listdir():
     if file.startswith('cbs_b'):
         subj.append(file)
 
 ###### do the jobs
-for s in subj:
-    for run in runs:
-        raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+s+'/raw_fif/'+s+'_'+ run+'_raw.fif',allow_maxshield=True,preload=True)
-        find_events(raw_file, s,run)
-        events=process_events(s,run)
-        check=check_events(events,condition)
-        mmr_event=select_mmr_events(events, s, run)
-        cabr_event=select_cabr_events(events, s, run)                  
+for n,s in enumerate(subj):
+    condition = conditions[n]
+    raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+s+'/raw_fif/'+s+'_'+ run+'_raw.fif',allow_maxshield=True,preload=True)
+    find_events(raw_file, s,run)
+    events=process_events(s,run)
+    check=check_events(events,condition)
+    mmr_event=select_mmr_events(events, s, run)
+    cabr_event=select_cabr_events(events, s, run)                  
     #condition='4'
-#%%
-subj = 'cbs_b117'
-raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+subj+'/raw_fif/'+subj+ run+'_raw.fif',allow_maxshield=True,preload=True)
-
-find_events(raw_file, subj,run)
-events=process_events(subj,run)
-check=check_events(events,condition)
-mmr_event=select_mmr_events(events, subj, run)
-cabr_event=select_cabr_events(events, subj, run)
 
 #%% check the sound presentation
 raw_file.pick_channels(['MISC001'])
