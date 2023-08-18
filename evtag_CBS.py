@@ -226,8 +226,9 @@ os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
-conditions = ['2','1','3','1','1','1','1','3','1','5','1','5','2','1'] # for each individuals following the order in subj
+conditions = ['2','1','2','1','1','1','1','3','1','5','1','5','2','1'] # for each individuals following the order in subj
 subj = [] 
+check_all= []
 for file in os.listdir():
     if file.startswith('cbs_b'):
         subj.append(file)
@@ -244,6 +245,7 @@ for n,s in enumerate(subj):
     find_events(raw_file, s,run)
     events=process_events(s,run)
     check=check_events(events,condition)
+    check_all.append(check)
     mmr_event=select_mmr_events(events, s, run)
     cabr_event=select_cabr_events(events, s, run)                  
 
