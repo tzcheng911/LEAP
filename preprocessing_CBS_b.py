@@ -132,6 +132,9 @@ def do_projection(subject, run):
     raw_erm.add_proj(ecg_projs)
     raw_erm.add_proj(eog_projs)
 
+    raw.save(file_out + '.fif',overwrite = True)
+    raw_erm.save(fname_erm_out + '.fif',overwrite = True)
+
     return raw, raw_erm
 
 def do_filtering(data, lp):
@@ -200,7 +203,7 @@ runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
-subj = [] # A104 got some technical issue
+subj = []
 for file in os.listdir():
     if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
