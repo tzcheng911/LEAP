@@ -82,6 +82,8 @@ def do_sss(subject,st_correlation,int_order):
     'cbs_A121': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG2622'],
     'cbs_A122': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
     'cbs_A123': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
+    'cbs_b901': ['MEG0312', 'MEG2411'],
+    'cbs_b902': ['MEG0312', 'MEG1712'],
     'cbs_b101': ['MEG0312', 'MEG1712', 'MEG1831', 'MEG1841', 'MEG2021', 'MEG2231'],
     'cbs_b102': ['MEG0312', 'MEG1712'],
     'cbs_b103': ['MEG0312', 'MEG1712'],
@@ -203,11 +205,11 @@ runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
-subj = []
+subjects = []
 for file in os.listdir():
     if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
-        subj.append(file)
-
+        subjects.append(file)
+subj = subjects[-5:]
 ###### do the jobs
 for s in subj:
     print(s)

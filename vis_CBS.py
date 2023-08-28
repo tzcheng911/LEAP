@@ -19,7 +19,7 @@ runs = ['_01','_02']
 
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_b'):
         subj.append(file)
 
 run = runs[0]

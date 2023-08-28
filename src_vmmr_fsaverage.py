@@ -40,8 +40,8 @@ raw_fname = fname + '_raw_sss.fif'
 clean_sss_raw = mne.io.read_raw_fif(raw_fname,allow_maxshield=True,preload=True)
 cov = mne.read_cov(fname_erm + '_raw_sss_proj_fil50-cov')
 trans = mne.read_trans(root_path + s + '/sss_fif/' + s + '-trans.fif')
-bem = mne.read_bem_solution(subjects_dir + s + '/bem/' + s + '-5120-5120-5120-bem-sol.fif')
-src = mne.read_source_spaces(subjects_dir + s + '/bem/' + s + '-ico-5-src.fif')
+bem = mne.read_bem_solution(subjects_dir + subject + '/bem/' + s + '-5120-5120-5120-bem-sol.fif')
+src = mne.read_source_spaces(subjects_dir + subject + '/bem/' + s + '-ico-5-src.fif')
 
 info = mne.io.read_info(raw_fname)
 
