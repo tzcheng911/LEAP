@@ -19,8 +19,8 @@ def do_foward(s):
     root_path='/media/tzcheng/storage/CBS/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
-    file_in = root_path + '/' + s + '/sss_fif/' + s
-    raw_file = mne.read_raw_fif(file_in + '/' + s + '_01_otp_raw_sss.fif')
+    file_in = root_path + '/' + s + '/sss_fif/' 
+    raw_file = mne.io.read_raw_fif(file_in + '/' + s + '_01_otp_raw_sss.fif')
     trans=mne.read_trans(file_in + '-trans.fif')
     src=mne.read_source_spaces(subjects_dir + '/' + s + '/bem/' + s + '-vol5-src.fif')
     bem=mne.read_bem_solution(subjects_dir + '/' + s + '/bem/' + s + '-5120-5120-5120-bem-sol.fif')
@@ -81,9 +81,9 @@ def do_inverse(s,morph):
         mmr1_fsaverage.save(file_in + '_mmr1_morph', overwrite=True)
         mmr2_fsaverage.save(file_in + '_mmr2_morph', overwrite=True)
     else: 
-        print('No morphing has been performed. The individual results may not be goot to average.')
+        print('No morphing has been performed. The individual results may not be good to average.')
 
-    return mmr1, mmr2, src, inverse_operator
+    return mmr1, mmr2, mmr1_fsaverage, mmr2_fsaverage, src, inverse_operator
 
 ########################################
 root_path='/media/tzcheng/storage/CBS/'
