@@ -46,8 +46,8 @@ for s in subj:
     file_in = root_path + '/' + s + '/sss_fif/' + s
     
 
-    stc_mmr1=mne.read_source_estimate(file_in+'_dev1_mmr-vl.stc')
-    stc_mmr2=mne.read_source_estimate(file_in+'_dev2_mmr-vl.stc')
+    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1-vl.stc')
+    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2-vl.stc')
    
     group_mmr1.append(stc_mmr1.data)
     group_mmr2.append(stc_mmr2.data)
@@ -67,10 +67,10 @@ group_mmr2=np.asarray(group_mmr2)
 group_mmr1_roi=np.asarray(group_mmr1_roi)
 group_mmr2_roi=np.asarray(group_mmr2_roi)
 
-np.save(root_path + 'meg_mmr_analysis/group_dev1.npy',group_mmr1)
-np.save(root_path + 'meg_mmr_analysis/group_dev2.npy',group_mmr2)
-np.save(root_path + 'meg_mmr_analysis/group_dev1_roi.npy',group_mmr1_roi)
-np.save(root_path + 'meg_mmr_analysis/group_dev2_roi.npy',group_mmr2_roi)
+np.save(root_path + 'meg_mmr_analysis/group_mmr1.npy',group_mmr1)
+np.save(root_path + 'meg_mmr_analysis/group_mmr2.npy',group_mmr2)
+np.save(root_path + 'meg_mmr_analysis/group_mmr1_roi.npy',group_mmr1_roi)
+np.save(root_path + 'meg_mmr_analysis/group_mmr2_roi.npy',group_mmr2_roi)
 
 # visualize the averaged 
 stc = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr1-vl.stc')

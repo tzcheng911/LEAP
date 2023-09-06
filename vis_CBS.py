@@ -11,24 +11,37 @@ import matplotlib
 import numpy as np
 import os
 
-########################################
 root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
+subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 runs = ['_01','_02']
 
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_b'):
+    if file.startswith('cbs_A'):
         subj.append(file)
 
 run = runs[0]
-s = subj[0]
+s = subj[2]
 
 subject = s
-subjects_dir = '/media/tzcheng/storage2/subjects/'
 
+########################################
+# visualize stc
+stc = mne.read_source_estimate(root_path + s + '/sss_fif/' + s + '_mmr2-vl.stc')
+src = mne.read_source_spaces(subjects_dir + '/' + s + '/bem/' + s + '-vol-5-src.fif')
+# src = mne.read_source_spaces(root_path + s + '/sss_fif/' + s +'_src')  # similar
+initial_time = 0.1
+brain = stc.plot(
+    src,
+    subject=s,
+    subjects_dir=subjects_dir,
+    initial_time=initial_time,
+)
 
+########################################
+# compute and visualize stc and sensor level
 file_in = root_path + '/' + s + '/sss_fif/' + s
 fwd = mne.read_forward_solution(file_in + '-fwd.fif')
 cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50-cov.fif')
