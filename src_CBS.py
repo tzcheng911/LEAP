@@ -21,16 +21,17 @@ def do_foward(s):
 
     file_in = root_path + '/' + s + '/sss_fif/' 
     raw_file = mne.io.read_raw_fif(file_in + '/' + s + '_01_otp_raw_sss.fif')
-    trans=mne.read_trans(file_in + '-trans.fif')
-    src=mne.read_source_spaces(subjects_dir + '/' + s + '/bem/' + s + '-vol5-src.fif')
+    trans=mne.read_trans(file_in + s + '-trans.fif')
+    src=mne.read_source_spaces(subjects_dir + '/' + s + '/bem/' + s + '-vol-5-src.fif')
     bem=mne.read_bem_solution(subjects_dir + '/' + s + '/bem/' + s + '-5120-5120-5120-bem-sol.fif')
     fwd=mne.make_forward_solution(raw_file.info,trans,src,bem,meg=True,eeg=False)
-    mne.write_forward_solution(file_in + '-fwd.fif',fwd,overwrite=True)
+    mne.write_forward_solution(file_in + s +'-fwd.fif',fwd,overwrite=True)
 
     return fwd, src
 
 
 def do_inverse(s,morph):
+    run = '_01'
     root_path='/media/tzcheng/storage/CBS/'
     subject = s
     subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -62,7 +63,7 @@ def do_inverse(s,morph):
     src.save(file_in + '_src', overwrite=True)
     
     if morph == True:
-        print('Morph individual src space to common cortical space.')
+        print('Morph' + s +  'src space to common cortical space.')
         fetch_fsaverage(subjects_dir)  # ensure fsaverage src exists
         fname_src_fsaverage = subjects_dir + "/fsaverage/bem/fsaverage-vol-5-src.fif"
         src_fs = mne.read_source_spaces(fname_src_fsaverage)
@@ -70,8 +71,8 @@ def do_inverse(s,morph):
         inverse_operator["src"],
         subject_from=s,
         subjects_dir=subjects_dir,
-        niter_affine=[10, 10, 5],
-        niter_sdr=[10, 10, 5],  # just for speed
+        # niter_affine=[10, 10, 5],
+        # niter_sdr=[10, 10, 5],  # just for speed
         src_to=src_fs,
         verbose=True)
 
@@ -98,7 +99,7 @@ for file in os.listdir():
         subj.append(file)
 
 for s in subj:
-    for run in runs:
+    # for run in runs:
         print(s)
         do_foward(s)
         do_inverse(s,morph)
