@@ -29,15 +29,18 @@ subject = s
 
 ########################################
 # visualize stc
-stc = mne.read_source_estimate(root_path + s + '/sss_fif/' + s + '_mmr2-vl.stc')
+stc = mne.read_source_estimate(root_path + s + '/sss_fif/' + s + '_mmr2_morph-vl.stc')
 src = mne.read_source_spaces(subjects_dir + '/' + s + '/bem/' + s + '-vol-5-src.fif')
 # src = mne.read_source_spaces(root_path + s + '/sss_fif/' + s +'_src')  # similar
+src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif')
+
 initial_time = 0.1
 brain = stc.plot(
     src,
-    subject=s,
+    subject='fsaverage',
     subjects_dir=subjects_dir,
     initial_time=initial_time,
+    mode='glass_brain'
 )
 
 ########################################
@@ -62,9 +65,9 @@ mne.viz.plot_compare_evokeds(evoked_s, picks=chs, combine="mean", show_sensors="
 
 ## Visualize source level
 inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
-stc_std = mne.minimum_norm.apply_inverse((evoked_s), inverse_operator)
-stc_dev1 = mne.minimum_norm.apply_inverse((evoked_d1), inverse_operator)
-stc_dev2 = mne.minimum_norm.apply_inverse((evoked_d2), inverse_operator)
+stc_std = mne.minimum_norm.apply_inverse((evoked_s), inverse_operator, pick_ori='vector')
+stc_dev1 = mne.minimum_norm.apply_inverse((evoked_d1), inverse_operator, pick_ori='vector')
+stc_dev2 = mne.minimum_norm.apply_inverse((evoked_d2), inverse_operator, pick_ori='vector')
 src = inverse_operator['src']
 
 mmr1 = stc_dev1 - stc_std

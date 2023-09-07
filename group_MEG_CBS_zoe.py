@@ -46,14 +46,16 @@ for s in subj:
     file_in = root_path + '/' + s + '/sss_fif/' + s
     
 
-    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1-vl.stc')
-    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2-vl.stc')
+    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_morph-vl.stc')
+    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_morph-vl.stc')
    
     group_mmr1.append(stc_mmr1.data)
     group_mmr2.append(stc_mmr2.data)
     # #extract ROIS
-    src = mne.read_source_spaces(file_in +'_src')
-    labels = subjects_dir + s + '/mri/aparc+aseg.mgz'
+    # src = mne.read_source_spaces(file_in +'_src')
+    src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif') # for morphing data
+    # labels = subjects_dir + s + '/mri/aparc+aseg.mgz'
+    labels = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
     mmr1_roi=mne.extract_label_time_course(stc_mmr1,labels,src,mode='mean',allow_empty=True)
     mmr2_roi=mne.extract_label_time_course(stc_mmr2,labels,src,mode='mean',allow_empty=True)
     
@@ -67,49 +69,29 @@ group_mmr2=np.asarray(group_mmr2)
 group_mmr1_roi=np.asarray(group_mmr1_roi)
 group_mmr2_roi=np.asarray(group_mmr2_roi)
 
-np.save(root_path + 'meg_mmr_analysis/group_mmr1.npy',group_mmr1)
-np.save(root_path + 'meg_mmr_analysis/group_mmr2.npy',group_mmr2)
-np.save(root_path + 'meg_mmr_analysis/group_mmr1_roi.npy',group_mmr1_roi)
-np.save(root_path + 'meg_mmr_analysis/group_mmr2_roi.npy',group_mmr2_roi)
+np.save(root_path + 'meg_mmr_analysis/group_mmr1_morph.npy',group_mmr1)
+np.save(root_path + 'meg_mmr_analysis/group_mmr2_morph.npy',group_mmr2)
+np.save(root_path + 'meg_mmr_analysis/group_mmr1_morph_roi.npy',group_mmr1_roi)
+np.save(root_path + 'meg_mmr_analysis/group_mmr2_morph_roi.npy',group_mmr2_roi)
 
-# visualize the averaged 
-stc = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr1-vl.stc')
-mmr = np.load(root_path + 'meg_mmr_analysis/group_dev1.npy')
+#%%######################################## visualize the averaged 
+stc = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
+mmr = np.load(root_path + 'meg_mmr_analysis/group_mmr2_morph.npy')
 stc.data = mmr.mean(axis=0)
-
-################## is this right?? need to morph the data to the template first
-## # from MNE Read the source space we are morphing to
-# src = mne.read_source_spaces(src_fname)
-# fsave_vertices = [s["vertno"] for s in src]
-# morph_mat = mne.compute_source_morph(
-#     src=inverse_operator["src"],
-#     subject_to="fsaverage",
-#     spacing=fsave_vertices,
-#     subjects_dir=subjects_dir,
-# ).morph_mat
-
-# n_vertices_fsave = morph_mat.shape[0]
-
-# # We have to change the shape for the dot() to work properly
-# X = X.reshape(n_vertices_sample, n_times * n_subjects * 2)
-# print("Morphing data.")
-# X = morph_mat.dot(X)  # morph_mat is a sparse matrix
-X = X.reshape(n_vertices_fsave, n_times, n_subjects, 2)
 
 subject = 'fsaverage'
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
+stc.plot(src,clim=dict(kind="value",pos_lims=[0,2,5]),subject=subject, subjects_dir=subjects_dir)
 stc.plot(src,subject=subject, subjects_dir=subjects_dir)
 
 #%%
 #averaged acrossed fsaverage
-group_mmr1=np.load(root_path + 'meg_mmr_analysis/group_dev1.npy')
-group_mmr2=np.load(root_path + 'meg_mmr_analysis/group_dev2.npy')
 t = np.shape(group_mmr1)[-1]
 
 # whole brain mmr plot
-plot_err(np.mean(group_mmr1,1),'b')
-plot_err(np.mean(group_mmr2,1),'r')
+plot_err(np.mean(group_mmr1,1),'b',t)
+plot_err(np.mean(group_mmr2,1),'r',t)
 plt.xlabel('Time (ms)', fontsize=18)
 plt.ylabel('dSPM value', fontsize=18)
 plt.title('MMR wholebrain',fontsize=18)
