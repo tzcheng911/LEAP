@@ -7,6 +7,8 @@ Created on Thu Jul 27 16:47:33 2023
 """
 ## Import library  
 import mne
+import mnefun
+import matplotlib.pyplot as plt
 
 ## Visualize epochs
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -37,3 +39,30 @@ mmr = deviant - standard
 standard.plot(subject='vMMR_902', subjects_dir=subjects_dir, hemi='both')
 # deviant.plot(subject='vMMR_902', subjects_dir=subjects_dir, hemi='both')
 # mmr.plot(subject='vMMR_902', subjects_dir=subjects_dir, hemi='both')
+
+## visualize signer (vMMR_901) vs. non-signer (vMMR_902) in a few ROIs
+src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/' + s + '/bem/' + s +'-ico-5-src.fif') 
+label = mne.read_labels_from_annot(subject=s, parc='HCPMMP1_combined',subjects_dir='/media/tzcheng/storage2/subjects/')
+label_tc=mne.extract_label_time_course(mmr,label,src,mode='mean',allow_empty=True)
+
+# mask1=get_atlas_roi_mask(mmr,roi='superiortemporal,temporalpole',atlas_subject='fsaverage')
+
+for name in label:
+    print(name.name)
+
+Brain = mne.viz.get_brain_class()
+brain = Brain(
+    s,
+    "lh",
+    "inflated",
+    subjects_dir=subjects_dir,
+    cortex="low_contrast",
+    background="white",
+    size=(800, 600),
+)
+
+
+brain.add_annotation("aparc")
+
+label_name = label[2]
+brain.add_label(label_name, borders=False)
