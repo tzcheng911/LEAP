@@ -13,17 +13,16 @@ import matplotlib
 import numpy as np
 import os
 import nibabel as nib
-from mne.datasets import sample, fetch_fsaverage
 
 def do_foward(s):
     root_path='/media/tzcheng/storage/CBS/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
-    file_in = root_path + '/' + s + '/sss_fif/' 
-    raw_file = mne.io.read_raw_fif(file_in + '/' + s + '_01_otp_raw_sss.fif')
+    file_in = root_path + s + '/sss_fif/' 
+    raw_file = mne.io.read_raw_fif(file_in  + s + '_01_otp_raw_sss.fif')
     trans=mne.read_trans(file_in + s + '-trans.fif')
-    src=mne.read_source_spaces(subjects_dir + '/' + s + '/bem/' + s + '-vol-5-src.fif')
-    bem=mne.read_bem_solution(subjects_dir + '/' + s + '/bem/' + s + '-5120-5120-5120-bem-sol.fif')
+    src=mne.read_source_spaces(subjects_dir + s + '/bem/' + s + '-vol-5-src.fif')
+    bem=mne.read_bem_solution(subjects_dir +  s + '/bem/' + s + '-5120-5120-5120-bem-sol.fif')
     fwd=mne.make_forward_solution(raw_file.info,trans,src,bem,meg=True,eeg=False)
     mne.write_forward_solution(file_in + s +'-fwd.fif',fwd,overwrite=True)
 
@@ -61,7 +60,7 @@ def do_inverse(s,morph,ori):
     
     if morph == True:
         print('Morph' + s +  'src space to common cortical space.')
-        fname_src_fsaverage = subjects_dir + "/fsaverage/bem/fsaverage-vol-5-src.fif"
+        fname_src_fsaverage = subjects_dir + 'ANTS12-0Months3T/bem/ANTS12-0Months3T-vol-5-src.fif'
         src_fs = mne.read_source_spaces(fname_src_fsaverage)
         morph = mne.compute_source_morph(
             inverse_operator["src"],
@@ -71,15 +70,15 @@ def do_inverse(s,morph,ori):
             niter_sdr=[10, 10, 5],  # just for speed
             src_to=src_fs,
             verbose=True)
-        standard_fsaverage = morph.apply(standard)
-        dev1_fsaverage = morph.apply(dev1)
-        dev2_fsaverage = morph.apply(dev2)
+        # standard_fsaverage = morph.apply(standard)
+        # dev1_fsaverage = morph.apply(dev1)
+        # dev2_fsaverage = morph.apply(dev2)
         mmr1_fsaverage = morph.apply(mmr1)
         mmr2_fsaverage = morph.apply(mmr2)
         
-        standard_fsaverage.save(file_in + '_std_' + ori +'_morph', overwrite=True)
-        dev1_fsaverage.save(file_in + '_dev1_' + ori +'_morph', overwrite=True)
-        dev2_fsaverage.save(file_in + '_dev2_' + ori +'_morph', overwrite=True)
+        # standard_fsaverage.save(file_in + '_std_' + ori +'_morph', overwrite=True)
+        # dev1_fsaverage.save(file_in + '_dev1_' + ori +'_morph', overwrite=True)
+        # dev2_fsaverage.save(file_in + '_dev2_' + ori +'_morph', overwrite=True)
         mmr1_fsaverage.save(file_in + '_mmr1_' + ori +'_morph', overwrite=True)
         mmr2_fsaverage.save(file_in + '_mmr2_' + ori +'_morph', overwrite=True)
     else: 
@@ -94,13 +93,13 @@ def do_inverse(s,morph,ori):
 root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
-morph = True
+morph = False
 ori = 'vector'
 
 runs = ['_01','_02']
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_b'):
         subj.append(file)
 
 for s in subj:

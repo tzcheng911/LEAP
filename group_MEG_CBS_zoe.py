@@ -34,7 +34,7 @@ for file in os.listdir():
         subj.append(file)
 
 runs = ['01','02']
-run = runs [1]
+run = runs [0]
 
 #%%
 group_mmr1=[]
@@ -69,21 +69,25 @@ group_mmr2=np.asarray(group_mmr2)
 group_mmr1_roi=np.asarray(group_mmr1_roi)
 group_mmr2_roi=np.asarray(group_mmr2_roi)
 
-np.save(root_path + 'meg_mmr_analysis/group_mmr1_vector_morph.npy',group_mmr1)
-np.save(root_path + 'meg_mmr_analysis/group_mmr2_vector_morph.npy',group_mmr2)
-np.save(root_path + 'meg_mmr_analysis/group_mmr1_vector_morph_roi.npy',group_mmr1_roi)
-np.save(root_path + 'meg_mmr_analysis/group_mmr2_vector_morph_roi.npy',group_mmr2_roi)
+np.save(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph.npy',group_mmr1)
+np.save(root_path + 'meeg_mmr_analysis/group_mmr2_vector_morph.npy',group_mmr2)
+np.save(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph_roi.npy',group_mmr1_roi)
+np.save(root_path + 'meeg_mmr_analysis/group_mmr2_vector_morph_roi.npy',group_mmr2_roi)
 
 #%%######################################## visualize the averaged 
-stc = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
-mmr = np.load(root_path + 'meg_mmr_analysis/group_mmr2_morph.npy')
-stc.data = mmr.mean(axis=0)
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
+stc2 = stc1
+mmr1 = np.load(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph.npy')
+mmr2 = np.load(root_path + 'meeg_mmr_analysis/group_mmr2_vector_morph.npy')
+stc1.data = mmr1.mean(axis=0)
+stc2.data = mmr2.mean(axis=0)
 
 subject = 'fsaverage'
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
-stc.plot(src,clim=dict(kind="value",pos_lims=[0,2,5]),subject=subject, subjects_dir=subjects_dir)
-stc.plot(src,subject=subject, subjects_dir=subjects_dir)
+# stc.plot(src,clim=dict(kind="value",pos_lims=[0,2,5]),subject=subject, subjects_dir=subjects_dir)
+stc1.plot(src,subject=subject, subjects_dir=subjects_dir)
+stc2.plot(src,subject=subject, subjects_dir=subjects_dir)
 
 #%%
 #averaged acrossed fsaverage
@@ -135,7 +139,7 @@ np.save('/mnt/CBS/meg_mmr_analysis/tfce_p_values',cluster_p_values)
 np.save('/mnt/CBS/meg_mmr_analysis/tfce_t',T_obs)
 np.save('/mnt/CBS/meg_mmr_analysis/tfce_h0',H0)
 #%% visualize clusters
-stc=mne.read_source_estimate('/mnt/CBS/cbs_101/sss_fif/cbs_A101_mmr1-vl.stc')
+stc=mne.read_source_estimate('/CBS/cbs_A101/sss_fif/cbs_A101_mmr1-vl.stc')
 cluster_p_values=-np.log10(cluster_p_values)
 
 

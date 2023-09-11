@@ -61,7 +61,6 @@ brain = Brain(
     size=(800, 600),
 )
 
-
 brain.add_annotation("aparc")
 
 label_name = label[2]
