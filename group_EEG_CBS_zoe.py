@@ -41,21 +41,21 @@ runs = ['01','02']
 run = runs [0]
 
 #%% calculating group mmr
-mmr1_group = []
-mmr2_group = []
+group_mmr1 = []
+group_mmr2 = []
 
-# block 1 group average
+# run 1 group average
 for s in subj:
     std = mne.read_evokeds(root_path + s +'/eeg/cbs_' + s + '_' + run + '_evoked_substd_mmr.fif',allow_maxshield = True)
     dev1 = mne.read_evokeds(root_path + s +'/eeg/cbs_' + s + '_' + run + '_evoked_dev1_mmr.fif',allow_maxshield = True)
     dev2 = mne.read_evokeds(root_path + s +'/eeg/cbs_' + s + '_' + run + '_evoked_dev2_mmr.fif',allow_maxshield = True)
     mmr1 = dev1[0].data - std[0].data
     mmr2 = dev2[0].data - std[0].data
-    mmr1_group.append(mmr1)
-    mmr2_group.append(mmr2)
+    group_mmr1.append(mmr1)
+    group_mmr2.append(mmr2)
     
-group_mmr1=np.squeeze(np.asarray(mmr1_group),1)
-group_mmr2=np.squeeze(np.asarray(mmr2_group),1)
+group_mmr1=np.squeeze(np.asarray(group_mmr1),1)
+group_mmr2=np.squeeze(np.asarray(group_mmr2),1)
 
 np.save(root_path + 'meeg_mmr_analysis/group_mmr1_eeg.npy',group_mmr1)
 np.save(root_path + 'meeg_mmr_analysis/group_mmr2_eeg.npy',group_mmr2)
