@@ -9,12 +9,13 @@ Created on Thu Jul 27 16:47:33 2023
 import mne
 import mnefun
 import matplotlib.pyplot as plt
+import numpy as np
 
 ## Visualize epochs
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
-s = 'vMMR_902'
-run = '_1'
+s = 'vMMR_901'
+run = '_4'
 
 root_path = '/media/tzcheng/storage/vmmr/'
 fwd = mne.read_forward_solution(root_path + s + '/sss_fif/'+ s + '_fwd.fif')
@@ -41,15 +42,15 @@ mmr = deviant - standard
 ## for publishable figures (still working on it, screen shot for now)
 # brain.save_movie(time_dilation=20, tmin=0.05, tmax=0.16,
 #                  interpolation='linear', framerate=10)
-brain = mmr.plot(subject=s, subjects_dir=subjects_dir, hemi='both', background="w",  clim =dict(kind="value",pos_lims= [0,9,19]))
-screenshot = brain.screenshot()
+#brain = mmr.plot(subject=s, subjects_dir=subjects_dir, hemi='both', background="w",  clim =dict(kind="value",pos_lims= [0,9,19]))
+#screenshot = brain.screenshot()
 
 #%%########################################
 ## visualize signer (vMMR_901) vs. non-signer (vMMR_902) in a few ROIs
 src = mne.setup_source_space(
     'sample', spacing="ico5", add_dist="patch", subjects_dir=subjects_dir)
 src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/' + s + '/bem/' + s +'-ico-5-src.fif') 
-label = mne.read_labels_from_annot(subject='sample', parc='aparc',subjects_dir='/media/tzcheng/storage2/subjects/')
+label = mne.read_labels_from_annot(subject=s, parc='aparc',subjects_dir='/media/tzcheng/storage2/subjects/')
 label_tc=mne.extract_label_time_course(mmr,label,src,mode='mean',allow_empty=True)
 
 # mask1=get_atlas_roi_mask(mmr,roi='superiortemporal,temporalpole',atlas_subject='fsaverage')
@@ -78,4 +79,19 @@ for nROI in ROI_label:
     brain.add_label(label[nROI], borders=False)
 
 ## visualize signer (vMMR_901) vs. non-signer (vMMR_902) in a few hot spot
+r4_901 = np.load('vMMR_901_rh_run4.npy')
+r4_902 = np.load('vMMR_902_rh_run4.npy')
+times = np.load('vmmr_times.npy')
 
+for i in np.arange(0,4,1):
+    plt.figure()
+    plt.plot(times,r4_901[i,])
+    plt.plot(times,r4_902[i,])
+    plt.title(label[Qis_ROI_label[i]].name)
+    plt.legend(['signer','non-signer'])
+    plt.xlabel('Time (s)')
+    plt.ylabel('Activation (AU)')
+    plt.xlim([-0.1, 0.5])
+    plt.ylim([-15, 12])
+    plt.savefig('/home/tzcheng/Desktop/' + 'run1_' + label[Qis_ROI_label[i]].name +'.pdf')
+    

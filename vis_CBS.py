@@ -84,6 +84,6 @@ evoked_d1 = mne.read_evokeds(file_in + run + '_evoked_dev1_cabr.fif')[0]
 evoked_d2 = mne.read_evokeds(file_in + run + '_evoked_dev2_cabr.fif')[0]
 
 evoked_s.crop(tmin=-0.1, tmax=0.2)
-
 mne.viz.plot_compare_evokeds(evoked_s, picks="meg", axes="topo") # plot all of them
 
+## stc of ROI
