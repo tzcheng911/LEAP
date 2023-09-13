@@ -72,7 +72,7 @@ mne.gui.coregistration(subject=subject, subjects_dir=subjects_dir)
 conductivity = (0.3,)  # for single layer
 # conductivity = (0.3, 0.006, 0.3)  # for three layers
 model = mne.make_bem_model(
-    subject="sample", ico=4, conductivity=conductivity, subjects_dir=subjects_dir
+    subject=s, ico=4, conductivity=conductivity, subjects_dir=subjects_dir
 )
 bem = mne.make_bem_solution(model)
 

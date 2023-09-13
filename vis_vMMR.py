@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 s = 'vMMR_902'
-run = '_4'
+run = '_1'
 
 root_path = '/media/tzcheng/storage/vmmr/'
 fwd = mne.read_forward_solution(root_path + s + '/sss_fif/'+ s + '_fwd.fif')
@@ -36,24 +36,31 @@ deviant = mne.minimum_norm.apply_inverse((evoked_d), inverse_operator)
 
 mmr = deviant - standard
 
-standard.plot(subject='vMMR_902', subjects_dir=subjects_dir, hemi='both')
+#standard.plot(subject='vMMR_902', subjects_dir=subjects_dir, hemi='both')
 # deviant.plot(subject='vMMR_902', subjects_dir=subjects_dir, hemi='both')
-# mmr.plot(subject='vMMR_902', subjects_dir=subjects_dir, hemi='both')
+## for publishable figures (still working on it, screen shot for now)
+# brain.save_movie(time_dilation=20, tmin=0.05, tmax=0.16,
+#                  interpolation='linear', framerate=10)
+brain = mmr.plot(subject=s, subjects_dir=subjects_dir, hemi='both', background="w",  clim =dict(kind="value",pos_lims= [0,9,19]))
+screenshot = brain.screenshot()
 
+#%%########################################
 ## visualize signer (vMMR_901) vs. non-signer (vMMR_902) in a few ROIs
+src = mne.setup_source_space(
+    'sample', spacing="ico5", add_dist="patch", subjects_dir=subjects_dir)
 src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/' + s + '/bem/' + s +'-ico-5-src.fif') 
-label = mne.read_labels_from_annot(subject=s, parc='HCPMMP1_combined',subjects_dir='/media/tzcheng/storage2/subjects/')
+label = mne.read_labels_from_annot(subject='sample', parc='aparc',subjects_dir='/media/tzcheng/storage2/subjects/')
 label_tc=mne.extract_label_time_course(mmr,label,src,mode='mean',allow_empty=True)
 
 # mask1=get_atlas_roi_mask(mmr,roi='superiortemporal,temporalpole',atlas_subject='fsaverage')
-
 for name in label:
     print(name.name)
 
+# ROI based on Qi's request superior temporal, middle temporal, IFG-triangularis (pars triangularis), IFG-opercularis (pars opercularis), inferior parietal, lateraloccipital
 Brain = mne.viz.get_brain_class()
 brain = Brain(
     s,
-    "lh",
+    "both",
     "inflated",
     subjects_dir=subjects_dir,
     cortex="low_contrast",
@@ -63,5 +70,12 @@ brain = Brain(
 
 brain.add_annotation("aparc")
 
-label_name = label[2]
-brain.add_label(label_name, borders=False)
+# visualize the label
+ROI_label = [1,67]
+Qis_ROI_label = [1,67,23,37] # STS, transverse temporal, the occipital ROI, the IFG ROI (pars opercularis)
+
+for nROI in ROI_label:
+    brain.add_label(label[nROI], borders=False)
+
+## visualize signer (vMMR_901) vs. non-signer (vMMR_902) in a few hot spot
+
