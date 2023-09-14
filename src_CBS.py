@@ -86,14 +86,14 @@ def do_inverse(s,morph,ori):
         standard.save(file_in + '_std_' + str(ori), overwrite=True)
         dev1.save(file_in + '_dev1_' + str(ori), overwrite=True)
         dev2.save(file_in + '_dev2_' + str(ori), overwrite=True)
-        mmr1.save(file_in + '_mmr1' + str(ori), overwrite=True)
-        mmr2.save(file_in + '_mmr2' + str(ori), overwrite=True)
+        mmr1.save(file_in + '_mmr1_' + str(ori), overwrite=True)
+        mmr2.save(file_in + '_mmr2_' + str(ori), overwrite=True)
 
 ########################################
 root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
-morph = True
+morph = False
 ori = None # 'vector'
 
 runs = ['_01','_02']

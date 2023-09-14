@@ -8,10 +8,23 @@ Created on Thu Jul 27 16:47:33 2023
 ## Import library  
 import mne
 import matplotlib
+import matplotlib.pyplot as plt 
 import numpy as np
 import os
 from nilearn.plotting import plot_glass_brain
+from scipy import stats,signal
 
+def plot_err(group_stc,color,t):
+    group_avg=np.mean(group_stc,axis=0)
+   #plt.figure()
+    err=np.std(group_stc,axis=0)/np.sqrt(group_stc.shape[0])
+    up=group_avg+err
+    lw=group_avg-err
+    t=np.linspace(-100,600,3501)
+    plt.plot(t,group_avg,color=color)
+    plt.fill_between(t,up,lw,color=color,alpha=0.5)
+
+#%%#######################################   
 root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -28,41 +41,33 @@ s = subj[2]
 
 subject = s
 
-#%%#######################################
-# visualize stc
-stc = mne.read_source_estimate(root_path + s + '/sss_fif/' + s + '_mmr2_morph-vl.stc')
-src = mne.read_source_spaces(subjects_dir + '/' + s + '/bem/' + s + '-vol-5-src.fif')
-# src = mne.read_source_spaces(root_path + s + '/sss_fif/' + s +'_src')  # similar
-src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif')
-
-initial_time = 0.1
-brain = stc.plot(
-    src,
-    subject='fsaverage',
-    subjects_dir=subjects_dir,
-    initial_time=initial_time,
-    mode='glass_brain'
-)
-
-########################################
-# compute and visualize stc and sensor level
+#%%####################################### visualize individual sensor and source
+#%% before morphing from evoked data
 file_in = root_path + '/' + s + '/sss_fif/' + s
 fwd = mne.read_forward_solution(file_in + '-fwd.fif')
 cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50-cov.fif')
 
-## Cortical
+## Visualize sensor level
+## MMR
 epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mmr_e.fif')
 
 evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
 evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]
 evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0]
 
-## Visualize sensor level
 mne.viz.plot_compare_evokeds(evoked_s, picks=["MEG0721"], combine="mean")
 mne.viz.plot_compare_evokeds(evoked_s, picks="meg", axes="topo") # plot all of them
 epoch.plot_sensors(kind='3d', ch_type='mag', ch_groups='position')
 chs = ["MEG0721","MEG0631","MEG0741","MEG1821"]
 mne.viz.plot_compare_evokeds(evoked_s, picks=chs, combine="mean", show_sensors="upper right")
+
+## FFR
+epoch = mne.read_epochs(file_in + run + '_epochs_subcortical.fif')
+evoked_s = mne.read_evokeds(file_in + run + '_evoked_substd_cabr.fif')[0]
+evoked_d1 = mne.read_evokeds(file_in + run + '_evoked_dev1_cabr.fif')[0]
+evoked_d2 = mne.read_evokeds(file_in + run + '_evoked_dev2_cabr.fif')[0]
+evoked_s.crop(tmin=-0.1, tmax=0.2)
+mne.viz.plot_compare_evokeds(evoked_s, picks="meg", axes="topo") # plot all of them
 
 ## Visualize source level
 inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
@@ -77,40 +82,75 @@ mmr2 = stc_dev2 - stc_std
 mmr1.plot(src,subject=subject, subjects_dir=subjects_dir)
 mmr2.plot(src,subject=subject, subjects_dir=subjects_dir)
 
-## Subcortical
-epoch = mne.read_epochs(file_in + run + '_epochs_subcortical.fif')
+#%% after morphing
+stc = mne.read_source_estimate(root_path + s + '/sss_fif/' + s + '_mmr2_morph-vl.stc')
+src = mne.read_source_spaces(subjects_dir + '/' + s + '/bem/' + s + '-vol-5-src.fif')
+# src = mne.read_source_spaces(root_path + s + '/sss_fif/' + s +'_src')  # similar
+src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif')
 
-evoked_s = mne.read_evokeds(file_in + run + '_evoked_substd_cabr.fif')[0]
-evoked_d1 = mne.read_evokeds(file_in + run + '_evoked_dev1_cabr.fif')[0]
-evoked_d2 = mne.read_evokeds(file_in + run + '_evoked_dev2_cabr.fif')[0]
+initial_time = 0.1
+brain = stc.plot(
+    src,
+    subject='fsaverage',
+    subjects_dir=subjects_dir,
+    initial_time=initial_time,
+    mode='glass_brain'
+)
 
-evoked_s.crop(tmin=-0.1, tmax=0.2)
-mne.viz.plot_compare_evokeds(evoked_s, picks="meg", axes="topo") # plot all of them
-
-#%%######################################## visualize the group level average
+#%%######################################## visualize the group level source average
+# load the data
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 stc2 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
-mmr1 = np.load(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph.npy')
-mmr2 = np.load(root_path + 'meeg_mmr_analysis/group_mmr2_vector_morph.npy')
-stc1.data = mmr1.mean(axis=0)
-stc2.data = mmr2.mean(axis=0)
+MEG_mmr1_v = np.load(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph.npy') # with the mag or vector method
+MEG_mmr2_v = np.load(root_path + 'meeg_mmr_analysis/group_mmr2_vector_morph.npy') # with the mag or vector method
+MEG_mmr1_m = np.load(root_path + 'meeg_mmr_analysis/group_mmr1_morph.npy') # with the mag or vector method
+MEG_mmr2_m = np.load(root_path + 'meeg_mmr_analysis/group_mmr2_morph.npy') # with the mag or vector method
+
+stc1.data = MEG_mmr1_m.mean(axis=0)
+stc2.data = MEG_mmr2_m.mean(axis=0)
 
 subject = 'fsaverage'
 src = mne.read_source_spaces(subjects_dir + subject + '/bem/fsaverage-vol-5-src.fif')
 
+# stcs = stc1.in_label(label = label_names[0], mri = fname_aseg, src = src) #restrict to stc to one of the label 
+# stc.plot(src,clim=dict(kind="value",pos_lims=[0,2,5]),subject=subject, subjects_dir=subjects_dir)
+# stc1.plot(src,subject=subject, subjects_dir=subjects_dir, bg_img='aparc+aseg.mgz', mode="glass_brain")
+# stc2.plot(src,subject=subject, subjects_dir=subjects_dir, bg_img='aparc+aseg.mgz')
+
+## stc of ROI
 fname_aseg = subjects_dir + subject + '/mri/aparc+aseg.mgz'
-label_names = mne.get_volume_labels_from_aseg(fname_aseg)
-for name in label_names:
-    print(name)
-    
+label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+label_names
+
 label_tc_mmr1=mne.extract_label_time_course(stc1,fname_aseg,src,mode='mean',allow_empty=True)
 label_tc_mmr2=mne.extract_label_time_course(stc2,fname_aseg,src,mode='mean',allow_empty=True)
 
-# could use in_label to restrict to stc to one of the label
-stcs = stc1.in_label(label = label_names[0], mri = fname_aseg, src = src)
+# averaged whole brain mmr plot
+times = stc1.times
+plot_err(stats.zscore(MEG_mmr2_m.mean(axis=1),axis=1),'b',stc1.times)
+plot_err(stats.zscore(MEG_mmr2_v.mean(axis=1),axis=1),'r',stc1.times)
+plt.legend(['MEG mag','','MEG vector',''])
+plt.xlabel('Time (ms)')
+plt.ylabel('zscore')
 
-#%% stc.plot(src,clim=dict(kind="value",pos_lims=[0,2,5]),subject=subject, subjects_dir=subjects_dir)
-stc1.plot(src,subject=subject, subjects_dir=subjects_dir, bg_img='aparc+aseg.mgz', mode="glass_brain")
-stc2.plot(src,subject=subject, subjects_dir=subjects_dir, bg_img='aparc+aseg.mgz')
+# ROI mmr plot
+lh_ROI_label = [60,61,62,72] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
+rh_ROI_label = [96,97,98,108] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 
-## stc of ROI
+plt.figure()
+plt.plot(times,label_tc_mmr2[lh_ROI_label,].transpose())
+plt.title('CBS_A MMR2 lh')
+plt.legend(label_names[lh_ROI_label])
+plt.xlabel('Time (s)')
+plt.ylabel('Activation (AU)')
+plt.xlim([-0.1, 0.5])
+#    plt.savefig('/home/tzcheng/Desktop/' + 'run1_' + label[Qis_ROI_label[i]].name +'.pdf')
+
+plt.figure()
+plt.plot(times,label_tc_mmr2[rh_ROI_label,].transpose())
+plt.title('CBS_A MMR2 rh')
+plt.legend(label_names[rh_ROI_label])
+plt.xlabel('Time (s)')
+plt.ylabel('Activation (AU)')
+plt.xlim([-0.1, 0.5])
+#    plt.savefig('/home/tzcheng/Desktop/' + 'run1_' + label[Qis_ROI_label[i]].name +'.pdf')
