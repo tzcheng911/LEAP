@@ -9,6 +9,7 @@ Created on Wed Aug  9 17:57:34 2023
 import mne
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import stats,signal
 import os
 
 def plot_err(group_stc,color,t):
@@ -30,7 +31,7 @@ os.chdir(root_path)
 ## parameters 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_b'):
         subj.append(file)
 
 runs = ['01','02']
@@ -45,21 +46,21 @@ group_mmr2_roi=[]
 for s in subj:
     file_in = root_path + '/' + s + '/sss_fif/' + s
     
-
-    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_vector_morph-vl.stc')
-    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_vector_morph-vl.stc')
+    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_None-vl.stc')
+    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_None-vl.stc')
    
     group_mmr1.append(stc_mmr1.data)
     group_mmr2.append(stc_mmr2.data)
-    # #extract ROIS
-    # src = mne.read_source_spaces(file_in +'_src')
-    src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif') # for morphing data
-    # labels = subjects_dir + s + '/mri/aparc+aseg.mgz'
-    fname_aseg = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
+    # #extract ROIS for morphing data
+    # src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif') # for morphing data
+    # fname_aseg = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
+    # #extract ROIS for non-morphing data
+    src = mne.read_source_spaces(file_in +'_src')
+    fname_aseg = subjects_dir + s + '/mri/aparc+aseg.mgz'
+    
     label_names = mne.get_volume_labels_from_aseg(fname_aseg)
     mmr1_roi=mne.extract_label_time_course(stc_mmr1,fname_aseg,src,mode='mean',allow_empty=True)
     mmr2_roi=mne.extract_label_time_course(stc_mmr2,fname_aseg,src,mode='mean',allow_empty=True)
-    
 
     group_mmr1_roi.append(mmr1_roi)
     group_mmr2_roi.append(mmr2_roi)
@@ -71,35 +72,14 @@ group_mmr2=np.asarray(group_mmr2)
 group_mmr1_roi=np.asarray(group_mmr1_roi)
 group_mmr2_roi=np.asarray(group_mmr2_roi)
 
-np.save(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph.npy',group_mmr1)
-np.save(root_path + 'meeg_mmr_analysis/group_mmr2_vector_morph.npy',group_mmr2)
-np.save(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph_roi.npy',group_mmr1_roi)
-np.save(root_path + 'meeg_mmr_analysis/group_mmr2_vector_morph_roi.npy',group_mmr2_roi)
-
-
+np.save(root_path + 'cbsb_me\eg_analysis/group_mmr1_morph.npy',group_mmr1)
+np.save(root_path + 'cbsb_me\eg_analysis/group_mmr2_morph.npy',group_mmr2)
+np.save(root_path + 'cbsb_me\eg_analysis/group_mmr1_morph_roi.npy',group_mmr1_roi)
+np.save(root_path + 'cbsb_me\eg_analysis/group_mmr2_morph_roi.npy',group_mmr2_roi)
 
 #%%
-#averaged acrossed fsaverage
-t = np.shape(group_mmr1)[-1]
-
-# whole brain mmr plot
-plot_err(np.mean(group_mmr1,1),'b',t)
-plot_err(np.mean(group_mmr2,1),'r',t)
-plt.xlabel('Time (ms)', fontsize=18)
-plt.ylabel('dSPM value', fontsize=18)
-plt.title('MMR wholebrain',fontsize=18)
-plt.legend(['','nonnative','','native'])
-
-#%%
-# get the label name
-atlas = 'aparc' # aparc, aparc.a2009s
-label_names = mne.get_volume_labels_from_aseg(fname_aseg)
-
-#%% 200-600ms average
-t=np.linspace(-100,600,700)
-idx = np.where((t>200) & (t<500))
-mmr1_average=np.mean(np.mean(np.squeeze(mmr1[:,:,idx]),2),1)
-mmr2_average=np.mean(np.mean(np.squeeze(mmr2[:,:,idx]),2),1)
+mmr1 = np.load(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph.npy')
+mmr2 = np.load(root_path + 'meeg_mmr_analysis/group_mmr2_vector_morph.npy')
 
 #%% whole brain stats
 X = mmr1-mmr2
@@ -108,7 +88,7 @@ Xt=np.transpose(X,[0,2,1])
 from mne import spatial_src_adjacency
 from mne.stats import spatio_temporal_cluster_1samp_test
 
-src=mne.read_source_spaces('/mnt/subjects/fsaverage/bem/fsaverage-vol-5-src.fif')
+src=mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif')
 print('Computing adjecency')
 adjecency = spatial_src_adjacency(src)
 
@@ -124,14 +104,13 @@ T_obs, clusters, cluster_p_values, H0 = clu =\
 #    is multiple-comparisons corrected).
 #good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
 
-np.save('/mnt/CBS/meg_mmr_analysis/tfce_p_values',cluster_p_values)
-np.save('/mnt/CBS/meg_mmr_analysis/tfce_t',T_obs)
-np.save('/mnt/CBS/meg_mmr_analysis/tfce_h0',H0)
+np.save('/media/tzcheng/storage/CBS/meg_mmr_analysis/tfce_p_values',cluster_p_values)
+np.save('/media/tzcheng/storage/CBS/meg_mmr_analysis/tfce_t',T_obs)
+np.save('/media/tzcheng/storage/CBS/meg_mmr_analysis/tfce_h0',H0)
+
 #%% visualize clusters
 stc=mne.read_source_estimate('/CBS/cbs_A101/sss_fif/cbs_A101_mmr1-vl.stc')
 cluster_p_values=-np.log10(cluster_p_values)
-
-
 stc.data=cluster_p_values.reshape(3501,14629).T
 
 #lims=[0, 0.025, 0.05]
