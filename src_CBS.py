@@ -94,7 +94,7 @@ root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
 morph = False
-ori = None # 'vector'
+ori = 'vector' # 'vector'
 
 runs = ['_01','_02']
 subj = [] 
