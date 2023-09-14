@@ -10,6 +10,7 @@ import mne
 import matplotlib
 import numpy as np
 import os
+from nilearn.plotting import plot_glass_brain
 
 root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
@@ -27,7 +28,7 @@ s = subj[2]
 
 subject = s
 
-########################################
+#%%#######################################
 # visualize stc
 stc = mne.read_source_estimate(root_path + s + '/sss_fif/' + s + '_mmr2_morph-vl.stc')
 src = mne.read_source_spaces(subjects_dir + '/' + s + '/bem/' + s + '-vol-5-src.fif')
@@ -85,5 +86,31 @@ evoked_d2 = mne.read_evokeds(file_in + run + '_evoked_dev2_cabr.fif')[0]
 
 evoked_s.crop(tmin=-0.1, tmax=0.2)
 mne.viz.plot_compare_evokeds(evoked_s, picks="meg", axes="topo") # plot all of them
+
+#%%######################################## visualize the group level average
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
+stc2 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
+mmr1 = np.load(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph.npy')
+mmr2 = np.load(root_path + 'meeg_mmr_analysis/group_mmr2_vector_morph.npy')
+stc1.data = mmr1.mean(axis=0)
+stc2.data = mmr2.mean(axis=0)
+
+subject = 'fsaverage'
+src = mne.read_source_spaces(subjects_dir + subject + '/bem/fsaverage-vol-5-src.fif')
+
+fname_aseg = subjects_dir + subject + '/mri/aparc+aseg.mgz'
+label_names = mne.get_volume_labels_from_aseg(fname_aseg)
+for name in label_names:
+    print(name)
+    
+label_tc_mmr1=mne.extract_label_time_course(stc1,fname_aseg,src,mode='mean',allow_empty=True)
+label_tc_mmr2=mne.extract_label_time_course(stc2,fname_aseg,src,mode='mean',allow_empty=True)
+
+# could use in_label to restrict to stc to one of the label
+stcs = stc1.in_label(label = label_names[0], mri = fname_aseg, src = src)
+
+#%% stc.plot(src,clim=dict(kind="value",pos_lims=[0,2,5]),subject=subject, subjects_dir=subjects_dir)
+stc1.plot(src,subject=subject, subjects_dir=subjects_dir, bg_img='aparc+aseg.mgz', mode="glass_brain")
+stc2.plot(src,subject=subject, subjects_dir=subjects_dir, bg_img='aparc+aseg.mgz')
 
 ## stc of ROI

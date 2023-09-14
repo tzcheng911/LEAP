@@ -60,7 +60,7 @@ def do_inverse(s,morph,ori):
     
     if morph == True:
         print('Morph' + s +  'src space to common cortical space.')
-        fname_src_fsaverage = subjects_dir + 'ANTS12-0Months3T/bem/ANTS12-0Months3T-vol-5-src.fif'
+        fname_src_fsaverage = subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif'
         src_fs = mne.read_source_spaces(fname_src_fsaverage)
         morph = mne.compute_source_morph(
             inverse_operator["src"],
@@ -79,22 +79,22 @@ def do_inverse(s,morph,ori):
         # standard_fsaverage.save(file_in + '_std_' + ori +'_morph', overwrite=True)
         # dev1_fsaverage.save(file_in + '_dev1_' + ori +'_morph', overwrite=True)
         # dev2_fsaverage.save(file_in + '_dev2_' + ori +'_morph', overwrite=True)
-        mmr1_fsaverage.save(file_in + '_mmr1_' + ori +'_morph', overwrite=True)
-        mmr2_fsaverage.save(file_in + '_mmr2_' + ori +'_morph', overwrite=True)
+        mmr1_fsaverage.save(file_in + '_mmr1_' + str(ori) +'_morph', overwrite=True)
+        mmr2_fsaverage.save(file_in + '_mmr2_' + str(ori) +'_morph', overwrite=True)
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
-        standard.save(file_in + '_std_' + ori, overwrite=True)
-        dev1.save(file_in + '_dev1_' + ori, overwrite=True)
-        dev2.save(file_in + '_dev2_' + ori, overwrite=True)
-        mmr1.save(file_in + '_mmr1' + ori, overwrite=True)
-        mmr2.save(file_in + '_mmr2' + ori, overwrite=True)
+        standard.save(file_in + '_std_' + str(ori), overwrite=True)
+        dev1.save(file_in + '_dev1_' + str(ori), overwrite=True)
+        dev2.save(file_in + '_dev2_' + str(ori), overwrite=True)
+        mmr1.save(file_in + '_mmr1' + str(ori), overwrite=True)
+        mmr2.save(file_in + '_mmr2' + str(ori), overwrite=True)
 
 ########################################
 root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
-morph = False
-ori = 'vector'
+morph = True
+ori = None # 'vector'
 
 runs = ['_01','_02']
 subj = [] 

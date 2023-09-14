@@ -55,10 +55,12 @@ for s in subj:
     # src = mne.read_source_spaces(file_in +'_src')
     src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif') # for morphing data
     # labels = subjects_dir + s + '/mri/aparc+aseg.mgz'
-    labels = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
-    mmr1_roi=mne.extract_label_time_course(stc_mmr1,labels,src,mode='mean',allow_empty=True)
-    mmr2_roi=mne.extract_label_time_course(stc_mmr2,labels,src,mode='mean',allow_empty=True)
+    fname_aseg = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
+    label_names = mne.get_volume_labels_from_aseg(fname_aseg)
+    mmr1_roi=mne.extract_label_time_course(stc_mmr1,fname_aseg,src,mode='mean',allow_empty=True)
+    mmr2_roi=mne.extract_label_time_course(stc_mmr2,fname_aseg,src,mode='mean',allow_empty=True)
     
+
     group_mmr1_roi.append(mmr1_roi)
     group_mmr2_roi.append(mmr2_roi)
     
@@ -74,20 +76,7 @@ np.save(root_path + 'meeg_mmr_analysis/group_mmr2_vector_morph.npy',group_mmr2)
 np.save(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph_roi.npy',group_mmr1_roi)
 np.save(root_path + 'meeg_mmr_analysis/group_mmr2_vector_morph_roi.npy',group_mmr2_roi)
 
-#%%######################################## visualize the averaged 
-stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
-stc2 = stc1
-mmr1 = np.load(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph.npy')
-mmr2 = np.load(root_path + 'meeg_mmr_analysis/group_mmr2_vector_morph.npy')
-stc1.data = mmr1.mean(axis=0)
-stc2.data = mmr2.mean(axis=0)
 
-subject = 'fsaverage'
-src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
-
-# stc.plot(src,clim=dict(kind="value",pos_lims=[0,2,5]),subject=subject, subjects_dir=subjects_dir)
-stc1.plot(src,subject=subject, subjects_dir=subjects_dir)
-stc2.plot(src,subject=subject, subjects_dir=subjects_dir)
 
 #%%
 #averaged acrossed fsaverage
