@@ -14,8 +14,8 @@ import numpy as np
 ## Visualize epochs
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
-s = 'vMMR_901'
-run = '_4'
+s = 'vMMR_902'
+run = '_1'
 
 root_path = '/media/tzcheng/storage/vmmr/'
 fwd = mne.read_forward_solution(root_path + s + '/sss_fif/'+ s + '_fwd.fif')
@@ -52,7 +52,7 @@ src = mne.setup_source_space(
 src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/' + s + '/bem/' + s +'-ico-5-src.fif') 
 label = mne.read_labels_from_annot(subject=s, parc='aparc',subjects_dir='/media/tzcheng/storage2/subjects/')
 label_tc=mne.extract_label_time_course(mmr,label,src,mode='mean',allow_empty=True)
-
+np.save('vMMR_902_all_run1.npy',label_tc)
 # mask1=get_atlas_roi_mask(mmr,roi='superiortemporal,temporalpole',atlas_subject='fsaverage')
 for name in label:
     print(name.name)
@@ -72,26 +72,29 @@ brain = Brain(
 brain.add_annotation("aparc")
 
 # visualize the label
-ROI_label = [1,67]
+ROI_label = [0,66,36,40]
 Qis_ROI_label = [1,67,23,37] # STS, transverse temporal, the occipital ROI, the IFG ROI (pars opercularis)
 
 for nROI in ROI_label:
     brain.add_label(label[nROI], borders=False)
 
-## visualize signer (vMMR_901) vs. non-signer (vMMR_902) in a few hot spot
-r4_901 = np.load('vMMR_901_rh_run4.npy')
-r4_902 = np.load('vMMR_902_rh_run4.npy')
-times = np.load('vmmr_times.npy')
+#%%# visualize signer (vMMR_901) vs. non-signer (vMMR_902) in a few hot spot
+r4_901 = np.load('/media/tzcheng/storage/vmmr/figures/vMMR_901_all_run1.npy')
+r4_902 = np.load('/media/tzcheng/storage/vmmr/figures/vMMR_902_all_run1.npy')
+times = np.load('/media/tzcheng/storage/vmmr/figures/vmmr_times.npy')
+label = np.load('/media/tzcheng/storage/vmmr/figures/aparc_label.npy',allow_pickle=True)
 
-for i in np.arange(0,4,1):
+ROI_label = [0,66,36,40]
+
+for i in np.arange(0,len(ROI_label),1):
     plt.figure()
-    plt.plot(times,r4_901[i,])
-    plt.plot(times,r4_902[i,])
-    plt.title(label[Qis_ROI_label[i]].name)
+    plt.plot(times,r4_901[ROI_label[i],])
+    plt.plot(times,r4_902[ROI_label[i],])
+    plt.title(label[ROI_label[i]].name)
     plt.legend(['signer','non-signer'])
     plt.xlabel('Time (s)')
     plt.ylabel('Activation (AU)')
     plt.xlim([-0.1, 0.5])
-    plt.ylim([-15, 12])
-    plt.savefig('/home/tzcheng/Desktop/' + 'run1_' + label[Qis_ROI_label[i]].name +'.pdf')
+    plt.ylim([-10, 25])
+    plt.savefig('/home/tzcheng/Desktop/' + 'run1_' + label[ROI_label[i]].name +'.pdf')
     
