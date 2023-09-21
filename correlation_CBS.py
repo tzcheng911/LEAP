@@ -98,7 +98,6 @@ for s in np.arange(0,len(MEG_mmr1_m),1):
     
 #%%######################################## averaged across subjects
 ts = 1000 # 100 ms
-te = 1750 # 250 ms
 
 ## averaged across all sources
 mean_EEG_mmr2 = EEG_mmr1.mean(axis =0)

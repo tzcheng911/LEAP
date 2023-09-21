@@ -31,7 +31,7 @@ os.chdir(root_path)
 ## parameters 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_b'):
+    if file.startswith('cbs_A'):
         subj.append(file)
 
 runs = ['01','02']
@@ -46,6 +46,7 @@ group_mmr2_roi=[]
 for s in subj:
     file_in = root_path + '/' + s + '/sss_fif/' + s
     
+    stc_mmr1=mne.read_source_estimate(file_in+'_std_vector-morph-vl.stc')
     stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_vector-vl.stc')
     stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_vector-vl.stc')
    
