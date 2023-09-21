@@ -57,6 +57,6 @@ for s in subj:
 group_mmr1=np.squeeze(np.asarray(group_mmr1),1)
 group_mmr2=np.squeeze(np.asarray(group_mmr2),1)
 
-np.save(root_path + 'meeg_mmr_analysis/group_mmr1_eeg.npy',group_mmr1)
-np.save(root_path + 'meeg_mmr_analysis/group_mmr2_eeg.npy',group_mmr2)
-np.save(root_path + 'meeg_mmr_analysis/group_std_eeg.npy',std)
+# np.save(root_path + 'meeg_mmr_analysis/group_mmr1_eeg.npy',group_mmr1)
+# np.save(root_path + 'meeg_mmr_analysis/group_mmr2_eeg.npy',group_mmr2)
+np.save(root_path + 'cbsA_meeg_analysis/group_std_eeg.npy',std)

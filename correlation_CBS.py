@@ -39,6 +39,7 @@ def plot_err(group_data,color,t):
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
     
 #%%######################################## load data
+# mmr
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 stc2 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_vector_morph.npy') # with the mag or vector method
@@ -52,6 +53,16 @@ MEG_mmr2_roi_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_morph_roi.np
 
 EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_eeg.npy')
 EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_eeg.npy')
+
+# std
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_std_vector_morph-vl.stc')
+stc2 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_std_vector_morph-vl.stc')
+
+MEG_std_v = np.load(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy') # with the mag or vector method
+MEG_std_m = np.load(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy') # with the mag or vector method
+MEG_std_roi_v = np.load(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy') # with the mag or vector method
+MEG_std_roi_m = np.load(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy') # with the mag or vector method
+
 times = stc1.times
 
 # load source
