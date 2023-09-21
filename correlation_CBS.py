@@ -20,6 +20,7 @@ from scipy import stats,signal
 import scipy as sp
 import os
 import seaborn as sns
+import pandas as pd
 
 np.printoptions(precision=3)
 sp.printoptions(precision=3)
@@ -66,11 +67,12 @@ rh_ROI_label = [96,97,98,108] # STG and IFG (parsopercularis, parsorbitalis, par
 
 #%%######################################## visualization
 # brain heat map for the averaged result
-stc1.data = MEG_mmr1_m.mean(axis=0)
-stc2.data = MEG_mmr2_m.mean(axis=0)
+stc1.data = MEG_mmr1_v.mean(axis=0)
+stc2.data = MEG_mmr2_v.mean(axis=0)
 
 # stc.plot(src,clim=dict(kind="value",pos_lims=[0,2,5]),subject=subject, subjects_dir=subjects_dir)
-stc1.plot(src,subject=subject, subjects_dir=subjects_dir)
+stc1.plot(src,subject=subject, subjects_dir=subjects_dir,clim=dict(kind="value",pos_lims=[0,2,8]))
+stc2.plot(src,subject=subject, subjects_dir=subjects_dir,clim=dict(kind="value",pos_lims=[0,2,8]))
 stc2.plot(src,subject=subject, subjects_dir=subjects_dir)
 
 # time series of EEG, MEG_v, MEG_m averaged across all sources
@@ -141,8 +143,8 @@ print(cos_sim)
 ## for each vertice
 
 #%%######################################## for each subject: get mean or max in a window
-ts = 1000
-te = 1500
+ts = 1000 # 100 ms
+te = 2000 # 300 ms
 
 ## corr between EEG and averaged source MEG
 #%% [poor method] get the mean: no correlation observed between EEG and MEG_m (better in window [100 200] ms)
@@ -192,9 +194,11 @@ print(r,p)
 r,p = pearsonr(ext_MEG_mmr2_v,ext_EEG_mmr2)
 print(r,p)
 
-#%% [ok method] get the correlation between each point: no correlation observed between EEG and MEG_m (better in window [100 200] ms)
+#%% [ok method] get the correlation between each point
 mean_MEG_mmr2_m = MEG_mmr2_m.mean(axis=1)
 mean_MEG_mmr2_v = MEG_mmr2_v.mean(axis=1)
+mean_MEG_mmr1_m = MEG_mmr1_m.mean(axis=1)
+mean_MEG_mmr1_v = MEG_mmr1_v.mean(axis=1)
 
 r_m_all_t = []
 r_v_all_t = []
@@ -214,9 +218,6 @@ plt.legend(['MEG_m','MEG_v'])
 plt.ylabel('Pearson r')
 
 #%%######################################## for each subject: correlate time series in a window with pearson r
-ts = 1000 # 100 ms
-te = 2000 # 300 ms
-
 mean_MEG_mmr1_m = MEG_mmr1_m[:,:,ts:te].mean(axis=1)
 mean_MEG_mmr1_v = MEG_mmr1_v[:,:,ts:te].mean(axis=1)
 mean_MEG_mmr2_m = MEG_mmr2_m[:,:,ts:te].mean(axis=1)
@@ -236,16 +237,34 @@ print('abs corr between MEG_m & EEG:' + str(np.abs(r_m_all_s).mean()))
 print('abs corr between MEG_v & EEG:' + str(np.abs(r_v_all_s).mean()))
 
 ## corr between EEG and MEG ROI
-mean_MEG_mmr2_m = MEG_mmr2_roi_m[:,lh_ROI_label,ts:te].mean(axis=1)
-mean_MEG_mmr2_v = MEG_mmr2_roi_v[:,lh_ROI_label,ts:te].mean(axis=1)
 r_all_s = []
-p_all_s = []
+
 for s in np.arange(0,len(MEG_mmr1_m),1):
-    r,p = pearsonr(mean_MEG_mmr2_v[s,:],EEG_mmr2[s,ts:te])
-    r_all_s.append(r)
-    p_all_s.append(p)
+    for nROI in np.arange(0,len(label_names),1):
+        rm,p = pearsonr(MEG_mmr1_roi_m[s,nROI,ts:te],EEG_mmr1[s,ts:te])
+        rv,p = pearsonr(MEG_mmr1_roi_v[s,nROI,ts:te],EEG_mmr1[s,ts:te])
+        r_all_s.append([s,label_names[nROI],rm,rv])
     
-## corr between EEG and each vertice
+df_ROI = pd.DataFrame(columns = ["Subject", "ROI", "Corr MEG_m & EEG", "Corr MEG_v & EEG"], data = r_all_s)
+df_ROI.groupby('ROI').mean()
+
+## corr between EEG and each vertice: slower, just load the pickled file
+r_all_s = []
+
+for s in np.arange(0,len(MEG_mmr1_m),1):
+    print('Now starting sub' + str(s))
+    for v in np.arange(0,np.shape(MEG_mmr1_m)[1],1):
+        rm,p = pearsonr(MEG_mmr1_m[s,v,ts:te],EEG_mmr1[s,ts:te])
+        rv,p = pearsonr(MEG_mmr1_v[s,v,ts:te],EEG_mmr1[s,ts:te])
+        r_all_s.append([s,v,rm,rv])    
+df_v = pd.DataFrame(columns = ["Subject", "Vertno", "Corr MEG_m & EEG", "Corr MEG_v & EEG"], data = r_all_s)
+df_v.to_pickle('df_corr_MEGEEG_mmr1_v.pkl')
+df_v_mean = df_v.groupby('Vertno').mean()
+v_hack = df_v_mean["Corr MEG_v & EEG"]
+v_hack = pd.concat([v_hack,v_hack],axis=1)
+stc_corr = stc1.copy()
+stc_corr.data = v_hack
+stc_corr.plot(src,subject=subject, subjects_dir=subjects_dir,clim=dict(kind="value",pos_lims=[0,0.16,0.32]))
 
 #%%######################################## for each subject: correlate time series in a window with xcorr
 # get the cross correlation of the whole time windowr
@@ -275,6 +294,32 @@ for s in np.arange(0,len(MEG_mmr1_m),1):
 
 print('abs xcorr between MEG_m & EEG:' + str(np.array(xcorr_m_all_s).mean()))
 print('abs xcorr between MEG_v & EEG:' + str(np.array(xcorr_v_all_s).mean()))
+
+## corr between EEG and MEG ROI
+xcorr_all_s = []
+
+for s in np.arange(0,len(MEG_mmr1_m),1):
+    for nROI in np.arange(0,len(label_names),1):
+        a = EEG_mmr2[s,ts:te]
+        b = MEG_mmr2_roi_m[s,nROI,ts:te]
+        c = MEG_mmr2_roi_v[s,nROI,ts:te]
+        
+        norm_a = np.linalg.norm(a)
+        a = a / norm_a
+        norm_b = np.linalg.norm(b)
+        b = b / norm_b
+        norm_c = np.linalg.norm(c)
+        c = c / norm_c
+        
+        xcorr_m = signal.correlate(a,b)
+        xcorr_m = abs(xcorr_m)
+        xcorr_v = signal.correlate(a,b)
+        xcorr_v = abs(xcorr_v)
+        
+        xcorr_all_s.append([s,label_names[nROI],xcorr_m,xcorr_v])
+
+df_ROI = pd.DataFrame(columns = ["Subject", "ROI", "Corr MEG_m & EEG", "Corr MEG_v & EEG"], data = r_all_s)
+df_ROI.groupby('ROI').mean()
 
 #%%######################################## for each subject: correlate time series in a window with cosine similarity (still working)
 cos_sim_all_s = [] 
