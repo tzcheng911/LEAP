@@ -79,7 +79,7 @@ def do_inverse(s,morph,ori):
         # mmr1_fsaverage = morph.apply(mmr1)
         # mmr2_fsaverage = morph.apply(mmr2)
         
-        standard_fsaverage.save(file_in + '_std_' + ori +'_morph', overwrite=True)
+        standard_fsaverage.save(file_in + '_std_' + str(ori) +'_morph', overwrite=True)
         # dev1_fsaverage.save(file_in + '_dev1_' + ori +'_morph', overwrite=True)
         # dev2_fsaverage.save(file_in + '_dev2_' + ori +'_morph', overwrite=True)
         # mmr1_fsaverage.save(file_in + '_mmr1_' + str(ori) +'_morph', overwrite=True)
@@ -97,7 +97,7 @@ root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
 morph = True
-ori = 'vector' # 'vector', 'None'
+ori = None # 'vector', None
 
 runs = ['_01','_02']
 subj = [] 

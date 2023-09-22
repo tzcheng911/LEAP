@@ -56,12 +56,13 @@ EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_eeg.npy')
 
 # std
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_std_vector_morph-vl.stc')
-stc2 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_std_vector_morph-vl.stc')
 
 MEG_std_v = np.load(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy') # with the mag or vector method
-MEG_std_m = np.load(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy') # with the mag or vector method
+MEG_std_m = np.load(root_path + 'cbsA_meeg_analysis/group_std_vector_none.npy') # with the mag or vector method
 MEG_std_roi_v = np.load(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy') # with the mag or vector method
-MEG_std_roi_m = np.load(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy') # with the mag or vector method
+MEG_std_roi_m = np.load(root_path + 'cbsA_meeg_analysis/group_std_none_morph_roi.npy') # with the mag or vector method
+
+EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/group_std_eeg.npy',allow_pickle=True)
 
 times = stc1.times
 
@@ -109,10 +110,11 @@ for s in np.arange(0,len(MEG_mmr1_m),1):
     
 #%%######################################## averaged across subjects
 ts = 1000 # 100 ms
+te = 2000 # 300 ms
 
 ## averaged across all sources
 mean_EEG_mmr2 = EEG_mmr1.mean(axis =0)
-mean_MEG_mmr2_m = MEG_mmr1_m.mean(axis =0).mean(axis=0)
+stc_m = MEG_mmr1_m.mean(axis =0).mean(axis=0)
 mean_MEG_mmr2_v = MEG_mmr1_v.mean(axis =0).mean(axis=0)
 
 # pearson r 
@@ -122,7 +124,7 @@ corr_p = pearsonr(mean_EEG_mmr2[ts:te], mean_MEG_mmr2_v[ts:te])
 # normalized cross correlation [-1 1]
 # based on https://stackoverflow.com/questions/53436231/normalized-cross-correlation-in-python
 a = mean_EEG_mmr2
-b = mean_MEG_mmr2_m
+b = stc_m
 
 norm_a = np.linalg.norm(a)
 a = a / norm_a
@@ -145,7 +147,7 @@ times[np.argmax(xcorr)] # the time when the max corr happened
 # cosine similarity
 cos_sim = dot(mean_EEG_mmr2[ts:te],mean_MEG_mmr2_m[ts:te]) / (norm(mean_EEG_mmr2[ts:te])*norm(mean_MEG_mmr2_m[ts:te]))
 print(cos_sim)
-cos_sim = dot(mean_EEG_mmr2[ts:te],mean_MEG_mmr2_v[ts:te]) / (norm(mean_EEG_mmr2[ts:te])*norm(mean_MEG_mmr2_v[ts:te]))
+cos_sim = dot(mean_EEG_mmr2[ts:te],stc_v[ts:te]) / (norm(mean_EEG_mmr2[ts:te])*norm(stc_v[ts:te]))
 print(cos_sim)
 
 ## for each ROI
@@ -153,20 +155,19 @@ print(cos_sim)
 ## for each vertice
 
 #%%######################################## for each subject: get mean or max in a window
-ts = 1000 # 100 ms
-te = 2000 # 300 ms
+ts = 1000 # 100 m
 
 ## corr between EEG and averaged source MEG
 #%% [poor method] get the mean: no correlation observed between EEG and MEG_m (better in window [100 200] ms)
-mean_MEG_mmr2_m = MEG_mmr2_m[:,:,ts:te].mean(axis=-1).mean(axis=-1)
-mean_MEG_mmr2_v = MEG_mmr2_v[:,:,ts:te].mean(axis=-1).mean(axis=-1)
+stc_m = MEG_mmr2_m[:,:,ts:te].mean(axis=-1).mean(axis=-1)
+stc_v = MEG_mmr2_v[:,:,ts:te].mean(axis=-1).mean(axis=-1)
 mean_EEG_mmr2 = EEG_mmr2[:,ts:te].mean(axis=-1)
 
-r,p = pearsonr(mean_MEG_mmr2_m,mean_EEG_mmr2)
+r,p = pearsonr(stc_m,mean_EEG_mmr2)
 print(r,p)
-r,p = pearsonr(mean_MEG_mmr2_v,mean_EEG_mmr2)
+r,p = pearsonr(stc_v,mean_EEG_mmr2)
 print(r,p)
-r,p = pearsonr(mean_MEG_mmr2_v,mean_MEG_mmr2_m)
+r,p = pearsonr(stc_v,stc_m)
 print(r,p)
 
 #%% [poor method] get the max (peak) or min (trough) point: no correlation observed between EEG and MEG_m (better in window [100 200] ms)
@@ -205,18 +206,16 @@ r,p = pearsonr(ext_MEG_mmr2_v,ext_EEG_mmr2)
 print(r,p)
 
 #%% [ok method] get the correlation between each point
-mean_MEG_mmr2_m = MEG_mmr2_m.mean(axis=1)
-mean_MEG_mmr2_v = MEG_mmr2_v.mean(axis=1)
-mean_MEG_mmr1_m = MEG_mmr1_m.mean(axis=1)
-mean_MEG_mmr1_v = MEG_mmr1_v.mean(axis=1)
+stc_m = MEG_mmr2_m.mean(axis=1) # change the name to std or other data
+stc_v = MEG_std_v.mean(axis=1)
 
 r_m_all_t = []
 r_v_all_t = []
 
 for t in np.arange(0,len(times),1):
-    r,p = pearsonr(mean_MEG_mmr2_m[:,t],EEG_mmr2[:,t])
-    r_m_all_t.append(r)
-    r,p = pearsonr(mean_MEG_mmr2_v[:,t],EEG_mmr2[:,t])
+    # r,p = pearsonr(stc_m[:,t],EEG_mmr2[:,t])
+    # r_m_all_t.append(r)
+    r,p = pearsonr(stc_v[:,t],EEG_mmr2[:,t])
     r_v_all_t.append(r)
     
 plt.figure()
@@ -228,19 +227,17 @@ plt.legend(['MEG_m','MEG_v'])
 plt.ylabel('Pearson r')
 
 #%%######################################## for each subject: correlate time series in a window with pearson r
-mean_MEG_mmr1_m = MEG_mmr1_m[:,:,ts:te].mean(axis=1)
-mean_MEG_mmr1_v = MEG_mmr1_v[:,:,ts:te].mean(axis=1)
-mean_MEG_mmr2_m = MEG_mmr2_m[:,:,ts:te].mean(axis=1)
-mean_MEG_mmr2_v = MEG_mmr2_v[:,:,ts:te].mean(axis=1)
+stc_m = MEG_mmr2_m[:,:,ts:te].mean(axis=1)
+stc_v = MEG_mmr2_v[:,:,ts:te].mean(axis=1)
 
 # [good method] get the pearson correlation of the whole time window
 r_m_all_s = []
 r_v_all_s = []
 
 for s in np.arange(0,len(MEG_mmr1_m),1):
-    r,p = pearsonr(mean_MEG_mmr2_m[s,:],EEG_mmr2[s,ts:te])
+    r,p = pearsonr(stc_m[s,:],EEG_mmr2[s,ts:te])
     r_m_all_s.append(r)
-    r,p = pearsonr(mean_MEG_mmr2_v[s,:],EEG_mmr2[s,ts:te])
+    r,p = pearsonr(stc_v[s,:],EEG_mmr2[s,ts:te])
     r_v_all_s.append(r)
 
 print('abs corr between MEG_m & EEG:' + str(np.abs(r_m_all_s).mean()))
@@ -283,8 +280,8 @@ xcorr_v_all_s = []
 
 for s in np.arange(0,len(MEG_mmr1_m),1):
     a = EEG_mmr2[s,ts:te]
-    b = mean_MEG_mmr2_m[s,:]
-    c = mean_MEG_mmr2_v[s,:]
+    b = stc_m[s,:]
+    c = stc_v[s,:]
     
     ## the way matlab do xcorr normalization: the max is 1 if do a zero lag autocorrealtoin
     norm_a = np.linalg.norm(a)
@@ -336,7 +333,7 @@ cos_sim_all_s = []
 
 for s in np.arange(0,len(MEG_mmr1_m),1):
     a = EEG_mmr2[s,ts:te]
-    b = mean_MEG_mmr2_v[s,:]
+    b = stc_v[s,:]
      
     cos_sim = dot(a,b) / (norm(a)*norm(b))
     cos_sim_all_s.append(cos_sim)
