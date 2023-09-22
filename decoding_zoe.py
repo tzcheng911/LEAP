@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Sep 21 12:31:26 2023
-
+Modified from czhao, still working
 @author: tzcheng
 """
 import os 
@@ -95,3 +95,99 @@ brain = stc_feat.plot(
     time_unit="s",
     subjects_dir=subjects_dir,
 )
+
+#%%
+import matplotlib.pyplot as plt
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.linear_model import LogisticRegression
+import mne
+from mne.decoding import cross_val_multiscore, LinearModel, SlidingEstimator, get_coef, Vectorizer, Scaler
+#Retrieve source space data into an array
+X1= np.load('/mnt/storage/ATP/group/ba_diff.npy')
+X2= np.load('/mnt/storage/ATP/group/ga_diff.npy')
+X=np.concatenate((X1,X2),axis=0)
+y = np.concatenate((np.repeat(0,20),np.repeat(1,20))) #0 is for ba and 1 is for ga
+# prepare a series of classifier applied at each time sample
+clf = make_pipeline(
+    StandardScaler(),  # z-score normalization
+    SelectKBest(f_classif, k=500),  # select features for speed
+    LinearModel(),
+    )
+time_decod = SlidingEstimator(clf, scoring="roc_auc")
+# Run cross-validated decoding analyses:
+scores_observed = cross_val_multiscore(time_decod, X, y, cv=5 , n_jobs=None)
+#Plot average decoding scores of 5 splits
+times = np.linspace(-100,800,num=901)
+fig, ax = plt.subplots(1)
+ax.plot(times, scores_observed.mean(0), label="score")
+ax.axhline(0.5, color="k", linestyle="--", label="chance")
+ax.axvline(0, color="k")
+plt.legend()
+# The fitting needs not be cross validated because the weights are based on
+# the training sets
+time_decod.fit(X, y)
+# Retrieve patterns after inversing the z-score normalization step:
+patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
+#%% create a permutation of scores
+# prepare a series of classifier applied at each time sample
+import copy
+import random
+n_perm=100
+scores_perm=[]
+for i in range(n_perm):
+    yp = copy.deepcopy(y)
+    random.shuffle(yp)
+    clf = make_pipeline(
+        StandardScaler(),  # z-score normalization
+        SelectKBest(f_classif, k=500),  # select features for speed
+        LinearModel(LogisticRegression(C=1, solver="liblinear")),
+        )
+    time_decod = SlidingEstimator(clf, scoring="roc_auc")
+    # Run cross-validated decoding analyses:
+    scores = cross_val_multiscore(time_decod, X, yp, cv=5, n_jobs=None)
+    scores_perm.append(np.mean(scores,axis=0))
+scores_perm_array=np.asarray(scores_perm)
+
+#%% train a classification model
+from sklearn.svm import SVC
+from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+clf=SVC(kernel='linear',C=1.0)
+predicted=cross_val_predict(clf,X,Y,cv=2)
+from sklearn.metrics import confusion_matrix,accuracy_score,precision_score,recall_score
+C=confusion_matrix(Y,predicted)
+A=accuracy_score(Y,predicted)
+P=precision_score(Y,predicted)
+R=recall_score(Y,predicted)
+#%% build a distribution with shuffled Y
+n_perm=1000
+R2=[]
+for i in range(n_perm):
+    np.random.shuffle(Y)
+    clf=SVR(kernel='linear',C=1)
+    predicted=cross_val_predict(clf,X,Y,cv=2)
+    R2.append(r2_score(Y,predicted))
+plt.figure(figsize=(10,10))
+plt.hist(R2,bins=30,color='r')
+plt.vlines(0.305,ymin=0,ymax=100,color='k',linewidth=3)
+plt.vlines(np.percentile(R2,97.5),ymin=0,ymax=100,color='r',linewidth=3)
+plt.ylabel('Count',fontsize=20)
+plt.xlabel('R2 score bins',fontsize=20)
+#%% build distribution
+n_perm=1000
+Adis=[]
+for i in range(n_perm):
+    np.random.shuffle(Y)
+    clf=SVC(kernel='linear',C=1.0)
+    predicted=cross_val_predict(clf,X,Y,cv=2)
+    a=accuracy_score(Y,predicted)
+    Adis.append(a)
+plt.figure(figsize=(10,10))
+plt.hist(Adis,bins=10,color='b')
+plt.vlines(A,ymin=0,ymax=300,color='k',linewidth=3)
+plt.vlines(np.percentile(Adis,97.5),ymin=0,ymax=300,color='r',linewidth=3)
+plt.ylabel('Count',fontsize=20)
+plt.xlabel('R2 score bins',fontsize=20)
