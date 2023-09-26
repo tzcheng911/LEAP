@@ -45,21 +45,23 @@ group_mmr2_roi=[]
 group_std=[]
 group_std_roi =[]
 
+# #extract ROIS for morphing data
+src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif') # for morphing data
+fname_aseg = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
+
 for s in subj:
     file_in = root_path + s + '/sss_fif/' + s
     
-    stc_std=mne.read_source_estimate(file_in+'_std_None_morph-vl.stc')
+    stc_std=mne.read_source_estimate(file_in+'_std_vector_morph-vl.stc')
     # stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_vector-vl.stc')
     # stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_vector-vl.stc')
     group_std.append(stc_std.data)
     # group_mmr1.append(stc_mmr1.data)
     # group_mmr2.append(stc_mmr2.data)
-    # #extract ROIS for morphing data
-    # src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif') # for morphing data
-    # fname_aseg = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
+
     # #extract ROIS for non-morphing data
-    src = mne.read_source_spaces(file_in +'_src')
-    fname_aseg = subjects_dir + s + '/mri/aparc+aseg.mgz'
+    # src = mne.read_source_spaces(file_in +'_src')
+    # fname_aseg = subjects_dir + s + '/mri/aparc+aseg.mgz'
     
     label_names = mne.get_volume_labels_from_aseg(fname_aseg)
     
@@ -78,8 +80,8 @@ group_std_roi = np.asarray(group_std_roi)
 # group_mmr1_roi=np.asarray(group_mmr1_roi)
 # group_mmr2_roi=np.asarray(group_mmr2_roi)
 
-np.save(root_path + 'cbsA_meg_analysis/group_std_None_morph.npy',group_std)
-np.save(root_path + 'cbsA_meg_analysis/group_std_None_morph_roi.npy',group_std_roi)
+np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy',group_std)
+np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy',group_std_roi)
 # np.save(root_path + 'cbsb_meg_analysis/group_mmr1_vector.npy',group_mmr1)
 # np.save(root_path + 'cbsb_meg_analysis/group_mmr2_vector.npy',group_mmr2)
 # np.save(root_path + 'cbsb_meg_analysis/group_mmr1_vector_roi.npy',group_mmr1_roi)

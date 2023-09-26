@@ -13,6 +13,7 @@ import matplotlib
 import numpy as np
 import os
 import nibabel as nib
+from tqdm import tqdm
 
 def do_foward(s):
     root_path='/media/tzcheng/storage/CBS/'
@@ -105,7 +106,7 @@ for file in os.listdir():
     if file.startswith('cbs_A'):
         subj.append(file)
 
-for s in subj:
+for s in tqdm(subj):
     # for run in runs:
         print(s)
         # do_foward(s)
