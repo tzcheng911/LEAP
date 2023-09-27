@@ -134,9 +134,13 @@ def do_projection(subject, run):
 
     return raw, raw_erm
 
-def do_filtering(data, lp):
+def do_filtering(data, lp, do_cabr):
     ###### filtering
-    data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
+    if do_cabr == True:
+        data.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5)
+        data.filter(l_freq=80,h_freq=2000,method='iir',iir_params=dict(order=4,ftype='butter'))
+    else:
+        data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
 
 def do_cov(subject,data):
@@ -200,6 +204,7 @@ runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
 lp = 50 
+do_cabr = True
 subj = [] # A104 got some technical issue
 for file in os.listdir():
     if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
@@ -208,17 +213,21 @@ for file in os.listdir():
 ###### do the jobs
 for s in subj:
     print(s)
-    do_otp(s)
-    do_sss(s,st_correlation,int_order)
+    # do_otp(s)
+    # do_sss(s,st_correlation,int_order)
     for run in runs:
         print ('Doing ECG/EOG projection...')
         [raw,raw_erm] = do_projection(s,run)
         print ('Doing filtering...')
-        raw_filt = do_filtering(raw,lp)
-        raw_erm_filt = do_filtering(raw_erm,lp)
+        raw_filt = do_filtering(raw,lp,do_cabr)
+        raw_erm_filt = do_filtering(raw_erm,lp,do_cabr)
         print ('calculate cov...')
         do_cov(s,raw_erm_filt)
         print ('Doing epoch...')
-        do_epoch_mmr(raw_filt, s, run)
-        do_epoch_cabr(raw_filt, s, run)
+        if do_cabr == True:
+            do_epoch_cabr(raw_filt, s, run)
+        else:
+            do_epoch_mmr(raw_filt, s, run)
+
+            
 
