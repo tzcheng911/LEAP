@@ -33,7 +33,7 @@ runs = ['_01','_02']
 
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_b'):
+    if file.startswith('cbs_A'):
         subj.append(file)
 
 run = runs[0]
@@ -62,10 +62,10 @@ chs = ["MEG0721","MEG0631","MEG0741","MEG1821"]
 mne.viz.plot_compare_evokeds(evoked_s, picks=chs, combine="mean", show_sensors="upper right")
 
 ## FFR
-epoch = mne.read_epochs(file_in + run + '_epochs_subcortical.fif')
-evoked_s = mne.read_evokeds(file_in + run + '_evoked_substd_cabr.fif')[0]
-evoked_d1 = mne.read_evokeds(file_in + run + '_evoked_dev1_cabr.fif')[0]
-evoked_d2 = mne.read_evokeds(file_in + run + '_evoked_rrays cannot bdev2_cabr.fif')[0]
+epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_cABR_e.fif')
+evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd_cabr.fif')[0]
+evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_cabr.fif')[0]
+evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev2_cabr.fif')[0]
 evoked_s.crop(tmin=-0.1, tmax=0.2)
 mne.viz.plot_compare_evokeds(evoked_s, picks="meg", axes="topo") # plot all of them
 
