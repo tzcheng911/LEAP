@@ -97,8 +97,8 @@ def do_inverse(s,morph,ori):
 root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
-morph = True
-ori = None # 'vector', None
+morph = False
+ori = 'vector' # 'vector', None
 
 runs = ['_01','_02']
 subj = [] 

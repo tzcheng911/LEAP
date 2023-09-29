@@ -18,11 +18,23 @@ import mne
 from mne.minimum_norm import apply_inverse_epochs, read_inverse_operator
 from mne.decoding import cross_val_multiscore, LinearModel, SlidingEstimator, get_coef
 
+#%%####################################### Load baby data
+root_path='/media/tzcheng/storage/CBS/'
+subjects_dir = '/media/tzcheng/storage2/subjects/'
+
+fname_aseg = subjects_dir + 'ANTS15-0Months3T/mri/aparc+aseg.mgz'
+label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+
+lh_ROI_label = [61,63] # STG and frontal pole
+rh_ROI_label = [96,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
+
+mmr1 = np.load('cbsb_meg_analysis/group_mmr1_vector_roi.npy',allow_pickle=True)
+mmr2 = np.load('cbsb_meg_analysis/group_mmr2_vector_roi.npy',allow_pickle=True)
+
 #%%####################################### Load data
 root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 subjects_dir = '/media/tzcheng/storage2/subjects/'
-
 
 subj = [] 
 for file in os.listdir():
@@ -130,6 +142,7 @@ plt.legend()
 time_decod.fit(X, y)
 # Retrieve patterns after inversing the z-score normalization step:
 patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
+
 #%% create a permutation of scores
 # prepare a series of classifier applied at each time sample
 import copy

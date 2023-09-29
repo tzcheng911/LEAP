@@ -71,6 +71,17 @@ mne.viz.plot_compare_evokeds(evoked_s, picks="meg", axes="topo") # plot all of t
 
 ## Visualize source level
 inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
+
+snr = 3.0
+stc_epoch = mne.minimum_norm.apply_inverse_epochs(
+    epoch,
+    inverse_operator,
+    lambda2=1.0 / snr**2,
+    verbose=False,
+    method="MNE",
+    pick_ori=None,
+)
+
 stc_std = mne.minimum_norm.apply_inverse((evoked_s), inverse_operator, pick_ori='vector')
 stc_dev1 = mne.minimum_norm.apply_inverse((evoked_d1), inverse_operator, pick_ori='vector')
 stc_dev2 = mne.minimum_norm.apply_inverse((evoked_d2), inverse_operator, pick_ori='vector')

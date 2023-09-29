@@ -70,11 +70,11 @@ rh_ROI_label = [96,97,98,108] # STG and IFG (parsopercularis, parsorbitalis, par
 #%%######################################## visualization
 # brain heat map for the averaged result
 stc1.data = MEG_mmr1_v.mean(axis=0)
-stc2.data = MEG_mmr2_v.mean(axis=0)
+stc2.data = MEG_mmr2_m.mean(axis=0)
 
 # stc.plot(src,clim=dict(kind="value",pos_lims=[0,2,5]),subject=subject, subjects_dir=subjects_dir)
 stc1.plot(src,subject=subject, subjects_dir=subjects_dir,clim=dict(kind="value",pos_lims=[0,2,8]))
-stc2.plot(src,subject=subject, subjects_dir=subjects_dir,clim=dict(kind="value",pos_lims=[0,2,8]))
+stc2.plot(src,subject=subject, subjects_dir=subjects_dir,clim=dict(kind="value",pos_lims=[0,4,10]))
 stc2.plot(src,subject=subject, subjects_dir=subjects_dir)
 
 # time series of EEG, MEG_v, MEG_m averaged across all sources
@@ -86,6 +86,7 @@ plt.legend(['EEG','','MEG mag','','MEG vector',''])
 plt.xlabel('Time (ms)')
 plt.ylabel('zscore')
 plt.xlim([-100, 600])
+plt.ylim([-2, 1.5])
 
 # time series of EEG, MEG_v, MEG_m averaged across all sources for each individual
 fig,axs = plt.subplots(1,len(MEG_mmr1_m),sharex=True,sharey=True)
@@ -145,7 +146,6 @@ print(cos_sim)
 ## for each vertice
 
 #%%######################################## for each subject: get mean or max in a window
-ts = 1000 # 100 m
 
 ## corr between EEG and averaged source MEG
 #%% [poor method] get the mean: no correlation observed between EEG and MEG_m (better in window [100 200] ms)
@@ -203,8 +203,8 @@ r_m_all_t = []
 r_v_all_t = []
 
 for t in np.arange(0,len(times),1):
-    # r,p = pearsonr(stc_m[:,t],EEG_mmr2[:,t])
-    # r_m_all_t.append(r)
+    r,p = pearsonr(stc_m[:,t],EEG_mmr2[:,t])
+    r_m_all_t.append(r)
     r,p = pearsonr(stc_v[:,t],EEG_mmr2[:,t])
     r_v_all_t.append(r)
     
@@ -215,6 +215,12 @@ plt.xlim([-0.1,0.6])
 plt.xlabel('Time (s)')
 plt.legend(['MEG_m','MEG_v'])
 plt.ylabel('Pearson r')
+
+plt.figure()
+plt.scatter(stc_v[:,1300],EEG_mmr2[:,1300])
+plt.xlabel('MEG')
+plt.ylabel('EEG')
+plt.title('t = 150ms')
 
 #%%######################################## for each subject: correlate time series in a window with pearson r
 stc_m = MEG_mmr2_m[:,:,ts:te].mean(axis=1)
