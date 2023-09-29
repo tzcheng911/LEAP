@@ -22,9 +22,6 @@ import os
 import seaborn as sns
 import pandas as pd
 
-np.printoptions(precision=3)
-sp.printoptions(precision=3)
-
 root_path='/media/tzcheng/storage/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
@@ -38,7 +35,7 @@ def plot_err(group_data,color,t):
     plt.plot(t,group_avg,color=color)
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
     
-#%%######################################## load data
+#%%######################################## load data MMR
 # mmr
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 stc2 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
@@ -500,3 +497,32 @@ stc_corr = stc1.copy()
 stc_corr.data = v_hack
 stc_corr.plot(src,subject=subject, subjects_dir=subjects_dir)
 stc_corr.plot(src,subject=subject, subjects_dir=subjects_dir,clim=dict(kind="value",pos_lims=[0,0.2,0.39]))
+
+#%%######################################## load data FFR
+s = 'cbs_A109'
+raw_file = mne.io.read_raw_fif(root_path + s +'/raw_fif/' + s + '_01_raw.fif',allow_maxshield=True)
+cabr_event = mne.read_events(root_path + s + '/events/' + s + '_01_events_cabr-eve.fif')
+
+audio = raw_file.pick_channels(['MISC001'])
+event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
+epochs = mne.Epochs(audio, cabr_event, event_id,tmin =-0.01, tmax=0.18,baseline=(-0.01,0))
+evoked_substd=epochs['Standardp'].average(picks=('misc'))
+evoked_dev1=epochs['Deviant1p'].average(picks=('misc'))
+evoked_dev2=epochs['Deviant2p'].average(picks=('misc'))
+evoked_substd.plot()
+evoked_dev1.plot()
+evoked_dev2.plot()
+
+EEG = mne.read_evokeds(root_path + s + '/eeg/cbs_' + s + '_01_evoked_substd_cabr.fif',allow_maxshield=True)
+EEG[0].crop(-0.01,0.18)
+MEG = mne.read_evokeds(root_path + s + '/sss_fif/' + s + '_01_evoked_substd_cabr.fif',allow_maxshield=True) # with the mag or vector method
+EEG_data = EEG[0].get_data()
+MEG_data = MEG[0].get_data()
+
+# small correlation for some subjects this one subject
+r_all= []
+for i in np.arange(0,len(MEG_data),1):
+    r,p = pearsonr(np.squeeze(EEG_data), MEG_data[i,])
+    r_all.append(r)
+print(max(r_all))
+print(min(r_all))
