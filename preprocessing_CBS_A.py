@@ -147,7 +147,7 @@ def do_cov(subject,data):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
     fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_otp_raw_sss_proj_fil50'
-    fname_erm_out = fname_erm + '_mmr'+'-cov'
+    fname_erm_out = fname_erm + '_ffr'+'-cov'
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
     mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
 
@@ -184,7 +184,7 @@ def do_epoch_cabr(data, subject, run):
     
     reject=dict(grad=4000e-13,mag=4e-12)
     picks = mne.pick_types(data.info,meg=True,eeg=False) 
-    epochs = mne.Epochs(data, cabr_events, event_id,tmin =-0.01, tmax=0.18, baseline=(-0.01,0),reject=reject,picks=picks)
+    epochs = mne.Epochs(data, cabr_events, event_id,tmin =-0.02, tmax=0.2, baseline=(-0.02,0),reject=reject,picks=picks)
 
     evoked_substd=epochs['Standardp','Standardn'].average()
     evoked_dev1=epochs['Deviant1p','Deviant1n'].average()
@@ -204,7 +204,7 @@ runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
 lp = 50 
-do_cabr = False
+do_cabr = True
 subj = [] # A104 got some technical issue
 for file in os.listdir():
     if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
@@ -219,15 +219,15 @@ for s in subj:
         print ('Doing ECG/EOG projection...')
         [raw,raw_erm] = do_projection(s,run)
         print ('Doing filtering...')
-        # raw_filt = do_filtering(raw,lp,do_cabr)
+        raw_filt = do_filtering(raw,lp,do_cabr)
         raw_erm_filt = do_filtering(raw_erm,lp,do_cabr)
         print ('calculate cov...')
         do_cov(s,raw_erm_filt)
-        # print ('Doing epoch...')
-        # if do_cabr == True:
-        #     do_epoch_cabr(raw_filt, s, run)
-        # else:
-        #     do_epoch_mmr(raw_filt, s, run)
+        print ('Doing epoch...')
+        if do_cabr == True:
+            do_epoch_cabr(raw_filt, s, run)
+        else:
+            do_epoch_mmr(raw_filt, s, run)
 
             
 
