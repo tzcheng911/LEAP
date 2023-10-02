@@ -75,16 +75,16 @@ def do_inverse(s,morph,ori):
             src_to=src_fs,
             verbose=True)
         standard_fsaverage = morph.apply(standard)
-        # dev1_fsaverage = morph.apply(dev1)
-        # dev2_fsaverage = morph.apply(dev2)
-        # mmr1_fsaverage = morph.apply(mmr1)
-        # mmr2_fsaverage = morph.apply(mmr2)
+        dev1_fsaverage = morph.apply(dev1)
+        dev2_fsaverage = morph.apply(dev2)
+        mmr1_fsaverage = morph.apply(mmr1)
+        mmr2_fsaverage = morph.apply(mmr2)
         
         standard_fsaverage.save(file_in + '_std_' + str(ori) +'_morph', overwrite=True)
-        # dev1_fsaverage.save(file_in + '_dev1_' + ori +'_morph', overwrite=True)
-        # dev2_fsaverage.save(file_in + '_dev2_' + ori +'_morph', overwrite=True)
-        # mmr1_fsaverage.save(file_in + '_mmr1_' + str(ori) +'_morph', overwrite=True)
-        # mmr2_fsaverage.save(file_in + '_mmr2_' + str(ori) +'_morph', overwrite=True)
+        dev1_fsaverage.save(file_in + '_dev1_' + str(ori) +'_morph', overwrite=True)
+        dev2_fsaverage.save(file_in + '_dev2_' + str(ori) +'_morph', overwrite=True)
+        mmr1_fsaverage.save(file_in + '_mmr1_' + str(ori) +'_morph', overwrite=True)
+        mmr2_fsaverage.save(file_in + '_mmr2_' + str(ori) +'_morph', overwrite=True)
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
         standard.save(file_in + '_std_' + str(ori), overwrite=True)
@@ -97,13 +97,13 @@ def do_inverse(s,morph,ori):
 root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
-morph = False
+morph = True
 ori = 'vector' # 'vector', None
 
 runs = ['_01','_02']
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_b'):
         subj.append(file)
 
 for s in tqdm(subj):
