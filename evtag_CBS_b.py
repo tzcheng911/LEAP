@@ -5,7 +5,7 @@ Created on Tue Nov  9 14:51:27 2021
 Modified by Zoe Cheng on Thurs Aug 17 10:55:59 2023
 
 This script is for CBS event processing FOR INFANTS ONLY 
-see eeg_preprocessing_final.py for adults
+see eeg_analysis_final.py for adults
 for the new presentation code where there is only an event stamp 
 at the beginning of the string
 
@@ -226,7 +226,7 @@ os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
-conditions = ['2','1','2','1','1','1','1','3','1','5','1','5','2','1'] # for each individuals following the order in subj
+conditions = ['2','1','2','1','1','1','1','3','1','5','1','5','2','1'] # for each individuals following the order in BABY subj
 subj = [] 
 check_all= []
 for file in os.listdir():
