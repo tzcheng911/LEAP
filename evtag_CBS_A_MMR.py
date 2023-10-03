@@ -208,7 +208,8 @@ os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
-conditions = ['2','1','2','1','1','1','1','3','1','5','1','5','2','1'] # for each individuals following the order in BABY subj
+conditions = ['6','1','2','1','5','6','1','3','6','3','5','6','2','1','4','1','2','3'] # run1: follow the order of subj
+conditions = ['4','6','4','3','4','2','4','6','3','3','4','1','5','2','2','4','4','3']# run2: follow the order of subj
 direction = 'pa_to_ba' # traditional direction 'ba_to_pa': ba to pa and ba to mba; reverse direction 'pa_to_ba' : is pa to ba and mba to be
 subj = [] 
 check_all= []

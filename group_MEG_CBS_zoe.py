@@ -83,10 +83,10 @@ group_mmr2_roi=np.asarray(group_mmr2_roi)
 
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy',group_std)
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy',group_std_roi)
-np.save(root_path + 'cbsb_meg_analysis/group_mmr1_reverse_None_morph.npy',group_mmr1)
-np.save(root_path + 'cbsb_meg_analysis/group_mmr2_reverse_None_morph.npy',group_mmr2)
-np.save(root_path + 'cbsb_meg_analysis/group_mmr1_reverse_None_morph_roi.npy',group_mmr1_roi)
-np.save(root_path + 'cbsb_meg_analysis/group_mmr2_reverse_None_morph_roi.npy',group_mmr2_roi)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_reverse_None_morph.npy',group_mmr1)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_reverse_None_morph.npy',group_mmr2)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_reverse_None_morph_roi.npy',group_mmr1_roi)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_reverse_None_morph_roi.npy',group_mmr2_roi)
 
 #%%
 mmr1 = np.load(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph.npy')
