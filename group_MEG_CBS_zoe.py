@@ -50,14 +50,15 @@ src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsa
 fname_aseg = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
 
 for s in subj:
+    print('Extracting ' + s + ' data')
     file_in = root_path + s + '/sss_fif/' + s
     
-    stc_std=mne.read_source_estimate(file_in+'_std_vector_morph-vl.stc')
-    # stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_vector-vl.stc')
-    # stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_vector-vl.stc')
-    group_std.append(stc_std.data)
-    # group_mmr1.append(stc_mmr1.data)
-    # group_mmr2.append(stc_mmr2.data)
+    # stc_std=mne.read_source_estimate(file_in+'_std_vector_morph-vl.stc')
+    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_reverse_None_morph-vl.stc')
+    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_reverse_None_morph-vl.stc')
+    # group_std.append(stc_std.data)
+    group_mmr1.append(stc_mmr1.data)
+    group_mmr2.append(stc_mmr2.data)
 
     # #extract ROIS for non-morphing data
     # src = mne.read_source_spaces(file_in +'_src')
@@ -65,27 +66,27 @@ for s in subj:
     
     label_names = mne.get_volume_labels_from_aseg(fname_aseg)
     
-    stc_roi=mne.extract_label_time_course(stc_std,fname_aseg,src,mode='mean',allow_empty=True)
-    # mmr1_roi=mne.extract_label_time_course(stc_mmr1,fname_aseg,src,mode='mean',allow_empty=True)
-    # mmr2_roi=mne.extract_label_time_course(stc_mmr2,fname_aseg,src,mode='mean',allow_empty=True)
+    # stc_roi=mne.extract_label_time_course(stc_std,fname_aseg,src,mode='mean',allow_empty=True)
+    mmr1_roi=mne.extract_label_time_course(stc_mmr1,fname_aseg,src,mode='mean',allow_empty=True)
+    mmr2_roi=mne.extract_label_time_course(stc_mmr2,fname_aseg,src,mode='mean',allow_empty=True)
     
-    group_std_roi.append(stc_roi)
-    # group_mmr1_roi.append(mmr1_roi)
-    # group_mmr2_roi.append(mmr2_roi)
+    # group_std_roi.append(stc_roi)
+    group_mmr1_roi.append(mmr1_roi)
+    group_mmr2_roi.append(mmr2_roi)
     
-group_std=np.asarray(group_std)    
-# group_mmr1=np.asarray(group_mmr1)
-# group_mmr2=np.asarray(group_mmr2)
-group_std_roi = np.asarray(group_std_roi)
-# group_mmr1_roi=np.asarray(group_mmr1_roi)
-# group_mmr2_roi=np.asarray(group_mmr2_roi)
+# group_std=np.asarray(group_std)    
+group_mmr1=np.asarray(group_mmr1)
+group_mmr2=np.asarray(group_mmr2)
+# group_std_roi = np.asarray(group_std_roi)
+group_mmr1_roi=np.asarray(group_mmr1_roi)
+group_mmr2_roi=np.asarray(group_mmr2_roi)
 
-np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy',group_std)
-np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy',group_std_roi)
-# np.save(root_path + 'cbsb_meg_analysis/group_mmr1_vector.npy',group_mmr1)
-# np.save(root_path + 'cbsb_meg_analysis/group_mmr2_vector.npy',group_mmr2)
-# np.save(root_path + 'cbsb_meg_analysis/group_mmr1_vector_roi.npy',group_mmr1_roi)
-# np.save(root_path + 'cbsb_meg_analysis/group_mmr2_vector_roi.npy',group_mmr2_roi)
+# np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy',group_std)
+# np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy',group_std_roi)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr1_reverse_None_morph.npy',group_mmr1)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr2_reverse_None_morph.npy',group_mmr2)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr1_reverse_None_morph_roi.npy',group_mmr1_roi)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr2_reverse_None_morph_roi.npy',group_mmr2_roi)
 
 #%%
 mmr1 = np.load(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph.npy')

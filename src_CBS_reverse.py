@@ -29,6 +29,7 @@ def do_foward(s):
 
     return fwd, src
 
+
 def do_inverse(s,morph,ori):
     run = '_01'
     root_path='/media/tzcheng/storage/CBS/'
@@ -39,27 +40,26 @@ def do_inverse(s,morph,ori):
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
     trans = mne.read_trans(file_in +'-trans.fif')
     cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50_mmr-cov.fif')
-    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mmr_e.fif')
-    evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
-    evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]        
-    evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0]
+  
+    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mmr_reverse_e.fif')
+    evoked_s1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd1_reverse_mmr.fif')[0]
+    evoked_s2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd2_reverse_mmr.fif')[0]
+    evoked_d = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev_reverse_mmr.fif')[0]
     
     inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
-
-    standard = mne.minimum_norm.apply_inverse((evoked_s), inverse_operator, pick_ori = ori)
-    dev1 = mne.minimum_norm.apply_inverse((evoked_d1), inverse_operator, pick_ori = ori)
-    dev2 = mne.minimum_norm.apply_inverse((evoked_d2), inverse_operator, pick_ori = ori)
-    mmr1 = dev1 - standard
-    mmr2 = dev2 - standard
+    standard1 = mne.minimum_norm.apply_inverse((evoked_s1), inverse_operator, pick_ori = ori)
+    standard2 = mne.minimum_norm.apply_inverse((evoked_s2), inverse_operator, pick_ori = ori)
+    dev = mne.minimum_norm.apply_inverse((evoked_d), inverse_operator, pick_ori = ori)
+    mmr1 = dev - standard1
+    mmr2 = dev - standard2
     src = inverse_operator['src']
-    src.save(file_in + '_src', overwrite=True)
 
     if ori == 'vector':
         mmr1 = mmr1.magnitude()
         mmr2 = mmr2.magnitude()
-        standard = standard.magnitude()
-        dev1 = dev1.magnitude()
-        dev2 = dev2.magnitude()
+        dev = dev.magnitude()
+        standard1 = standard1.magnitude()
+        standard2 = standard2.magnitude()
     
     if morph == True:
         print('Morph' + s +  'src space to common cortical space.')
@@ -73,24 +73,24 @@ def do_inverse(s,morph,ori):
             niter_sdr=[10, 10, 5],  # just for speed
             src_to=src_fs,
             verbose=True)
-        standard_fsaverage = morph.apply(standard)
-        dev1_fsaverage = morph.apply(dev1)
-        dev2_fsaverage = morph.apply(dev2)
+        dev_fsaverage = morph.apply(dev)
+        standard1_fsaverage = morph.apply(standard1)
+        standard2_fsaverage = morph.apply(standard2)
         mmr1_fsaverage = morph.apply(mmr1)
         mmr2_fsaverage = morph.apply(mmr2)
         
-        standard_fsaverage.save(file_in + '_std_' + str(ori) +'_morph', overwrite=True)
-        dev1_fsaverage.save(file_in + '_dev1_' + str(ori) +'_morph', overwrite=True)
-        dev2_fsaverage.save(file_in + '_dev2_' + str(ori) +'_morph', overwrite=True)
-        mmr1_fsaverage.save(file_in + '_mmr1_' + str(ori) +'_morph', overwrite=True)
-        mmr2_fsaverage.save(file_in + '_mmr2_' + str(ori) +'_morph', overwrite=True)
+        dev_fsaverage.save(file_in + '_dev_reverse_' + str(ori) +'_morph', overwrite=True)
+        standard1_fsaverage.save(file_in + '_std1_reverse_' + str(ori) +'_morph', overwrite=True)
+        standard2_fsaverage.save(file_in + '_std2_reverse_' + str(ori) +'_morph', overwrite=True)
+        mmr1_fsaverage.save(file_in + '_mmr1_reverse_' + str(ori) +'_morph', overwrite=True)
+        mmr2_fsaverage.save(file_in + '_mmr2_reverse_' + str(ori) +'_morph', overwrite=True)
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
-        standard.save(file_in + '_std_' + str(ori), overwrite=True)
-        dev1.save(file_in + '_dev1_' + str(ori), overwrite=True)
-        dev2.save(file_in + '_dev2_' + str(ori), overwrite=True)
-        mmr1.save(file_in + '_mmr1_' + str(ori), overwrite=True)
-        mmr2.save(file_in + '_mmr2_' + str(ori), overwrite=True)
+        standard1.save(file_in + '_std1_reverse_' + str(ori), overwrite=True)
+        standard2.save(file_in + '_std2_reverse_' + str(ori), overwrite=True)
+        dev.save(file_in + '_dev_reverse_' + str(ori), overwrite=True)
+        mmr1.save(file_in + '_mmr1_reverse_' + str(ori), overwrite=True)
+        mmr2.save(file_in + '_mmr2_reverse_' + str(ori), overwrite=True)
 
 ########################################
 root_path='/media/tzcheng/storage/CBS/'

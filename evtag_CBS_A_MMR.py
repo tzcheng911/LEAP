@@ -9,6 +9,8 @@ It is used for
 2. extract the /mba/ as standard 1 /pa/ as standard 2 and /ba/ as dev
 see eeg_analysis_final.py for the original script 
 
+Some notes: A119 raw event is messed up (STI101), subtracting 1024 from the second and the third column
+
 The correspondance between event tage and sound are
 
                         TTl                  event code
@@ -28,8 +30,8 @@ def find_events(raw_file,subj,block):
     #find events
     events = mne.find_events(raw_file,stim_channel='STI101')
     root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-    file_name_raw=root_path + str(subj)+ '_' + str(block) +'_events_raw-eve.fif'
-    mne.write_events(file_name_raw,events)  ###write out raw events for double checking
+    file_name_raw=root_path + str(subj)+ str(block) +'_events_raw-eve.fif'
+    mne.write_events(file_name_raw,events,overwrite=True)  ###write out raw events for double checking
     
 def process_events(subj,block):
      #find events
@@ -95,7 +97,7 @@ def process_events(subj,block):
        
     root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
     file_name_new=root_path + str(subj) + '_' + block +'_events_processed-eve.fif'
-#    mne.write_events(file_name_new,events)  ###read in raw events
+    mne.write_events(file_name_new,events,overwrite=True)  ###read in raw events
     return events
 
 def check_events(events,condition):  ## processed events
@@ -172,15 +174,15 @@ def select_mmr_events(events,subj,block, direction): ## load the processed event
 
     ## For the /mba/ as standard 1 /pa/ as standard 2 and /ba/ as dev
     elif direction == 'pa_to_ba':
-        std1=[] # /pa/ to /ba/
+        std1=[] # /mba/ to /ba/
         dev=[]
-        for i in range(len(e)):
+        for i in range(len(e)-1):
             if e[i][2]==3 and e[i+1][2]==1: # change from -1 to +1 so get the std and dev order reverse
                 std1.append(e[i])
                 dev.append(e[i+1]) # change from -1 to +1 so get the std and dev order reverse
                 
-        std2=[] # /mba/ to /ba/
-        for i in range(len(e)):
+        std2=[] # /pa/ to /ba/
+        for i in range(len(e)-1):
             if e[i][2]==6 and e[i+1][2]==1: # change from -1 to +1 so get the std and dev order reverse
                 std2.append(e[i])
                 dev.append(e[i+1]) # change from -1 to +1 so get the std and dev order reverse
@@ -193,7 +195,7 @@ def select_mmr_events(events,subj,block, direction): ## load the processed event
         mmr_event=np.concatenate((std1,std2,dev_sample),axis=0)
         
         root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-        file_name_new=root_path + str(subj) + '_' + block + '_events_mmr_reverse-eve.fif'
+        file_name_new=root_path + str(subj) + block + '_events_mmr_reverse-eve.fif'
         mne.write_events(file_name_new,mmr_event)
     else:
         print('Select a direction to do MMR!')
@@ -222,7 +224,7 @@ for n,s in enumerate(subj):
         os.makedirs(root_path + s + '/events')
         
     raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/' + s + '/raw_fif/' + s + run +'_raw.fif',allow_maxshield=True,preload=True)
-#    find_events(raw_file, s,run)
+    find_events(raw_file, s,run)
     events=process_events(s,run)
 #    check=check_events(events,condition)
 #    check_all.append(check)
