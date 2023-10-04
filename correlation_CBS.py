@@ -2,10 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Sep 11 13:23:58 2023
-calculate EEG & MEG correlation in adults for 
-1. TOI 150 - 250 ms across whole brain
-2. ROI
-3. each vertice
+Visualize and calculate EEG & MEG correlation in adults for MMR and Standard.
+
+Correlation between EEG & MEG time series for...
+1. averaged across all subjects and all vertices
+2. averaged across all vertices for each subject (mean, max of window; point-by-point correlation)
+3. averaged for each ROI
+4. averaged for each vertice
+
+Correlation methods: pearson r, xcorr, cosine similarity
 
 @author: tzcheng
 """
@@ -120,7 +125,7 @@ norm_b = np.linalg.norm(b)
 b = b / norm_b
 
 xcorr = signal.correlate(a,b)
-print(max(xcorr))
+print(max(xcorr)) for each subject
 print(min(xcorr))
 print(np.argmax(xcorr))
 print(np.argmin(xcorr))
@@ -328,7 +333,7 @@ for s in np.arange(0,len(MEG_mmr1_m),1):
 print('abs cos sim between MEG_m & EEG:' + str(np.array(xcorr_m_all_s).mean()))
 print('abs cos sim between MEG_v & EEG:' + str(np.array(xcorr_v_all_s).mean()))
 
-#%%######################################## use std to observe source activity
+#%%######################################## load data Standard
 # Hypothesis: N1 is more sensory, so should observe the highest correlation in the auditory area
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_std_vector_morph-vl.stc')
 
