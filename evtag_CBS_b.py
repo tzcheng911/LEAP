@@ -8,6 +8,7 @@ This script is for CBS event processing FOR INFANTS ONLY
 see eeg_analysis_final.py for adults
 for the new presentation code where there is only an event stamp 
 at the beginning of the string
+Could be used for SLD too. Change the path, subject name and condition
 
 Notes:
 1. cbs_b113 has very short recording, cbs_b115 has no recording
@@ -38,13 +39,15 @@ def find_events(raw_file,subj,block):
     STI4[:,2] = 8
     events = np.concatenate((STI1,STI3,STI4),axis=0)
     events = events[events[:,0].argsort()] # sort by the latency
-    root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
+    # root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
     file_name_raw=root_path + str(subj) + str(block) +'_events_raw-eve.fif'
     mne.write_events(file_name_raw,events,overwrite=True)  ###write out raw events for double checking
     
 def process_events(subj,block):
      #find events
-    root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
+    # root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
     file_name_raw=root_path + str(subj) + str(block) +'_events_raw-eve.fif'
     events=mne.read_events(file_name_raw)  ###write out raw events for double checking
     
@@ -104,7 +107,7 @@ def process_events(subj,block):
             for m in i:
                 events[ind1[m]][2]=7 
        
-    root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
+    
     file_name_new=root_path + str(subj) + block +'_events_processed-eve.fif'
     mne.write_events(file_name_new,events,overwrite=True)  ###read in raw events
     return events
@@ -122,7 +125,8 @@ def check_events(events,condition):  ## processed events
         elif event[2]==6 or event[2]==7:
             e2.append(3)
             
-    path='/media/tzcheng/storage/CBS/'
+    path='/media/tzcheng/storage2/SLD/MEG/'
+    # path='/media/tzcheng/storage/CBS/'
     seq_file=path + 'seq'+ condition+'_200.npy'
     seq=np.load(seq_file)
     soa_file=path + 'soas' + condition + '_cbsb_200.npy'
@@ -175,7 +179,8 @@ def select_mmr_events(events,subj,block): ## load the processed events
     
     mmr_event=np.concatenate((substd,dev1,dev2),axis=0)
     
-    root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
+    # root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
     file_name_new=root_path + str(subj) + block + '_events_mmr-eve.fif'
     mne.write_events(file_name_new,mmr_event,overwrite=True)
     return mmr_event
@@ -213,26 +218,31 @@ def select_cabr_events(events,subj,block): ## load the processed events
     substd2 = [std2[i] for i in sorted(random.sample(range(len(std2)), sample_size))]
     
     cabr_event=np.concatenate((substd1,substd2,dev1,dev2),axis=0)
-    
-    root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+    # root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
     file_name_new=root_path + str(subj) + block + '_events_cabr-eve.fif'
     mne.write_events(file_name_new, cabr_event,overwrite=True)
     return cabr_event
 
 #%% 
 ########################################
-root_path='/media/tzcheng/storage/CBS/'
+# root_path='/media/tzcheng/storage/CBS/'
+root_path='/media/tzcheng/storage2/SLD/MEG/'
+
 os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
-conditions = ['2','1','2','1','1','1','1','3','1','5','1','5','2','1'] # for each individuals following the order in BABY subj
+#  conditions = ['2','1','2','1','1','1','1','3','1','5','1','5','2','1'] # for each individuals following the order in BABY subj
+#conditions =['1','2','2','3','2','2','6','2','4','4']
+conditions =['4','4']
+
 subj = [] 
 check_all= []
 for file in os.listdir():
-    if file.startswith('cbs_b'):
+    if file.startswith('sld'):
         subj.append(file)
-
+subj = subj[5:]
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]
@@ -241,7 +251,8 @@ for n,s in enumerate(subj):
     if not isExist:
         os.makedirs(root_path + s + '/events')
         
-    raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/' + s + '/raw_fif/' + s + run +'_raw.fif',allow_maxshield=True,preload=True)
+    # raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/' + s + '/raw_fif/' + s + run +'_raw.fif',allow_maxshield=True,preload=True)
+    raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s + '_t1' + run +'_raw.fif',allow_maxshield=True,preload=True)
     find_events(raw_file, s,run)
     events=process_events(s,run)
     check=check_events(events,condition)

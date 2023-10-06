@@ -7,6 +7,7 @@ Need to change the input file name "cbs_A" to "cbs_b" for infants
 Need to manually enter bad channels for sss from the experiment notes. 
 Need to change parameters st_correlation and int_order in sss for adult/infants
 Didn't save the product from ecg, eog project and filtering to save some space
+Could be used to run SLD too (change the root path, subject name, add the pre_bads)
 
 @author: tzcheng
 """
@@ -20,31 +21,36 @@ import numpy as np
 import os
 
 def do_otp(subject):
-    root_path='/media/tzcheng/storage/CBS/'+ subject +'/raw_fif/'
+#    root_path='/media/tzcheng/storage/CBS/'+ subject +'/raw_fif/'
+    root_path='/media/tzcheng/storage2/SLD/MEG/'+ subject +'/raw_fif/'
+
     os.chdir(root_path)
     #find all the raw files
     runs=['01','erm'] # ['01','02','erm'] for the adults and ['01','erm'] for the infants
     for run in runs:
         # file_in=root_path+'cbs'+str(subj)+'_'+str(run)+'_raw.fif'
         # file_out=root_path+'cbs'+str(subj)+'_'+str(run)+'_otp_raw.fif'
-        file_in=root_path+subject+'_'+run+'_raw.fif'
-        file_out=root_path+subject+'_'+run+'_otp_raw.fif'
+        file_in=root_path+subject+'_t1_'+run+'_raw.fif'
+        file_out=root_path+subject+'_t1_'+run+'_otp_raw.fif'
         raw=mne.io.Raw(file_in,allow_maxshield=True)
         picks=mne.pick_types(raw.info,meg=True,eeg=False,eog=False, ecg=False,exclude='bads')
         raw_otp=mne.preprocessing.oversampled_temporal_projection(raw,duration=1,picks=picks)
         raw_otp.save(file_out,overwrite=True)
 
 def do_sss(subject,st_correlation,int_order):
-    root_path='/media/tzcheng/storage/CBS/'
+    # root_path='/media/tzcheng/storage/CBS/'
+    root_path='/media/tzcheng/storage2/SLD/MEG/'
+
     os.chdir(root_path)
     params = mnefun.Params(n_jobs=6, n_jobs_mkl=1, proj_sfreq=200, n_jobs_fir='cuda',
                        n_jobs_resample='cuda', filter_length='auto')
 
     params.subjects = [subject]
 
-    params.work_dir = '/media/tzcheng/storage/CBS/'
-    params.run_names = ['%s_01_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
-    params.runs_empty = ['%s_erm_otp']
+    # params.work_dir = '/media/tzcheng/storage/CBS/'
+    params.work_dir = '/media/tzcheng/storage2/SLD/MEG/'
+    params.run_names = ['%s_t1_01_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
+    params.runs_empty = ['%s_t1_erm_otp']
     params.subject_indices = [0] #to run individual participants
     #params.subject_indices = np.arange(0,len(params.subjects)) #to run all subjects
 
@@ -75,7 +81,7 @@ def do_sss(subject,st_correlation,int_order):
     'cbs_A108': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG0911'],
     'cbs_A109': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG0313'],
     'cbs_A110': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A111': ['MEG0122', 'MEG0333', 'MrunsMEG1612', 'MEG1643', 'MEG2012'],
+    'cbs_A111': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG2012'],
     'cbs_A117': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
     'cbs_A118': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG2012'],
     'cbs_A119': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
@@ -96,7 +102,17 @@ def do_sss(subject,st_correlation,int_order):
     'cbs_b114': ['MEG0312', 'MEG1712', 'MEG2612'],
     'cbs_b116': ['MEG0312', 'MEG1712'],
     'cbs_b117': ['MEG0312', 'MEG1712', 'MEG2011', 'MEG2241'],
-    'cbs_b118': ['MEG0312', 'MEG1712']
+    'cbs_b118': ['MEG0312', 'MEG1712'],
+    'sld_105': ['MEG0312', 'MEG1712'],
+    'sld_101': ['MEG0312', 'MEG1712'],
+    'sld_103': ['MEG0312', 'MEG1712','MEG1013'],
+    'sld_102': ['MEG0312', 'MEG1712','MEG1013'],
+    'sld_104': ['MEG0312', 'MEG1712'],
+    'sld_107': ['MEG0312', 'MEG1712','MEG0921'],
+    'sld_108': ['MEG0312', 'MEG1712'],
+    'sld_110': ['MEG0312', 'MEG1712'],
+    'sld_113': ['MEG0312', 'MEG1712','MEG1831'],
+    'sld_112': ['MEG0312', 'MEG1712']
     }
     # make sure you cd to the working directory that have ct and cal files
     mnefun.do_processing(
@@ -117,11 +133,11 @@ def do_sss(subject,st_correlation,int_order):
 def do_projection(subject, run):
     ###### cleaning with ecg and eog projection
     root_path = os.getcwd()
-    file_in=root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss'
+    file_in=root_path + '/' + subject + '/sss_fif/' + subject + '_t1'+run + '_otp_raw_sss'
     file_out=file_in + '_proj'
     raw = mne.io.read_raw_fif(file_in + '.fif',allow_maxshield=True,preload=True)
-    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + '_erm_otp_raw_sss'
-    fname_erm_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_raw_sss_proj'
+    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + '_t1_erm_otp_raw_sss'
+    fname_erm_out = root_path + '/' + subject + '/sss_fif/' + subject + '_t1'+run + '_erm_raw_sss_proj'
     raw_erm = mne.io.read_raw_fif(fname_erm + '.fif',allow_maxshield=True,preload=True)
         
     ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='ECG001', n_grad=1, n_mag=1, reject=None)
@@ -147,7 +163,7 @@ def do_filtering(data, lp):
 def do_cov(subject,data):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
-    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_otp_raw_sss_proj_fil50'
+    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + '_t1'+run + '_t1_erm_otp_raw_sss_proj_fil50'
     fname_erm_out = fname_erm + '-cov'
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
     mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
@@ -155,8 +171,8 @@ def do_cov(subject,data):
 def do_epoch_mmr(data, subject, run):
     ###### Read the event files to do epoch    
     root_path = os.getcwd()
-    mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_mmr-eve.fif')
-    file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj_fil50'
+    mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + '_t1'+run + '_events_mmr-eve.fif')
+    file_out = root_path + '/' + subject + '/sss_fif/' + subject + '_t1'+run + '_otp_raw_sss_proj_fil50'
 
     event_id = {'Standard':1,'Deviant1':3,'Deviant2':6}
     
@@ -179,7 +195,7 @@ def do_epoch_cabr(data, subject, run):
     ###### Read the event files (generated from evtag.py) 
     root_path = os.getcwd()
     cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_cabr-eve.fif')
-    file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj_fil50'
+    file_out = root_path + '/' + subject + '/sss_fif/' + subject + '_t1'+run + '_otp_raw_sss_proj_fil50'
     
     event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
     
@@ -197,7 +213,9 @@ def do_epoch_cabr(data, subject, run):
     return evoked_substd,evoked_dev1,evoked_dev2,epochs
 
 ########################################
-root_path='/media/tzcheng/storage/CBS/'
+# root_path='/media/tzcheng/storage/CBS/'
+root_path='/media/tzcheng/storage2/SLD/MEG/'
+
 os.chdir(root_path)
 
 ## parameters 
@@ -206,12 +224,12 @@ st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
 subjects = []
+
 for file in os.listdir():
-    if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
+    if file.startswith('sld'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subj = subjects[-5:]
 ###### do the jobs
-for s in subj:
+for s in subjects:
     print(s)
     do_otp(s)
     do_sss(s,st_correlation,int_order)
@@ -225,5 +243,5 @@ for s in subj:
         do_cov(s,raw_erm_filt)
         print ('Doing epoch...')
         do_epoch_mmr(raw_filt, s, run)
-        do_epoch_cabr(raw_filt, s, run)
+        # do_epoch_cabr(raw_filt, s, run)
 
