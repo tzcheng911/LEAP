@@ -242,7 +242,6 @@ check_all= []
 for file in os.listdir():
     if file.startswith('sld'):
         subj.append(file)
-subj = subj[5:]
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]

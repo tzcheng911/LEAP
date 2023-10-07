@@ -171,7 +171,7 @@ def do_cov(subject,data):
 def do_epoch_mmr(data, subject, run):
     ###### Read the event files to do epoch    
     root_path = os.getcwd()
-    mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + '_t1'+run + '_events_mmr-eve.fif')
+    mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject +run + '_events_mmr-eve.fif')
     file_out = root_path + '/' + subject + '/sss_fif/' + subject + '_t1'+run + '_otp_raw_sss_proj_fil50'
 
     event_id = {'Standard':1,'Deviant1':3,'Deviant2':6}
@@ -228,19 +228,20 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
+subjects = subjects[2:]
 ###### do the jobs
 for s in subjects:
     print(s)
-    do_otp(s)
-    do_sss(s,st_correlation,int_order)
+    # do_otp(s)
+    # do_sss(s,st_correlation,int_order)
     for run in runs:
         print ('Doing ECG/EOG projection...')
         [raw,raw_erm] = do_projection(s,run)
         print ('Doing filtering...')
         raw_filt = do_filtering(raw,lp)
         raw_erm_filt = do_filtering(raw_erm,lp)
-        print ('calculate cov...')
-        do_cov(s,raw_erm_filt)
+    #     print ('calculate cov...')
+    #     do_cov(s,raw_erm_filt)
         print ('Doing epoch...')
         do_epoch_mmr(raw_filt, s, run)
         # do_epoch_cabr(raw_filt, s, run)
