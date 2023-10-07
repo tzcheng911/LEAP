@@ -232,16 +232,16 @@ subjects = subjects[2:]
 ###### do the jobs
 for s in subjects:
     print(s)
-    # do_otp(s)
-    # do_sss(s,st_correlation,int_order)
+    do_otp(s)
+    do_sss(s,st_correlation,int_order)
     for run in runs:
         print ('Doing ECG/EOG projection...')
         [raw,raw_erm] = do_projection(s,run)
         print ('Doing filtering...')
         raw_filt = do_filtering(raw,lp)
         raw_erm_filt = do_filtering(raw_erm,lp)
-    #     print ('calculate cov...')
-    #     do_cov(s,raw_erm_filt)
+        print ('calculate cov...')
+        do_cov(s,raw_erm_filt)
         print ('Doing epoch...')
         do_epoch_mmr(raw_filt, s, run)
         # do_epoch_cabr(raw_filt, s, run)
