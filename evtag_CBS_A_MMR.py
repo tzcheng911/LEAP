@@ -7,16 +7,17 @@ This script is for CBS event processing FOR ADULTS ONLY.
 It is used for 
 1. extract the /ba/ as standard and /mba/ as dev1 /pa/ as dev 2
 2. extract the /mba/ as standard 1 /pa/ as standard 2 and /ba/ as dev
-see eeg_analysis_final.py for the original script 
+3. extract the last /ba/ as standard, the first /ba/ (follow pa, or mba seperately) as deviants (address the N1 disparity issue)
+see eeg_analysis_final.py for the original script to extract adult MMR and cABR
 
 Some notes: A119 raw event is messed up (STI101), subtracting 1024 from the second and the third column
 
 The correspondance between event tage and sound are
 
                         TTl                  event code
-standard                448                  1 and 2 (alt)
-dev1                    484                  3 and 5 (alt)
-dev2                    488                  6 and 7 (alt)
+ba                      448                  1 and 2 (alt)
+mba                     484                  3 and 5 (alt)
+pa                      488                  6 and 7 (alt)
 
 @author: tzcheng
 """
@@ -172,6 +173,33 @@ def select_mmr_events(events,subj,block, direction): ## load the processed event
         file_name_new=root_path + str(subj) + '_' + block + '_events_mmr-eve.fif'
         mne.write_events(file_name_new,mmr_event)
 
+    ## For the last /ba/ as standard first /ba/ after /mba/ as dev1 (50 trials) and after /pa/ as dev2 (only 49 cuz the last one is mba or pa)
+    elif direction == 'first_last_ba':
+        std=[] # last /ba/
+        dev1=[] # first /ba/ after /mba/ 31
+        dev2=[] # first /ba/ after /pa/ 61
+        for i in range(len(e)-1):
+            if e[i][2]==3 and e[i+1][2]==1: 
+                dev1.append(e[i+1])
+
+        for i in range(len(e)-1):
+            if e[i][2]==6 and e[i+1][2]==1: 
+                dev2.append(e[i+1])    
+        
+        for i in range(len(e)-1):
+            if (e[i][2]==1 and e[i+1][2]==3) or (e[i][2]==1 and e[i+1][2]==6): 
+                std.append(e[i])
+        #randomly select standard trials from the ones that precedes deviants#
+        ###
+        sample_size = int(len(std)/2)
+        substd = [std[i] for i in sorted(random.sample(range(len(std)), sample_size))]
+        
+        mmr_event=np.concatenate((substd,dev1,dev2),axis=0)
+        
+        root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
+        file_name_new=root_path + str(subj) + '_' + block + '_events_mmr_firstlastba-eve.fif'
+        mne.write_events(file_name_new,mmr_event)
+
     ## For the /mba/ as standard 1 /pa/ as standard 2 and /ba/ as dev
     elif direction == 'pa_to_ba':
         std1=[] # /mba/ to /ba/
@@ -209,7 +237,7 @@ os.chdir(root_path)
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
 conditions = ['6','1','2','1','5','6','1','3','6','3','5','6','2','1','4','1','2','3'] # run1: follow the order of subj
-conditions = ['4','6','4','3','4','2','4','6','3','3','4','1','5','2','2','4','4','3']# run2: follow the order of subj
+# conditions = ['4','6','4','3','4','2','4','6','3','3','4','1','5','2','2','4','4','3']# run2: follow the order of subj
 direction = 'pa_to_ba' # traditional direction 'ba_to_pa': ba to pa and ba to mba; reverse direction 'pa_to_ba' : is pa to ba and mba to be
 subj = [] 
 check_all= []
