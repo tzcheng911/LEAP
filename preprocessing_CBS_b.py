@@ -218,7 +218,7 @@ root_path='/media/tzcheng/storage2/SLD/MEG/'
 
 os.chdir(root_path)
 
-## parameters 
+#%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
@@ -228,12 +228,12 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = subjects[2:]
-###### do the jobs
+
+#%%###### do the jobs
 for s in subjects:
     print(s)
-    do_otp(s)
-    do_sss(s,st_correlation,int_order)
+    # do_otp(s)
+    # do_sss(s,st_correlation,int_order)
     for run in runs:
         print ('Doing ECG/EOG projection...')
         [raw,raw_erm] = do_projection(s,run)

@@ -54,8 +54,8 @@ for s in subj:
     file_in = root_path + s + '/sss_fif/' + s
     
     # stc_std=mne.read_source_estimate(file_in+'_std_vector_morph-vl.stc')
-    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_reverse_None_morph-vl.stc')
-    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_reverse_None_morph-vl.stc')
+    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_ba__vector_morph-vl.stc')
+    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_ba__vector_morph-vl.stc')
     # group_std.append(stc_std.data)
     group_mmr1.append(stc_mmr1.data)
     group_mmr2.append(stc_mmr2.data)
@@ -83,14 +83,26 @@ group_mmr2_roi=np.asarray(group_mmr2_roi)
 
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy',group_std)
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy',group_std_roi)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_reverse_None_morph.npy',group_mmr1)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_reverse_None_morph.npy',group_mmr2)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_reverse_None_morph_roi.npy',group_mmr1_roi)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_reverse_None_morph_roi.npy',group_mmr2_roi)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_ba_vector_morph.npy',group_mmr1)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_ba_vector_morph.npy',group_mmr2)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_ba_vector_morph_roi.npy',group_mmr1_roi)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_ba_vector_morph_roi.npy',group_mmr2_roi)
 
 #%%
-mmr1 = np.load(root_path + 'meeg_mmr_analysis/group_mmr1_vector_morph.npy')
-mmr2 = np.load(root_path + 'meeg_mmr_analysis/group_mmr2_vector_morph.npy')
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
+
+mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_vector_morph.npy')
+mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_morph.npy')
+
+# time series of EEG, MEG_v, MEG_m averaged across all sources
+plt.figure()
+plot_err(stats.zscore(mmr1_m.mean(axis=1),axis=1),'b',stc1.times)
+plot_err(stats.zscore(mmr1_v.mean(axis=1),axis=1),'r',stc1.times)
+plt.legend(['EEG','','MEG mag','','MEG vector',''])
+plt.xlabel('Time (ms)')
+plt.ylabel('zscore')
+plt.xlim([-100, 600])
+plt.ylim([-2, 1.5])
 
 #%% whole brain stats
 X = mmr1-mmr2
@@ -115,9 +127,9 @@ T_obs, clusters, cluster_p_values, H0 = clu =\
 #    is multiple-comparisons corrected).
 #good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
 
-np.save('/media/tzcheng/storage/CBS/meg_mmr_analysis/tfce_p_values',cluster_p_values)
-np.save('/media/tzcheng/storage/CBS/meg_mmr_analysis/tfce_t',T_obs)
-np.save('/media/tzcheng/storage/CBS/meg_mmr_analysis/tfce_h0',H0)
+np.save('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/tfce_p_values',cluster_p_values)
+np.save('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/tfce_t',T_obs)
+np.save('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/tfce_h0',H0)
 
 #%% visualize clusters
 stc=mne.read_source_estimate('/CBS/cbs_A101/sss_fif/cbs_A101_mmr1-vl.stc')

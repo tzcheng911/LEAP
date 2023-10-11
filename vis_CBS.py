@@ -33,7 +33,7 @@ runs = ['_01','_02']
 
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_b'):
         subj.append(file)
 
 run = runs[0]
@@ -55,6 +55,14 @@ evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_subs
 evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]
 evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0]
 
+# use these three lines to check for the evoked responses for babies
+for i in np.arange(0,len(subj),1):
+    s = subj[i]
+    evoked_s = mne.read_evokeds(root_path + '/' + s + '/sss_fif/' + s + '_01_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
+    evoked_s.plot_topomap(ch_type='mag',times=np.linspace(0, 0.5, 6),colorbar=True)
+    evoked_s.plot(picks='mag',gfp=True)
+
+evoked_s.plot_joint()
 mne.viz.plot_compare_evokeds(evoked_s, picks=["MEG0721"], combine="mean")
 mne.viz.plot_compare_evokeds(evoked_s, picks="meg", axes="topo") # plot all of them
 epoch.plot_sensors(kind='3d', ch_type='mag', ch_groups='position')
@@ -169,8 +177,8 @@ plt.xlim([-0.1, 0.5])
 #%%######################################## visualize the group level source average for INFANTS
 stc = mne.read_source_estimate(root_path + 'cbs_b106/sss_fif/cbs_b106_mmr2_None-vl.stc')
 
-MEG_mmr1_roi_v = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_vector_roi.npy') # with the mag or vector method
-MEG_mmr2_roi_v = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_vector_roi.npy') # with the mag or vector method
+MEG_mmr1_roi_v = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_ba_vector_roi.npy') # with the mag or vector method
+MEG_mmr2_roi_v = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_ba_vector_roi.npy') # with the mag or vector method
 MEG_mmr1_roi_m = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_roi.npy') # with the mag or vector method
 MEG_mmr2_roi_m = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_roi.npy') # with the mag or vector method
 

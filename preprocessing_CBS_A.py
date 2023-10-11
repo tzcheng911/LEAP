@@ -154,13 +154,12 @@ def do_cov(subject,data):
 def do_epoch_mmr(data, subject, run, direction):
     ###### Read the event files to do epoch    
     root_path = os.getcwd()
+    file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj_fil50'
 
     if direction == 'ba_to_pa':
         mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_mmr-eve.fif')
         event_id = {'Standard':1,'Deviant1':3,'Deviant2':6}
-    
-        file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj_fil50'
-        
+            
         reject=dict(grad=4000e-13,mag=4e-12)
         picks = mne.pick_types(data.info,meg=True,eeg=False) 
         epochs_cortical = mne.Epochs(data, mmr_events, event_id,tmin =-0.1, tmax=0.6,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
@@ -177,8 +176,6 @@ def do_epoch_mmr(data, subject, run, direction):
     elif direction == 'pa_to_ba':
         mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_mmr_reverse-eve.fif')
         event_id = {'Standard1':3,'Standard2':6,'Deviant':1}
-
-        file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj_fil50'
         
         reject=dict(grad=4000e-13,mag=4e-12)
         picks = mne.pick_types(data.info,meg=True,eeg=False) 
@@ -193,6 +190,23 @@ def do_epoch_mmr(data, subject, run, direction):
         evoked_substd2.save(file_out + '_evoked_substd2_reverse_mmr.fif',overwrite=True)
         evoked_dev.save(file_out + '_evoked_dev_reverse_mmr.fif',overwrite=True)
     
+    elif direction == 'first_last_ba':
+        mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_mmr_firstlastba-eve.fif')
+        event_id = {'Standard':1,'Deviant1':31,'Deviant2':61}
+        
+        reject=dict(grad=4000e-13,mag=4e-12)
+        picks = mne.pick_types(data.info,meg=True,eeg=False) 
+        epochs_cortical = mne.Epochs(data, mmr_events, event_id,tmin =-0.1, tmax=0.6,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
+
+        evoked_substd=epochs_cortical['Standard'].average()
+        evoked_dev1=epochs_cortical['Deviant1'].average()
+        evoked_dev2=epochs_cortical['Deviant2'].average()
+
+        epochs_cortical.save(file_out + '_mmr_ba_e.fif',overwrite=True)
+        evoked_substd.save(file_out + '_evoked_substd_ba_mmr.fif',overwrite=True)
+        evoked_dev1.save(file_out + '_evoked_dev1_ba_mmr.fif',overwrite=True)
+        evoked_dev2.save(file_out + '_evoked_dev2_ba_mmr.fif',overwrite=True)
+
 def do_epoch_cabr(data, subject, run):  
     ###### Read the event files (generated from evtag.py) 
     root_path = os.getcwd()
@@ -219,7 +233,10 @@ root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
 ## parameters 
-direction = 'pa_to_ba' # traditional direction 'ba_to_pa': ba to pa and ba to mba; reverse direction 'pa_to_ba' : is pa to ba and mba to be
+direction = 'first_last_ba' # traditional direction 'ba_to_pa': ba to pa and ba to mba
+# reverse direction 'pa_to_ba' : is pa to ba and mba to ba; 
+# only comparing /ba/ 'first_last_ba': only comparing /ba/ before and after habituation 
+
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
@@ -230,7 +247,7 @@ for file in os.listdir():
     if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 
-###### do the jobs
+#%%##### do the jobs
 for s in subj:
     print(s)
     # do_otp(s)
@@ -248,4 +265,3 @@ for s in subj:
             do_epoch_cabr(raw_filt, s, run)
         else:
             do_epoch_mmr(raw_filt, s, run, direction)
-

@@ -30,9 +30,11 @@ import os
 def find_events(raw_file,subj,block):
     #find events
     events = mne.find_events(raw_file,stim_channel='STI101')
+    if subj == 'cbs_A119':
+        events[:,2] = events[:,2] - 1024
     root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
     file_name_raw=root_path + str(subj)+ str(block) +'_events_raw-eve.fif'
-    mne.write_events(file_name_raw,events,overwrite=True)  ###write out raw events for double checking
+    # mne.write_events(file_name_raw,events,overwrite=True)  ###write out raw events for double checking
     
 def process_events(subj,block):
      #find events
@@ -97,8 +99,8 @@ def process_events(subj,block):
                 events[ind1[m]][2]=7 
        
     root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-    file_name_new=root_path + str(subj) + '_' + block +'_events_processed-eve.fif'
-    mne.write_events(file_name_new,events,overwrite=True)  ###read in raw events
+    file_name_new=root_path + str(subj) + block +'_events_processed-eve.fif'
+    # mne.write_events(file_name_new,events,overwrite=True)  ###read in raw events
     return events
 
 def check_events(events,condition):  ## processed events
@@ -170,8 +172,8 @@ def select_mmr_events(events,subj,block, direction): ## load the processed event
         mmr_event=np.concatenate((substd,dev1,dev2),axis=0)
         
         root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-        file_name_new=root_path + str(subj) + '_' + block + '_events_mmr-eve.fif'
-        mne.write_events(file_name_new,mmr_event)
+        file_name_new=root_path + str(subj) + block + '_events_mmr-eve.fif'
+        mne.write_events(file_name_new,mmr_event,overwrite=True)
 
     ## For the last /ba/ as standard first /ba/ after /mba/ as dev1 (50 trials) and after /pa/ as dev2 (only 49 cuz the last one is mba or pa)
     elif direction == 'first_last_ba':
@@ -180,10 +182,12 @@ def select_mmr_events(events,subj,block, direction): ## load the processed event
         dev2=[] # first /ba/ after /pa/ 61
         for i in range(len(e)-1):
             if e[i][2]==3 and e[i+1][2]==1: 
+                e[i+1][2]=31
                 dev1.append(e[i+1])
 
         for i in range(len(e)-1):
             if e[i][2]==6 and e[i+1][2]==1: 
+                e[i+1][2]=61
                 dev2.append(e[i+1])    
         
         for i in range(len(e)-1):
@@ -197,8 +201,8 @@ def select_mmr_events(events,subj,block, direction): ## load the processed event
         mmr_event=np.concatenate((substd,dev1,dev2),axis=0)
         
         root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-        file_name_new=root_path + str(subj) + '_' + block + '_events_mmr_firstlastba-eve.fif'
-        mne.write_events(file_name_new,mmr_event)
+        file_name_new=root_path + str(subj) + block + '_events_mmr_firstlastba-eve.fif'
+        mne.write_events(file_name_new,mmr_event,overwrite=True)
 
     ## For the /mba/ as standard 1 /pa/ as standard 2 and /ba/ as dev
     elif direction == 'pa_to_ba':
@@ -224,7 +228,7 @@ def select_mmr_events(events,subj,block, direction): ## load the processed event
         
         root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
         file_name_new=root_path + str(subj) + block + '_events_mmr_reverse-eve.fif'
-        mne.write_events(file_name_new,mmr_event)
+        mne.write_events(file_name_new,mmr_event,overwrite=True)
     else:
         print('Select a direction to do MMR!')
     return mmr_event
@@ -236,9 +240,11 @@ os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
-conditions = ['6','1','2','1','5','6','1','3','6','3','5','6','2','1','4','1','2','3'] # run1: follow the order of subj
+# conditions = ['6','1','2','1','5','6','1','3','6','3','5','6','2','1','4','1','2','3'] # run1: follow the order of subj
 # conditions = ['4','6','4','3','4','2','4','6','3','3','4','1','5','2','2','4','4','3']# run2: follow the order of subj
-direction = 'pa_to_ba' # traditional direction 'ba_to_pa': ba to pa and ba to mba; reverse direction 'pa_to_ba' : is pa to ba and mba to be
+direction = 'first_last_ba' # traditional direction 'ba_to_pa': ba to pa and ba to mba
+# reverse direction 'pa_to_ba' : is pa to ba and mba to ba; 
+# only comparing /ba/ 'first_last_ba': only comparing /ba/ before and after habituation 
 subj = [] 
 check_all= []
 for file in os.listdir():
@@ -255,7 +261,7 @@ for n,s in enumerate(subj):
     raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/' + s + '/raw_fif/' + s + run +'_raw.fif',allow_maxshield=True,preload=True)
     find_events(raw_file, s,run)
     events=process_events(s,run)
-#    check=check_events(events,condition)
-#    check_all.append(check)
+    # check=check_events(events,condition)
+    # check_all.append(check)
     mmr_event=select_mmr_events(events, s, run, direction)
 # %%
