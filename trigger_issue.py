@@ -47,6 +47,6 @@ STI1_s_ind = np.where(diff_STI1[:,0] < min_soa*srate)
 STI3_s_ind = np.where(diff_STI3[:,0] < 100)
 STI4_s_ind = np.where(diff_STI4[:,0] < 150) # still has some problems (4 more events than expected)
 STI1 = np.delete(STI1,np.array(STI1_s_ind) + 1,axis=0) # delete the next item
-STI3 = np.delete(STI1,np.array(STI3_s_ind) + 1,axis=0) # delete the next item
-STI4 = np.delete(STI1,np.array(STI4_s_ind) + 1,axis=0) # delete the next item
+STI3 = np.delete(STI3,np.array(STI3_s_ind) + 1,axis=0) # delete the next item
+STI4 = np.delete(STI4,np.array(STI4_s_ind) + 1,axis=0) # delete the next item
 
