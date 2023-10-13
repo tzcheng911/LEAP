@@ -33,7 +33,7 @@ runs = ['_01','_02']
 
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_b'):
+    if file.startswith('cbs_A'):
         subj.append(file)
 
 run = runs[0]
@@ -51,7 +51,8 @@ cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50-cov.fif')
 ## MMR
 epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mmr_e.fif')
 
-evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
+evoked_s = mne.read_estc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
+vokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
 evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]
 evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0]
 
@@ -120,10 +121,10 @@ brain = stc.plot(
 # load the data
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 stc2 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
-MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_vector_morph.npy') # with the mag or vector method
-MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_vector_morph.npy') # with the mag or vector method
-MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_morph.npy') # with the mag or vector method
-MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_morph.npy') # with the mag or vector method
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_reverse_vector_morph.npy') # with the mag or vector method
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_reverse_vector_morph.npy') # with the mag or vector method
+MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_reverse_None_morph.npy') # with the mag or vector method
+MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_reverse_None_morph.npy') # with the mag or vector method
 
 stc1.data = MEG_mmr1_v.mean(axis=0)
 stc2.data = MEG_mmr2_v.mean(axis=0)
@@ -145,10 +146,14 @@ label_tc_mmr1=mne.extract_label_time_course(stc1,fname_aseg,src,mode='mean',allo
 label_tc_mmr2=mne.extract_label_time_course(stc2,fname_aseg,src,mode='mean',allow_empty=True)
 
 # averaged whole brain mmr plot
+plt.figure()
 times = stc1.times
-plot_err(stats.zscore(MEG_mmr2_m.mean(axis=1),axis=1),'b',stc1.times)
-plot_err(stats.zscore(MEG_mmr2_v.mean(axis=1),axis=1),'r',stc1.times)
-plt.legend(['MEG mag','','MEG vector',''])
+plot_err(stats.zscore(MEG_mmr1_v.mean(axis=1),axis=1),'c',stc1.times)
+plot_err(stats.zscore(MEG_mmr2_v.mean(axis=1),axis=1),'b',stc1.times)
+plot_err(stats.zscore(MEG_mmr1_m.mean(axis=1),axis=1),'m',stc1.times)
+plot_err(stats.zscore(MEG_mmr2_m.mean(axis=1),axis=1),'r',stc1.times)
+plt.legend(['MMR1 vector','','MMR2 vector','','MMR1 mag','','MMR2 mag',''])
+plt.xlim([-100,600])
 plt.xlabel('Time (ms)')
 plt.ylabel('zscore')
 

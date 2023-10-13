@@ -54,8 +54,8 @@ for s in subj:
     file_in = root_path + s + '/sss_fif/' + s
     
     # stc_std=mne.read_source_estimate(file_in+'_std_vector_morph-vl.stc')
-    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_ba__vector_morph-vl.stc')
-    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_ba__vector_morph-vl.stc')
+    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_ba_None_morph-vl.stc')
+    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_ba_None_morph-vl.stc')
     # group_std.append(stc_std.data)
     group_mmr1.append(stc_mmr1.data)
     group_mmr2.append(stc_mmr2.data)
@@ -83,10 +83,10 @@ group_mmr2_roi=np.asarray(group_mmr2_roi)
 
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy',group_std)
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy',group_std_roi)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_ba_vector_morph.npy',group_mmr1)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_ba_vector_morph.npy',group_mmr2)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_ba_vector_morph_roi.npy',group_mmr1_roi)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_ba_vector_morph_roi.npy',group_mmr2_roi)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_ba_None_morph.npy',group_mmr1)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_ba_None_morph.npy',group_mmr2)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_ba_None_morph_roi.npy',group_mmr1_roi)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_ba_None_morph_roi.npy',group_mmr2_roi)
 
 #%%
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')

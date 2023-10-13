@@ -34,9 +34,9 @@ def find_events(raw_file,subj,block):
     STI1 = mne.find_events(raw_file,stim_channel='STI001') 
     STI3 = mne.find_events(raw_file,stim_channel='STI003')
     STI4 = mne.find_events(raw_file,stim_channel='STI004')
-    STI1[:,2] = 1
-    STI3[:,2] = 4
-    STI4[:,2] = 8
+    STI1[:,2] = 1 # 2184
+    STI3[:,2] = 4 # 350 
+    STI4[:,2] = 8 # 250
     events = np.concatenate((STI1,STI3,STI4),axis=0)
     events = events[events[:,0].argsort()] # sort by the latency
     # root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
