@@ -71,13 +71,72 @@ raw_file.copy().pick(picks="stim").plot(
 # 1. cross-talk duplicate deviant events
 # 2. random standard events in the middle of the trial
 # 3. trigger splitting
+subj = 'vMMR_108'
+pulse_dur = 50
 soa = np.load('/media/tzcheng/storage/vmmr/npy/soas5_900.npy',allow_pickle=True)
 seq = np.load('/media/tzcheng/storage/vmmr/npy/full_seq5_900.npy')
-raw=mne.io.Raw('/media/tzcheng/storage/vmmr/vmmr_108/230915/vMMR_108_3_raw.fif',allow_maxshield=True,preload=True)
+change = np.load('/media/tzcheng/storage/vmmr/npy/change_ind5_900.npy')
+
+condition = {"vMMR_901":['1','1','1','1'],
+             "vMMR_902":['1','1','1','1'],
+             "vMMR_102":['7','2','8','9'],
+             "vMMR_103":['3','4','6','2'],
+             "vMMR_104":['5','6','7','8'],
+             "vMMR_108":['2','5','3','9'],
+             "vMMR_109":['3','7','6','4']}
+
+cond = condition[subj]
+raw=mne.io.Raw('/media/tzcheng/storage/vmmr/' + subj + '/' + subj + cond[1] + '_raw.fif',allow_maxshield=True,preload=True)
 raw.copy().pick(picks="stim").plot(start=3, duration=6)
 
 cross = mne.find_events(raw,stim_channel='STI001') # 900
 std = mne.find_events(raw,stim_channel='STI002') # 768
 d = mne.find_events(raw,stim_channel='STI003') # 132
 r = mne.find_events(raw,stim_channel='STI005')
+cross[:,2] = 1
+std[:,2] = 2
+d[:,2] = 4
+r[:,2] = 16
 
+## Get the number of events presented
+print('Cross events:' + str(len(np.where(np.isin(seq, ['c','C']))[0])))
+print('Stadard events:' + str(len(np.where(np.isin(seq, ['s','S']))[0])))
+print('Deviant events:' + str(len(np.where(np.isin(seq, ['d','D']))[0])))
+print('Change events:' + str(len(change)))
+
+## clean1 for the splitting triggers
+cross_s_ind = np.where(np.diff(cross,axis = 0)[:,0] < pulse_dur)
+std_s_ind = np.where(np.diff(std,axis = 0)[:,0]  < pulse_dur)
+d_s_ind = np.where(np.diff(d,axis = 0)[:,0]  < pulse_dur) # still has some problems (4 more events than expected)
+r_s_ind = np.where(np.diff(r,axis = 0)[:,0]  < pulse_dur) # still has some problems (4 more events than expected)
+cross = np.delete(cross,np.array(cross_s_ind) + 1,axis=0) # delete the next item
+std = np.delete(std,np.array(std_s_ind) + 1,axis=0) # delete the next item
+d = np.delete(d,np.array(d_s_ind) + 1,axis=0) # delete the next item
+r = np.delete(r,np.array(r_s_ind) + 1,axis=0) # delete the next item
+events_stim = np.concatenate((cross,std,d),axis=0)
+events_stim = events_stim[events_stim[:,0].argsort()] # sort by the latency
+
+## clean2 for the cross-talk (STI2 to STI3 same time stamp)
+i = np.where(np.diff(events[:,0]) < 100)[0]
+events_stim = np.delete(events_stim,np.array(i+1),axis=0) # delete the second one (follow the order of 2 and 4)
+events = np.concatenate((events_stim,r),axis=0)
+events = events[events[:,0].argsort()] # sort by the latency
+
+## clean3 for the random intruders e.g. 591.6 s
+
+# check how well the code delete the broken ones
+raw.copy().pick(picks="stim").plot(
+    events=events,
+    color="gray",
+    event_color={1:"r",2:"g",4:"b",16:"y"})
+len(np.where(events[:,2] == 1)[0]) == len(np.where(np.isin(seq, ['c','C']))[0]) # check cross
+len(np.where(events[:,2] == 2)[0]) == len(np.where(np.isin(seq, ['s','S']))[0]) # check std
+len(np.where(events[:,2] == 4)[0]) == len(np.where(np.isin(seq, ['d','D']))[0]) # check dev
+
+## check the ground truth
+seq[np.where(np.isin(seq, ['c','C']))[0]] = 1 # ground truth
+seq[np.where(np.isin(seq, ['s','S']))[0]] = 2 # ground truth
+seq[np.where(np.isin(seq, ['d','D']))[0]] = 4 # ground truth
+seq = seq.astype('int64')
+compare = events_stim[:,2] - seq
+np.sum(events_stim[:,2] == seq)

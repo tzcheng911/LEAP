@@ -6,14 +6,16 @@ import itertools
 import matplotlib
 
 ###### Load data
-SOA = np.load('/media/tzcheng/storage/vmmr/exp/soas1_900.npy')
-seq = np.load('/media/tzcheng/storage/vmmr/exp/full_seq1_900.npy')
-change = np.load('/media/tzcheng/storage/vmmr/exp/change_ind1_900.npy')
-root_path='/media/tzcheng/storage/vmmr/'
-
 root_path='/media/tzcheng/storage/vmmr/'
 os.chdir(root_path)
 runs = ['_1','_2','_3','_4']
+condition = {"vMMR_901":['1','1','1','1'],
+             "vMMR_902":['1','1','1','1'],
+             "vMMR_102":['7','2','8','9'],
+             "vMMR_103":['3','4','6','2'],
+             "vMMR_104":['5','6','7','8'],
+             "vMMR_108":['2','5','3','9'],
+             "vMMR_109":['3','7','6','4']}
 subj = [] 
 for file in os.listdir():
     if file.startswith('vMMR_'):
@@ -21,6 +23,7 @@ for file in os.listdir():
 
 for s in subj:
     for run in runs:
+        ###### Load files
         root_path = '/media/tzcheng/storage/vmmr/'
         file_in = root_path + '/' + s + '/raw_fif/' + s + run + '_raw.fif'
         file_out = root_path + '/' + s + '/events/'
@@ -39,8 +42,13 @@ for s in subj:
         events = np.concatenate((cross,std,d,r),axis=0)
         events = events[events[:,0].argsort()] # sort by the latency
         # events = mne.find_events(raw,stim_channel='STI101') # sum of all channels
-
-        ## Write event file
+        
+        ###### Check events
+        SOA = np.load('/media/tzcheng/storage/vmmr/exp/soas1_900.npy')
+        seq = np.load('/media/tzcheng/storage/vmmr/exp/full_seq1_900.npy')
+        change = np.load('/media/tzcheng/storage/vmmr/exp/change_ind1_900.npy')
+        
+        ###### Write event file
         path = "events"
         isExist = os.path.exists(root_path + path)
         if not isExist:
@@ -51,7 +59,7 @@ for s in subj:
         # file_name_events = '/media/tzcheng/storage/vmmr/vMMR_901/events/vMMR_901_1_raw-eve.fif'
         # events = mne.read_events(file_name_events)
 
-        ## Select relevant events 
+        ###### Select relevant events 
         r = mne.pick_events(events, include = 16)
         c = mne.pick_events(events, include = 1)
         std = mne.pick_events(events, include = 2)
