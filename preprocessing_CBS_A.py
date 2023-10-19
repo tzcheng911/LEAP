@@ -2,10 +2,9 @@
 """
 Created on Tue Aug 8 11:28:12 2023
 
-Preprocessing for vMMR. Need to have events file ready from evtag.py
-Need to change the input file name "cbs_A" to "cbs_b" for infants
+Preprocessing for CBS. Need to have events file ready from evtag.py
 Need to manually enter bad channels for sss from the experiment notes. 
-Need to change parameters st_correlation and int_order in sss for adult/infants
+Need to check parameters st_correlation and int_order in sss for adult/infants
 Didn't save the product from ecg, eog project and filtering to save some space
 
 @author: tzcheng
@@ -155,13 +154,14 @@ def do_epoch_mmr(data, subject, run, direction):
     ###### Read the event files to do epoch    
     root_path = os.getcwd()
     file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj_fil50'
-
+    
+    reject=dict(grad=4000e-13,mag=4e-12)
+    picks = mne.pick_types(data.info,meg=True,eeg=False) 
+    
     if direction == 'ba_to_pa':
         mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_mmr-eve.fif')
         event_id = {'Standard':1,'Deviant1':3,'Deviant2':6}
-            
-        reject=dict(grad=4000e-13,mag=4e-12)
-        picks = mne.pick_types(data.info,meg=True,eeg=False) 
+        
         epochs_cortical = mne.Epochs(data, mmr_events, event_id,tmin =-0.1, tmax=0.6,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
 
         evoked_substd=epochs_cortical['Standard'].average()
@@ -177,8 +177,6 @@ def do_epoch_mmr(data, subject, run, direction):
         mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_mmr_reverse-eve.fif')
         event_id = {'Standard1':3,'Standard2':6,'Deviant':1}
         
-        reject=dict(grad=4000e-13,mag=4e-12)
-        picks = mne.pick_types(data.info,meg=True,eeg=False) 
         epochs_cortical = mne.Epochs(data, mmr_events, event_id,tmin =-0.1, tmax=0.6,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
 
         evoked_substd1=epochs_cortical['Standard1'].average()
@@ -194,13 +192,63 @@ def do_epoch_mmr(data, subject, run, direction):
         mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_mmr_firstlastba-eve.fif')
         event_id = {'Standard':1,'Deviant1':31,'Deviant2':61}
         
-        reject=dict(grad=4000e-13,mag=4e-12)
-        picks = mne.pick_types(data.info,meg=True,eeg=False) 
         epochs_cortical = mne.Epochs(data, mmr_events, event_id,tmin =-0.1, tmax=0.6,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
 
         evoked_substd=epochs_cortical['Standard'].average()
         evoked_dev1=epochs_cortical['Deviant1'].average()
         evoked_dev2=epochs_cortical['Deviant2'].average()
+
+        epochs_cortical.save(file_out + '_mmr_ba_e.fif',overwrite=True)
+        evoked_substd.save(file_out + '_evoked_substd_ba_mmr.fif',overwrite=True)
+        evoked_dev1.save(file_out + '_evoked_dev1_ba_mmr.fif',overwrite=True)
+        evoked_dev2.save(file_out + '_evoked_dev2_ba_mmr.fif',overwrite=True)
+
+def do_epoch_mmr_eeg(data, subject, run, direction):
+    ###### Read the event files to do epoch    
+    root_path = os.getcwd()    
+    reject=dict(bio=100e-6)
+    file_out = root_path + '/' + subject + '/eeg/' + subject + run 
+
+ 
+    if direction == 'ba_to_pa':
+        mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_mmr-eve.fif')
+        event_id = {'Standard':1,'Deviant1':3,'Deviant2':6}
+        
+        epochs_cortical = mne.Epochs(data, mmr_events, event_id,tmin =-0.1, tmax=0.6,baseline=(-0.1,0),preload=True,proj=True,reject=reject)
+
+        evoked_substd=epochs_cortical['Standard'].average(picks=('bio'))
+        evoked_dev1=epochs_cortical['Deviant1'].average(picks=('bio'))
+        evoked_dev2=epochs_cortical['Deviant2'].average(picks=('bio'))
+
+        epochs_cortical.save(file_out + '_mmr_e.fif',overwrite=True)
+        evoked_substd.save(file_out + '_evoked_substd_mmr.fif',overwrite=True)
+        evoked_dev1.save(file_out + '_evoked_dev1_mmr.fif',overwrite=True)
+        evoked_dev2.save(file_out + '_evoked_dev2_mmr.fif',overwrite=True)
+    
+    elif direction == 'pa_to_ba':
+        mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_mmr_reverse-eve.fif')
+        event_id = {'Standard1':3,'Standard2':6,'Deviant':1}
+        
+        epochs_cortical = mne.Epochs(data, mmr_events, event_id,tmin =-0.1, tmax=0.6,baseline=(-0.1,0),preload=True,proj=True,reject=reject)
+
+        evoked_substd1=epochs_cortical['Standard1'].average(picks=('bio'))
+        evoked_substd2=epochs_cortical['Standard2'].average(picks=('bio'))
+        evoked_dev=epochs_cortical['Deviant'].average(picks=('bio'))
+
+        epochs_cortical.save(file_out + '_mmr_reverse_e.fif',overwrite=True)
+        evoked_substd1.save(file_out + '_evoked_substd1_reverse_mmr.fif',overwrite=True)
+        evoked_substd2.save(file_out + '_evoked_substd2_reverse_mmr.fif',overwrite=True)
+        evoked_dev.save(file_out + '_evoked_dev_reverse_mmr.fif',overwrite=True)
+    
+    elif direction == 'first_last_ba':
+        mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_mmr_firstlastba-eve.fif')
+        event_id = {'Standard':1,'Deviant1':31,'Deviant2':61}
+        
+        epochs_cortical = mne.Epochs(data, mmr_events, event_id,tmin =-0.1, tmax=0.6,baseline=(-0.1,0),preload=True,proj=True,reject=reject)
+
+        evoked_substd=epochs_cortical['Standard'].average(picks=('bio'))
+        evoked_dev1=epochs_cortical['Deviant1'].average(picks=('bio'))
+        evoked_dev2=epochs_cortical['Deviant2'].average(picks=('bio'))
 
         epochs_cortical.save(file_out + '_mmr_ba_e.fif',overwrite=True)
         evoked_substd.save(file_out + '_evoked_substd_ba_mmr.fif',overwrite=True)
@@ -233,7 +281,7 @@ root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
 ## parameters 
-direction = 'first_last_ba' # traditional direction 'ba_to_pa': ba to pa and ba to mba
+direction = 'pa_to_ba' # traditional direction 'ba_to_pa': ba to pa and ba to mba
 # reverse direction 'pa_to_ba' : is pa to ba and mba to ba; 
 # only comparing /ba/ 'first_last_ba': only comparing /ba/ before and after habituation 
 
@@ -242,26 +290,39 @@ st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
 lp = 50 
 do_cabr = False
+
 subj = [] # A104 got some technical issue
 for file in os.listdir():
     if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 
-#%%##### do the jobs
+#%%##### do the jobs for MEG
+# for s in subj:
+#     print(s)
+#     # do_otp(s)
+#     # do_sss(s,st_correlation,int_order)
+#     for run in runs:
+#         print ('Doing ECG/EOG projection...')
+#         [raw,raw_erm] = do_projection(s,run)
+#         print ('Doing filtering...')
+#         raw_filt = do_filtering(raw,lp,do_cabr)
+#         raw_erm_filt = do_filtering(raw_erm,lp,do_cabr)
+#         # print ('calculate cov...')
+#         # do_cov(s,raw_erm_filt)
+#         print ('Doing epoch...')
+#         if do_cabr == True:
+#             do_epoch_cabr(raw_filt, s, run)
+#         else:
+#             do_epoch_mmr(raw_filt, s, run, direction)
+
+
+#%%##### do the jobs for EEG
 for s in subj:
     print(s)
-    # do_otp(s)
-    # do_sss(s,st_correlation,int_order)
     for run in runs:
-        print ('Doing ECG/EOG projection...')
-        [raw,raw_erm] = do_projection(s,run)
-        print ('Doing filtering...')
-        raw_filt = do_filtering(raw,lp,do_cabr)
-        raw_erm_filt = do_filtering(raw_erm,lp,do_cabr)
-        # print ('calculate cov...')
-        # do_cov(s,raw_erm_filt)
-        print ('Doing epoch...')
-        if do_cabr == True:
-            do_epoch_cabr(raw_filt, s, run)
-        else:
-            do_epoch_mmr(raw_filt, s, run, direction)
+        raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
+        raw_file.filter(l_freq=0,h_freq=50,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
+        raw_file.pick_channels(['BIO004'])
+        do_epoch_mmr_eeg(raw_file, s, run, direction)
+
+# %%

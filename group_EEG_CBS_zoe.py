@@ -10,7 +10,6 @@ import mne
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
 from scipy import stats,signal
 from scipy.io import wavfile
 import os
@@ -46,11 +45,20 @@ group_mmr2 = []
 group_std = []
 # run 1 group average
 for s in subj:
-    std = mne.read_evokeds(root_path + s +'/eeg/cbs_' + s + '_' + run + '_evoked_substd_mmr.fif',allow_maxshield = True)
-    dev1 = mne.read_evokeds(root_path + s +'/eeg/cbs_' + s + '_' + run + '_evoked_dev1_mmr.fif',allow_maxshield = True)
-    dev2 = mne.read_evokeds(root_path + s +'/eeg/cbs_' + s + '_' + run + '_evoked_dev2_mmr.fif',allow_maxshield = True)
+    # for the normal direction
+    std = mne.read_evokeds(root_path + s +'/eeg/' + s + '_' + run + '_evoked_substd_mmr.fif',allow_maxshield = True)
+    dev1 = mne.read_evokeds(root_path + s +'/eeg/' + s + '_' + run + '_evoked_dev1_mmr.fif',allow_maxshield = True)
+    dev2 = mne.read_evokeds(root_path + s +'/eeg/' + s + '_' + run + '_evoked_dev2_mmr.fif',allow_maxshield = True)
     mmr1 = dev1[0].data - std[0].data
     mmr2 = dev2[0].data - std[0].data
+
+    # for the reverse
+    # std1 = mne.read_evokeds(root_path + s +'/eeg/' + s + '_' + run + '_evoked_substd1_reverse_mmr.fif',allow_maxshield = True)
+    # std2 = mne.read_evokeds(root_path + s +'/eeg/' + s + '_' + run + '_evoked_substd2_reverse_mmr.fif',allow_maxshield = True)
+    # dev = mne.read_evokeds(root_path + s +'/eeg/' + s + '_' + run + '_evoked_dev_reverse_mmr.fif',allow_maxshield = True)
+    # mmr1 = dev[0].data - std1[0].data
+    # mmr2 = dev[0].data - std2[0].data
+
     group_mmr1.append(mmr1)
     group_mmr2.append(mmr2)
     group_std.append(std[0].data)
@@ -59,6 +67,6 @@ group_std = np.squeeze(np.asarray(group_std),1)
 group_mmr1=np.squeeze(np.asarray(group_mmr1),1)
 group_mmr2=np.squeeze(np.asarray(group_mmr2),1)
 
-# np.save(root_path + 'meeg_mmr_analysis/group_mmr1_eeg.npy',group_mmr1)
-# np.save(root_path + 'meeg_mmr_analysis/group_mmr2_eeg.npy',group_mmr2)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_eeg.npy',group_mmr1)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_eeg.npy',group_mmr2)
 np.save(root_path + 'cbsA_meeg_analysis/group_std_eeg.npy',group_std)
