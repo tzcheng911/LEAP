@@ -25,7 +25,7 @@ for s in subj:
     for run in runs:
         ###### Load files
         root_path = '/media/tzcheng/storage/vmmr/'
-        file_in = root_path + '/' + s + '/raw_fif/' + s + run + '_raw.fif'
+        file_in = root_path + '/' + s + '/' + s + run + '_raw.fif'
         file_out = root_path + '/' + s + '/events/'
         raw = mne.io.read_raw_fif(file_in,allow_maxshield=True)
         ch = raw.copy().pick("stim")
@@ -44,9 +44,9 @@ for s in subj:
         # events = mne.find_events(raw,stim_channel='STI101') # sum of all channels
         
         ###### Check events
-        SOA = np.load('/media/tzcheng/storage/vmmr/exp/soas1_900.npy')
-        seq = np.load('/media/tzcheng/storage/vmmr/exp/full_seq1_900.npy')
-        change = np.load('/media/tzcheng/storage/vmmr/exp/change_ind1_900.npy')
+        # SOA = np.load('/media/tzcheng/storage/vmmr/exp/soas1_900.npy')
+        # seq = np.load('/media/tzcheng/storage/vmmr/exp/full_seq1_900.npy')
+        # change = np.load('/media/tzcheng/storage/vmmr/exp/change_ind1_900.npy')
         
         ###### Write event file
         path = "events"

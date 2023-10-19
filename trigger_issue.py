@@ -14,9 +14,10 @@ import itertools
 
 
 #%%######################################## SLD112
+s = 'sld_113'
 soa = np.load('/media/tzcheng/storage2/SLD/MEG/soas2_cbsb_200.npy',allow_pickle=True)
 seq = np.load('/media/tzcheng/storage2/SLD/MEG/seq2_200.npy')
-raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/check_events_sld_112/raw_fif/sld_112_t1_01_raw.fif',allow_maxshield=True,preload=True)
+raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s +'_t1_01_raw.fif',allow_maxshield=True,preload=True)
 raw_file.copy().pick(picks="stim").plot(start=3, duration=6)
 
 min_soa = 0.15
@@ -75,7 +76,7 @@ raw_file.copy().pick(picks="stim").plot(
 import mne 
 import numpy as np
 
-subj = 'vMMR_109'
+subj = 'vMMR_108'
 pulse_dur = 50
 condition_all = {"A":['1','4','2','3'],
              "B":['2','3','1','4'],
@@ -99,69 +100,74 @@ sequence = {"vMMR_901":['1','1','1','1'],
 cond = condition[subj]
 seq = sequence[subj]
 
-nrun = 3
+for nrun in np.arange(0,4,1):
+    raw=mne.io.Raw('/media/tzcheng/storage/vmmr/' + subj + '/' + subj + '_' + condition_all[cond][nrun] + '_raw.fif',allow_maxshield=True,preload=True)
+    # raw.copy().pick(picks="stim").plot(start=3, duration=6)
+    SOA = np.load('/media/tzcheng/storage/vmmr/npy/soas' + seq[nrun] + '_900.npy',allow_pickle=True)
+    SEQ = np.load('/media/tzcheng/storage/vmmr/npy/full_seq' + seq[nrun] + '_900.npy')
+    CHANGE = np.load('/media/tzcheng/storage/vmmr/npy/change_ind' + seq[nrun] + '_900.npy')
 
+    cross = mne.find_events(raw,stim_channel='STI001') # 900
+    std = mne.find_events(raw,stim_channel='STI002') # 768
+    d = mne.find_events(raw,stim_channel='STI003') # 132
+    r = mne.find_events(raw,stim_channel='STI005')
+    cross[:,2] = 1
+    std[:,2] = 2
+    d[:,2] = 4
+    r[:,2] = 16
 
-raw=mne.io.Raw('/media/tzcheng/storage/vmmr/' + subj + '/' + subj + '_' + condition_all[cond][nrun] + '_raw.fif',allow_maxshield=True,preload=True)
-# raw.copy().pick(picks="stim").plot(start=3, duration=6)
-SOA = np.load('/media/tzcheng/storage/vmmr/npy/soas' + seq[nrun] + '_900.npy',allow_pickle=True)
-SEQ = np.load('/media/tzcheng/storage/vmmr/npy/full_seq' + seq[nrun] + '_900.npy')
-CHANGE = np.load('/media/tzcheng/storage/vmmr/npy/change_ind' + seq[nrun] + '_900.npy')
+    ## Get the number of events presented
+    print('Cross events:' + str(len(np.where(np.isin(SEQ, ['c','C']))[0])))
+    print('Stadard events:' + str(len(np.where(np.isin(SEQ, ['s','S']))[0])))
+    print('Deviant events:' + str(len(np.where(np.isin(SEQ, ['d','D']))[0])))
+    print('Change events:' + str(len(CHANGE)))
 
-cross = mne.find_events(raw,stim_channel='STI001') # 900
-std = mne.find_events(raw,stim_channel='STI002') # 768
-d = mne.find_events(raw,stim_channel='STI003') # 132
-r = mne.find_events(raw,stim_channel='STI005')
-cross[:,2] = 1
-std[:,2] = 2
-d[:,2] = 4
-r[:,2] = 16
+    ## clean1 for the splitting triggers
+    cross_s_ind = np.where(np.diff(cross,axis = 0)[:,0] < pulse_dur)
+    std_s_ind = np.where(np.diff(std,axis = 0)[:,0]  < pulse_dur)
+    d_s_ind = np.where(np.diff(d,axis = 0)[:,0]  < pulse_dur) 
+    r_s_ind = np.where(np.diff(r,axis = 0)[:,0]  < pulse_dur) 
+    cross = np.delete(cross,np.array(cross_s_ind) + 1,axis=0) # delete the next item
+    std = np.delete(std,np.array(std_s_ind) + 1,axis=0) # delete the next item
+    d = np.delete(d,np.array(d_s_ind) + 1,axis=0) # delete the next item
+    r = np.delete(r,np.array(r_s_ind) + 1,axis=0) # delete the next item
+    events_stim = np.concatenate((cross,std,d),axis=0)
+    events_stim = events_stim[events_stim[:,0].argsort()] # sort by the latency
 
-## Get the number of events presented
-print('Cross events:' + str(len(np.where(np.isin(SEQ, ['c','C']))[0])))
-print('Stadard events:' + str(len(np.where(np.isin(SEQ, ['s','S']))[0])))
-print('Deviant events:' + str(len(np.where(np.isin(SEQ, ['d','D']))[0])))
-print('Change events:' + str(len(CHANGE)))
+    ## clean2 for the cross-talk (STI2 to STI3 same time stamp)
+    i = np.where(np.diff(events_stim[:,0]) < pulse_dur)[0]
+    i_del = [] # delete the larger one cuz the cross-talk happen in this direction (2 followed 1 or 4 followed 2)
+    for ni in i:
+        if np.argmax(events_stim[ni:ni+2,2]) == 0:
+            i_del.append(ni)
+        elif np.argmax(events_stim[ni:ni+2,2]) == 1:
+            i_del.append(ni+1)
+       
+    events_stim = np.delete(events_stim,np.array([i_del])[0],axis=0) 
+    events = np.concatenate((events_stim,r),axis=0)
+    events = events[events[:,0].argsort()] # sort by the latency
 
-## clean1 for the splitting triggers
-cross_s_ind = np.where(np.diff(cross,axis = 0)[:,0] < pulse_dur)
-std_s_ind = np.where(np.diff(std,axis = 0)[:,0]  < pulse_dur)
-d_s_ind = np.where(np.diff(d,axis = 0)[:,0]  < pulse_dur) # still has some problems (4 more events than expected)
-r_s_ind = np.where(np.diff(r,axis = 0)[:,0]  < pulse_dur) # still has some problems (4 more events than expected)
-cross = np.delete(cross,np.array(cross_s_ind) + 1,axis=0) # delete the next item
-std = np.delete(std,np.array(std_s_ind) + 1,axis=0) # delete the next item
-d = np.delete(d,np.array(d_s_ind) + 1,axis=0) # delete the next item
-r = np.delete(r,np.array(r_s_ind) + 1,axis=0) # delete the next item
-events_stim = np.concatenate((cross,std,d),axis=0)
-events_stim = events_stim[events_stim[:,0].argsort()] # sort by the latency
+    ## clean3 for the random intruders e.g. 591.6 s
 
-## clean2 for the cross-talk (STI2 to STI3 same time stamp)
-i = np.where(np.diff(events_stim[:,0]) < 100)[0]
-events_stim = np.delete(events_stim,np.array(i+1),axis=0) # delete the second one (follow the order of 2 and 4)
-events = np.concatenate((events_stim,r),axis=0)
-events = events[events[:,0].argsort()] # sort by the latency
+    # check how well the code delete the broken ones
+    raw.copy().pick(picks="stim").plot(
+        events=events,
+        color="gray",
+        event_color={1:"r",2:"g",4:"b",16:"y"})
+    
+    ## check if the number of c, s, d is correct
+    print(len(np.where(events_stim[:,2] == 1)[0]) == len(np.where(np.isin(SEQ, ['c','C']))[0])) # check cross
+    print(len(np.where(events_stim[:,2] == 2)[0]) == len(np.where(np.isin(SEQ, ['s','S']))[0])) # check std
+    print(len(np.where(events_stim[:,2] == 4)[0]) == len(np.where(np.isin(SEQ, ['d','D']))[0])) # check dev
 
-## clean3 for the random intruders e.g. 591.6 s
-
-# check how well the code delete the broken ones
-# raw.copy().pick(picks="stim").plot(
-#     events=events,
-#     color="gray",
-#     event_color={1:"r",2:"g",4:"b",16:"y"})
-len(np.where(events_stim[:,2] == 1)[0]) == len(np.where(np.isin(SEQ, ['c','C']))[0]) # check cross
-len(np.where(events_stim[:,2] == 2)[0]) == len(np.where(np.isin(SEQ, ['s','S']))[0]) # check std
-len(np.where(events_stim[:,2] == 4)[0]) == len(np.where(np.isin(SEQ, ['d','D']))[0]) # check dev
-
-## check the ground truth
-SEQ[np.where(np.isin(SEQ, ['c','C']))[0]] = 1 # ground truth
-SEQ[np.where(np.isin(SEQ, ['s','S']))[0]] = 2 # ground truth
-SEQ[np.where(np.isin(SEQ, ['d','D']))[0]] = 4 # ground truth
-SEQ = SEQ.astype('int64')
-compare = events_stim[:,2] - SEQ
-print(np.sum(events_stim[:,2] == SEQ))
-print('subject:' + subj + 'run' + str(nrun+1))
-
-
+    ## check the ground truth
+    SEQ[np.where(np.isin(SEQ, ['c','C']))[0]] = 1 # ground truth
+    SEQ[np.where(np.isin(SEQ, ['s','S']))[0]] = 2 # ground truth
+    SEQ[np.where(np.isin(SEQ, ['d','D']))[0]] = 4 # ground truth
+    SEQ = SEQ.astype('int64')
+    compare = events_stim[:1800,2] - SEQ
+    print('Matching ones (out of 1800):' + str(np.sum(events_stim[:1800,2] == SEQ)))
+    print('subject:' + subj + 'run' + str(nrun+1))
 
 
 # %%
