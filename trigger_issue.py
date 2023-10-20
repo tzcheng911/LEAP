@@ -73,6 +73,8 @@ raw_file.copy().pick(picks="stim").plot(
 # 1. cross-talk duplicate deviant events
 # 2. random standard events in the middle of the trial
 # 3. trigger splitting
+
+## import the library
 import mne 
 import numpy as np
 
@@ -88,18 +90,21 @@ condition = {"vMMR_901":'A',
              "vMMR_103":'C',
              "vMMR_104":'D',
              "vMMR_108":'B',
-             "vMMR_109":'A'}
+             "vMMR_109":'A',
+             "vMMR_201":'A'}
 sequence = {"vMMR_901":['1','1','1','1'],
              "vMMR_902":['1','1','1','1'],
              "vMMR_102":['7','2','8','9'],
              "vMMR_103":['3','4','6','2'],
              "vMMR_104":['5','6','7','8'],
              "vMMR_108":['2','5','3','9'],
-             "vMMR_109":['3','7','6','4']}
+             "vMMR_109":['3','7','6','4'],
+             "vMMR_201":['6','5','7','9']}
 
 cond = condition[subj]
 seq = sequence[subj]
 
+## looping through runs
 for nrun in np.arange(0,4,1):
     raw=mne.io.Raw('/media/tzcheng/storage/vmmr/' + subj + '/' + subj + '_' + condition_all[cond][nrun] + '_raw.fif',allow_maxshield=True,preload=True)
     # raw.copy().pick(picks="stim").plot(start=3, duration=6)
@@ -115,12 +120,6 @@ for nrun in np.arange(0,4,1):
     std[:,2] = 2
     d[:,2] = 4
     r[:,2] = 16
-
-    ## Get the number of events presented
-    print('Cross events:' + str(len(np.where(np.isin(SEQ, ['c','C']))[0])))
-    print('Stadard events:' + str(len(np.where(np.isin(SEQ, ['s','S']))[0])))
-    print('Deviant events:' + str(len(np.where(np.isin(SEQ, ['d','D']))[0])))
-    print('Change events:' + str(len(CHANGE)))
 
     ## clean1 for the splitting triggers
     cross_s_ind = np.where(np.diff(cross,axis = 0)[:,0] < pulse_dur)
@@ -143,12 +142,16 @@ for nrun in np.arange(0,4,1):
         elif np.argmax(events_stim[ni:ni+2,2]) == 1:
             i_del.append(ni+1)
        
-    events_stim = np.delete(events_stim,np.array([i_del])[0],axis=0) 
+    if i_del: 
+        events_stim = np.delete(events_stim,np.array([i_del])[0],axis=0) 
+
+    ## clean3 for the random intruders e.g. 430 s (event 953) for vMMR_108 run 2
+    if subj == 'vMMR_108' and nrun == 1:
+        events_stim = np.delete(events_stim,953,axis=0) # hard coded this one random intruder 
+
     events = np.concatenate((events_stim,r),axis=0)
     events = events[events[:,0].argsort()] # sort by the latency
-
-    ## clean3 for the random intruders e.g. 591.6 s
-
+    
     # check how well the code delete the broken ones
     raw.copy().pick(picks="stim").plot(
         events=events,
@@ -165,9 +168,9 @@ for nrun in np.arange(0,4,1):
     SEQ[np.where(np.isin(SEQ, ['s','S']))[0]] = 2 # ground truth
     SEQ[np.where(np.isin(SEQ, ['d','D']))[0]] = 4 # ground truth
     SEQ = SEQ.astype('int64')
-    compare = events_stim[:1800,2] - SEQ
-    print('Matching ones (out of 1800):' + str(np.sum(events_stim[:1800,2] == SEQ)))
-    print('subject:' + subj + 'run' + str(nrun+1))
+    compare = events_stim[:,2] - SEQ
+    print('Matching ones (out of 1800):' + str(np.sum(events_stim[:,2] == SEQ)))
+    print('subject:' + subj + ' run' + str(nrun+1))
 
 
 # %%
