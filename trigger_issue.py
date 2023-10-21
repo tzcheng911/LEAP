@@ -4,6 +4,7 @@
 Created on Wed Oct 11 13:21:55 2023
 Deal with the trigger issue of SLD. Splitting triggers occasionally happened. 
 Need to take the first one as the events and get rid of the second half. 
+Need to deal with the cross-talk using the direction (2 -> 4)
 
 @author: tzcheng
 """
@@ -66,111 +67,3 @@ raw_file.copy().pick(picks="stim").plot(
     event_color={1:"r",4:"b",8:"y"})
 
 # check the ground truth in evtag.py
-
-
-#%%######################################## vMMR 104 108 109
-## three main issues
-# 1. cross-talk duplicate deviant events
-# 2. random standard events in the middle of the trial
-# 3. trigger splitting
-
-## import the library
-import mne 
-import numpy as np
-
-subj = 'vMMR_108'
-pulse_dur = 50
-condition_all = {"A":['1','4','2','3'],
-             "B":['2','3','1','4'],
-             "C":['4','1','3','2'],
-             "D":['3','2','4','1']}
-condition = {"vMMR_901":'A',
-             "vMMR_902":'A',
-             "vMMR_102":'B',
-             "vMMR_103":'C',
-             "vMMR_104":'D',
-             "vMMR_108":'B',
-             "vMMR_109":'A',
-             "vMMR_201":'A'}
-sequence = {"vMMR_901":['1','1','1','1'],
-             "vMMR_902":['1','1','1','1'],
-             "vMMR_102":['7','2','8','9'],
-             "vMMR_103":['3','4','6','2'],
-             "vMMR_104":['5','6','7','8'],
-             "vMMR_108":['2','5','3','9'],
-             "vMMR_109":['3','7','6','4'],
-             "vMMR_201":['6','5','7','9']}
-
-cond = condition[subj]
-seq = sequence[subj]
-
-## looping through runs
-for nrun in np.arange(0,4,1):
-    raw=mne.io.Raw('/media/tzcheng/storage/vmmr/' + subj + '/' + subj + '_' + condition_all[cond][nrun] + '_raw.fif',allow_maxshield=True,preload=True)
-    # raw.copy().pick(picks="stim").plot(start=3, duration=6)
-    SOA = np.load('/media/tzcheng/storage/vmmr/npy/soas' + seq[nrun] + '_900.npy',allow_pickle=True)
-    SEQ = np.load('/media/tzcheng/storage/vmmr/npy/full_seq' + seq[nrun] + '_900.npy')
-    CHANGE = np.load('/media/tzcheng/storage/vmmr/npy/change_ind' + seq[nrun] + '_900.npy')
-
-    cross = mne.find_events(raw,stim_channel='STI001') # 900
-    std = mne.find_events(raw,stim_channel='STI002') # 768
-    d = mne.find_events(raw,stim_channel='STI003') # 132
-    r = mne.find_events(raw,stim_channel='STI005')
-    cross[:,2] = 1
-    std[:,2] = 2
-    d[:,2] = 4
-    r[:,2] = 16
-
-    ## clean1 for the splitting triggers
-    cross_s_ind = np.where(np.diff(cross,axis = 0)[:,0] < pulse_dur)
-    std_s_ind = np.where(np.diff(std,axis = 0)[:,0]  < pulse_dur)
-    d_s_ind = np.where(np.diff(d,axis = 0)[:,0]  < pulse_dur) 
-    r_s_ind = np.where(np.diff(r,axis = 0)[:,0]  < pulse_dur) 
-    cross = np.delete(cross,np.array(cross_s_ind) + 1,axis=0) # delete the next item
-    std = np.delete(std,np.array(std_s_ind) + 1,axis=0) # delete the next item
-    d = np.delete(d,np.array(d_s_ind) + 1,axis=0) # delete the next item
-    r = np.delete(r,np.array(r_s_ind) + 1,axis=0) # delete the next item
-    events_stim = np.concatenate((cross,std,d),axis=0)
-    events_stim = events_stim[events_stim[:,0].argsort()] # sort by the latency
-
-    ## clean2 for the cross-talk (STI2 to STI3 same time stamp)
-    i = np.where(np.diff(events_stim[:,0]) < pulse_dur)[0]
-    i_del = [] # delete the larger one cuz the cross-talk happen in this direction (2 followed 1 or 4 followed 2)
-    for ni in i:
-        if np.argmax(events_stim[ni:ni+2,2]) == 0:
-            i_del.append(ni)
-        elif np.argmax(events_stim[ni:ni+2,2]) == 1:
-            i_del.append(ni+1)
-       
-    if i_del: 
-        events_stim = np.delete(events_stim,np.array([i_del])[0],axis=0) 
-
-    ## clean3 for the random intruders e.g. 430 s (event 953) for vMMR_108 run 2
-    if subj == 'vMMR_108' and nrun == 1:
-        events_stim = np.delete(events_stim,953,axis=0) # hard coded this one random intruder 
-
-    events = np.concatenate((events_stim,r),axis=0)
-    events = events[events[:,0].argsort()] # sort by the latency
-    
-    # check how well the code delete the broken ones
-    raw.copy().pick(picks="stim").plot(
-        events=events,
-        color="gray",
-        event_color={1:"r",2:"g",4:"b",16:"y"})
-    
-    ## check if the number of c, s, d is correct
-    print(len(np.where(events_stim[:,2] == 1)[0]) == len(np.where(np.isin(SEQ, ['c','C']))[0])) # check cross
-    print(len(np.where(events_stim[:,2] == 2)[0]) == len(np.where(np.isin(SEQ, ['s','S']))[0])) # check std
-    print(len(np.where(events_stim[:,2] == 4)[0]) == len(np.where(np.isin(SEQ, ['d','D']))[0])) # check dev
-
-    ## check the ground truth
-    SEQ[np.where(np.isin(SEQ, ['c','C']))[0]] = 1 # ground truth
-    SEQ[np.where(np.isin(SEQ, ['s','S']))[0]] = 2 # ground truth
-    SEQ[np.where(np.isin(SEQ, ['d','D']))[0]] = 4 # ground truth
-    SEQ = SEQ.astype('int64')
-    compare = events_stim[:,2] - SEQ
-    print('Matching ones (out of 1800):' + str(np.sum(events_stim[:,2] == SEQ)))
-    print('subject:' + subj + ' run' + str(nrun+1))
-
-
-# %%
