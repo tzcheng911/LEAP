@@ -185,8 +185,8 @@ for nrun in np.arange(0,4,1):
     # Calculate accuracy and dprime
     accuracy = correct/80
     
-    hit = correct/len(r)
-    FA = FA/len(r)
+    hit = correct/(len(correct) + len(FA)) # number of hit/total response
+    FA = FA/(len(correct) + len(FA)) # number of FA/total response
     dprime = norm.ppf(hit) - norm.ppf(FA)
 
     print("Accuracy:" + str(accuracy))
