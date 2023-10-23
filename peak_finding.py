@@ -19,7 +19,6 @@ def plot_err(group_stc,color,t):
     err=np.std(group_stc,axis=0)/np.sqrt(group_stc.shape[0])
     up=group_avg+err
     lw=group_avg-err
-    t=np.linspace(-100,600,3501)
     plt.plot(t,group_avg,color=color)
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
 
@@ -39,23 +38,32 @@ times = stc1.times
 mean_MEG_mmr1_v = np.mean(MEG_mmr1_v,axis=1)
 mean_MEG_mmr2_v = np.mean(MEG_mmr2_v,axis=1)
 
+#%%#######################################
 ## "Normalize" the peak by neighboring bins as in Nozaradan
-sub_bin = 2; # critical parameter follow Nozaradan 2011 parameter n - mean(n-5, n-4, n-3, n+3, n+4, n+5)
+sub_bin = 3; # critical parameter follow Nozaradan 2011 parameter n - mean(n-5, n-4, n-3, n+3, n+4, n+5)
 nt = np.shape(mean_MEG_mmr1_v)[1]
 
 mean_MEG_mmr1_v_subt = []
+mean_MEG_mmr2_v_subt = []
 t_ind = []
 for t in np.arange(sub_bin,nt-sub_bin,1):
     t_ind.append(t)
     subt_ind = [t-sub_bin,t-sub_bin+1,t+sub_bin-1,t+sub_bin] # t-2, t-1, t+1, t+2
     subt = mean_MEG_mmr1_v[:,t] - np.mean(mean_MEG_mmr1_v[:,subt_ind],axis=1)
     mean_MEG_mmr1_v_subt.append(subt)
+    subt = mean_MEG_mmr2_v[:,t] - np.mean(mean_MEG_mmr2_v[:,subt_ind],axis=1)
+    mean_MEG_mmr2_v_subt.append(subt)
 
 mean_MEG_mmr1_v_subt = np.transpose(mean_MEG_mmr1_v_subt)
+mean_MEG_mmr2_v_subt = np.transpose(mean_MEG_mmr2_v_subt)
+
 new_times = times[t_ind]
 
 #%%#######################################   
 plt.figure()
-plot_err(mean_MEG_mmr1_v_subt,'grey',new_times)
-plot_err(mean_MEG_mmr1_v,'k',stc1.times)
-plt.xlim([-100,600])
+plot_err(mean_MEG_mmr1_v,'m',times)
+plot_err(mean_MEG_mmr2_v,'r',times)
+
+plt.figure()
+plot_err(mean_MEG_mmr1_v_subt,'b',new_times)
+plot_err(mean_MEG_mmr2_v_subt,'r',new_times)
