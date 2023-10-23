@@ -11,16 +11,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats,signal
 import os
-
-def plot_err(group_stc,color,t):
-    group_avg=np.mean(group_stc,axis=0)
-   #plt.figure()
-    err=np.std(group_stc,axis=0)/np.sqrt(group_stc.shape[0])
-    up=group_avg+err
-    lw=group_avg-err
-    t=np.linspace(-100,600,3501)
-    plt.plot(t,group_avg,color=color)
-    plt.fill_between(t,up,lw,color=color,alpha=0.5)
     
 #%%########################################
 root_path='/media/tzcheng/storage/CBS/'
@@ -37,7 +27,7 @@ for file in os.listdir():
 runs = ['01','02']
 run = runs [0]
 
-#%%
+#%% output the time series in npy files
 group_mmr1=[]
 group_mmr2=[]
 group_mmr1_roi=[]
@@ -88,22 +78,6 @@ np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_ba_None_morph.npy',group_mmr2
 np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_ba_None_morph_roi.npy',group_mmr1_roi)
 np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_ba_None_morph_roi.npy',group_mmr2_roi)
 
-#%%
-stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
-
-mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_vector_morph.npy')
-mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_morph.npy')
-
-# time series of EEG, MEG_v, MEG_m averaged across all sources
-plt.figure()
-plot_err(stats.zscore(mmr1_m.mean(axis=1),axis=1),'b',stc1.times)
-plot_err(stats.zscore(mmr1_v.mean(axis=1),axis=1),'r',stc1.times)
-plt.legend(['EEG','','MEG mag','','MEG vector',''])
-plt.xlabel('Time (ms)')
-plt.ylabel('zscore')
-plt.xlim([-100, 600])
-plt.ylim([-2, 1.5])
-
 #%% whole brain stats
 X = mmr1-mmr2
 Xt=np.transpose(X,[0,2,1])
@@ -141,6 +115,7 @@ lims=[1.5, 2, 2.5]
 kwargs=dict(src=src, subject='fsaverage',subjects_dir=subjects_dir)
 #stc_to.data=1-cluster_p_values.reshape(701,14629).T
 brain=stc.plot_3d(clim=dict(kind='value',pos_lims=lims),hemi='both',views=['axial'],size=(600,300),view_layout='horizontal',show_traces=0.5,**kwargs)
+
 #%% ROIs
 #label info
 atlas = 'aparc' # aparc, aparc.a2009s

@@ -14,16 +14,6 @@ from scipy import stats,signal
 from scipy.io import wavfile
 import os
 
-def plot_err(group_data,color,t):
-    group_avg=np.mean(group_data,axis=0)
-   #plt.figure()
-    err=np.std(group_data,axis=0)/np.sqrt(group_data.shape[0])
-    up=group_avg+err
-    lw=group_avg-err
-    t=np.linspace(-100,600,3501)
-    plt.plot(t,group_avg,color=color)
-    plt.fill_between(t,up,lw,color=color,alpha=0.5)
-
 #%%########################################
 root_path='/media/tzcheng/storage/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -39,7 +29,7 @@ for file in os.listdir():
 runs = ['01','02']
 run = runs [0]
 
-#%% calculating group mmr
+#%% output the time series in npy files
 group_mmr1 = []
 group_mmr2 = []
 group_std = []
