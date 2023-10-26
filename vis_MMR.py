@@ -94,3 +94,46 @@ plot_err(MEG_mmr1_roi_v[:,lh_ROI_label,:].mean(axis=1),'m',stc1.times)
 plot_err(MEG_mmr2_roi_v[:,lh_ROI_label,:].mean(axis=1),'r',stc1.times)
 plt.xlim([-100,600])
 plt.xlabel('Time (ms)')
+
+#%%####################################### check the evoked for first /ba/, /pa/ and /mba/
+## Note that the result could be slightly different because /ba/ was random sampled
+root_path='/media/tzcheng/storage/CBS/'
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
+times = stc1.times
+
+EEG_1pa = np.load(root_path + 'cbsA_meeg_analysis/group_dev2_eeg.npy')
+EEG_1mba = np.load(root_path + 'cbsA_meeg_analysis/group_dev1_eeg.npy')
+EEG_1ba = np.load(root_path + 'cbsA_meeg_analysis/group_dev_reverse_eeg.npy')
+
+EEG_endpa = np.load(root_path + 'cbsA_meeg_analysis/group_std2_reverse_eeg.npy')
+EEG_endmba = np.load(root_path + 'cbsA_meeg_analysis/group_std1_reverse_eeg.npy')
+EEG_endba = np.load(root_path + 'cbsA_meeg_analysis/group_std_eeg.npy')
+
+plt.figure()
+plot_err(EEG_1ba,'r',stc1.times)
+plot_err(EEG_1mba,'g',stc1.times)
+plot_err(EEG_1pa,'b',stc1.times)
+plt.title('EEG Evoked response for ba, mba and pa')
+plt.legend(['ba','','mba','','pa',''])
+plt.xlabel('Time (ms)')
+plt.ylabel('Amplitude')
+plt.xlim([-100,600])
+
+plt.figure()
+plot_err(EEG_endba,'r',stc1.times)
+plot_err(EEG_endmba,'g',stc1.times)
+plot_err(EEG_endpa,'b',stc1.times)
+plt.title('EEG Evoked response for ba, mba and pa')
+plt.legend(['ba','','mba','','pa',''])
+plt.xlabel('Time (ms)')
+plt.ylabel('Amplitude')
+plt.xlim([-100,600])
+
+plt.figure()
+plot_err(EEG_endmba,'r',stc1.times)
+plot_err(EEG_1ba,'b',stc1.times)
+plot_err(EEG_1ba-EEG_endmba,'k',stc1.times)
+plt.legend(['std','','dev','','MMR',''])
+plt.xlabel('Time (ms)')
+plt.ylabel('Amplitude')
+plt.xlim([-100,600])

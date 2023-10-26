@@ -27,7 +27,33 @@ for file in os.listdir():
 runs = ['01','02']
 run = runs [0]
 
-#%% output the time series in npy files
+#%% output the sensor time series in npy files
+group_mmr1=[]
+group_mmr2=[]
+
+for s in subj:
+    print('Extracting ' + s + ' data')
+    file_in = root_path + s + '/sss_fif/' + s
+    
+    # stc_std=mne.read_source_estimate(file_in+'_std_vector_morph-vl.stc')
+    dev1=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]
+    dev2=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0]
+    std=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
+   
+    mmr1 = dev1.data - std.data
+    mmr2 = dev2.data - std.data
+    
+    # group_std.append(stc_std.data)
+    group_mmr1.append(mmr1)
+    group_mmr2.append(mmr2)
+    
+group_mmr1=np.asarray(group_mmr1)
+group_mmr2=np.asarray(group_mmr2)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_sensor.npy',group_mmr1)
+np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_sensor.npy',group_mmr2)
+
+
+#%% output the source time series in npy files
 group_mmr1=[]
 group_mmr2=[]
 group_mmr1_roi=[]
@@ -44,8 +70,8 @@ for s in subj:
     file_in = root_path + s + '/sss_fif/' + s
     
     # stc_std=mne.read_source_estimate(file_in+'_std_vector_morph-vl.stc')
-    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_ba_None_morph-vl.stc')
-    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_ba_None_morph-vl.stc')
+    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_vector_morph-vl.stc')
+    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_vector_morph-vl.stc')
     # group_std.append(stc_std.data)
     group_mmr1.append(stc_mmr1.data)
     group_mmr2.append(stc_mmr2.data)
@@ -73,10 +99,10 @@ group_mmr2_roi=np.asarray(group_mmr2_roi)
 
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy',group_std)
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy',group_std_roi)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_ba_None_morph.npy',group_mmr1)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_ba_None_morph.npy',group_mmr2)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_ba_None_morph_roi.npy',group_mmr1_roi)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_ba_None_morph_roi.npy',group_mmr2_roi)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr1_vector_morph.npy',group_mmr1)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr2_vector_morph.npy',group_mmr2)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr1_vector_morph_roi.npy',group_mmr1_roi)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr2_vector_morph_roi.npy',group_mmr2_roi)
 
 #%% whole brain stats
 X = mmr1-mmr2
