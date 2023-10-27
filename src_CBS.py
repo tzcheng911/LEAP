@@ -35,7 +35,7 @@ def do_inverse(s,morph,ori):
     subject = s
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
-    file_in = root_path + '/' + s + '/sss_fif/' + s
+    file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
     trans = mne.read_trans(file_in +'-trans.fif')
     cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50_mmr-cov.fif')
@@ -52,14 +52,11 @@ def do_inverse(s,morph,ori):
     mmr1 = dev1 - standard
     mmr2 = dev2 - standard
     src = inverse_operator['src']
-    src.save(file_in + '_src', overwrite=True)
+    # src.save(file_in + '_src', overwrite=True)
 
-    if ori == 'vector':
+    if ori == 'vector': # only the mmr (dev - std) needs this part
         mmr1 = mmr1.magnitude()
         mmr2 = mmr2.magnitude()
-        standard = standard.magnitude()
-        dev1 = dev1.magnitude()
-        dev2 = dev2.magnitude()
     
     if morph == True:
         print('Morph' + s +  'src space to common cortical space.')
@@ -76,21 +73,21 @@ def do_inverse(s,morph,ori):
         standard_fsaverage = morph.apply(standard)
         dev1_fsaverage = morph.apply(dev1)
         dev2_fsaverage = morph.apply(dev2)
-        mmr1_fsaverage = morph.apply(mmr1)
-        mmr2_fsaverage = morph.apply(mmr2)
+        # mmr1_fsaverage = morph.apply(mmr1)
+        # mmr2_fsaverage = morph.apply(mmr2)
         
         standard_fsaverage.save(file_in + '_std_' + str(ori) +'_morph', overwrite=True)
         dev1_fsaverage.save(file_in + '_dev1_' + str(ori) +'_morph', overwrite=True)
         dev2_fsaverage.save(file_in + '_dev2_' + str(ori) +'_morph', overwrite=True)
-        mmr1_fsaverage.save(file_in + '_mmr1_' + str(ori) +'_morph', overwrite=True)
-        mmr2_fsaverage.save(file_in + '_mmr2_' + str(ori) +'_morph', overwrite=True)
+        # mmr1_fsaverage.save(file_in + '_mmr1_' + str(ori) +'_morph', overwrite=True)
+        # mmr2_fsaverage.save(file_in + '_mmr2_' + str(ori) +'_morph', overwrite=True)
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
         standard.save(file_in + '_std_' + str(ori), overwrite=True)
         dev1.save(file_in + '_dev1_' + str(ori), overwrite=True)
         dev2.save(file_in + '_dev2_' + str(ori), overwrite=True)
-        mmr1.save(file_in + '_mmr1_' + str(ori), overwrite=True)
-        mmr2.save(file_in + '_mmr2_' + str(ori), overwrite=True)
+        # mmr1.save(file_in + '_mmr1_' + str(ori), overwrite=True)
+        # mmr2.save(file_in + '_mmr2_' + str(ori), overwrite=True)
 
 ########################################
 root_path='/media/tzcheng/storage/CBS/'

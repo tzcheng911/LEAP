@@ -55,13 +55,10 @@ def do_inverse(s,morph,ori,direction):
         mmr2 = dev - standard2
         src = inverse_operator['src']
 
-        if ori == 'vector':
+        if ori == 'vector': # only the mmr (dev - std) needs this part
             mmr1 = mmr1.magnitude()
             mmr2 = mmr2.magnitude()
-            dev = dev.magnitude()
-            standard1 = standard1.magnitude()
-            standard2 = standard2.magnitude()
-        
+
         if morph == True:
             print('Morph' + s +  'src space to common cortical space.')
             fname_src_fsaverage = subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif'

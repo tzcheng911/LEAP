@@ -95,7 +95,7 @@ plot_err(MEG_mmr2_roi_v[:,lh_ROI_label,:].mean(axis=1),'r',stc1.times)
 plt.xlim([-100,600])
 plt.xlabel('Time (ms)')
 
-#%%####################################### check the evoked for first /ba/, /pa/ and /mba/
+#%%####################################### check the evoked for fist and last /ba/, /pa/ and /mba/
 ## Note that the result could be slightly different because /ba/ was random sampled
 root_path='/media/tzcheng/storage/CBS/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
@@ -114,7 +114,7 @@ plot_err(EEG_1ba,'r',stc1.times)
 plot_err(EEG_1mba,'g',stc1.times)
 plot_err(EEG_1pa,'b',stc1.times)
 plt.title('EEG Evoked response for ba, mba and pa')
-plt.legend(['ba','','mba','','pa',''])
+plt.legend(['1st ba','','1st mba','','1st pa',''])
 plt.xlabel('Time (ms)')
 plt.ylabel('Amplitude')
 plt.xlim([-100,600])
@@ -124,16 +124,55 @@ plot_err(EEG_endba,'r',stc1.times)
 plot_err(EEG_endmba,'g',stc1.times)
 plot_err(EEG_endpa,'b',stc1.times)
 plt.title('EEG Evoked response for ba, mba and pa')
-plt.legend(['ba','','mba','','pa',''])
+plt.legend(['last ba','','last mba','','last pa',''])
 plt.xlabel('Time (ms)')
 plt.ylabel('Amplitude')
 plt.xlim([-100,600])
 
 plt.figure()
-plot_err(EEG_endmba,'r',stc1.times)
-plot_err(EEG_1ba,'b',stc1.times)
-plot_err(EEG_1ba-EEG_endmba,'k',stc1.times)
+plot_err(EEG_endba,'r',stc1.times)
+plot_err(EEG_1pa,'b',stc1.times)
+plot_err(EEG_1pa-EEG_endba,'k',stc1.times)
 plt.legend(['std','','dev','','MMR',''])
 plt.xlabel('Time (ms)')
 plt.ylabel('Amplitude')
 plt.xlim([-100,600])
+
+plt.figure()
+plot_err(EEG_1pa,'b',stc1.times)
+plot_err(EEG_endpa,'r',stc1.times)
+plt.legend(['1st pa','','last pa',''])
+plt.xlabel('Time (ms)')
+plt.ylabel('Amplitude')
+plt.xlim([-100,600])
+
+plt.figure()
+plot_err(EEG_1mba - EEG_endmba,'b',stc1.times)
+plot_err(EEG_1pa - EEG_endpa,'r',stc1.times)
+plt.legend(['mmr mba','','mmr pa',''])
+plt.xlabel('Time (ms)')
+plt.ylabel('Amplitude')
+plt.xlim([-100,600])
+
+#%%####################################### check the source activity for first and last /ba/, /pa/ and /mba/
+## Note that the result could be slightly different because /ba/ was random sampled
+root_path='/media/tzcheng/storage/CBS/'
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
+times = stc1.times
+
+MEG_v_1pa = np.load(root_path + 'cbsA_meeg_analysis/group_dev2_vector_morph.npy')
+MEG_v_1mba = np.load(root_path + 'cbsA_meeg_analysis/group_dev1_vector_morph.npy')
+MEG_v_1ba = np.load(root_path + 'cbsA_meeg_analysis/group_dev_reverse_eeg.npy')
+
+MEG_v_endpa = np.load(root_path + 'cbsA_meeg_analysis/group_std2_reverse_eeg.npy')
+MEG_v_endmba = np.load(root_path + 'cbsA_meeg_analysis/group_std1_reverse_eeg.npy')
+MEG_v_endba = np.load(root_path + 'cbsA_meeg_analysis/group_std_eeg.npy')
+
+MEG_m_1pa = np.load(root_path + 'cbsA_meeg_analysis/group_dev1_None_morph.npy')
+MEG_m_1mba = np.load(root_path + 'cbsA_meeg_analysis/group_dev1_None_morph.npy')
+MEG_m_1ba = np.load(root_path + 'cbsA_meeg_analysis/group_dev_reverse_eeg.npy')
+
+MEG_m_endpa = np.load(root_path + 'cbsA_meeg_analysis/group_std2_reverse_eeg.npy')
+MEG_m_endmba = np.load(root_path + 'cbsA_meeg_analysis/group_std1_reverse_eeg.npy')
+MEG_m_endba = np.load(root_path + 'cbsA_meeg_analysis/group_std_eeg.npy')
+
