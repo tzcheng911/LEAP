@@ -29,7 +29,7 @@ def do_inverse(s,morph,ori):
     cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50_mmr-cov.fif')
     epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mmr_e.fif')
     evoked_s1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd1_reverse_mmr.fif')[0] # last mba
-    evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0] # fist mba
+    evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0] # first mba
     evoked_s2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd2_reverse_mmr.fif')[0] # last pa
     evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0] # first pa
     
@@ -85,7 +85,7 @@ root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
 morph = True
-ori = 'vector' # 'vector', None
+ori = None # 'vector', None
 
 runs = ['_01','_02']
 subj = [] 

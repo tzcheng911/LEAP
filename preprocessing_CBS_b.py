@@ -2,7 +2,7 @@
 """
 Created on Tue Aug 8 11:28:12 2023
 
-Preprocessing for vMMR. Need to have events file ready from evtag.py
+Preprocessing for CBS_b. Need to have events file ready from evtag.py
 Need to change the input file name "cbs_A" to "cbs_b" for infants
 Need to manually enter bad channels for sss from the experiment notes. 
 Need to change parameters st_correlation and int_order in sss for adult/infants
