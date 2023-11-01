@@ -7,7 +7,7 @@ import matplotlib
 from scipy.stats import norm
 
 ###### Load data
-subj = 'vMMR_201'
+subj = 'vMMR_104'
 
 root_path='/media/tzcheng/storage/vmmr/'
 os.chdir(root_path)
@@ -83,7 +83,8 @@ for nrun in np.arange(0,4,1):
     # step 3: for the random intruders e.g. 430 s (event 953) for vMMR_108 run 2
     if subj == 'vMMR_108' and nrun == 1:
         events_stim = np.delete(events_stim,953,axis=0) # manually delete this one random intruder 
-
+    if subj == 'vMMR_104' and nrun == 0:
+        events_stim = np.delete(events_stim,1501,axis=0) # manually delete this one random intruder 
     events = np.concatenate((events_stim,r),axis=0)
     events = events[events[:,0].argsort()] # sort by the latency
 
@@ -118,7 +119,7 @@ for nrun in np.arange(0,4,1):
 
     ###### Select relevant events for MMR
     # Code std before d to 6
-    # make sure no responses within 100 ms before and 500 ms after the std or dev
+    # make sure no responses within 100 msbefore and 500 ms after the std or dev
     sdr_del = []
     
     # get the s, d and r events
