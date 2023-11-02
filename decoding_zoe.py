@@ -148,8 +148,9 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_b101/sss_fif/cbs_b101_mmr2_None
 times = stc1.times
 
 ## parameters
+
 ts = 500 # 0s
-te = 1750 # 0.25s
+te = 2750 # 0.45s
 ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
@@ -160,11 +161,11 @@ lh_ROI_label = [72,60,61,62] # STG and frontal pole
 rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 
 if ROI_wholebrain == 'ROI':
-    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_vector_morph_roi.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_vector_morph_roi.npy',allow_pickle=True)
+    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_None_morph_roi.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_None_morph_roi.npy',allow_pickle=True)
 elif ROI_wholebrain == 'wholebrain':
-    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_vector_morph.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_vector_morph.npy',allow_pickle=True)
+    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_None_morph.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_None_morph.npy',allow_pickle=True)
 else:
     print("Need to decide whether to use ROI or whole brain as feature.")
 X = np.concatenate((mmr1,mmr2),axis=0)
@@ -183,13 +184,20 @@ time_decod = SlidingEstimator(clf, scoring="roc_auc")
 scores_observed = cross_val_multiscore(time_decod, X, y, cv=5 , n_jobs=None)
 
 #Plot average decoding scores of 5 splits
-TOI = np.linspace(0,250,num=1250)
+TOI = np.linspace(0,450,num=2250)
 fig, ax = plt.subplots(1)
 ax.plot(TOI, scores_observed.mean(0), label="score")
 ax.axhline(0.5, color="k", linestyle="--", label="chance")
 ax.axvline(0, color="k")
 plt.legend()
 
+# the training sets
+time_decod.fit(X, y)
+# Retrieve patterns after inversing the z-score normalization step:
+patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
+
+np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_None_morph_kall_mba_pa.npy',scores_observed)
+np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_None_morph_kall_mba_pa.npy',patterns)
 
 #%%####################################### Load babies
 fname_aseg = subjects_dir + 'ANTS15-0Months3T/mri/aparc+aseg.mgz'

@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Nov  2 10:20:59 2023
+Run decoding in terminal. Saved the accuracy and patterns.
+
+
+@author: tzcheng
+"""
+
+import os 
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.model_selection import StratifiedKFold
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.svm import SVC
+
+import mne
+from mne.minimum_norm import apply_inverse_epochs, read_inverse_operator
+from mne.preprocessing import Xdawn
+from mne.decoding import (
+    SlidingEstimator,
+    GeneralizingEstimator,
+    Scaler,
+    cross_val_multiscore,
+    LinearModel,
+    get_coef,
+    Vectorizer,
+    CSP,
+)
+
+#%%####################################### Subject-by-subject decoding for each condition 
+root_path='/media/tzcheng/storage/CBS/'
+subjects_dir = '/media/tzcheng/storage2/subjects/'
+os.chdir(root_path)
+
+stc1 = mne.read_source_estimate(root_path + 'cbs_b101/sss_fif/cbs_b101_mmr2_None_morph-vl.stc')
+times = stc1.times
+
+## parameters
+
+ts = 500 # 0s
+te = 2750 # 0.45s
+ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
+k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
+
+#%%####################################### Load adults
+fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+lh_ROI_label = [72,60,61,62] # STG and frontal pole
+rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
+
+if ROI_wholebrain == 'ROI':
+    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph_roi.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_None_morph_roi.npy',allow_pickle=True)
+elif ROI_wholebrain == 'wholebrain':
+    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_None_morph.npy',allow_pickle=True)
+else:
+    print("Need to decide whether to use ROI or whole brain as feature.")
+X = np.concatenate((mmr1,mmr2),axis=0)
+X = X[:,:,ts:te] 
+y = np.concatenate((np.repeat(0,len(mmr1)),np.repeat(1,len(mmr1)))) #0 is for mmr1 and 1 is for mmr2
+
+# prepare a series of classifier applied at each time sample
+clf = make_pipeline(
+    StandardScaler(),  # z-score normalization
+    SelectKBest(f_classif, k=k_feature),  # select features for speed
+    LinearModel(),
+    )
+time_decod = SlidingEstimator(clf, scoring="roc_auc")
+
+# Run cross-validated decoding analyses
+scores_observed = cross_val_multiscore(time_decod, X, y, cv=5 , n_jobs=None)
+
+#Plot average decoding scores of 5 splits
+TOI = np.linspace(0,450,num=2250)
+fig, ax = plt.subplots(1)
+ax.plot(TOI, scores_observed.mean(0), label="score")
+ax.axhline(0.5, color="k", linestyle="--", label="chance")
+ax.axvline(0, color="k")
+plt.legend()
+
+# the training sets
+time_decod.fit(X, y)
+# Retrieve patterns after inversing the z-score normalization step:
+patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
+
+np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_None_morph_kall_mba_pa.npy',scores_observed)
+np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_None_morph_kall_mba_pa.npy',patterns)
