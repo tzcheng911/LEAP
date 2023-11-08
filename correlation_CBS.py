@@ -44,17 +44,17 @@ def plot_err(group_data,color,t):
 # mmr
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 stc2 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
-MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_vector_morph.npy') # with the mag or vector method
-MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_vector_morph.npy') # with the mag or vector method
-MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_morph.npy') # with the mag or vector method
-MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_morph.npy') # with the mag or vector method
-MEG_mmr1_roi_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_vector_morph_roi.npy') # with the mag or vector method
-MEG_mmr2_roi_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_vector_morph_roi.npy') # with the mag or vector method
-MEG_mmr1_roi_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_morph_roi.npy') # with the mag or vector method
-MEG_mmr2_roi_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_morph_roi.npy') # with the mag or vector method
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy') # with the mag or vector method
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph.npy') # with the mag or vector method
+MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph.npy') # with the mag or vector method
+MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_None_morph.npy') # with the mag or vector method
+MEG_mmr1_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph_roi.npy') # with the mag or vector method
+MEG_mmr2_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph_roi.npy') # with the mag or vector method
+MEG_mmr1_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_morph_roi.npy') # with the mag or vector method
+MEG_mmr2_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_morph_roi.npy') # with the mag or vector method
 
-EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_eeg.npy')
-EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_eeg.npy')
+EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr1_mba_eeg.npy')
+EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr2_pa_eeg.npy')
 
 times = stc1.times
 
@@ -106,13 +106,16 @@ ts = 1000 # 100 ms
 te = 2000 # 300 ms
 
 ## averaged across all sources
-mean_EEG_mmr2 = EEG_mmr1.mean(axis =0)
-stc_m = MEG_mmr1_m.mean(axis =0).mean(axis=0)
-mean_MEG_mmr2_v = MEG_mmr1_v.mean(axis =0).mean(axis=0)
+mean_EEG_mmr2 = EEG_mmr2.mean(axis =0)
+stc_m = MEG_mmr2_m.mean(axis =0).mean(axis=0)
+
+mean_MEG_mmr2_v = MEG_mmr2_v.mean(axis =0).mean(axis=0)
+mean_MEG_mmr2_m = MEG_mmr2_m.mean(axis =0).mean(axis=0)
 
 # pearson r 
-# TOI [100 250] 0.89 for MEG_m & EEG and -0.63 for MEG_v & EEG 
-corr_p = pearsonr(mean_EEG_mmr2[ts:te], mean_MEG_mmr2_v[ts:te])
+# Tradtional direction: TOI [100 250] 0.89 for MEG_m & EEG and -0.63 for MEG_v & EEG 
+# New direction: TOI [100 300] -0.40 for MEG_m & EEG and -0.26 for MEG_v & EEG 
+corr_p = pearsonr(mean_EEG_mmr2[ts:te], mean_MEG_mmr2_m[ts:te])
 
 # normalized cross correlation [-1 1]
 # based on https://stackoverflow.com/questions/53436231/normalized-cross-correlation-in-python
@@ -125,7 +128,7 @@ norm_b = np.linalg.norm(b)
 b = b / norm_b
 
 xcorr = signal.correlate(a,b)
-print(max(xcorr)) for each subject
+print(max(xcorr))
 print(min(xcorr))
 print(np.argmax(xcorr))
 print(np.argmin(xcorr))
@@ -198,28 +201,33 @@ r,p = pearsonr(ext_MEG_mmr2_v,ext_EEG_mmr2)
 print(r,p)
 
 #%% [ok method] get the correlation between each point
-stc_m = MEG_mmr2_m.mean(axis=1) # change the name to std or other data
-stc_v = MEG_mmr2_v.mean(axis=1)
+stc_m = MEG_mmr1_m.mean(axis=1) # change the name to std or other data
+stc_v = MEG_mmr1_v.mean(axis=1)
+EEG = EEG_mmr1
+
 
 r_m_all_t = []
 r_v_all_t = []
 
 for t in np.arange(0,len(times),1):
-    r,p = pearsonr(stc_m[:,t],EEG_mmr2[:,t])
+    r,p = pearsonr(stc_m[:,t],EEG[:,t])
     r_m_all_t.append(r)
-    r,p = pearsonr(stc_v[:,t],EEG_mmr2[:,t])
+    r,p = pearsonr(stc_v[:,t],EEG[:,t])
     r_v_all_t.append(r)
-    
-plt.figure()
-plt.plot(times,r_m_all_t)
-plt.plot(times,r_v_all_t)
-plt.xlim([-0.1,0.6])
-plt.xlabel('Time (s)')
+
+fig, ax = plt.subplots(1)
+ax.plot(times, r_m_all_t)
+ax.plot(times, r_v_all_t)
+ax.axhline(0, color="k", linestyle="--")
+ax.axvline(0, color="k")
+plt.title('MMR1')
 plt.legend(['MEG_m','MEG_v'])
+plt.xlabel('Time (s)')
 plt.ylabel('Pearson r')
+plt.xlim([-0.1,0.6])
 
 plt.figure()
-plt.scatter(stc_v[:,1300],EEG_mmr2[:,1300])
+plt.scatter(stc_v[:,1300],EEG[:,1300])
 plt.xlabel('MEG')
 plt.ylabel('EEG')
 plt.title('t = 150ms')
@@ -227,15 +235,16 @@ plt.title('t = 150ms')
 #%%######################################## for each subject: correlate time series in a window with pearson r
 stc_m = MEG_mmr2_m[:,:,ts:te].mean(axis=1)
 stc_v = MEG_mmr2_v[:,:,ts:te].mean(axis=1)
+EEG = EEG_mmr2
 
 # [good method] get the pearson correlation of the whole time window
 r_m_all_s = []
 r_v_all_s = []
 
 for s in np.arange(0,len(MEG_mmr1_m),1):
-    r,p = pearsonr(stc_m[s,:],EEG_mmr2[s,ts:te])
+    r,p = pearsonr(stc_m[s,:],EEG[s,ts:te])
     r_m_all_s.append(r)
-    r,p = pearsonr(stc_v[s,:],EEG_mmr2[s,ts:te])
+    r,p = pearsonr(stc_v[s,:],EEG[s,ts:te])
     r_v_all_s.append(r)
 
 print('abs corr between MEG_m & EEG:' + str(np.abs(r_m_all_s).mean()))
@@ -246,8 +255,8 @@ r_all_s = []
 
 for s in np.arange(0,len(MEG_mmr1_m),1):
     for nROI in np.arange(0,len(label_names),1):
-        rm,p = pearsonr(MEG_mmr1_roi_m[s,nROI,ts:te],EEG_mmr1[s,ts:te])
-        rv,p = pearsonr(MEG_mmr1_roi_v[s,nROI,ts:te],EEG_mmr1[s,ts:te])
+        rm,p = pearsonr(MEG_mmr1_roi_m[s,nROI,ts:te],EEG[s,ts:te])
+        rv,p = pearsonr(MEG_mmr1_roi_v[s,nROI,ts:te],EEG[s,ts:te])
         r_all_s.append([s,label_names[nROI],rm,rv])
     
 df_ROI = pd.DataFrame(columns = ["Subject", "ROI", "Corr MEG_m & EEG", "Corr MEG_v & EEG"], data = r_all_s)
@@ -259,8 +268,8 @@ r_all_s = []
 for s in np.arange(0,len(MEG_mmr1_m),1):
     print('Now starting sub' + str(s))
     for v in np.arange(0,np.shape(MEG_mmr1_m)[1],1):
-        rm,p = pearsonr(MEG_mmr1_m[s,v,ts:te],EEG_mmr1[s,ts:te])
-        rv,p = pearsonr(MEG_mmr1_v[s,v,ts:te],EEG_mmr1[s,ts:te])
+        rm,p = pearsonr(MEG_mmr1_m[s,v,ts:te],EEG[s,ts:te])
+        rv,p = pearsonr(MEG_mmr1_v[s,v,ts:te],EEG[s,ts:te])
         r_all_s.append([s,v,rm,rv])    
 df_v = pd.DataFrame(columns = ["Subject", "Vertno", "Corr MEG_m & EEG", "Corr MEG_v & EEG"], data = r_all_s)
 df_v.to_pickle('df_corr_MEGEEG_mmr1_v.pkl')
@@ -277,7 +286,7 @@ xcorr_m_all_s = []
 xcorr_v_all_s = []
 
 for s in np.arange(0,len(MEG_mmr1_m),1):
-    a = (EEG_mmr2[s,ts:te] - np.mean(EEG_mmr2[s,ts:te]))/np.std(EEG_mmr2[s,ts:te])
+    a = (EEG[s,ts:te] - np.mean(EEG[s,ts:te]))/np.std(EEG[s,ts:te])
     b = (stc_m[s,:] - np.mean(stc_m[s,:]))/np.std(stc_m[s,:])
     c = (stc_v[s,:] - np.mean(stc_v[s,:]))/np.std(stc_v[s,:])
     
@@ -302,7 +311,7 @@ xcorr_all_s = []
 
 for s in np.arange(0,len(MEG_mmr1_m),1):
     for nROI in np.arange(0,len(label_names),1):
-        a = (EEG_mmr2[s,ts:te] - np.mean(EEG_mmr2[s,ts:te]))/np.std(EEG_mmr2[s,ts:te])
+        a = (EEG[s,ts:te] - np.mean(EEG[s,ts:te]))/np.std(EEG[s,ts:te])
         b = (MEG_mmr2_roi_m[s,nROI,ts:te] - np.mean(MEG_mmr2_roi_m[s,nROI,ts:te]))/np.std(MEG_mmr2_roi_m[s,nROI,ts:te])
         c = (MEG_mmr2_roi_v[s,nROI,ts:te] - np.mean(MEG_mmr2_roi_v[s,nROI,ts:te]))/np.std(MEG_mmr2_roi_v[s,nROI,ts:te])
         
@@ -324,7 +333,7 @@ df_ROI.groupby('ROI').mean()
 cos_sim_all_s = [] 
 
 for s in np.arange(0,len(MEG_mmr1_m),1):
-    a = EEG_mmr2[s,ts:te]
+    a = EEG[s,ts:te]
     b = stc_v[s,:]
      
     cos_sim = dot(a,b) / (norm(a)*norm(b))

@@ -16,6 +16,7 @@ from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.svm import SVC
+import time
 
 import mne
 from mne.minimum_norm import apply_inverse_epochs, read_inverse_operator
@@ -30,6 +31,7 @@ from mne.decoding import (
     Vectorizer,
     CSP,
 )
+
 #%%####################################### Trial-by-trial decoding for each individual
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/CBS/'
@@ -140,6 +142,7 @@ brain = stc.plot(src=src, subjects_dir=subjects_dir
 # ax.set(ylabel="True label", xlabel="Predicted label")
 
 #%%####################################### Subject-by-subject decoding for each condition 
+tic = time.time()
 root_path='/media/tzcheng/storage/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
@@ -152,7 +155,7 @@ times = stc1.times
 ts = 500 # 0s
 te = 2750 # 0.45s
 ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
-k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
+k_feature = 500 # ROI: 'all' features; whole brain: 500 features
 
 #%%####################################### Load adults
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
@@ -161,11 +164,11 @@ lh_ROI_label = [72,60,61,62] # STG and frontal pole
 rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 
 if ROI_wholebrain == 'ROI':
-    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_None_morph_roi.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_None_morph_roi.npy',allow_pickle=True)
+    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph_roi.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph_roi.npy',allow_pickle=True)
 elif ROI_wholebrain == 'wholebrain':
-    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_None_morph.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_None_morph.npy',allow_pickle=True)
+    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph.npy',allow_pickle=True)
 else:
     print("Need to decide whether to use ROI or whole brain as feature.")
 X = np.concatenate((mmr1,mmr2),axis=0)
@@ -196,8 +199,11 @@ time_decod.fit(X, y)
 # Retrieve patterns after inversing the z-score normalization step:
 patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
 
-np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_None_morph_kall_mba_pa.npy',scores_observed)
-np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_None_morph_kall_mba_pa.npy',patterns)
+toc = time.time()
+print('It takes ' + str((toc - tic)/60) + 'min to run decoding')
+
+np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_vector_morph_k500_100_450_mba_pa.npy',scores_observed)
+np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_vector_morph_k500_100_450_mba_pa.npy',patterns)
 
 #%%####################################### Load babies
 fname_aseg = subjects_dir + 'ANTS15-0Months3T/mri/aparc+aseg.mgz'
@@ -243,23 +249,31 @@ time_decod.fit(X, y)
 
 # Retrieve patterns after inversing the z-score normalization step:
 patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
-stc1_crop = stc1.crop(tmin=stc1.times[ts],tmax=stc1.times[te],include_tmax=False)
+
+stc1_crop = stc1.copy().crop(tmin=stc1.times[ts],tmax=stc1.times[te],include_tmax=False)
 stc1_crop.data = patterns
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
 # Plot patterns across sources
-stc1_crop.plot(src,subject='fsaverage', subjects_dir=subjects_dir)
+stc1_crop.plot(src,clim=dict(kind="value",pos_lims=[0,15,30]), subject='fsaverage', subjects_dir=subjects_dir)
+
+stc1_crop.plot(src, subject='fsaverage', subjects_dir=subjects_dir)
 
 # Plot patterns across time
-TOI = np.linspace(0,250,num=1250)
+TOI = np.linspace(0,450,num=2250)
 fig, ax = plt.subplots(1)
 ax.plot(TOI, patterns.transpose())
 ax.axhline(0.5, color="k", linestyle="--", label="chance")
 ax.axvline(0, color="k")
 plt.legend()
 
-np.save(root_path + 'cbsA_meeg_analysis/decoding/baby_roc_auc_vector_morph_kall.npy',scores_observed)
-np.save(root_path + 'cbsA_meeg_analysis/decoding/baby_patterns_vector_morph_kall.npy',patterns)
+# Plot acc across time
+TOI = np.linspace(0,450,num=2250)
+fig, ax = plt.subplots(1)
+ax.plot(TOI, scores_observed.mean(0), label="score")
+ax.axhline(0.5, color="k", linestyle="--", label="chance")
+ax.axvline(0, color="k")
+plt.legend()
 
 #%%
 import matplotlib.pyplot as plt
@@ -283,11 +297,14 @@ clf = make_pipeline(
 time_decod = SlidingEstimator(clf, scoring="roc_auc")
 # Run cross-validated decoding analyses:
 scores_observed = cross_val_multiscore(time_decod, X, y, cv=5 , n_jobs=None)
+mean_score = scores_observed.mean(axis=0)
 #Plot average decoding scores of 5 splits
 times = np.linspace(-100,800,num=901)
 fig, ax = plt.subplots(1)
-ax.plot(times, scores_observed.mean(0), label="score")
+ax.plot(times, mean_score, label="score")
 ax.axhline(0.5, color="k", linestyle="--", label="chance")
+ax.axhline(np.percentile(mean_score,q = 95), color="grey", linestyle="--", label="chance")
+
 ax.axvline(0, color="k")
 plt.legend()
 # The fitting needs not be cross validated because the weights are based on

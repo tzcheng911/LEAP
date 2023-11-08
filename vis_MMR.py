@@ -26,24 +26,24 @@ def plot_err(group_stc,color,t):
     plt.plot(t,group_avg,color=color)
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
 
-#%%#######################################   
 root_path='/media/tzcheng/storage/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
-
-## Load vertex
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
-MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_vector_morph.npy') # with the mag or vector method
-MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_vector_morph.npy') # with the mag or vector method
-MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_None_morph.npy') # with the mag or vector method
-MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_None_morph.npy') # with the mag or vector method
-EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_eeg.npy')
-EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_eeg.npy')
+
+#%%####################################### Traditional or new direction
+## Load vertex
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy') # with the mag or vector method
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph.npy') # with the mag or vector method
+MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph.npy') # with the mag or vector method
+MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_None_morph.npy') # with the mag or vector method
+EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr1_eeg.npy')
+EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr2_eeg.npy')
 
 ## Load ROIs
-MEG_mmr1_roi_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_vector_morph_roi.npy') # with the mag or vector method
-MEG_mmr2_roi_v = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_vector_morph_roi.npy') # with the mag or vector method
-MEG_mmr1_roi_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr1_None_morph_roi.npy') # with the mag or vector method
-MEG_mmr2_roi_m = np.load(root_path + 'cbsA_meeg_analysis/group_mmr2_None_morph_roi.npy') # with the mag or vector method
+MEG_mmr1_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph_roi.npy') # with the mag or vector method
+MEG_mmr2_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph_roi.npy') # with the mag or vector method
+MEG_mmr1_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph_roi.npy') # with the mag or vector method
+MEG_mmr2_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_None_morph_roi.npy') # with the mag or vector method
 
 
 subject = 'fsaverage'
@@ -60,7 +60,7 @@ plt.figure()
 plt.subplot(311)
 plot_err(EEG_mmr1,'grey',stc1.times)
 plot_err(EEG_mmr2,'k',stc1.times)
-plt.title('Traditional direction')
+plt.title('First-Last direction')
 plt.xlim([-100,600])
 
 plt.subplot(312)
@@ -80,7 +80,7 @@ plt.figure()
 plt.subplot(311)
 plot_err(EEG_mmr1,'grey',stc1.times)
 plot_err(EEG_mmr2,'k',stc1.times)
-plt.title('Traditional direction')
+plt.title('left ROI: First last mba and pa')
 plt.xlim([-100,600])
 
 plt.subplot(312)
@@ -101,13 +101,15 @@ root_path='/media/tzcheng/storage/CBS/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 times = stc1.times
 
-EEG_1pa = np.load(root_path + 'cbsA_meeg_analysis/group_dev2_eeg.npy')
-EEG_1mba = np.load(root_path + 'cbsA_meeg_analysis/group_dev1_eeg.npy')
-EEG_1ba = np.load(root_path + 'cbsA_meeg_analysis/group_dev_reverse_eeg.npy')
+EEG_1pa = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_dev2_eeg.npy')
+EEG_1mba = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_dev1_eeg.npy')
+EEG_1ba = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_dev_reverse_eeg.npy')
 
-EEG_endpa = np.load(root_path + 'cbsA_meeg_analysis/group_std2_reverse_eeg.npy')
-EEG_endmba = np.load(root_path + 'cbsA_meeg_analysis/group_std1_reverse_eeg.npy')
-EEG_endba = np.load(root_path + 'cbsA_meeg_analysis/group_std_eeg.npy')
+EEG_endpa = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_std2_reverse_eeg.npy')
+EEG_endmba = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_stdMEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph.npy')
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy')
+1_reverse_eeg.npy')
+EEG_endba = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_std_eeg.npy')
 
 plt.figure()
 plot_err(EEG_1ba,'r',stc1.times)
@@ -118,7 +120,8 @@ plt.legend(['1st ba','','1st mba','','1st pa',''])
 plt.xlabel('Time (ms)')
 plt.ylabel('Amplitude')
 plt.xlim([-100,600])
-
+scores_observed = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/roc_auc_None_morph_kall.npy')
+patterns = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/patterns_None_morph_kall.npy')
 plt.figure()
 plot_err(EEG_endba,'r',stc1.times)
 plot_err(EEG_endmba,'g',stc1.times)
@@ -160,15 +163,15 @@ root_path='/media/tzcheng/storage/CBS/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 times = stc1.times
 
-MEG_m_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph.npy')
-MEG_m_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_None_morph.npy')
+MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph.npy')
+MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_None_morph.npy')
 
-MEG_v_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy')
-MEG_v_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph.npy')
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy')
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph.npy')
 
 plt.figure()
-plot_err(MEG_m_mmr1.mean(axis = 1),'b',stc1.times)
-plot_err(MEG_m_mmr2.mean(axis = 1),'r',stc1.times)
+plot_err(MEG_mmr1_m.mean(axis = 1),'b',stc1.times)
+plot_err(MEG_mmr2_m.mean(axis = 1),'r',stc1.times)
 plt.legend(['mmr mba','','mmr pa',''])
 plt.xlabel('Time (ms)')
 plt.ylabel('Amplitude')
@@ -176,10 +179,117 @@ plt.title('Mag method')
 plt.xlim([-100,600])
 
 plt.figure()
-plot_err(MEG_v_mmr1.mean(axis = 1),'b',stc1.times)
-plot_err(MEG_v_mmr2.mean(axis = 1),'r',stc1.times)
+plot_err(MEG_mmr1_v.mean(axis = 1),'b',stc1.times)
+plot_err(MEG_mmr2_v.mean(axis = 1),'r',stc1.times)
 plt.legend(['mmr mba','','mmr pa',''])
 plt.xlabel('Time (ms)')
 plt.ylabel('Amplitude')
 plt.title('vector method')
 plt.xlim([-100,600])
+scores_observed = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/roc_auc_None_morph_kall.npy')
+patterns = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/patterns_None_morph_kall.npy')
+## visualization average
+times = stc1.times
+plt.figure()
+plt.subplot(311)
+plot_err(EEG_1mba - EEG_endmba,'grey',stc1.times)
+plot_err(EEG_1pa - EEG_endpa,'k',stc1.times)
+plt.title('First last mba and pa')
+plt.xlim([-100,600])
+
+plt.subplot(312)
+plot_err(MEG_mmr1_m.mean(axis=1),'c',stc1.times)
+plot_err(MEG_mmr2_m.mean(axis=1),'b',stc1.times)
+plt.xlim([-100,600])
+plt.ylabel('Amplitude')
+
+plt.subplot(313)
+plot_err(MEG_mmr1_v.mean(axis=1),'m',stc1.times)
+plot_err(MEG_mmr2_v.mean(axis=1),'r',stc1.times)
+plt.xlim([-100,600])
+plt.xlabel('Time (ms)')
+
+#%%####################################### check the std, dev, mmr for first and last /ba/, /pa/ and /mba/
+MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph.npy') # with the mag or vector method
+MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_None_morph.npy') # with the mag or vector method
+MEG_std1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_std1_reverse_None_morph.npy') # with the mag or vector method
+MEG_std2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_std2_reverse_None_morph.npy') # with the mag or vector method
+MEG_dev1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_dev1_None_morph.npy') # with the mag or vector method
+MEG_dev2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_dev2_None_morph.npy') # with the mag or vector method
+
+plt.figure()
+plot_err(MEG_std1_m.mean(axis = 1),'r',stc1.times)
+plot_err(MEG_dev1_m.mean(axis = 1),'b',stc1.times)
+plot_err(MEG_dev1_m.mean(axis = 1) - MEG_std1_m.mean(axis = 1),'k',stc1.times)
+plt.legend(['std','','dev','','MMR1',''])
+plt.xlabel('Time (ms)')and the 
+plt.ylabel('Amplitude')
+plt.xlim([-100,600])
+
+plt.figure()
+plot_err(MEG_std2_m.mean(axis = 1),'r',stc1.times)
+plot_err(MEG_dev2_m.mean(axis = 1),'b',stc1.times)
+plot_err(MEG_dev2_m.mean(axis = 1) - MEG_std2_m.mean(axis = 1),'k',stc1.times)
+plt.legend(['std','','dev','','MMR2',''])
+plt.xlabel('Time (ms)')
+plt.ylabel('Amplitude')
+plt.xlim([-100,600])
+
+#%%####################################### MMR result whole brain
+## Traditional direction: ba to mba vs. ba to pa
+MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_None_morph.npy')
+MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_None_morph.npy')
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph.npy')
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy')
+
+## New method: first - last mba vs. first pa - last pa
+MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph.npy')
+MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_None_morph.npy')
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy')
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph.npy')
+
+
+root_path='/media/tzcheng/storage/CBS/'
+subjects_dir = '/media/tzcheng/storage2/subjects/'
+
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
+times = stc1.times
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+
+stc1.data = MEG_mmr2_m.mean(axis=0) - MEG_mmr1_m.mean(axis=0)
+stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
+stc1.plot(src,clim=dict(kind="value",pos_lims=[0,4,8]), subject='fsaverage', subjects_dir=subjects_dir)
+
+#%%####################################### decoding result
+## Traditional direction: ba to mba vs. ba to pa
+scores_observed = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/roc_auc_vector_morph_kall.npy')
+patterns = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/patterns_vector_morph_kall.npy')
+scores_observed = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/roc_auc_None_morph_kall.npy')
+patterns = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/patterns_None_morph_kall.npy')
+
+## New method: first - last mba vs. first pa - last pa
+scores_observed = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/roc_auc_vector_morph_kall_mba_pa.npy')
+patterns = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/patterns_vector_morph_kall_mba_pa.npy')
+scores_observed = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/roc_auc_None_morph_kall_mba_pa.npy')
+patterns = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/patterns_None_morph_kall_mba_pa.npy')
+
+## Plot acc across time
+fig, ax = plt.subplots(1)
+ax.plot(stc1.times, scores_observed.mean(0), label="score")
+ax.axhline(0.5, color="k", linestyle="--", label="chance")
+ax.axhline(np.percentile(scores_observed.mean(0),q = 95), color="grey", linestyle="--", label="95 percentile")
+ax.axvline(0, color="k")
+plt.title('Decoding accuracy')
+plt.xlim([-0.1,0.6])
+
+## Plot patterns
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
+stc1.data = patterns
+stc1_crop = stc1.copy().crop(tmin= 0, tmax=0.5)
+# Plot patterns across sources
+stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
+
+stc1.plot(src, clim=dict(kind="value",pos_lims=[0,4,8], subject='fsaverage', subjects_dir=subjects_dir)
+stc1_crop.plot(src, subject='fsaverage', subjects_dir=subjects_dir)
+stc1_crop.plot(src,c, subject='fsaverage', subjects_dir=subjects_dir)
+
