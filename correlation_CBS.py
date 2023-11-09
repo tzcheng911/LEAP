@@ -26,6 +26,8 @@ import scipy as sp
 import os
 import seaborn as sns
 import pandas as pd
+import scipy.stats as stats
+
 
 root_path='/media/tzcheng/storage/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -44,17 +46,17 @@ def plot_err(group_data,color,t):
 # mmr
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 stc2 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
-MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy') # with the mag or vector method
-MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph.npy') # with the mag or vector method
-MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph.npy') # with the mag or vector method
-MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_None_morph.npy') # with the mag or vector method
-MEG_mmr1_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph_roi.npy') # with the mag or vector method
-MEG_mmr2_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph_roi.npy') # with the mag or vector method
-MEG_mmr1_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_morph_roi.npy') # with the mag or vector method
-MEG_mmr2_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_morph_roi.npy') # with the mag or vector method
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph.npy') # with the mag or vector method
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy') # with the mag or vector method
+MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_None_morph.npy') # with the mag or vector method
+MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_None_morph.npy') # with the mag or vector method
+MEG_mmr1_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph_roi.npy') # with the mag or vector method
+MEG_mmr2_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph_roi.npy') # with the mag or vector method
+MEG_mmr1_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_morph_roi.npy') # with the mag or vector method
+MEG_mmr2_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_morph_roi.npy') # with the mag or vector method
 
-EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr1_mba_eeg.npy')
-EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr2_pa_eeg.npy')
+EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr1_eeg.npy')
+EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr2_eeg.npy')
 
 times = stc1.times
 
@@ -103,12 +105,12 @@ for s in np.arange(0,len(MEG_mmr1_m),1):
     
 #%%######################################## averaged across subjects
 ts = 1000 # 100 ms
-te = 2000 # 300 ms
+te = 1750 # 250 ms
 
 ## averaged across all sources
 mean_EEG_mmr2 = EEG_mmr2.mean(axis =0)
 stc_m = MEG_mmr2_m.mean(axis =0).mean(axis=0)
-
+stc_v = MEG_mmr2_v.mean(axis =0).mean(axis=0)
 mean_MEG_mmr2_v = MEG_mmr2_v.mean(axis =0).mean(axis=0)
 mean_MEG_mmr2_m = MEG_mmr2_m.mean(axis =0).mean(axis=0)
 
@@ -119,8 +121,9 @@ corr_p = pearsonr(mean_EEG_mmr2[ts:te], mean_MEG_mmr2_m[ts:te])
 
 # normalized cross correlation [-1 1]
 # based on https://stackoverflow.com/questions/53436231/normalized-cross-correlation-in-python
-a = mean_EEG_mmr2
-b = stc_m
+# Tradtional direction: TOI [100 250] 0.91 (lag=0) for MEG_m & EEG and 0.33 (lage = 81.2 ms) for MEG_v & EEG
+a = mean_EEG_mmr2[ts:te]
+b = stc_v[ts:te]
 
 norm_a = np.linalg.norm(a)
 a = a / norm_a
@@ -128,17 +131,10 @@ norm_b = np.linalg.norm(b)
 b = b / norm_b
 
 xcorr = signal.correlate(a,b)
-print(max(xcorr))
-print(min(xcorr))
-print(np.argmax(xcorr))
-print(np.argmin(xcorr))
-lags = signal.correlation_lags(len(mean_EEG_mmr2),len(mean_MEG_mmr2_m))
+print(max(abs(xcorr)))
+lags = signal.correlation_lags(len(a),len(b))
 lags_time = lags/5000
-
-#xcorr = np.abs(xcorr)
-max_xcorr = np.max(xcorr)
-max_xcorr_ind = np.argmax(xcorr)
-times[np.argmax(xcorr)] # the time when the max corr happened
+print(lags_time[np.argmax(abs(xcorr))]) # if negative then the b is shifted left, if positive b is shifted right
 
 # cosine similarity
 cos_sim = dot(mean_EEG_mmr2[ts:te],mean_MEG_mmr2_m[ts:te]) / (norm(mean_EEG_mmr2[ts:te])*norm(mean_MEG_mmr2_m[ts:te]))
@@ -201,10 +197,9 @@ r,p = pearsonr(ext_MEG_mmr2_v,ext_EEG_mmr2)
 print(r,p)
 
 #%% [ok method] get the correlation between each point
-stc_m = MEG_mmr1_m.mean(axis=1) # change the name to std or other data
-stc_v = MEG_mmr1_v.mean(axis=1)
-EEG = EEG_mmr1
-
+stc_m = MEG_mmr2_m.mean(axis=1) # change the name to std or other data
+stc_v = MEG_mmr2_v.mean(axis=1)
+EEG = EEG_mmr2
 
 r_m_all_t = []
 r_v_all_t = []
@@ -220,7 +215,7 @@ ax.plot(times, r_m_all_t)
 ax.plot(times, r_v_all_t)
 ax.axhline(0, color="k", linestyle="--")
 ax.axvline(0, color="k")
-plt.title('MMR1')
+plt.title('MMR2')
 plt.legend(['MEG_m','MEG_v'])
 plt.xlabel('Time (s)')
 plt.ylabel('Pearson r')
@@ -249,6 +244,9 @@ for s in np.arange(0,len(MEG_mmr1_m),1):
 
 print('abs corr between MEG_m & EEG:' + str(np.abs(r_m_all_s).mean()))
 print('abs corr between MEG_v & EEG:' + str(np.abs(r_v_all_s).mean()))
+X = np.abs(r_v_all_s) - np.abs(r_m_all_s)
+stats.ttest_1samp(X,0)
+
 
 ## corr between EEG and MEG ROI
 r_all_s = []
@@ -296,15 +294,22 @@ for s in np.arange(0,len(MEG_mmr1_m),1):
     c = c / np.linalg.norm(c)
 
     xcorr = signal.correlate(a,b)
-    xcorr = abs(xcorr)
     xcorr_m_all_s.append(xcorr)
     
     xcorr = signal.correlate(a,c)
-    xcorr = abs(xcorr)
     xcorr_v_all_s.append(xcorr)
 
-print('abs xcorr between MEG_m & EEG:' + str(np.array(xcorr_m_all_s).mean()))
-print('abs xcorr between MEG_v & EEG:' + str(np.array(xcorr_v_all_s).mean()))
+lags = signal.correlation_lags(len(a),len(b))
+lags_time = lags/5000
+
+np.argmax(abs(xcorr_m_all_s),axis=1)
+
+print('abs xcorr between MEG_m & EEG:' + str(np.max(np.abs(xcorr_m_all_s),axis=1).mean()))
+print('abs xcorr between MEG_v & EEG:' + str(np.max(np.abs(xcorr_v_all_s),axis=1).mean()))
+print('max lag of abs xcorr between MEG_m & EEG:' + str(np.argmax(np.abs(xcorr_m_all_s),axis=1).mean()))
+print('max lag of abs xcorr between MEG_v & EEG:' + str(np.argmax(np.abs(xcorr_v_all_s),axis=1).mean()))
+X = np.max(np.abs(xcorr_v_all_s),axis=1) - np.max(np.abs(xcorr_m_all_s),axis=1)
+stats.ttest_1samp(X,0)
 
 ## xcorr between EEG and MEG ROI
 xcorr_all_s = []
