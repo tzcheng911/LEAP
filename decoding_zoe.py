@@ -275,6 +275,30 @@ ax.axhline(0.5, color="k", linestyle="--", label="chance")
 ax.axvline(0, color="k")
 plt.legend()
 
+#%%####################################### Investigate the feature number
+scores_observed_k50 = np.load('roc_auc_vector_morph_k50_100_450_mba_pa.npy')
+patterns_k50 = np.load('patterns_vector_morph_k50_100_450_mba_pa.npy')
+
+scores_observed_k500 = np.load('roc_auc_vector_morph_k500_100_450_mba_pa.npy')
+patterns_k500 = np.load('patterns_vector_morph_k500_100_450_mba_pa.npy')
+
+scores_observed_kall = np.load('roc_auc_vector_morph_kall_100_450_mba_pa.npy')
+patterns_kall = np.load('patterns_vector_morph_kall_100_450_mba_pa.npy')
+
+fig, (ax1, ax2, ax3) = plt.subplots(figsize=(13, 3), ncols=3)
+fig1 = ax1.imshow(patterns_k50,extent=[0,2250,0,14629],aspect='auto')
+fig2 = ax2.imshow(patterns_k500,extent=[0,2250,0,14629],aspect='auto')
+fig3 = ax3.imshow(patterns_kall,extent=[0,2250,0,14629],aspect='auto')
+
+fig.colorbar(fig1, ax=ax1)
+fig.colorbar(fig2, ax=ax2)
+fig.colorbar(fig3, ax=ax3)
+fig1.set_clim(-60,60)
+fig2.set_clim(-60,60)
+fig3.set_clim(-60,60)
+ax1.set_title('k = 50')
+ax2.set_title('k = 500')
+ax3.set_title('k = all')
 #%%
 import matplotlib.pyplot as plt
 from sklearn.pipeline import make_pipeline

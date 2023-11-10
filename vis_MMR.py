@@ -20,7 +20,7 @@ def plot_err(group_stc,color,t):
     group_avg=np.mean(group_stc,axis=0)
    #plt.figure()
     err=np.std(group_stc,axis=0)/np.sqrt(group_stc.shape[0])
-    up=group_avg+err
+    up=group_avg+errMEG/vector_method
     lw=group_avg-err
     t=np.linspace(-100,600,3501)
     plt.plot(t,group_avg,color=color)
@@ -237,10 +237,16 @@ plt.xlim([-100,600])
 
 #%%####################################### MMR result whole brain
 ## Traditional direction: ba to mba vs. ba to pa
+## Adults
 MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_None_morph.npy')
 MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_None_morph.npy')
 MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph.npy')
 MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy')
+## Babies
+MEG_mmr1_m = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_None_morph.npy')
+MEG_mmr2_m = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_None_morph.npy')
+MEG_mmr1_v = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_vector_morph.npy')
+MEG_mmr2_v = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_vector_morph.npy')
 
 ## New method: first - last mba vs. first pa - last pa
 MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph.npy')
@@ -248,24 +254,28 @@ MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_
 MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy')
 MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph.npy')
 
-
-root_path='/media/tzcheng/storage/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 times = stc1.times
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
-stc1.data = MEG_mmr2_m.mean(axis=0) - MEG_mmr1_m.mean(axis=0)
+stc1.data = MEG_mmr2_v.mean(axis=0) - MEG_mmr1_v.mean(axis=0)
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 stc1.plot(src,clim=dict(kind="value",pos_lims=[0,4,8]), subject='fsaverage', subjects_dir=subjects_dir)
 
 #%%####################################### decoding result
 ## Traditional direction: ba to mba vs. ba to pa
+## Adults
 scores_observed = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/roc_auc_vector_morph_kall.npy')
 patterns = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/patterns_vector_morph_kall.npy')
 scores_observed = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/roc_auc_None_morph_kall.npy')
 patterns = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/patterns_None_morph_kall.npy')
+## Babies
+scores_observed = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/baby_roc_auc_vector_morph_kall.npy')
+patterns = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/baby_patterns_vector_morph_kall.npy')
+scores_observed = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/baby_roc_auc_None_morph_kall.npy')
+patterns = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/baby_patterns_None_morph_kall.npy')
 
 ## New method: first - last mba vs. first pa - last pa
 scores_observed = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/roc_auc_vector_morph_kall_mba_pa.npy')
@@ -279,14 +289,19 @@ ax.plot(stc1.times, scores_observed.mean(0), label="score")
 ax.axhline(0.5, color="k", linestyle="--", label="chance")
 ax.axhline(np.percentile(scores_observed.mean(0),q = 95), color="grey", linestyle="--", label="95 percentile")
 ax.axvline(0, color="k")
+plt.xlabel('Time (s)')
 plt.title('Decoding accuracy')
 plt.xlim([-0.1,0.6])
 
 ## Plot patterns
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 stc1.data = patterns
-stc1_crop = stc1.copy().crop(tmin= 0, tmax=0.5)
+stc1_crop = stc1.copy().crop(tmin= 0.1, tmax=0.3)
 # Plot patterns across sources
+stc1_crop.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
+
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 
 stc1.plot(src, clim=dict(kind="value",pos_lims=[0,4,8], subject='fsaverage', subjects_dir=subjects_dir)
