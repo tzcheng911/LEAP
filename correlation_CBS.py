@@ -52,8 +52,8 @@ MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_
 MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_None_morph.npy') # with the mag or vector method
 MEG_mmr1_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph_roi.npy') # with the mag or vector method
 MEG_mmr2_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph_roi.npy') # with the mag or vector method
-MEG_mmr1_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_morph_roi.npy') # with the mag or vector method
-MEG_mmr2_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_morph_roi.npy') # with the mag or vector method
+MEG_mmr1_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_None_morph_roi.npy') # with the mag or vector method
+MEG_mmr2_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_None_morph_roi.npy') # with the mag or vector method
 
 EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr1_eeg.npy')
 EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr2_eeg.npy')
@@ -236,7 +236,7 @@ EEG = EEG_mmr2
 r_m_all_s = []
 r_v_all_s = []
 
-for s in np.arange(0,len(MEG_mmr1_m),1):
+for s in np.arange(0,len(MEG_mmr2_m),1):
     r,p = pearsonr(stc_m[s,:],EEG[s,ts:te])
     r_m_all_s.append(r)
     r,p = pearsonr(stc_v[s,:],EEG[s,ts:te])
@@ -247,30 +247,31 @@ print('abs corr between MEG_v & EEG:' + str(np.abs(r_v_all_s).mean()))
 X = np.abs(r_v_all_s) - np.abs(r_m_all_s)
 stats.ttest_1samp(X,0)
 
-
 ## corr between EEG and MEG ROI
 r_all_s = []
 
-for s in np.arange(0,len(MEG_mmr1_m),1):
+for s in np.arange(0,len(MEG_mmr2_m),1):
     for nROI in np.arange(0,len(label_names),1):
-        rm,p = pearsonr(MEG_mmr1_roi_m[s,nROI,ts:te],EEG[s,ts:te])
-        rv,p = pearsonr(MEG_mmr1_roi_v[s,nROI,ts:te],EEG[s,ts:te])
+        rm,p = pearsonr(MEG_mmr2_roi_m[s,nROI,ts:te],EEG[s,ts:te])
+        rv,p = pearsonr(MEG_mmr2_roi_v[s,nROI,ts:te],EEG[s,ts:te])
         r_all_s.append([s,label_names[nROI],rm,rv])
     
 df_ROI = pd.DataFrame(columns = ["Subject", "ROI", "Corr MEG_m & EEG", "Corr MEG_v & EEG"], data = r_all_s)
+df_ROI.to_pickle('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/correlation/df_corr_MEGEEG_mmr2_ROI.pkl')
+
 df_ROI.groupby('ROI').mean()
 
 ## corr between EEG and each vertice: slower, just load the pickled file
-r_all_s = []
+r_v_all_s = []
 
-for s in np.arange(0,len(MEG_mmr1_m),1):
+for s in np.arange(0,len(MEG_mmr2_m),1):
     print('Now starting sub' + str(s))
-    for v in np.arange(0,np.shape(MEG_mmr1_m)[1],1):
-        rm,p = pearsonr(MEG_mmr1_m[s,v,ts:te],EEG[s,ts:te])
-        rv,p = pearsonr(MEG_mmr1_v[s,v,ts:te],EEG[s,ts:te])
-        r_all_s.append([s,v,rm,rv])    
-df_v = pd.DataFrame(columns = ["Subject", "Vertno", "Corr MEG_m & EEG", "Corr MEG_v & EEG"], data = r_all_s)
-df_v.to_pickle('df_corr_MEGEEG_mmr1_v.pkl')
+    for v in np.arange(0,np.shape(MEG_mmr2_m)[1],1):
+        rm,p = pearsonr(MEG_mmr2_m[s,v,ts:te],EEG[s,ts:te])
+        rv,p = pearsonr(MEG_mmr2_v[s,v,ts:te],EEG[s,ts:te])
+        r_v_all_s.append([s,v,rm,rv])    
+df_v = pd.DataFrame(columns = ["Subject", "Vertno", "Corr MEG_m & EEG", "Corr MEG_v & EEG"], data = r_v_all_s)
+df_v.to_pickle('df_corr_MEGEEG_mmr2_v.pkl')
 df_v_mean = df_v.groupby('Vertno').mean()
 v_hack = df_v_mean["Corr MEG_v & EEG"]
 v_hack = pd.concat([v_hack,v_hack],axis=1)
@@ -283,7 +284,7 @@ stc_corr.plot(src,subject=subject, subjects_dir=subjects_dir,clim=dict(kind="val
 xcorr_m_all_s = []
 xcorr_v_all_s = []
 
-for s in np.arange(0,len(MEG_mmr1_m),1):
+for s in np.arange(0,len(MEG_mmr2_m),1):
     a = (EEG[s,ts:te] - np.mean(EEG[s,ts:te]))/np.std(EEG[s,ts:te])
     b = (stc_m[s,:] - np.mean(stc_m[s,:]))/np.std(stc_m[s,:])
     c = (stc_v[s,:] - np.mean(stc_v[s,:]))/np.std(stc_v[s,:])
@@ -306,15 +307,18 @@ np.argmax(abs(xcorr_m_all_s),axis=1)
 
 print('abs xcorr between MEG_m & EEG:' + str(np.max(np.abs(xcorr_m_all_s),axis=1).mean()))
 print('abs xcorr between MEG_v & EEG:' + str(np.max(np.abs(xcorr_v_all_s),axis=1).mean()))
-print('max lag of abs xcorr between MEG_m & EEG:' + str(np.argmax(np.abs(xcorr_m_all_s),axis=1).mean()))
-print('max lag of abs xcorr between MEG_v & EEG:' + str(np.argmax(np.abs(xcorr_v_all_s),axis=1).mean()))
+print('max lag of abs xcorr between MEG_m & EEG:' + str(lags_time[np.argmax(np.abs(xcorr_m_all_s),axis=1)].mean()))
+print('max lag of abs xcorr between MEG_v & EEG:' + str(lags_time[np.argmax(np.abs(xcorr_v_all_s),axis=1)].mean()))
 X = np.max(np.abs(xcorr_v_all_s),axis=1) - np.max(np.abs(xcorr_m_all_s),axis=1)
 stats.ttest_1samp(X,0)
 
-## xcorr between EEG and MEG ROI
+## xcorr between EEG and MEG ROI: only store the max xcorr and the lag
 xcorr_all_s = []
+lag_all_s = []
+lags = signal.correlation_lags(len(EEG[0,ts:te]),len(EEG[0,ts:te]))
+lags_time = lags/5000
 
-for s in np.arange(0,len(MEG_mmr1_m),1):
+for s in np.arange(0,len(MEG_mmr2_m),1):
     for nROI in np.arange(0,len(label_names),1):
         a = (EEG[s,ts:te] - np.mean(EEG[s,ts:te]))/np.std(EEG[s,ts:te])
         b = (MEG_mmr2_roi_m[s,nROI,ts:te] - np.mean(MEG_mmr2_roi_m[s,nROI,ts:te]))/np.std(MEG_mmr2_roi_m[s,nROI,ts:te])
@@ -325,19 +329,48 @@ for s in np.arange(0,len(MEG_mmr1_m),1):
         c = c /  np.linalg.norm(c)
         
         xcorr_m = signal.correlate(a,b)
-        xcorr_m = abs(xcorr_m)
-        xcorr_v = signal.correlate(a,b)
-        xcorr_v = abs(xcorr_v)
+        xcorr_v = signal.correlate(a,c)
         
-        xcorr_all_s.append([s,label_names[nROI],xcorr_m,xcorr_v])
+        xcorr_all_s.append([s,label_names[nROI],max(abs(xcorr_m)),max(abs(xcorr_v))])
+        lag_all_s.append([s,label_names[nROI],lags_time[np.argmax(abs(xcorr_m))],lags_time[np.argmax(abs(xcorr_v))]])
 
-df_ROI = pd.DataFrame(columns = ["Subject", "ROI", "Corr MEG_m & EEG", "Corr MEG_v & EEG"], data = r_all_s)
+df_ROI = pd.DataFrame(columns = ["Subject", "ROI", "XCorr MEG_m & EEG", "XCorr MEG_v & EEG"], data = xcorr_all_s)
+df_ROI.to_pickle('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/correlation/df_xcorr_MEGEEG_mmr2_ROI.pkl')
+df_ROI_lag = pd.DataFrame(columns = ["Subject", "ROI", "Lag XCorr MEG_m & EEG", "Lag XCorr MEG_v & EEG"], data = lag_all_s)
+df_ROI_lag.to_pickle('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/correlation/df_xcorr_lag_MEGEEG_mmr2_ROI.pkl')
+
 df_ROI.groupby('ROI').mean()
+
+# xcorr between EEG and each vertice: only store the max xcorr and the lag
+xcorr_v_all_s = []
+lag_v_all_s = []
+
+for s in np.arange(0,len(MEG_mmr2_m),1):
+    print('Now starting sub' + str(s))
+    for v in np.arange(0,np.shape(MEG_mmr2_m)[1],1):
+        a = (EEG[s,ts:te] - np.mean(EEG[s,ts:te]))/np.std(EEG[s,ts:te])
+        b = (MEG_mmr2_m[s,v,ts:te] - np.mean(MEG_mmr2_m[s,v,ts:te]))/np.std(MEG_mmr2_m[s,v,ts:te])     
+        c = (MEG_mmr2_v[s,v,ts:te] - np.mean(MEG_mmr2_v[s,v,ts:te]))/np.std(MEG_mmr2_v[s,v,ts:te])
+
+        ## the way matlab do xcorr normalization: the max is 1 if do a zero lag autocorrealtoin
+        a = a / np.linalg.norm(a)
+        b = b / np.linalg.norm(b)
+        c = c / np.linalg.norm(c)
+        
+        xcorr_m = signal.correlate(a,b)
+        xcorr_v = signal.correlate(a,c)
+        xcorr_v_all_s.append([s,v,max(abs(xcorr_m)),max(abs(xcorr_v))])
+        lag_v_all_s.append([s,v,lags_time[np.argmax(abs(xcorr_m))],lags_time[np.argmax(abs(xcorr_v))]])
+    
+df_v = pd.DataFrame(columns = ["Subject", "Vertno", "XCorr MEG_m & EEG", "XCorr MEG_v & EEG"], data = xcorr_v_all_s)
+df_v.to_pickle('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/correlation/df_xcorr_MEGEEG_mmr2_v.pkl')
+df_lag = pd.DataFrame(columns = ["Subject", "Vertno", "Lag XCorr MEG_m & EEG", "Lag XCorr MEG_v & EEG"], data = lag_v_all_s)
+df_v.to_pickle('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/correlation/df_xcorr_lag_MEGEEG_mmr2_v.pkl')
 
 #%%######################################## for each subject: correlate time series in a window with cosine similarity (still working)
 cos_sim_all_s = [] 
 
-for s in np.arange(0,len(MEG_mmr1_m),1):
+for s in np.arange(0,len(MEG_mmr2_m),1):
     a = EEG[s,ts:te]
     b = stc_v[s,:]
      
@@ -346,6 +379,44 @@ for s in np.arange(0,len(MEG_mmr1_m),1):
 
 print('abs cos sim between MEG_m & EEG:' + str(np.array(xcorr_m_all_s).mean()))
 print('abs cos sim between MEG_v & EEG:' + str(np.array(xcorr_v_all_s).mean()))
+
+#%%######################################## Analyze pickle file 
+## Corr need to get abs
+corr_ROI =pd.read_pickle('df_corr_MEGEEG_mmr2_ROI.pkl')
+corr_v =pd.read_pickle('df_corr_MEGEEG_mmr2_v.pkl')
+corr_ROI["Corr MEG_v & EEG"] = pd.DataFrame.abs(corr_ROI["Corr MEG_v & EEG"])
+corr_ROI["Corr MEG_m & EEG"] = pd.DataFrame.abs(corr_ROI["Corr MEG_m & EEG"])
+corr_v["Corr MEG_v & EEG"] = pd.DataFrame.abs(corr_v["Corr MEG_v & EEG"])
+corr_v["Corr MEG_m & EEG"] = pd.DataFrame.abs(corr_v["Corr MEG_m & EEG"])
+corr_ROI_mean = corr_ROI.groupby('ROI').mean()
+corr_v_mean = corr_v.groupby('Vertno').mean()
+
+# Visualization
+subject = 'fsaverage'
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
+
+stc_corr = stc1.copy()
+v_hack = pd.concat([corr_v_mean["Corr MEG_v & EEG"],corr_v_mean["Corr MEG_m & EEG"]],axis=1) # the first time point is MEG_v & EEG, the second is MEG_m & EEG
+stc_corr.data = v_hack
+stc_corr.plot(src,subject=subject, subjects_dir=subjects_dir)
+
+## XCorr
+xcorr_ROI =pd.read_pickle('df_xcorr_MEGEEG_mmr2_ROI.pkl')
+xcorr_v =pd.read_pickle('df_xcorr_MEGEEG_mmr2_v.pkl')
+
+xcorr_ROI_mean = xcorr_ROI.groupby('ROI').mean()
+xcorr_v_mean = xcorr_v.groupby('Vertno').mean()
+
+# Visualization
+subject = 'fsaverage'
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
+
+stc_corr = stc1.copy()
+v_hack = pd.concat([xcorr_v_mean["XCorr MEG_v & EEG"],xcorr_v_mean["XCorr MEG_m & EEG"]],axis=1) # the first time point is MEG_v & EEG, the second is MEG_m & EEG
+stc_corr.data = v_hack
+stc_corr.plot(src,clim=dict(kind="percent",lims=[90,95,99]),subject=subject, subjects_dir=subjects_dir)
 
 #%%######################################## load data Standard
 # Hypothesis: N1 is more sensory, so should observe the highest correlation in the auditory area
@@ -358,6 +429,7 @@ EEG_std = np.load(root_path + 'cbsA_meeg_analysis/group_std_eeg.npy',allow_pickl
 
 # brain heat map for the averaged result
 stc1.data = MEG_std_v.mean(axis=0)
+
 #%%######################################## visualization
 # stc.plot(src,clim=dict(kind="value",pos_lims=[0,2,5]),subject=subject, subjects_dir=subjects_dir)
 stc1.plot(src,subject=subject, subjects_dir=subjects_dir,clim=dict(kind="value",pos_lims=[0,2,8]))
@@ -430,14 +502,14 @@ df_ROI_corr["Corr MEG_v & EEG"] =df_ROI_corr["Corr MEG_v & EEG"].abs()
 df_ROI_corr = df_ROI_corr.groupby('ROI').mean()
 
 ## corr between EEG and each vertice: slower, just load the pickled file
-# r_all_s = []
-# for s in np.arange(0,len(stc_v),1):
-#     print('Now starting sub' + str(s))
-#     for v in np.arange(0,np.shape(MEG_std_v)[1],1):
-#         rv,p = pearsonr(MEG_std_v[s,v,ts:te],EEG_std[s,ts:te])
-#         r_all_s.append([s,v,rv])    
-# df_v = pd.DataFrame(columns = ["Subject", "Vertno", "Corr MEG_v & EEG"], data = r_all_s)
-# df_v.to_pickle('df_corr_MEGEEG_std.pkl')
+r_all_s = []
+for s in np.arange(0,len(stc_v),1):
+    print('Now starting sub' + str(s))
+    for v in np.arange(0,np.shape(MEG_std_v)[1],1):
+        rv,p = pearsonr(MEG_std_v[s,v,ts:te],EEG_std[s,ts:te])
+        r_all_s.append([s,v,rv])    
+df_v = pd.DataFrame(columns = ["Subject", "Vertno", "Corr MEG_v & EEG"], data = r_all_s)
+df_v.to_pickle('df_corr_MEGEEG_std.pkl')
 df_v_corr = pd.read_pickle('df_corr_MEGEEG_std.pkl')
 df_v_corr["Corr MEG_v & EEG"] =df_v_corr["Corr MEG_v & EEG"].abs()
 df_v_mean = df_v_corr.groupby('Vertno').mean()
