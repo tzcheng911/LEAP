@@ -141,6 +141,59 @@ brain = stc.plot(src=src, subjects_dir=subjects_dir
 # plt.yticks(tick_marks, target_names)
 # ax.set(ylabel="True label", xlabel="Predicted label")
 
+
+#%%####################################### decoding for single channel EEG
+## Could apply to MMR or FFR, just load different group file
+root_path='/media/tzcheng/storage/CBS/'
+times = np.linspace(-0.01,0.2,1101)
+
+ts = 500 # 0s # for MMR
+te = 2750 # 0.45s # for MMR
+
+# std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg.npy')
+# dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg.npy')
+# dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg.npy')
+std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_eeg.npy')
+dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_eeg.npy')
+dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_eeg.npy')
+
+X = np.concatenate((std,dev1,dev2),axis=0)
+X = X[:,ts:te]
+y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
+
+clf = make_pipeline(
+    StandardScaler(),  # z-score normalization
+    LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
+)
+scores = cross_val_multiscore(clf, X, y, cv=5, n_jobs=None) # takes about 10 mins to run
+score = np.mean(scores, axis=0)
+print("Accuracy: %0.1f%%" % (100 * score,))
+
+## Run permutation
+import copy
+import random
+n_perm=1000
+scores_perm=[]
+for i in range(n_perm):
+    yp = copy.deepcopy(y)
+    random.shuffle(yp)
+    clf = make_pipeline(
+        StandardScaler(),  # z-score normalization
+        LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
+        )
+    # Run cross-validated decoding analyses:
+    scores = cross_val_multiscore(clf, X, yp, cv=5, n_jobs=None)
+    scores_perm.append(np.mean(scores,axis=0))
+    print("Iteration " + str(i))
+scores_perm_array=np.asarray(scores_perm)
+
+plt.figure()
+plt.hist(scores_perm_array,bins=30,color='k')
+plt.vlines(score,ymin=0,ymax=100,color='r',linewidth=3)
+plt.vlines(np.percentile(scores_perm_array,97.5),ymin=0,ymax=100,color='grey',linewidth=3)
+plt.ylabel('Count',fontsize=20)
+plt.xlabel('Accuracy',fontsize=20)
+
 #%%####################################### Subject-by-subject decoding for each condition 
 tic = time.time()
 root_path='/media/tzcheng/storage/CBS/'
@@ -151,7 +204,6 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_b101/sss_fif/cbs_b101_mmr2_None
 times = stc1.times
 
 ## parameters
-
 ts = 500 # 0s
 te = 2750 # 0.45s
 ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
