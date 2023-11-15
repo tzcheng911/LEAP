@@ -24,7 +24,6 @@ def find_events(raw_file,subj,block):
     file_name_raw=root_path + str(subj)+ '_' + str(block) +'_events_raw-eve.fif'
     mne.write_events(file_name_raw,events)  ###write out raw events for double checking
     
-    
 def process_events(subj,block):
      #find events
     root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
