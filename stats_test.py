@@ -63,8 +63,8 @@ src=mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsave
 
 times = stc1.times
 
-mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_None_morph.npy')
-mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_None_morph.npy')
+mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph.npy')
+mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy')
 
 X = mmr1-mmr2
 Xt = np.transpose(X,[0,2,1])
@@ -78,11 +78,12 @@ adjecency = spatial_src_adjacency(src)
 # t_threshold=-stats.distributions.t.ppf(p_threshold/2.,35-1)
 print('Clustering.')
 
-T_obs, clusters, cluster_p_values, H0 = clu =\
-    spatio_temporal_cluster_1samp_test(Xt, adjacency=adjecency, n_jobs=4,threshold=None, buffer_size=None,n_permutations=512)
-
 # T_obs, clusters, cluster_p_values, H0 = clu =\
-#     spatio_temporal_cluster_1samp_test(Xt, adjacency=adjecency, n_jobs=4,threshold=dict(start=0,step=0.5), buffer_size=None,n_permutations=512)
+#     spatio_temporal_cluster_1samp_test(Xt, adjacency=adjecency, n_jobs=4,threshold=None, buffer_size=None,n_permutations=512)
+
+## will kill the kernal
+T_obs, clusters, cluster_p_values, H0 = clu =\
+    spatio_temporal_cluster_1samp_test(Xt, adjacency=adjecency, n_jobs=4,threshold=dict(start=0,step=0.5), buffer_size=None,n_permutations=512)
 #    Now select the clusters that are sig. at p < 0.05 (note that this value
 #    is multiple-comparisons corrected).
 good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
