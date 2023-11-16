@@ -255,7 +255,7 @@ epochs = mne.Epochs(raw_file, mmr_event, event_id,tmin =-0.05, tmax=0.15,baselin
 evoked_substd=epochs['Standard'].average(picks=('misc'))
 evoked_substd.plot()
 #%% analyze cabr data
-cabr_event=mne.read_events('/mnt/CBS/'+subj+'/events/'+subj+'_'+block+'_events_cabr-eve.fif')
+cabr_event=mne.read_events('/media/tzcheng/storage/CBS/'+subj+'/events/'+subj+'_'+block+'_events_cabr-eve.fif')
 
 raw_file=mne.io.Raw('/mnt/CBS/'+subj+'/eeg/'+subj+'_'+block+'_raw.fif',allow_maxshield=True,preload=True)
 raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('bio'))

@@ -2,7 +2,7 @@
 """
 Created on Tue Aug 8 11:28:12 2023
 
-Preprocessing for CBS. Need to have events file ready from evtag.py
+Preprocessing for CBS MEG and EEG. Need to have events file ready from evtag.py
 Need to manually enter bad channels for sss from the experiment notes. 
 Need to check parameters st_correlation and int_order in sss for adult/infants
 Didn't save the product from ecg, eog project and filtering to save some space
@@ -17,6 +17,7 @@ import matplotlib
 from mne.preprocessing import maxwell_filter
 import numpy as np
 import os
+import random
 
 def do_otp(subject):
     root_path='/media/tzcheng/storage/CBS/'+ subject +'/raw_fif/'
@@ -103,7 +104,7 @@ def do_sss(subject,st_correlation,int_order):
         do_sss=True,  # Run SSS remotely
         gen_ssp=False,  # Generate SSP vectors XX(ECG)
         apply_ssp=False,  # Apply SSP vectors and filtering XX
-        write_epochs=False,  # Write epochs to disk XX
+        write_epochs=False,  # Write epochs to disk XX200
         gen_covs=False,  # Generate covariances
         gen_fwd=False,  # Generate forward solutions (do co-registration first)
         gen_inv=False,  # Generate inverses
@@ -276,6 +277,48 @@ def do_epoch_cabr(data, subject, run):
     evoked_dev2.save(file_out + '_evoked_dev2_cabr.fif',overwrite=True)
     return evoked_substd,evoked_dev1,evoked_dev2,epochs
 
+def do_epoch_cabr_eeg(data, subject, run, n_trials):  
+    ###### Read the event files (generated from evtag.py) 
+    root_path = os.getcwd()
+    cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_cabr-eve.fif')
+    file_out = root_path + '/' + subject + '/eeg/' + subject + run 
+    
+    event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
+    
+    reject=dict(bio=35e-6)
+    epochs = mne.Epochs(data, cabr_events, event_id,tmin =-0.02, tmax=0.2, baseline=(-0.02,0),reject=reject)
+    new_epochs = epochs.copy().drop_bad()
+
+    ## match the trial number for each sound
+    ## get random number of sounds from all sounds
+    ## neet to find p and n len after dropping bad, use the smaller one to be the full len
+    if n_trials == 'all':
+        evoked_substd=epochs['Standardp','Standardn'].average(picks=('bio'))
+        evoked_dev1=epochs['Deviant1p','Deviant1n'].average(picks=('bio'))
+        evoked_dev2=epochs['Deviant2p','Deviant2n'].average(picks=('bio'))
+    else:
+        rand_ind = random.sample(range(min(len(new_epochs['Standardp'].events),len(new_epochs['Standardn'].events))),n_trials//2) 
+        evoked_substd_p=new_epochs['Standardp'][rand_ind].average(picks=('bio'))
+        evoked_substd_n=new_epochs['Standardn'][rand_ind].average(picks=('bio'))
+        evoked_substd = mne.combine_evoked([evoked_substd_p,evoked_substd_n], weights='equal')
+        del rand_ind
+    
+        rand_ind = random.sample(range(min(len(new_epochs['Deviant1p'].events),len(new_epochs['Deviant1n'].events))),n_trials//2) 
+        evoked_dev1_p=new_epochs['Deviant1p'][rand_ind].average(picks=('bio'))
+        evoked_dev1_n=new_epochs['Deviant1n'][rand_ind].average(picks=('bio'))
+        evoked_dev1 = mne.combine_evoked([evoked_dev1_p,evoked_dev1_n], weights='equal')
+        del rand_ind
+    
+        rand_ind = random.sample(range(min(len(new_epochs['Deviant2p'].events),len(new_epochs['Deviant2n'].events))),n_trials//2) 
+        evoked_dev2_p=new_epochs['Deviant2p'][rand_ind].average(picks=('bio'))
+        evoked_dev2_n=new_epochs['Deviant2n'][rand_ind].average(picks=('bio'))
+        evoked_dev2 = mne.combine_evoked([evoked_dev2_p,evoked_dev2_n], weights='equal')
+
+    new_epochs.save(file_out + '_cABR_e_' + str(n_trials) + '.fif',overwrite=True)
+    evoked_substd.save(file_out + '_evoked_substd_cabr_' + str(n_trials) + '.fif',overwrite=True)
+    evoked_dev1.save(file_out + '_evoked_dev1_cabr_' + str(n_trials) + '.fif',overwrite=True)
+    evoked_dev2.save(file_out + '_evoked_dev2_cabr_' + str(n_trials) + '.fif',overwrite=True)
+    return evoked_substd,evoked_dev1,evoked_dev2,new_epochs
 ########################################
 root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
@@ -316,13 +359,26 @@ for file in os.listdir():
 #             do_epoch_mmr(raw_filt, s, run, direction)
 
 
-#%%##### do the jobs for EEG
+#%%##### do the jobs for EEG MMR
+# for s in subj:
+#     print(s)
+#     for run in runs:
+#         raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
+#         raw_file.filter(l_freq=0,h_freq=50,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
+#         raw_file.pick_channels(['BIO004'])
+#         do_epoch_mmr_eeg(raw_file, s, run, direction)
+
+#%%##### do the jobs for EEG FFR
+n_trials = 50 # can be an integer or 'all' using all the sounds
+# randomly select k sounds from each condition
+# each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
+# we have at least 200 sounds for each condition 
+
 for s in subj:
     print(s)
     for run in runs:
         raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
-        raw_file.filter(l_freq=0,h_freq=50,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
+        raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('bio'))
+        raw_file.filter(l_freq=80,h_freq=2000,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
         raw_file.pick_channels(['BIO004'])
-        do_epoch_mmr_eeg(raw_file, s, run, direction)
-
-# %%
+        do_epoch_cabr_eeg(raw_file, s, run, n_trials)
