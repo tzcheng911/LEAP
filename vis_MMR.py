@@ -116,6 +116,17 @@ plot_err(MEG_mmr2_roi_v[:,lh_ROI_label,:].mean(axis=1),'r',stc1.times)
 plt.xlim([-100,600])
 plt.xlabel('Time (ms)')
 
+# time series of EEG, MEG_v, MEG_m averaged across all sources for each individual
+fig,axs = plt.subplots(1,len(MEG_mmr1_m),sharex=True,sharey=True)
+fig.suptitle('MMR2')
+
+for s in np.arange(0,len(MEG_mmr1_m),1):
+    axs[s].plot(times,stats.zscore(EEG_mmr2[s,:],axis=0),'k')
+    axs[s].plot(times,stats.zscore(MEG_mmr2_m[s,:,:].mean(axis =0),axis=0),'b')
+    axs[s].plot(times,stats.zscore(MEG_mmr2_v[s,:,:].mean(axis =0),axis=0),'r')
+    axs[s].set_xlim([0.05,0.3])
+    axs[s].set_title('subj' + str(s+1))
+    
 #%%####################################### check the evoked for fist and last /ba/, /pa/ and /mba/
 ## Note that the result could be slightly different because /ba/ was random sampled
 root_path='/media/tzcheng/storage/CBS/'
@@ -209,6 +220,7 @@ plt.title('vector method')
 plt.xlim([-100,600])
 scores_observed = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/roc_auc_None_morph_kall.npy')
 patterns = np.load('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/decoding/patterns_None_morph_kall.npy')
+
 ## visualization average
 times = stc1.times
 plt.figure()
@@ -319,7 +331,7 @@ src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.f
 
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 stc1.data = patterns
-stc1_crop = stc1.copy().crop(tmin= 0.1, tmax=0.3)
+stc1_crop = stc1.copy().crop(tmin= -0.1, tmax=0.4)
 # Plot patterns across sources
 stc1_crop.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 

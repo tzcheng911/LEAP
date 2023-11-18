@@ -328,8 +328,8 @@ df_v.to_pickle('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/correlation/df_xco
 
 #%%######################################## Analyze pre-saved pickle files
 ## corr 
-corr_ROI =pd.read_pickle('df_corr_MEGEEG_mmr2_ROI.pkl')
-corr_v =pd.read_pickle('df_corr_MEGEEG_mmr2_v.pkl')
+corr_ROI =pd.read_pickle('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/correlation/df_corr_MEGEEG_mmr2_ROI.pkl')
+corr_v =pd.read_pickle('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/correlation/df_corr_MEGEEG_mmr2_v.pkl')
 corr_ROI["Corr MEG_v & EEG"] = pd.DataFrame.abs(corr_ROI["Corr MEG_v & EEG"]) # need to get abs
 corr_ROI["Corr MEG_m & EEG"] = pd.DataFrame.abs(corr_ROI["Corr MEG_m & EEG"])
 corr_v["Corr MEG_v & EEG"] = pd.DataFrame.abs(corr_v["Corr MEG_v & EEG"])
@@ -348,8 +348,8 @@ stc_corr.data = v_hack
 stc_corr.plot(src,subject=subject, subjects_dir=subjects_dir)
 
 ## xcorr
-xcorr_ROI =pd.read_pickle('df_xcorr_MEGEEG_mmr2_ROI.pkl') # already have abs
-xcorr_v =pd.read_pickle('df_xcorr_MEGEEG_mmr2_v.pkl')
+xcorr_ROI =pd.read_pickle('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/correlation/df_xcorr_MEGEEG_mmr2_ROI.pkl') # already have abs
+xcorr_v =pd.read_pickle('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/correlation/df_xcorr_MEGEEG_mmr2_v.pkl')
 xcorr_ROI_mean = xcorr_ROI.groupby('ROI').mean()
 xcorr_v_mean = xcorr_v.groupby('Vertno').mean()
 
