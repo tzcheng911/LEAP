@@ -127,7 +127,7 @@ brain = stc.plot(src=src, subjects_dir=subjects_dir
 # report = classification_report(labels, preds, target_names=target_names)
 # print(report)
 
-# # Normalized confusion matrix
+# # Normalized confusion matrixt last
 # cm = confusion_matrix(labels, preds)
 # cm_normalized = cm.astype(float) / cm.sum(axis=1)[:, np.newaxis]
 
@@ -145,21 +145,28 @@ brain = stc.plot(src=src, subjects_dir=subjects_dir
 #%%####################################### decoding for single channel EEG
 ## Could apply to MMR or FFR, just load different group file
 root_path='/media/tzcheng/storage/CBS/'
-times = np.linspace(-0.01,0.2,1101)
+# times = np.linspace(-0.02,0.2,1101)
+times = np.linspace(-0.1,0.6,3501)
 
-ts = 500 # 0s # for MMR
-te = 2750 # 0.45s # for MMR
+ts = 500
+te = 1750
 
-# std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg.npy')
-# dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg.npy')
-# dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg.npy')
+# std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg_200.npy')
+# dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')
+# dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')
 std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_eeg.npy')
 dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_eeg.npy')
 dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_eeg.npy')
 
-X = np.concatenate((std,dev1,dev2),axis=0)
+MMR1 = dev1 - std
+MMR2 = dev2 - std
+
+X = np.concatenate((MMR1,MMR2),axis=0)
 X = X[:,ts:te]
-y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
+y = np.concatenate((np.repeat(0,len(dev1)),np.repeat(1,len(dev2))))
+
+# X = np.concatenate((std,dev1,dev2),axis=0)
+# y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
 
 clf = make_pipeline(
     StandardScaler(),  # z-score normalization
@@ -172,7 +179,7 @@ print("Accuracy: %0.1f%%" % (100 * score,))
 ## Run permutation
 import copy
 import random
-n_perm=1000
+n_perm=500
 scores_perm=[]
 for i in range(n_perm):
     yp = copy.deepcopy(y)
@@ -189,10 +196,30 @@ scores_perm_array=np.asarray(scores_perm)
 
 plt.figure()
 plt.hist(scores_perm_array,bins=30,color='k')
-plt.vlines(score,ymin=0,ymax=100,color='r',linewidth=3)
-plt.vlines(np.percentile(scores_perm_array,97.5),ymin=0,ymax=100,color='grey',linewidth=3)
+plt.vlines(score,ymin=0,ymax=12,color='r',linewidth=2)
+plt.vlines(np.percentile(scores_perm_array,95),ymin=0,ymax=12,color='grey',linewidth=2)
 plt.ylabel('Count',fontsize=20)
 plt.xlabel('Accuracy',fontsize=20)
+
+plt.figure()
+plt.subplot(311)
+plt.plot(times,std.mean(axis=0))
+plt.title('ntrial = 200, Accuracy = 0.82')
+plt.xlim([-0.01,0.2])
+plt.legend(['ba'])
+
+plt.subplot(312)
+plt.plot(times,dev1.mean(axis=0))
+plt.xlim([-0.01,0.2])
+plt.ylabel('Amplitude')
+plt.legend(['mba'])
+
+plt.subplot(313)
+plt.plot(times,dev2.mean(axis=0))
+plt.xlim([-0.01,0.2])
+plt.xlabel('Time (s)')
+plt.legend(['pa'])
+
 
 #%%####################################### Subject-by-subject decoding for each condition 
 tic = time.time()
@@ -203,7 +230,7 @@ os.chdir(root_path)
 stc1 = mne.read_source_estimate(root_path + 'cbs_b101/sss_fif/cbs_b101_mmr2_None_morph-vl.stc')
 times = stc1.times
 
-## parameters
+## parametersTable 1. Correlation 
 ts = 500 # 0s
 te = 2750 # 0.45s
 ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor

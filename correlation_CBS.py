@@ -27,7 +27,7 @@ import os
 import seaborn as sns
 import pandas as pd
 import scipy.stats as stats
-
+from scipy.io import wavfile
 
 root_path='/media/tzcheng/storage/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -589,21 +589,7 @@ stc_corr.data = v_hack
 stc_corr.plot(src,subject=subject, subjects_dir=subjects_dir)
 stc_corr.plot(src,subject=subject, subjects_dir=subjects_dir,clim=dict(kind="value",pos_lims=[0,0.2,0.39]))
 
-#%%######################################## load data FFR
-s = 'cbs_A109'
-raw_file = mne.io.read_raw_fif(root_path + s +'/raw_fif/' + s + '_01_raw.fif',allow_maxshield=True)
-cabr_event = mne.read_events(root_path + s + '/events/' + s + '_01_events_cabr-eve.fif')
-
-audio = raw_file.pick_channels(['MISC001'])
-event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
-epochs = mne.Epochs(audio, cabr_event, event_id,tmin =-0.01, tmax=0.18,baseline=(-0.01,0))
-evoked_substd=epochs['Standardp'].average(picks=('misc'))
-evoked_dev1=epochs['Deviant1p'].average(picks=('misc'))
-evoked_dev2=epochs['Deviant2p'].average(picks=('misc'))
-evoked_substd.plot()
-evoked_dev1.plot()
-evoked_dev2.plot()
-
+#%%######################################## load EEG & MEG FFR
 EEG = mne.read_evokeds(root_path + s + '/eeg/cbs_' + s + '_01_evoked_substd_cabr.fif',allow_maxshield=True)
 EEG[0].crop(-0.01,0.18)
 MEG = mne.read_evokeds(root_path + s + '/sss_fif/' + s + '_01_evoked_substd_cabr.fif',allow_maxshield=True) # with the mag or vector method
@@ -617,3 +603,58 @@ for i in np.arange(0,len(MEG_data),1):
     r_all.append(r)
 print(max(r_all))
 print(min(r_all))
+
+#%%######################################## load EEG FFR
+## Load FFR
+std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg_200.npy')
+dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')
+dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')
+
+## Load recorded  audio
+std_audio = np.load(root_path + 'stimuli/cbs_A123_ba.npy')
+dev1_audio = np.load(root_path + 'stimuli/cbs_A123_mba.npy')
+dev2_audio = np.load(root_path + 'stimuli/cbs_A123_pa.npy')
+
+times = np.linspace(-0.02,0.2,1101)
+## Load real audio
+# fs, std_audio = wavfile.read('/media/tzcheng/storage/CBS/stimuli/-10.wav')
+# fs, dev1_audio = wavfile.read('/media/tzcheng/storage/CBS/stimuli/+40.wav')
+# fs, dev2_audio = wavfile.read('/media/tzcheng/storage/CBS/stimuli/-40.wav')
+# Downsample
+
+
+## Initialize 
+xcorr_all_s = []
+xcorr_lag_all_s = []
+times = np.linspace(-0.02,0.2,1101)
+audio = std_audio
+EEG = std
+
+a = (audio - np.mean(audio))/np.std(audio)
+a = a / np.linalg.norm(a)
+
+for s in np.arange(0,len(std),1):
+    b = (EEG[s,:] - np.mean(EEG[s,:]))/np.std(EEG[s,:])
+    
+    ## the way matlab do xcorr normalization: the max is 1 if do a zero lag autocorrealtoin
+    b = b / np.linalg.norm(b)
+
+    xcorr = signal.correlate(a,b)
+    xcorr = abs(xcorr)
+    xcorr_all_s.append(np.max(xcorr))
+    xcorr_lag_all_s.append(np.argmax(xcorr))
+lags = signal.correlation_lags(len(a),len(b))
+lags_time = lags/5000
+    
+print('abs xcorr between FFR & audio:' + str(np.array(xcorr_all_s).mean()))
+print('abs xcorr lag between FFR & audio:' + str(np.array(lags_time[xcorr_lag_all_s]).mean()))
+
+dev1_xcorr
+dev1_xcorr_lag
+dev2_xcorr
+dev2_xcorr_lag
+std_xcorr
+std_xcorr_lag
+
+X = np.array(dev1_xcorr_lag) - np.array(dev2_xcorr_lag)
+stats.ttest_1samp(X,0)

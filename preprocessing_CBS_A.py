@@ -75,7 +75,7 @@ def do_sss(subject,st_correlation,int_order):
     'cbs_A108': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG0911'],
     'cbs_A109': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG0313'],
     'cbs_A110': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A111': ['MEG0122', 'MEG0333', 'MrunsMEG1612', 'MEG1643', 'MEG2012'],
+    'cbs_A111': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG2012'],
     'cbs_A117': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
     'cbs_A118': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG2012'],
     'cbs_A119': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],

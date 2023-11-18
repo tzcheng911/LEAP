@@ -7,7 +7,7 @@ import matplotlib
 from scipy.stats import norm
 
 ###### Load data
-subj = 'vMMR_104'
+subj = 'vMMR_202'
 
 root_path='/media/tzcheng/storage/vmmr/'
 os.chdir(root_path)
@@ -25,7 +25,9 @@ condition = {"vMMR_901":'A',
              "vMMR_104":'D',
              "vMMR_108":'B',
              "vMMR_109":'A',
-             "vMMR_201":'A'}
+             "vMMR_201":'A',
+             "vMMR_112":'D',
+             "vMMR_202":'B'}
 sequence = {"vMMR_901":['1','1','1','1'],
              "vMMR_902":['1','1','1','1'],
              "vMMR_102":['7','2','8','9'],
@@ -33,7 +35,9 @@ sequence = {"vMMR_901":['1','1','1','1'],
              "vMMR_104":['5','6','7','8'],
              "vMMR_108":['2','5','3','9'],
              "vMMR_109":['3','7','6','4'],
-             "vMMR_201":['6','5','7','9']}
+             "vMMR_201":['6','5','7','9'],
+             "vMMR_112":['3','7','1','8'],
+             "vMMR_202":['4','6','2','8']}
 
 cond = condition[subj]
 seq = sequence[subj]
@@ -106,7 +110,7 @@ for nrun in np.arange(0,4,1):
     SEQ[np.where(np.isin(SEQ, ['s','S']))[0]] = 2 # ground truth
     SEQ[np.where(np.isin(SEQ, ['d','D']))[0]] = 4 # ground truth
     SEQ = SEQ.astype('int64')
-    compare = events_stim[:,2] - SEQ
+    # compare = events_stim[:,2] - SEQ
     print('Matching ones (out of 1800):' + str(np.sum(events_stim[:,2] == SEQ)))
     print('subject:' + subj + ' run' + str(nrun+1))
 
@@ -160,7 +164,7 @@ for nrun in np.arange(0,4,1):
     
     # calculate the Hit rate
     for i in np.arange(0,len(resp)-1,1):
-        if resp[i,2] == 166 and resp[i+1,2] == 16: # press after the change
+        if resp[i,2] == 166 and resp[i+1,2] == 16: # press (16) after the change (166)
             RT = resp[i+1,0] - resp[i,0]
             if RT < 1000:
                 correct += 1
@@ -169,7 +173,7 @@ for nrun in np.arange(0,4,1):
             # print(i)
             # print(resp[i:i+4])
             if RT_double < 1000:
-                correct += 1
+                correct += 2
         elif resp[i,2] == 16 and resp[i+1,2] == 166:
             pass
         # else:
@@ -186,8 +190,8 @@ for nrun in np.arange(0,4,1):
     # Calculate accuracy and dprime
     accuracy = correct/80
     
-    hit = correct/(len(correct) + len(FA)) # number of hit/total response
-    FA = FA/(len(correct) + len(FA)) # number of FA/total response
+    hit = correct/(correct+FA) # number of hit/total response
+    FA = FA/(correct + FA) # number of FA/total response
     dprime = norm.ppf(hit) - norm.ppf(FA)
 
     print("Accuracy:" + str(accuracy))

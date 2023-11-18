@@ -20,7 +20,7 @@ def plot_err(group_stc,color,t):
     group_avg=np.mean(group_stc,axis=0)
    #plt.figure()
     err=np.std(group_stc,axis=0)/np.sqrt(group_stc.shape[0])
-    up=group_avg+errMEG/vector_method
+    up=group_avg+err
     lw=group_avg-err
     t=np.linspace(-100,600,3501)
     plt.plot(t,group_avg,color=color)
@@ -32,10 +32,10 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morp
 
 #%%####################################### Traditional or new direction
 ## Load vertex
-MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy') # with the mag or vector method
-MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph.npy') # with the mag or vector method
-MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph.npy') # with the mag or vector method
-MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_None_morph.npy') # with the mag or vector method
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph.npy') # with the mag or vector method
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy') # with the mag or vector method
+MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_None_morph.npy') # with the mag or vector method
+MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_None_morph.npy') # with the mag or vector method
 EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr1_eeg.npy')
 EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr2_eeg.npy')
 
@@ -54,7 +54,28 @@ label_names
 lh_ROI_label = [60,61,62,72] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 rh_ROI_label = [96,97,98,108] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 
-## visualization average
+## visualization average same-plot
+plt.figure()
+plot_err(stats.zscore(EEG_mmr1,axis=1),'k',stc1.times)
+plot_err(stats.zscore(MEG_mmr1_m.mean(axis=1),axis=1),'b',stc1.times)
+plot_err(stats.zscore(MEG_mmr1_v.mean(axis=1),axis=1),'r',stc1.times)
+plt.legend(['EEG','','MEG mag','','MEG vector',''])
+plt.xlabel('Time (ms)')
+plt.ylabel('zscore')
+plt.title('Traditional method MMR1')
+plt.xlim([-100, 600])
+
+plt.figure()
+plot_err(stats.zscore(EEG_mmr2,axis=1),'k',stc1.times)
+plot_err(stats.zscore(MEG_mmr2_m.mean(axis=1),axis=1),'b',stc1.times)
+plot_err(stats.zscore(MEG_mmr2_v.mean(axis=1),axis=1),'r',stc1.times)
+plt.legend(['EEG','','MEG mag','','MEG vector',''])
+plt.xlabel('Time (ms)')
+plt.ylabel('zscore')
+plt.title('Traditional method MMR2')
+plt.xlim([-100, 600])
+
+## visualization average sub-plot
 times = stc1.times
 plt.figure()
 plt.subplot(311)
@@ -260,9 +281,9 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morp
 times = stc1.times
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
-stc1.data = MEG_mmr2_v.mean(axis=0) - MEG_mmr1_v.mean(axis=0)
+stc1.data = MEG_mmr2_m.mean(axis=0) - MEG_mmr1_m.mean(axis=0)
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
-stc1.plot(src,clim=dict(kind="value",pos_lims=[0,4,8]), subject='fsaverage', subjects_dir=subjects_dir)
+stc1.plot(src,clim=dict(kind="value",pos_lims=[0,12,16]), subject='fsaverage', subjects_dir=subjects_dir)
 
 #%%####################################### decoding result
 ## Traditional direction: ba to mba vs. ba to pa
