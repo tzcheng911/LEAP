@@ -56,6 +56,27 @@ X = mmr2-mmr1
 X = X[:,ts:te].mean(axis=1)
 stats.ttest_1samp(X,0)
 
+#%% non-paramatric permutation test on EEG
+root_path='/media/tzcheng/storage/CBS/'
+times = np.linspace(-0.1,0.6,3501)
+
+ts = 500
+te = 1750
+
+std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_eeg.npy')
+dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_eeg.npy')
+dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_eeg.npy')
+
+MMR1 = dev1 - std
+MMR2 = dev2 - std
+
+X = MMR1-MMR2
+X = X[:,ts:te]
+T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(X)
+
+good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
+times[ts:te][clusters[good_cluster_inds]]
+
 #%% non-paramatric permutation test on the whole brain
 tic = time.time()
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
