@@ -59,36 +59,36 @@ for nrun in np.arange(0,4,1):
     d[:, 2] = 4
     r[:, 2] = 16
 
-    ###### Repair broken triggers
-    # step 1: delete the second splitting triggers
-    cross_s_ind = np.where(np.diff(cross,axis = 0)[:,0] < pulse_dur)
-    std_s_ind = np.where(np.diff(std,axis = 0)[:,0]  < pulse_dur)
-    d_s_ind = np.where(np.diff(d,axis = 0)[:,0]  < pulse_dur) 
-    r_s_ind = np.where(np.diff(r,axis = 0)[:,0]  < pulse_dur) 
-    cross = np.delete(cross,np.array(cross_s_ind) + 1,axis=0) # delete the next item
-    std = np.delete(std,np.array(std_s_ind) + 1,axis=0) # delete the next item
-    d = np.delete(d,np.array(d_s_ind) + 1,axis=0) # delete the next item
-    r = np.delete(r,np.array(r_s_ind) + 1,axis=0) # delete the next item
+    # ###### Repair broken triggers
+    # # step 1: delete the second splitting triggers
+    # cross_s_ind = np.where(np.diff(cross,axis = 0)[:,0] < pulse_dur)
+    # std_s_ind = np.where(np.diff(std,axis = 0)[:,0]  < pulse_dur)
+    # d_s_ind = np.where(np.diff(d,axis = 0)[:,0]  < pulse_dur) 
+    # r_s_ind = np.where(np.diff(r,axis = 0)[:,0]  < pulse_dur) 
+    # cross = np.delete(cross,np.array(cross_s_ind) + 1,axis=0) # delete the next item
+    # std = np.delete(std,np.array(std_s_ind) + 1,axis=0) # delete the next item
+    # d = np.delete(d,np.array(d_s_ind) + 1,axis=0) # delete the next item
+    # r = np.delete(r,np.array(r_s_ind) + 1,axis=0) # delete the next item
     events_stim = np.concatenate((cross,std,d),axis=0)
     events_stim = events_stim[events_stim[:,0].argsort()] # sort by the latency
     
-    # step 2: deal with the cross-talk (leaking from STI1 to STI2, and STI2 to STI3)
-    i = np.where(np.diff(events_stim[:,0]) < pulse_dur)[0]
-    i_del = [] # delete the larger one cuz the cross-talk happen in this direction (2 followed 1 or 4 followed 2)
-    for ni in i:
-        if np.argmax(events_stim[ni:ni+2,2]) == 0:
-            i_del.append(ni)
-        elif np.argmax(events_stim[ni:ni+2,2]) == 1:
-            i_del.append(ni+1)
+    # # step 2: deal with the cross-talk (leaking from STI1 to STI2, and STI2 to STI3)
+    # i = np.where(np.diff(events_stim[:,0]) < pulse_dur)[0]
+    # i_del = [] # delete the larger one cuz the cross-talk happen in this direction (2 followed 1 or 4 followed 2)
+    # for ni in i:
+    #     if np.argmax(events_stim[ni:ni+2,2]) == 0:
+    #         i_del.append(ni)
+    #     elif np.argmax(events_stim[ni:ni+2,2]) == 1:
+    #         i_del.append(ni+1)
        
-    if i_del: 
-        events_stim = np.delete(events_stim,np.array([i_del])[0],axis=0) 
+    # if i_del: 
+    #     events_stim = np.delete(events_stim,np.array([i_del])[0],axis=0) 
 
-    # step 3: for the random intruders e.g. 430 s (event 953) for vMMR_108 run 2
-    if subj == 'vMMR_108' and nrun == 1:
-        events_stim = np.delete(events_stim,953,axis=0) # manually delete this one random intruder 
-    if subj == 'vMMR_104' and nrun == 0:
-        events_stim = np.delete(events_stim,1501,axis=0) # manually delete this one random intruder 
+    # # step 3: for the random intruders e.g. 430 s (event 953) for vMMR_108 run 2
+    # if subj == 'vMMR_108' and nrun == 1:
+    #     events_stim = np.delete(events_stim,953,axis=0) # manually delete this one random intruder 
+    # if subj == 'vMMR_104' and nrun == 0:
+    #     events_stim = np.delete(events_stim,1501,axis=0) # manually delete this one random intruder 
     events = np.concatenate((events_stim,r),axis=0)
     events = events[events[:,0].argsort()] # sort by the latency
 
@@ -139,10 +139,11 @@ for nrun in np.arange(0,4,1):
     sdr = np.concatenate(([[1,1,1]],sdr,[[1,1,1]]),axis=0)
     
     # catch the button press within [-100 500] window of a std or dev events
+    # ----s-d-press-s-d---- 
     for n in np.arange(0,len(sdr),1):
-        if sdr[n,2] == 16 and sdr[n-1,2] != 16:
-            RT_pre = sdr[n+1,0]-sdr[n,0]
-            RT_post = sdr[n,0]-sdr[n-1,0]
+        if sdr[n,2] == 16 and sdr[n-1,2] != 16: # the current one (n) is the *press*
+            RT_pre = sdr[n+1,0]-sdr[n,0] # pre and post regarding the s and d ----s-d-*press-s*-d---- 
+            RT_post = sdr[n,0]-sdr[n-1,0] # pre and post regarding the s and d ----s-*d-press*-s-d---- 
             if abs(RT_pre) < 100:
                 sdr_del.append(n+1)
                 print("Press during the std or dev trials!")
@@ -153,46 +154,46 @@ for nrun in np.arange(0,4,1):
     sdr = np.delete(sdr,sdr_del,axis=0) # delete the events contaminated by button press
     mne.write_events(file_out + subj + condition_all[cond][nrun] +'_mmr-eve.fif', sdr, overwrite = True)
 
-    ###### Evaluate the behavioral performance
-    # 1. count as correct response if less than 1 s after the change
-    # 2. calculate d prime
-    events_stim[CHANGE,2] = 166
-    resp = np.concatenate((events_stim[CHANGE,:],r),axis=0)
-    resp = resp[resp[:,0].argsort()] # 166 is the change, 16 is the button press
+    # ###### Evaluate the behavioral performance
+    # # 1. count as correct response if less than 1s after the change
+    # # 2. calculate d prime
+    # events_stim[CHANGE,2] = 166
+    # resp = np.concatenate((events_stim[CHANGE,:],r),axis=0)
+    # resp = resp[resp[:,0].argsort()] # 166 is the change, 16 is the button press
 
-    correct = 0
+    # correct = 0
     
-    # calculate the Hit rate
-    for i in np.arange(0,len(resp)-1,1):
-        if resp[i,2] == 166 and resp[i+1,2] == 16: # press (16) after the change (166)
-            RT = resp[i+1,0] - resp[i,0]
-            if RT < 1000:
-                correct += 1
-        elif all(resp[i:i+2,2] == 166) and all(resp[i+2:i+4,2] == 16): ## consider close change 166, 166, 16, 16
-            RT_double = resp[i+4,0] - resp[i+1,0] # second 16 should be less than 1s of the second 166
-            # print(i)
-            # print(resp[i:i+4])
-            if RT_double < 1000:
-                correct += 2
-        elif resp[i,2] == 16 and resp[i+1,2] == 166:
-            pass
-        # else:
-        #     print("something is wrong!")
-        #     print(i)
+    # # calculate the Hit rate
+    # for i in np.arange(0,len(resp)-1,1):
+    #     if resp[i,2] == 166 and resp[i+1,2] == 16: # press (16) after the change (166)
+    #         RT = resp[i+1,0] - resp[i,0]
+    #         if RT < 1000:
+    #             correct += 1
+    #     elif all(resp[i:i+2,2] == 166) and all(resp[i+2:i+4,2] == 16): ## consider close change 166, 166, 16, 16
+    #         RT_double = resp[i+4,0] - resp[i+1,0] # second 16 should be less than 1s of the second 166
+    #         # print(i)
+    #         # print(resp[i:i+4])
+    #         if RT_double < 1000:
+    #             correct += 2
+    #     elif resp[i,2] == 16 and resp[i+1,2] == 166:
+    #         pass
+    #     # else:
+    #     #     print("something is wrong!")
+    #     #     print(i)
     
-    # calculate the FA rate
-    FA = 0
-    for i in np.arange(0,len(resp)-1,1):
-        if resp[i,2] == 16 and (resp[i,0] - resp[i-1,0] > 1000): # find the ones longer than 1s from previous event (i.e. 16 or 166)
-            FA += 1
-            # print(resp[i-2:i+2])
+    # # calculate the FA rate
+    # FA = 0
+    # for i in np.arange(0,len(resp)-1,1):
+    #     if resp[i,2] == 16 and (resp[i,0] - resp[i-1,0] > 1000): # find the ones longer than 1s from previous event (i.e. 16 or 166)
+    #         FA += 1
+    #         # print(resp[i-2:i+2])
 
-    # Calculate accuracy and dprime
-    accuracy = correct/80
+    # # Calculate accuracy and dprime
+    # accuracy = correct/80
     
-    hit = correct/(correct+FA) # number of hit/total response
-    FA = FA/(correct + FA) # number of FA/total response
-    dprime = norm.ppf(hit) - norm.ppf(FA)
+    # hit = correct/(correct+FA) # number of hit/total response
+    # FA = FA/(correct + FA) # number of FA/total response
+    # dprime = norm.ppf(hit) - norm.ppf(FA)
 
-    print("Accuracy:" + str(accuracy))
-    print("d prime:" + str(dprime))
+    # print("Accuracy:" + str(accuracy))
+    # print("d prime:" + str(dprime))
