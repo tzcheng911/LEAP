@@ -142,7 +142,7 @@ def do_filtering(data, lp, do_cabr):
     else:
         data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
-
+label_tc_dummy
 def do_cov(subject,data):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()

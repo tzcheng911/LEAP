@@ -293,7 +293,7 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morp
 times = stc1.times
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
-stc1.data = MEG_mmr2_m.mean(axis=0) - MEG_mmr1_m.mean(axis=0)
+stc1.data = MEG_mmr2_v.mean(axis=0) - MEG_mmr1_v.mean(axis=0)
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 stc1.plot(src,clim=dict(kind="value",pos_lims=[0,12,16]), subject='fsaverage', subjects_dir=subjects_dir)
 
