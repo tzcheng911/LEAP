@@ -112,7 +112,12 @@ def do_sss(subject,st_correlation,int_order):
     'sld_108': ['MEG0312', 'MEG1712'],
     'sld_110': ['MEG0312', 'MEG1712'],
     'sld_113': ['MEG0312', 'MEG1712','MEG1831'],
-    'sld_112': ['MEG0312', 'MEG1712']
+    'sld_112': ['MEG0312', 'MEG1712'],
+    'sld_111': ['MEG0312', 'MEG1712'],
+    'sld_114': ['MEG0312', 'MEG1712'],
+    'sld_115': ['MEG0312', 'MEG1712'],
+    'sld_116': ['MEG0312', 'MEG1712'],
+    'sld_117': ['MEG0312', 'MEG1712', 'MEG0631'],
     }
     # make sure you cd to the working directory that have ct and cal files
     mnefun.do_processing(
@@ -228,12 +233,13 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
+subjects = ['sld_115','sld_116','sld_117']
 
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    # do_otp(s)
-    # do_sss(s,st_correlation,int_order)
+    do_otp(s)
+    do_sss(s,st_correlation,int_order)
     for run in runs:
         print ('Doing ECG/EOG projection...')
         [raw,raw_erm] = do_projection(s,run)

@@ -146,14 +146,14 @@ brain = stc.plot(src=src, subjects_dir=subjects_dir
 ## Could apply to MMR or FFR, just load different group file
 root_path='/media/tzcheng/storage/CBS/'
 # times = np.linspace(-0.02,0.2,1101)
-times = np.linspace(-0.1,0.6,3501)
+# times = np.linspace(-0.1,0.6,3501)
 
 ts = 500
 te = 1750
 
-# std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg_200.npy')
-# dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')
-# dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')
+std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg_200.npy')
+dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')
+dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')
 std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_eeg.npy')
 dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_eeg.npy')
 dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_eeg.npy')
@@ -165,8 +165,8 @@ X = np.concatenate((MMR1,MMR2),axis=0)
 X = X[:,ts:te]
 y = np.concatenate((np.repeat(0,len(dev1)),np.repeat(1,len(dev2))))
 
-# X = np.concatenate((std,dev1,dev2),axis=0)
-# y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
+X = np.concatenate((std,dev1,dev2),axis=0)
+y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
 
 clf = make_pipeline(
     StandardScaler(),  # z-score normalization
@@ -197,9 +197,10 @@ scores_perm_array=np.asarray(scores_perm)
 plt.figure()
 plt.hist(scores_perm_array,bins=30,color='k')
 plt.vlines(score,ymin=0,ymax=12,color='r',linewidth=2)
-plt.vlines(np.percentile(scores_perm_array,95),ymin=0,ymax=12,color='grey',linewidth=2)
+plt.vlines(np.percentile(scores_perm_array,97.5),ymin=0,ymax=12,color='grey',linewidth=2)
 plt.ylabel('Count',fontsize=20)
 plt.xlabel('Accuracy',fontsize=20)
+plt.title('FFR accuracy compared to 97.5 percentile of n = 500 null distribution')
 
 plt.figure()
 plt.subplot(311)

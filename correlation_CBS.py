@@ -411,25 +411,35 @@ std_audio = signal.resample(std_audio, num_std, t=None, axis=0, window=None)
 dev1_audio = signal.resample(dev1_audio, num_dev, t=None, axis=0, window=None)
 dev2_audio = signal.resample(dev2_audio, num_dev, t=None, axis=0, window=None)
 
-audio0 = std_audio
-EEG0 = std
+audio0 = dev2_audio
+EEG0 = dev2
 times0_audio = np.linspace(0,len(audio0)/5000,len(audio0))
 times0_eeg = np.linspace(0,len(EEG0[0])/5000,len(EEG0[0]))
 
-## dev 2
-ts = 100
+## dev 1: noise burst from 40 ms (200th points)
+ts = 200 + 100
 te = 650
-audio = audio0[ts:te] # try 0.05 to 0.13 s for dev2
+audio = audio0[ts:te] # try 0.042 to 0.13 s for dev2
 EEG = EEG0[:,ts:te]
 times_audio = times0_audio[ts:te]
 times_eeg = times0_eeg[ts:te]
 lags = signal.correlation_lags(len(audio),len(EEG[0]))
 lags_s = lags/5000
 
-## std
+## dev 2: noise burst from 0 ms (100th points)
+ts = 100
+te = 650
+audio = audio0[ts:te] # try 0.02 to 0.13 s for dev2
+EEG = EEG0[:,ts:te]
+times_audio = times0_audio[ts:te]
+times_eeg = times0_eeg[ts:te]
+lags = signal.correlation_lags(len(audio),len(EEG[0]))
+lags_s = lags/5000
+
+## std: noise burst from 0 ms (100th points)
 ts = 100
 te = 500
-audio = audio0[ts:te] # try 0.03 to 0.1 s for std
+audio = audio0[ts:te] # try 0.02 to 0.1 s for std
 EEG = EEG0[:,ts:te]
 times_audio = times0_audio[ts:te]
 times_eeg = times0_eeg[ts:te]

@@ -135,7 +135,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('me2'): 
         subjects.append(file)
-subjects = subjects[43:]
+subjects = subjects[57:]
 
 subj_11mo = []
 for file in os.listdir():

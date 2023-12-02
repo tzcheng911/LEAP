@@ -58,23 +58,35 @@ stats.ttest_1samp(X,0)
 
 #%% non-paramatric permutation test on EEG
 root_path='/media/tzcheng/storage/CBS/'
-times = np.linspace(-0.1,0.6,3501)
-
+times = np.linspace(-0.1,0.6,3501) # For MMR
+times = np.linspace(-0.02,0.2,1101) # For FFR
 ts = 500
 te = 1750
 
 std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_eeg.npy')
 dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_eeg.npy')
 dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_eeg.npy')
+std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg_200.npy')
+dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')
+dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')
+
 
 MMR1 = dev1 - std
 MMR2 = dev2 - std
 
 X = MMR1-MMR2
 X = X[:,ts:te]
+
+## FFR 
+X = dev2 - dev1
+X = dev2 - std
+
 T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(X)
 
 good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
+for i in np.arange(0,len(good_cluster_inds),1):
+    print("The " + str(i+1) + "st significant cluster")
+    print(times[clusters[good_cluster_inds[i]]])
 times[ts:te][clusters[good_cluster_inds]]
 
 #%% non-paramatric permutation test on the whole brain

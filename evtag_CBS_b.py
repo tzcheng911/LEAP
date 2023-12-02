@@ -13,6 +13,8 @@ Could be used for SLD too. Change the path, subject name and condition
 Notes:
 1. cbs_b113 has very short recording, cbs_b115 has no recording
 2. had to change the cbs_b102 (was coded as cbs_902)
+3. sld_111 has issue on process events (last two events duplicate)
+4. sld_105 t2 has 2 recordings
     
 The correspondance between event tage and sound are
 
@@ -89,6 +91,7 @@ def process_events(subj,block):
     #figure out length of each trial and the indx of alt sounds
     trial_length=[]
     alt_ind=[]
+    
     for i in range(1,len(ind2),2):
         tl=ind2[i]-ind2[i-1]+1
         trial_length.append(tl)
@@ -233,15 +236,24 @@ os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
-#  conditions = ['2','1','2','1','1','1','1','3','1','5','1','5','2','1'] # for each individuals following the order in BABY subj
-#conditions =['1','2','2','3','2','2','6','2','4','4']
-conditions =['4','4']
+# conditions = ['2','1','2','1','1','1','1','3','1','5','1','5','2','1'] # follow the order of CBS subj, see paper runsheet
+# conditions =['1','2','2','3','2','2','6','2','4','4'] # follow the order of SLD subj, see runsheet here 
+# https://uwnetid-my.sharepoint.com/:x:/r/personal/babyleap_uw_edu/_layouts/15/Doc.aspx?sourcedoc=%7B4CDEB132-CCF5-4641-AFEF-43E17E28C126%7D&file=SLD%20Tracking%20&%20Runsheets.xlsx=&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0&action=default&mobileredirect=true
+
 
 subj = [] 
 check_all= []
 for file in os.listdir():
     if file.startswith('sld'):
         subj.append(file)
+
+## do individual by individual 
+# subj = ['sld_114','sld_115','sld_116','sld_117']
+# conditions = ['2','6','4','4']
+
+subj = ['sld_105']
+conditions = ['2']
+
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]
@@ -251,7 +263,7 @@ for n,s in enumerate(subj):
         os.makedirs(root_path + s + '/events')
         
     # raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/' + s + '/raw_fif/' + s + run +'_raw.fif',allow_maxshield=True,preload=True)
-    raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s + '_t1' + run +'_raw.fif',allow_maxshield=True,preload=True)
+    raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s + '_t2' + run +'_raw.fif',allow_maxshield=True,preload=True)
     find_events(raw_file, s,run)
     events=process_events(s,run)
     check=check_events(events,condition)
