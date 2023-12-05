@@ -71,7 +71,8 @@ def do_sss(subject,st_correlation,int_order,time):
     params.int_order = int_order # 8 for adults and 6 for infants
     params.movecomp = 'inter'
     # params.mf_prebad['cbs_A101'] = ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643']
-    params.mf_prebad = {
+    
+    t1_prebad = {
     'cbs_A101': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
     'cbs_A103': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG0911'],
     'cbs_A104': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
@@ -119,7 +120,24 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_116': ['MEG0312', 'MEG1712'],
     'sld_117': ['MEG0312', 'MEG1712', 'MEG0631'],
     }
+    
+    t2_prebad = {
+    'sld_105': ['MEG0312', 'MEG1712'],
+    'sld_101': ['MEG0312', 'MEG1712'],
+    # 'sld_103': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
+    # 'sld_102': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
+    # 'sld_104': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
+    # 'sld_107': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643']
+    }
+    
+    if time == '_t1':
+        params.mf_prebad = t1_prebad
+    elif time == '_t2':
+        params.mf_prebad = t2_prebad
+    else: 
+        print("Check the t1 or t2")
     # make sure you cd to the working directory that have ct and cal files
+    
     mnefun.do_processing(
         params,
         do_score=False,  # do scoring
@@ -225,7 +243,7 @@ os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = '_t1' # first time (6 mo) or second time (12 mo) coming back 
+time = '_t2' # first time (6 mo) or second time (12 mo) coming back 
 
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
@@ -235,7 +253,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = ['sld_102']
+subjects = ['sld_105','sld_101']
 
 #%%###### do the jobs
 for s in subjects:
@@ -252,5 +270,5 @@ for s in subjects:
         do_cov(s,raw_erm_filt,time)
         print ('Doing epoch...')
         do_epoch_mmr(raw_filt, s, run,time)
-        # do_epoch_cabr(raw_filt, s, run)
+        do_epoch_cabr(raw_filt, s, run,time)
 
