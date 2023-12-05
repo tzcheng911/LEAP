@@ -20,7 +20,7 @@ from mne.preprocessing import maxwell_filter
 import numpy as np
 import os
 
-def do_otp(subject):
+def do_otp(subject,time):
 #    root_path='/media/tzcheng/storage/CBS/'+ subject +'/raw_fif/'
     root_path='/media/tzcheng/storage2/SLD/MEG/'+ subject +'/raw_fif/'
 
@@ -30,14 +30,14 @@ def do_otp(subject):
     for run in runs:
         # file_in=root_path+'cbs'+str(subj)+'_'+str(run)+'_raw.fif'
         # file_out=root_path+'cbs'+str(subj)+'_'+str(run)+'_otp_raw.fif'
-        file_in=root_path+subject+'_t1_'+run+'_raw.fif'
-        file_out=root_path+subject+'_t1_'+run+'_otp_raw.fif'
+        file_in=root_path+subject+time+'_'+run+'_raw.fif'
+        file_out=root_path+subject+time+'_'+run+'_otp_raw.fif'
         raw=mne.io.Raw(file_in,allow_maxshield=True)
         picks=mne.pick_types(raw.info,meg=True,eeg=False,eog=False, ecg=False,exclude='bads')
         raw_otp=mne.preprocessing.oversampled_temporal_projection(raw,duration=1,picks=picks)
         raw_otp.save(file_out,overwrite=True)
 
-def do_sss(subject,st_correlation,int_order):
+def do_sss(subject,st_correlation,int_order,time):
     # root_path='/media/tzcheng/storage/CBS/'
     root_path='/media/tzcheng/storage2/SLD/MEG/'
 
@@ -49,8 +49,8 @@ def do_sss(subject,st_correlation,int_order):
 
     # params.work_dir = '/media/tzcheng/storage/CBS/'
     params.work_dir = '/media/tzcheng/storage2/SLD/MEG/'
-    params.run_names = ['%s_t1_01_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
-    params.runs_empty = ['%s_t1_erm_otp']
+    params.run_names = ['%s' + time + '_01_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
+    params.runs_empty = ['%s' + time + '_erm_otp']
     params.subject_indices = [0] #to run individual participants
     #params.subject_indices = np.arange(0,len(params.subjects)) #to run all subjects
 
@@ -135,14 +135,14 @@ def do_sss(subject,st_correlation,int_order):
         print_status=False,
     )
 
-def do_projection(subject, run):
+def do_projection(subject, run,time):
     ###### cleaning with ecg and eog projection
     root_path = os.getcwd()
-    file_in=root_path + '/' + subject + '/sss_fif/' + subject + '_t1'+run + '_otp_raw_sss'
+    file_in=root_path + '/' + subject + '/sss_fif/' + subject + time +run + '_otp_raw_sss'
     file_out=file_in + '_proj'
     raw = mne.io.read_raw_fif(file_in + '.fif',allow_maxshield=True,preload=True)
-    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + '_t1_erm_otp_raw_sss'
-    fname_erm_out = root_path + '/' + subject + '/sss_fif/' + subject + '_t1'+run + '_erm_raw_sss_proj'
+    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + time + '_erm_otp_raw_sss'
+    fname_erm_out = root_path + '/' + subject + '/sss_fif/' + subject + time + run + '_erm_raw_sss_proj'
     raw_erm = mne.io.read_raw_fif(fname_erm + '.fif',allow_maxshield=True,preload=True)
         
     ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='ECG001', n_grad=1, n_mag=1, reject=None)
@@ -165,19 +165,19 @@ def do_filtering(data, lp):
     data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
 
-def do_cov(subject,data):
+def do_cov(subject,data,time):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
-    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + '_t1'+run + '_t1_erm_otp_raw_sss_proj_fil50'
+    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + time +run + '_erm_otp_raw_sss_proj_fil50'
     fname_erm_out = fname_erm + '-cov'
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
     mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
 
-def do_epoch_mmr(data, subject, run):
+def do_epoch_mmr(data, subject, run,time):
     ###### Read the event files to do epoch    
     root_path = os.getcwd()
-    mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject +run + '_events_mmr-eve.fif')
-    file_out = root_path + '/' + subject + '/sss_fif/' + subject + '_t1'+run + '_otp_raw_sss_proj_fil50'
+    mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject +time+run + '_events_mmr-eve.fif')
+    file_out = root_path + '/' + subject + '/sss_fif/' + subject + time +run + '_otp_raw_sss_proj_fil50'
 
     event_id = {'Standard':1,'Deviant1':3,'Deviant2':6}
     
@@ -196,11 +196,11 @@ def do_epoch_mmr(data, subject, run):
     
     return evoked_substd,evoked_dev1,evoked_dev2,epochs_cortical
 
-def do_epoch_cabr(data, subject, run):  
+def do_epoch_cabr(data, subject, run,time):  
     ###### Read the event files (generated from evtag.py) 
     root_path = os.getcwd()
-    cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_cabr-eve.fif')
-    file_out = root_path + '/' + subject + '/sss_fif/' + subject + '_t1'+run + '_otp_raw_sss_proj_fil50'
+    cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + time + run + '_events_cabr-eve.fif')
+    file_out = root_path + '/' + subject + '/sss_fif/' + subject + time +run + '_otp_raw_sss_proj_fil50'
     
     event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
     
@@ -225,6 +225,8 @@ os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
+time = '_t1' # first time (6 mo) or second time (12 mo) coming back 
+
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
@@ -233,22 +235,22 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = ['sld_115','sld_116','sld_117']
+subjects = ['sld_102']
 
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    do_otp(s)
-    do_sss(s,st_correlation,int_order)
+    do_otp(s,time)
+    do_sss(s,st_correlation,int_order,time)
     for run in runs:
         print ('Doing ECG/EOG projection...')
-        [raw,raw_erm] = do_projection(s,run)
+        [raw,raw_erm] = do_projection(s,run,time)
         print ('Doing filtering...')
         raw_filt = do_filtering(raw,lp)
         raw_erm_filt = do_filtering(raw_erm,lp)
         print ('calculate cov...')
-        do_cov(s,raw_erm_filt)
+        do_cov(s,raw_erm_filt,time)
         print ('Doing epoch...')
-        do_epoch_mmr(raw_filt, s, run)
+        do_epoch_mmr(raw_filt, s, run,time)
         # do_epoch_cabr(raw_filt, s, run)
 

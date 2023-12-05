@@ -31,7 +31,7 @@ import itertools
 import random
 import os
 
-def find_events(raw_file,subj,block):
+def find_events(raw_file,subj,block,time):
     #find events: fix the STI011 issue by recreating STI101
     STI1 = mne.find_events(raw_file,stim_channel='STI001') 
     STI3 = mne.find_events(raw_file,stim_channel='STI003')
@@ -43,14 +43,14 @@ def find_events(raw_file,subj,block):
     events = events[events[:,0].argsort()] # sort by the latency
     # root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
     root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
-    file_name_raw=root_path + str(subj) + str(block) +'_events_raw-eve.fif'
+    file_name_raw=root_path + str(subj) + time + str(block) +'_events_raw-eve.fif'
     mne.write_events(file_name_raw,events,overwrite=True)  ###write out raw events for double checking
     
-def process_events(subj,block):
+def process_events(subj,block,time):
      #find events
     # root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
     root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
-    file_name_raw=root_path + str(subj) + str(block) +'_events_raw-eve.fif'
+    file_name_raw=root_path + str(subj) + time + str(block) +'_events_raw-eve.fif'
     events=mne.read_events(file_name_raw)  ###write out raw events for double checking
     
     ###
@@ -111,7 +111,7 @@ def process_events(subj,block):
                 events[ind1[m]][2]=7 
        
     
-    file_name_new=root_path + str(subj) + block +'_events_processed-eve.fif'
+    file_name_new=root_path + str(subj) + time + block +'_events_processed-eve.fif'
     mne.write_events(file_name_new,events,overwrite=True)  ###read in raw events
     return events
 
@@ -157,7 +157,7 @@ def check_events(events,condition):  ## processed events
     return check
 
 
-def select_mmr_events(events,subj,block): ## load the processed events
+def select_mmr_events(events,subj,block,time): ## load the processed events
     e=[]
     for event in events:
         if event[2] in [1,2,3,5,6,7]:
@@ -184,12 +184,12 @@ def select_mmr_events(events,subj,block): ## load the processed events
     
     # root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
     root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
-    file_name_new=root_path + str(subj) + block + '_events_mmr-eve.fif'
+    file_name_new=root_path + str(subj) + time + block + '_events_mmr-eve.fif'
     mne.write_events(file_name_new,mmr_event,overwrite=True)
     return mmr_event
 
 
-def select_cabr_events(events,subj,block): ## load the processed events
+def select_cabr_events(events,subj,block,time): ## load the processed events
     e=[]
     for event in events:
         if event[2] in [1,2,3,5,6,7]:
@@ -223,7 +223,7 @@ def select_cabr_events(events,subj,block): ## load the processed events
     cabr_event=np.concatenate((substd1,substd2,dev1,dev2),axis=0)
     root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
     # root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-    file_name_new=root_path + str(subj) + block + '_events_cabr-eve.fif'
+    file_name_new=root_path + str(subj) + time + block + '_events_cabr-eve.fif'
     mne.write_events(file_name_new, cabr_event,overwrite=True)
     return cabr_event
 
@@ -236,8 +236,9 @@ os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
+time = '_t1' # first time (6 mo) or second time (12 mo) coming back 
 # conditions = ['2','1','2','1','1','1','1','3','1','5','1','5','2','1'] # follow the order of CBS subj, see paper runsheet
-# conditions =['1','2','2','3','2','2','6','2','4','4'] # follow the order of SLD subj, see runsheet here 
+conditions =['1','4','2','2','4','3','2','2','2','6','6','2','4','4'] # follow the order of SLD subj, see runsheet here 
 # https://uwnetid-my.sharepoint.com/:x:/r/personal/babyleap_uw_edu/_layouts/15/Doc.aspx?sourcedoc=%7B4CDEB132-CCF5-4641-AFEF-43E17E28C126%7D&file=SLD%20Tracking%20&%20Runsheets.xlsx=&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0&action=default&mobileredirect=true
 
 
@@ -248,11 +249,13 @@ for file in os.listdir():
         subj.append(file)
 
 ## do individual by individual 
+## t1
 # subj = ['sld_114','sld_115','sld_116','sld_117']
 # conditions = ['2','6','4','4']
 
-subj = ['sld_105']
-conditions = ['2']
+## t2
+# subj = ['sld_101','sld_102']
+# conditions = ['5','4']
 
 ###### do the jobs
 for n,s in enumerate(subj):
@@ -263,13 +266,13 @@ for n,s in enumerate(subj):
         os.makedirs(root_path + s + '/events')
         
     # raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/' + s + '/raw_fif/' + s + run +'_raw.fif',allow_maxshield=True,preload=True)
-    raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s + '_t2' + run +'_raw.fif',allow_maxshield=True,preload=True)
-    find_events(raw_file, s,run)
-    events=process_events(s,run)
+    raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s + time + run +'_raw.fif',allow_maxshield=True,preload=True)
+    find_events(raw_file, s,run,time)
+    events=process_events(s,run,time)
     check=check_events(events,condition)
     check_all.append(check)
-    mmr_event=select_mmr_events(events, s, run)
-    cabr_event=select_cabr_events(events, s, run)                  
+    mmr_event=select_mmr_events(events, s, run,time)
+    cabr_event=select_cabr_events(events, s, run,time)                  
 
 #%% check the sound presentation
 raw_file.pick_channels(['MISC001'])

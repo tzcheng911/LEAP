@@ -51,14 +51,15 @@ proj = mne.io.read_raw_fif('/media/tzcheng/storage2/SLD/MEG/sld_101/sss_fif/sld_
 ## MMR
 epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mmr_e.fif')
 
-evoked_s = mne.read_estc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
-evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
-evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]modify the paper then give to
+evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')[0]
+evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]
 evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0]
 
 # use these three lines to check for the evoked responses for babies
 for i in np.arange(0,len(subj),1):
-    s = subj[i]proj = mne.io.read_raw_fif('/media/tzcheng/storage2/SLD/MEG/sld_101/sss_fif/sld_101_t1_01_otp_raw_sss_proj.fif')
+    s = subj[i]
+    proj = mne.io.read_raw_fif('/media/tzcheng/storage2/SLD/MEG/sld_101/sss_fif/sld_101_t1_01_otp_raw_sss_proj.fif')
     evoked_s = mne.read_evokeds(root_path + '/' + s + '/sss_fif/' + s + '_01_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
     evoked_s.plot_topomap(ch_type='mag',times=np.linspace(0, 0.5, 6),colorbar=True)
     evoked_s.plot(picks='mag',gfp=True)

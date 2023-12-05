@@ -3,7 +3,11 @@
 """
 Created on Sun Oct 29 23:03:10 2023
 Preprocessing for ME2. Need to have events file ready from evtag.py
-Need to redo me2_207_7m empty
+See a list of problemetic subjects from notion page.
+Focus on getting 7 mo from 100 and 200, 11 mo from 300
+Need manually fix:
+1. 108_7m, 202_7m, 208_7m, 316_11m only have run 1,2,4
+
 @author: tzcheng
 """
 
@@ -44,7 +48,6 @@ def do_sss(subject,st_correlation,int_order):
     params.runs_empty = ['%s_erm_otp']
     params.subject_indices = [0] #to run individual participants
     #params.subject_indices = np.arange(0,len(params.subjects)) #to run all subjects
-
 
     params.plot_drop_logs = True  # turn off for demo or plots will block
     #params.sws_ssh = 'christina@kasga.ilabs.uw.edu'
@@ -135,7 +138,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('me2'): 
         subjects.append(file)
-subjects = subjects[57:]
+subjects = subjects[66:]
 
 subj_11mo = []
 for file in os.listdir():
@@ -155,11 +158,12 @@ if not prebads_exist:
     print(s + ' doesnt have prebads txt')
     no_prebadstxt.append(s)
 
+# subjects = ['me2_108_7m', 'me2_202_7m', 'me2_208_7m', 'me2_316_11m'] # problemetic subjects
 #%%###### do the jobs
 for s in subjects:
     print(s)
     do_otp(s)
-    # do_sss(s,st_correlation,int_order)
+    do_sss(s,st_correlation,int_order)
     # for run in runs:
     #     print ('Doing ECG/EOG projection...')
     #     [raw,raw_erm] = do_projection(s,run)
