@@ -138,7 +138,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('me2'): 
         subjects.append(file)
-subjects = subjects[66:]
+subjects = subjects[59:]
 
 subj_11mo = []
 for file in os.listdir():
@@ -163,7 +163,7 @@ if not prebads_exist:
 for s in subjects:
     print(s)
     do_otp(s)
-    do_sss(s,st_correlation,int_order)
+    # do_sss(s,st_correlation,int_order)
     # for run in runs:
     #     print ('Doing ECG/EOG projection...')
     #     [raw,raw_erm] = do_projection(s,run)

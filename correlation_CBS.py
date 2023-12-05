@@ -48,7 +48,7 @@ def plot_err(group_data,color,t):
     err=np.std(group_data,axis=0)/np.sqrt(group_data.shape[0])
     up=group_avg+err
     lw=group_avg-err
-    t=np.linspace(-100,600,3501)
+    #t=np.linspace(-100,600,3501)
     plt.plot(t,group_avg,color=color)
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
     
@@ -412,7 +412,7 @@ dev1_audio = signal.resample(dev1_audio, num_dev, t=None, axis=0, window=None)
 dev2_audio = signal.resample(dev2_audio, num_dev, t=None, axis=0, window=None)
 
 audio0 = dev2_audio
-EEG0 = dev2
+EEG0 =std
 times0_audio = np.linspace(0,len(audio0)/5000,len(audio0))
 times0_eeg = np.linspace(0,len(EEG0[0])/5000,len(EEG0[0]))
 
@@ -514,3 +514,9 @@ std_xcorr_lag
 
 X = np.array(dev1_xcorr_lag) - np.array(dev2_xcorr_lag)
 stats.ttest_1samp(X,0)
+
+plt.figure()
+plot_err(std,'k',times0_eeg*1000)
+plt.xlabel('Time (ms)')
+
+plt.xlim([-100, 600])
