@@ -412,7 +412,7 @@ dev1_audio = signal.resample(dev1_audio, num_dev, t=None, axis=0, window=None)
 dev2_audio = signal.resample(dev2_audio, num_dev, t=None, axis=0, window=None)
 
 audio0 = dev2_audio
-EEG0 =std
+EEG0 =dev2
 times0_audio = np.linspace(0,len(audio0)/5000,len(audio0))
 times0_eeg = np.linspace(0,len(EEG0[0])/5000,len(EEG0[0]))
 
