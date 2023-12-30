@@ -252,10 +252,13 @@ for file in os.listdir():
 ## t1
 # subj = ['sld_114','sld_115','sld_116','sld_117']
 # conditions = ['2','6','4','4']
+subj = ['sld_118','sld_119','sld_121','sld_122']
+conditions = ['3','2','1','5']
 
 ## t2
-# subj = ['sld_101','sld_102']
-# conditions = ['5','4']
+# subj = ['sld_103','sld_104','sld_107']
+# conditions = ['4','1','1']
+
 
 ###### do the jobs
 for n,s in enumerate(subj):
