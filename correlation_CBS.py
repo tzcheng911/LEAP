@@ -411,8 +411,8 @@ std_audio = signal.resample(std_audio, num_std, t=None, axis=0, window=None)
 dev1_audio = signal.resample(dev1_audio, num_dev, t=None, axis=0, window=None)
 dev2_audio = signal.resample(dev2_audio, num_dev, t=None, axis=0, window=None)
 
-audio0 = std_audio
-EEG0 = std
+audio0 = dev2_audio
+EEG0 = dev2
 times0_audio = np.linspace(0,len(audio0)/5000,len(audio0))
 times0_eeg = np.linspace(0,len(EEG0[0])/5000,len(EEG0[0]))
 
@@ -505,14 +505,17 @@ fig.suptitle('FFR')
 for s in np.arange(0,len(EEG),1):
     axs[s].plot(times_eeg,EEG[s,:])
     
-dev1_xcorr
-dev1_xcorr_lag
-dev2_xcorr
-dev2_xcorr_lag
-std_xcorr
-std_xcorr_lag
+pa_coef = np.load('xcorr_coef_pa.npy')
+ba_coef = np.load('xcorr_coef_ba.npy')
+mba_coef = np.load('xcorr_coef_mba.npy')
+mba_lag = np.load('xcorr_lag_mba.npy')
+ba_lag = np.load('xcorr_lag_ba.npy')
+pa_lag = np.load('xcorr_lag_pa.npy')
 
-X = np.array(dev1_xcorr_lag) - np.array(dev2_xcorr_lag)
+np.mean(pa_lag)
+np.std(pa_lag)
+
+X = pa_coef - ba_coef
 stats.ttest_1samp(X,0)
 
 plt.figure()
