@@ -14,9 +14,12 @@ import numpy as np
 import time
 import mne
 import scipy.stats as stats
+from scipy import stats,signal
 from mne import spatial_src_adjacency
 from mne.stats import spatio_temporal_cluster_1samp_test
+import sklearn 
 import matplotlib.pyplot as plt 
+from scipy.io import wavfile
 
 def plot_err(group_stc,color,t):
     group_avg=np.mean(group_stc,axis=0)
@@ -197,3 +200,99 @@ plt.ylim((-0,10))
 plt.title('RIGHT Frontal',fontsize=18)
 plt.xticks(fontsize=12)
 plt.yticks(fontsize=12)
+
+#%% bootstraping the EEG xcorr between FFR and audio
+root_path='/media/tzcheng/storage/CBS/'
+
+## Load FFR from 0
+std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg_200.npy')[:,100:]
+dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')[:,100:]
+dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')[:,100:]
+
+## Load real audio
+fs, std_audio = wavfile.read('/media/tzcheng/storage/CBS/stimuli/+10.wav')
+fs, dev1_audio = wavfile.read('/media/tzcheng/storage/CBS/stimuli/-40.wav')
+fs, dev2_audio = wavfile.read('/media/tzcheng/storage/CBS/stimuli/+40.wav')
+# Downsample
+fs_new = 5000
+num_std = int((len(std_audio)*fs_new)/fs)
+num_dev = int((len(dev2_audio)*fs_new)/fs)  # #sample_new/fs_new=#sample/fs find number of samples in the resampled data
+            
+std_audio = signal.resample(std_audio, num_std, t=None, axis=0, window=None)
+dev1_audio = signal.resample(dev1_audio, num_dev, t=None, axis=0, window=None)
+dev2_audio = signal.resample(dev2_audio, num_dev, t=None, axis=0, window=None)
+
+## choose among std, dev1, dev2 and run the corresponding session below
+audio0 = dev2_audio
+EEG0 = dev2
+times0_audio = np.linspace(0,len(audio0)/5000,len(audio0))
+times0_eeg = np.linspace(0,len(EEG0[0])/5000,len(EEG0[0]))
+
+## dev 1: noise burst from 40 ms (200th points)
+ts = 200 + 100
+te = 650
+audio = audio0[ts:te] # try 0.042 to 0.13 s for dev2
+EEG = EEG0[:,ts:te]
+times_audio = times0_audio[ts:te]
+times_eeg = times0_eeg[ts:te]
+lags = signal.correlation_lags(len(audio),len(EEG[0]))
+lags_s = lags/5000
+
+## dev 2: noise burst from 0 ms (100th points)
+ts = 100
+te = 650
+audio = audio0[ts:te] # try 0.02 to 0.13 s for dev2
+EEG = EEG0[:,ts:te]
+times_audio = times0_audio[ts:te]
+times_eeg = times0_eeg[ts:te]
+lags = signal.correlation_lags(len(audio),len(EEG[0]))
+lags_s = lags/5000
+
+## std: noise burst from 0 ms (100th points)
+ts = 100
+te = 500
+audio = audio0[ts:te] # try 0.02 to 0.1 s for std
+EEG = EEG0[:,ts:te]
+times_audio = times0_audio[ts:te]
+times_eeg = times0_eeg[ts:te]
+lags = signal.correlation_lags(len(audio),len(EEG[0]))
+lags_s = lags/5000
+
+## xcorr from averaged FFR
+a = (audio - np.mean(audio))/np.std(audio)
+a = a / np.linalg.norm(a)
+b = (EEG.mean(axis=0) - np.mean(EEG.mean(axis=0)))/np.std(EEG.mean(axis=0))
+b = b / np.linalg.norm(b)
+xcorr = signal.correlate(a,b,mode='full')
+xcorr = abs(xcorr)
+xcorr_max = max(xcorr)
+xcorr_maxlag = np.argmax(xcorr)
+
+## sample with replacement 
+n_boot = 1000
+boot_xcorr_max = []
+boot_xcorr_maxlag = []
+ind = np.arange(0,np.shape(EEG)[0],1)
+
+for n in np.arange(0,n_boot,1):
+    boot_ind = sklearn.utils.resample(ind)
+    boot_EEG = EEG[boot_ind,:]
+    b = (boot_EEG.mean(axis=0) - np.mean(boot_EEG.mean(axis=0)))/np.std(boot_EEG.mean(axis=0))
+    b = b / np.linalg.norm(b)
+    xcorr = signal.correlate(a,b,mode='full')
+    xcorr = abs(xcorr)
+    xcorr_max = max(xcorr)
+    xcorr_maxlag = np.argmax(xcorr)
+    boot_xcorr_max.append(xcorr_max)
+    boot_xcorr_maxlag.append(xcorr_maxlag)
+boot_xcorr_maxlag = lags_s[boot_xcorr_maxlag]*1000
+boot_xcorr_max=np.asarray(boot_xcorr_max)
+boot_xcorr_maxlag=np.asarray(boot_xcorr_maxlag)
+
+plt.figure()
+plt.hist(boot_xcorr_max,bins=30,color='k')
+plt.vlines(xcorr_max,ymin=0,ymax=12,color='r',linewidth=2)
+plt.vlines(np.percentile(boot_xcorr_max,97.5),ymin=0,ymax=12,color='grey',linewidth=2)
+plt.ylabel('Count',fontsize=20)
+plt.xlabel('Xcorr coef',fontsize=20)
+plt.title('Xcorr coef compared to 97.5 percentile of n = 1000 bootstrap distribution')
