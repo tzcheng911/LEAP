@@ -389,11 +389,11 @@ dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.
 # dev1_audio = np.load(root_path + 'stimuli/cbs_A123_mba.npy')[100:750]
 # dev2_audio = np.load(root_path + 'stimuli/cbs_A123_pa.npy')[100:750]
 
-# plt.figure()
-# plt.plot(np.linspace(-0.02,0.2,1101),dev2.mean(axis=0))
+plt.figure()
+plt.plot(np.linspace(-0.02,0.2,1101),dev2.mean(axis=0))
 
-# plt.figure()
-# plt.plot(np.linspace(-0.02,0.2,1101),dev2_audio)
+plt.figure()
+plt.plot(np.linspace(0,0.13,650),dev2_audio)
 
 # plt.figure()
 # plt.plot(np.linspace(0,0.13,650),dev2_audio_r)
@@ -515,7 +515,7 @@ pa_lag = np.load('xcorr_lag_pa.npy')
 np.mean(pa_lag)
 np.std(pa_lag)
 
-X = pa_coef - ba_coef
+X = mba_lag - ba_lag
 stats.ttest_1samp(X,0)
 
 plt.figure()

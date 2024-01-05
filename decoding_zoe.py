@@ -151,12 +151,21 @@ root_path='/media/tzcheng/storage/CBS/'
 ts = 500
 te = 1750
 
+## 1st run
 std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg_200.npy')
 dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')
 dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')
 std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_eeg.npy')
 dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_eeg.npy')
 dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_eeg.npy')
+
+## 2nd run
+std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_std_cabr_eeg_all.npy')
+dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev1_cabr_eeg_all.npy')
+dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev2_cabr_eeg_all.npy')
+std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_std_eeg.npy')
+dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev1_eeg.npy')
+dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev2_eeg.npy')
 
 MMR1 = dev1 - std
 MMR2 = dev2 - std
@@ -200,7 +209,7 @@ plt.vlines(score,ymin=0,ymax=12,color='r',linewidth=2)
 plt.vlines(np.percentile(scores_perm_array,97.5),ymin=0,ymax=12,color='grey',linewidth=2)
 plt.ylabel('Count',fontsize=20)
 plt.xlabel('Accuracy',fontsize=20)
-plt.title('FFR accuracy compared to 97.5 percentile of n = 500 null distribution')
+plt.title('MMR accuracy compared to 97.5 percentile of n = 500 null distribution')
 
 plt.figure()
 plt.subplot(311)

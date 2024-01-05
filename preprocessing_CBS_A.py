@@ -142,7 +142,7 @@ def do_filtering(data, lp, do_cabr):
     else:
         data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
-label_tc_dummy
+
 def do_cov(subject,data):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
@@ -324,11 +324,11 @@ root_path='/media/tzcheng/storage/CBS/'
 os.chdir(root_path)
 
 ## parameters 
-direction = 'pa_to_ba' # traditional direction 'ba_to_pa': ba to pa and ba to mba
+direction = 'ba_to_pa' # traditional direction 'ba_to_pa': ba to pa and ba to mba
 # reverse direction 'pa_to_ba' : is pa to ba and mba to ba; 
 # only comparing /ba/ 'first_last_ba': only comparing /ba/ before and after habituation 
 
-runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
+runs = ['_02'] # ['_01','_02'] for the adults and ['_01'] for the infants
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
 lp = 50 
@@ -369,7 +369,7 @@ for file in os.listdir():
 #         do_epoch_mmr_eeg(raw_file, s, run, direction)
 
 #%%##### do the jobs for EEG FFR
-n_trials = 50 # can be an integer or 'all' using all the sounds
+n_trials = 'all' # can be an integer or 'all' using all the sounds
 # randomly select k sounds from each condition
 # each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
 # we have at least 200 sounds for each condition 

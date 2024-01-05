@@ -247,7 +247,7 @@ os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = '_t1' # first time (6 mo) or second time (12 mo) coming back 
+time = '_t2' # first time (6 mo) or second time (12 mo) coming back 
 
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
@@ -257,7 +257,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = ['sld_118','sld_119','sld_121','sld_122']
+subjects = ['sld_107']
 
 #%%###### do the jobs
 for s in subjects:

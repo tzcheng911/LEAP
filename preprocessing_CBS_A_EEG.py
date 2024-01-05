@@ -228,7 +228,7 @@ def average_cabr_trials(raw_file,cabr_events):
 
 #%% main
 subj='cbs_A123'
-block='01'
+block='02'
 #condition='4'
 #%%
 raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+subj+'/raw_fif/'+subj+'_'+ block+'_raw.fif',allow_maxshield=True,preload=True)
