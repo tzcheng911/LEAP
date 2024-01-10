@@ -64,7 +64,110 @@ def do_sss(subject,st_correlation,int_order):
     params.st_correlation = st_correlation # 0.98 for adults and 0.9 for infants
     params.int_order = int_order # 8 for adults and 6 for infants
     params.movecomp = 'inter'
-    params.mf_prebad = open(root_path + subject + '_prebad.txt').read().split()
+    
+    ## based on the excel runsheet
+    prebad = {
+    'me2_101_7m': ['MEG1743', 'MEG1842'],
+    'me2_101_11m': ['MEG1842'],
+    'me2_102_7m': ['MEG1743', 'MEG1842'],
+    'me2_102_11m': ['MEG1433'],
+    'me2_103_7m': ['MEG1743', 'MEG1842'],
+    'me2_103_11m': ['MEG1733', 'MEG1811', 'MEG1842'],
+    'me2_104_7m': ['MEG1743', 'MEG1842'],
+    'me2_104_11m': ['MEG1453'],
+    'me2_106_7m': ['MEG1743', 'MEG1842'],
+    'me2_106_11m': ['MEG1433'],
+    'me2_108_7m': ['MEG1743', 'MEG1842'],
+    'me2_108_11m': ['MEG1433'],
+    'me2_109_7m': ['MEG1842'],
+    'me2_110_7m': ['MEG1842'],
+    'me2_110_11m': ['MEG1433', 'MEG1743', 'MEG1842'],
+    'me2_111_7m': ['MEG1842'],
+    'me2_112_7m': ['MEG1842'],
+    'me2_112_11m': ['MEG1433','MEG1843'],
+    'me2_113_7m': ['MEG1842'],
+    'me2_113_11m': ['MEG1433', 'MEG1743', 'MEG1842'],
+    'me2_114_7m': ['MEG1842'],
+    'me2_115_7m': ['MEG1842'],
+    'me2_116_7m': ['MEG1842'],
+    'me2_116_11m': ['MEG1433', 'MEG1743', 'MEG1842'],
+    'me2_117_7m': ['MEG1842'],
+    'me2_118_7m': ['MEG1842'],
+    'me2_119_7m': ['MEG1842'],
+    'me2_119_11m': ['MEG1433', 'MEG1743'],
+    'me2_120_7m': ['MEG1842', 'MEG1431', 'MEG2431'],
+    'me2_122_7m': ['MEG1842'],
+    'me2_122_11m':  ['MEG1433', 'MEG1743', 'MEG1842'],
+    'me2_124_7m': ['MEG1842'],
+    'me2_124_11m': ['MEG1433', 'MEG1743'],
+    'me2_125_7m': ['MEG1842'],
+    'me2_127_7m': ['MEG1842'],
+    'me2_127_11m': ['MEG1433', 'MEG1743', 'MEG1842'],
+    'me2_128_7m': ['MEG1842'],
+    'me2_129_7m': ['MEG1842'],
+    'me2_129_11m': ['MEG1433', 'MEG1743', 'MEG0313'],
+    'me2_202_7m': ['MEG1433'],
+    'me2_203_7m': ['MEG1433'],
+    'me2_204_7m': ['MEG1433','MEG1321','MEG1141','MEG1322','MEG1323'],
+    'me2_205_7m': ['MEG1433'],
+    'me2_206_7m': ['MEG1433'],
+    'me2_207_7m': ['MEG1433'],
+    'me2_208_7m': ['MEG1433'],
+    'me2_209_7m': ['MEG1433'],
+    'me2_211_7m': ['MEG1433'],
+    'me2_212_7m': ['MEG1433'],
+    'me2_213_7m': ['MEG1433','MEG1743', 'MEG1842'],
+    'me2_215_7m': ['MEG1433','MEG1743', 'MEG1842'],
+    'me2_216_7m': ['MEG1433','MEG1743', 'MEG1872'],
+    'me2_217_7m': ['MEG1433','MEG1743', 'MEG1842'],
+    'me2_218_7m': ['MEG1433','MEG1743', 'MEG1842', 'MEG2011', 'MEG2041', 'MEG0621'],
+    'me2_220_7m': ['MEG1433','MEG1743', 'MEG1842'],
+    'me2_221_7m': ['MEG1433','MEG1743', 'MEG1842'],
+    'me2_202_11m': ['MEG1433','MEG1743', 'MEG1842'],
+    'me2_204_11m': ['MEG1433','MEG1243', 'MEG1842'],
+    'me2_205_11m': ['MEG1433','MEG1743', 'MEG1842'],
+    'me2_206_11m': ['MEG1433','MEG1753','MEG1243'],
+    'me2_207_11m': ['MEG1433','MEG1743', 'MEG1842'],
+    'me2_208_11m': ['MEG1433','MEG1243', 'MEG1842'],
+    'me2_209_11m': ['MEG1743', 'MEG1843'],
+    'me2_211_11m': ['MEG1433','MEG1743', 'MEG1842'],
+    'me2_212_11m': ['MEG1433','MEG1743', 'MEG1842'],
+    'me2_213_11m': ['MEG1433','MEG1811'],
+    'me2_215_11m': ['MEG1433','MEG1811'],
+    'me2_216_11m': ['MEG1433','MEG1811'],
+    'me2_217_11m': ['MEG1433','MEG1811'],
+    'me2_218_11m': ['MEG1433','MEG1811'],
+    'me2_220_11m': ['MEG1433','MEG1811'],
+    'me2_221_11m': ['MEG1433','MEG1811'],
+    'me2_301_11m': ['MEG1842'],
+    'me2_302_11m': ['MEG1842'],
+    'me2_303_11m': ['MEG1842'],
+    'me2_304_11m': ['MEG1842'],
+    'me2_305_11m': ['MEG1842'],
+    'me2_306_11m': ['MEG1842'],
+    'me2_307_11m': ['MEG1842'],
+    'me2_308_11m': ['MEG1842'],
+    'me2_309_11m': ['MEG1743','MEG1842'],
+    'me2_310_11m': ['MEG1842'],
+    'me2_311_11m': ['MEG1842'],
+    'me2_312_11m': ['MEG1842'],
+    'me2_313_11m': ['MEG1842'],
+    'me2_314_11m': ['MEG1842'],
+    'me2_315_11m': ['MEG1842'],
+    'me2_316_11m': ['MEG1433','MEG1842'],
+    'me2_318_11m': ['MEG1433','MEG1742','MEG1811','MEG1842'],
+    'me2_319_11m': ['MEG1433','MEG1743'],
+    'me2_320_11m': ['MEG1433','MEG1743'],
+    'me2_321_11m': ['MEG1433','MEG1743','MEG1842'],
+    'me2_322_11m': ['MEG1433','MEG1743','MEG1842'],
+    'me2_323_11m': ['MEG1433','MEG1743','MEG1842'],
+    'me2_324_11m': ['MEG1433','MEG1743','MEG1842'],
+    'me2_325_11m': ['MEG1433','MEG1743','MEG1842'],
+    'me2_326_11m': ['MEG1433','MEG1743','MEG1842'],
+    }
+    
+    params.mf_prebad = prebad
+    # params.mf_prebad = open(root_path + subject + '_prebad.txt').read().split()
     # make sure you cd to the working directory that have ct and cal files
     mnefun.do_processing(
         params,
@@ -162,16 +265,16 @@ if not prebads_exist:
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    do_otp(s)
-    # do_sss(s,st_correlation,int_order)
-    # for run in runs:
-    #     print ('Doing ECG/EOG projection...')
-    #     [raw,raw_erm] = do_projection(s,run)
-    #     print ('Doing filtering...')
-    #     raw_filt = do_filtering(s, raw,lp,run)
-    #     raw_erm_filt = do_filtering(s, raw_erm,lp)
-    #     print ('calculate cov...')
-    #     do_cov(s,raw_erm_filt,run)
-    #     print ('Doing epoch...')
-    #     # do_epoch_mmr(raw_filt, s, run)
-    #     # do_epoch_cabr(raw_filt, s, run)
+    # do_otp(s)
+    do_sss(s,st_correlation,int_order)
+    for run in runs:
+        print ('Doing ECG/EOG projection...')
+        [raw,raw_erm] = do_projection(s,run)
+        print ('Doing filtering...')
+        raw_filt = do_filtering(s, raw,lp,run)
+        raw_erm_filt = do_filtering(s, raw_erm,lp)
+        print ('calculate cov...')
+        do_cov(s,raw_erm_filt,run)
+        print ('Doing epoch...')
+        # do_epoch_mmr(raw_filt, s, run)
+        # do_epoch_cabr(raw_filt, s, run)
