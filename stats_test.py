@@ -279,12 +279,12 @@ for n in np.arange(0,n_boot,1):
     boot_EEG = EEG[boot_ind,:]
     b = (boot_EEG.mean(axis=0) - np.mean(boot_EEG.mean(axis=0)))/np.std(boot_EEG.mean(axis=0))
     b = b / np.linalg.norm(b)
-    xcorr = signal.correlate(a,b,mode='full')
-    xcorr = abs(xcorr)
-    xcorr_max = max(xcorr)
-    xcorr_maxlag = np.argmax(xcorr)
-    boot_xcorr_max.append(xcorr_max)
-    boot_xcorr_maxlag.append(xcorr_maxlag)
+    tmp_xcorr = signal.correlate(a,b,mode='full')
+    tmp_xcorr = abs(tmp_xcorr)
+    tmp_xcorr_max = max(tmp_xcorr)
+    tmp_xcorr_maxlag = np.argmax(tmp_xcorr)
+    boot_xcorr_max.append(tmp_xcorr_max)
+    boot_xcorr_maxlag.append(tmp_xcorr_maxlag)
 boot_xcorr_maxlag = lags_s[boot_xcorr_maxlag]*1000
 boot_xcorr_max=np.asarray(boot_xcorr_max)
 boot_xcorr_maxlag=np.asarray(boot_xcorr_maxlag)

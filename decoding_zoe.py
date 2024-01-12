@@ -209,7 +209,7 @@ plt.vlines(score,ymin=0,ymax=12,color='r',linewidth=2)
 plt.vlines(np.percentile(scores_perm_array,97.5),ymin=0,ymax=12,color='grey',linewidth=2)
 plt.ylabel('Count',fontsize=20)
 plt.xlabel('Accuracy',fontsize=20)
-plt.title('MMR accuracy compared to 97.5 percentile of n = 500 null distribution')
+plt.title('FFR accuracy compared to 97.5 percentile of n = 500 null distribution')
 
 plt.figure()
 plt.subplot(311)
