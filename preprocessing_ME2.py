@@ -34,7 +34,7 @@ def do_otp(subject):
         raw_otp.save(file_out,overwrite=True)
 
 def do_sss(subject,st_correlation,int_order):
-    root_path='/media/tzcheng/storage/ME2_MEG/'+ subject +'/raw_fif/'
+    root_path='/media/tzcheng/storage/ME2_MEG/'
 
     os.chdir(root_path)
     params = mnefun.Params(n_jobs=6, n_jobs_mkl=1, proj_sfreq=200, n_jobs_fir='cuda',
@@ -118,7 +118,8 @@ def do_sss(subject,st_correlation,int_order):
     'me2_212_7m': ['MEG1433'],
     'me2_213_7m': ['MEG1433','MEG1743', 'MEG1842'],
     'me2_215_7m': ['MEG1433','MEG1743', 'MEG1842'],
-    'me2_216_7m': ['MEG1433','MEG1743', 'MEG1872'],
+    'me2_216_7m': ['MEG1433','MEG1743', 'MEG1872'], # 'MEG1872' in mf_prebad['me2_216_7m'] is not a valid channel name -> change to 1842
+    'me2_216_7m': ['MEG1433','MEG1743', 'MEG1842'], 
     'me2_217_7m': ['MEG1433','MEG1743', 'MEG1842'],
     'me2_218_7m': ['MEG1433','MEG1743', 'MEG1842', 'MEG2011', 'MEG2041', 'MEG0621'],
     'me2_220_7m': ['MEG1433','MEG1743', 'MEG1842'],
@@ -187,22 +188,22 @@ def do_sss(subject,st_correlation,int_order):
 def do_projection(subject, run):
     ###### cleaning with ecg and eog projection
     root_path = os.getcwd()
-    file_in=root_path + subject + '/sss_fif/' + subject + '_'+run + '_otp_raw_sss'
+    file_in=root_path + '/' +subject + '/sss_fif/' + subject + run + '_otp_raw_sss'
     file_out=file_in + '_proj'
     raw = mne.io.read_raw_fif(file_in + '.fif',allow_maxshield=True,preload=True)
-    fname_erm = root_path + subject + '/sss_fif/' + subject + '_erm_otp_raw_sss'
-    fname_erm_out = root_path + subject + '/sss_fif/' + subject + '_'+run + '_erm_raw_sss_proj'
+    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + '_erm_otp_raw_sss'
+    fname_erm_out = root_path + '/' + subject + '/sss_fif/' + subject + '_'+run + '_erm_raw_sss_proj'
     raw_erm = mne.io.read_raw_fif(fname_erm + '.fif',allow_maxshield=True,preload=True)
         
-    ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='ECG001', n_grad=1, n_mag=1, reject=None)
-    ecg_epochs = mne.preprocessing.create_ecg_epochs(raw,ch_name='ECG001').average() # don't really need to assign the ch_name
-    eog_projs, eog_events = mne.preprocessing.compute_proj_eog(raw, ch_name=['EOG002'], n_grad=1, n_mag=1, reject=None) ## adult ['EOG002','EOG003'], infant ['EOG002']
-    eog_epochs = mne.preprocessing.create_eog_epochs(raw,ch_name=['EOG002']).average() ## adult ['EOG002','EOG003'], infant ['EOG002']
+    ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='ECG063', n_grad=1, n_mag=1, reject=None)
+    ecg_epochs = mne.preprocessing.create_ecg_epochs(raw,ch_name='ECG063').average() # don't really need to assign the ch_name
+    # eog_projs, eog_events = mne.preprocessing.compute_proj_eog(raw, ch_name=['EOG002'], n_grad=1, n_mag=1, reject=None) ## adult ['EOG002','EOG003'], infant ['EOG002']
+    # eog_epochs = mne.preprocessing.create_eog_epochs(raw,ch_name=['EOG002']).average() ## adult ['EOG002','EOG003'], infant ['EOG002']
 
     raw.add_proj(ecg_projs)
-    raw.add_proj(eog_projs)
+    # raw.add_proj(eog_projs)
     raw_erm.add_proj(ecg_projs)
-    raw_erm.add_proj(eog_projs)
+    # raw_erm.add_proj(eog_projs)
 
     raw.save(file_out + '.fif',overwrite = True)
     raw_erm.save(fname_erm_out + '.fif',overwrite = True)
@@ -212,7 +213,7 @@ def do_projection(subject, run):
 def do_filtering(subject, data, lp,run):
     ###### filtering
     root_path = os.getcwd()
-    file_in=root_path + subject + '/sss_fif/' + subject + '_'+run + '_otp_raw_sss_proj'
+    file_in=root_path + '/' + subject + '/sss_fif/' + subject + '_'+run + '_otp_raw_sss_proj'
     file_out=file_in + '_fil50'
     data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     data.save(file_out + '.fif',overwrite = True)
@@ -222,7 +223,7 @@ def do_filtering(subject, data, lp,run):
 def do_cov(subject,data,run):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
-    fname_erm = root_path + subject + '/sss_fif/' + subject + '_'+run + '_erm_otp_raw_sss_proj_fil50'
+    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + '_'+run + '_erm_otp_raw_sss_proj_fil50'
     fname_erm_out = fname_erm + '-cov'
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
     mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
@@ -241,8 +242,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('me2'): 
         subjects.append(file)
-subjects = subjects[83:]
-
+subjects = subjects[24:]
 subj_11mo = []
 for file in os.listdir():
     if file.endswith('11m'): 
@@ -254,12 +254,12 @@ for file in os.listdir():
         subj_7mo.append(file)
 
 ## check if there is prebad txt with the raw data: 49 subjects don't have it
-no_prebadstxt = []
-s = subjects[0]
-prebads_exist = os.path.exists(root_path + '/' + s + '/raw_fif/' + s + '_prebad.txt')
-if not prebads_exist:
-    print(s + ' doesnt have prebads txt')
-    no_prebadstxt.append(s)
+# no_prebadstxt = []
+
+# prebads_exist = os.path.exists(root_path + '/' + s + '/raw_fif/' + s + '_prebad.txt')
+# if not prebads_exist:
+#     print(s + ' doesnt have prebads txt')
+#     no_prebadstxt.append(s)
 
 # subjects = ['me2_108_7m', 'me2_202_7m', 'me2_208_7m', 'me2_316_11m'] # problemetic subjects
 #%%###### do the jobs
@@ -267,14 +267,14 @@ for s in subjects:
     print(s)
     # do_otp(s)
     do_sss(s,st_correlation,int_order)
-    for run in runs:
-        print ('Doing ECG/EOG projection...')
-        [raw,raw_erm] = do_projection(s,run)
-        print ('Doing filtering...')
-        raw_filt = do_filtering(s, raw,lp,run)
-        raw_erm_filt = do_filtering(s, raw_erm,lp)
-        print ('calculate cov...')
-        do_cov(s,raw_erm_filt,run)
-        print ('Doing epoch...')
-        # do_epoch_mmr(raw_filt, s, run)
-        # do_epoch_cabr(raw_filt, s, run)
+    # for run in runs:
+    #     print ('Doing ECG/EOG projection...')
+    #     [raw,raw_erm] = do_projection(s,run)
+    #     print ('Doing filtering...')
+    #     raw_filt = do_filtering(s, raw,lp,run)
+    #     raw_erm_filt = do_filtering(s, raw_erm,lp)
+    #     print ('calculate cov...')
+    #     do_cov(s,raw_erm_filt,run)
+    #     print ('Doing epoch...')
+    #     # do_epoch_mmr(raw_filt, s, run)
+    #     # do_epoch_cabr(raw_filt, s, run)
