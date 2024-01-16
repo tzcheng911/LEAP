@@ -74,7 +74,7 @@ def do_sss(subject,st_correlation,int_order):
     'me2_103_7m': ['MEG1743', 'MEG1842'],
     'me2_103_11m': ['MEG1733', 'MEG1811', 'MEG1842'],
     'me2_104_7m': ['MEG1743', 'MEG1842'],
-    'me2_104_11m': ['MEG1453'],
+    'me2_104_11m': ['MEG1433'], # 'MEG1453' in mf_prebad['me2_104_11m'] is not a valid channel name -> change to 1433
     'me2_106_7m': ['MEG1743', 'MEG1842'],
     'me2_106_11m': ['MEG1433'],
     'me2_108_7m': ['MEG1743', 'MEG1842'],
@@ -242,7 +242,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('me2'): 
         subjects.append(file)
-subjects = subjects[34:]
+subjects = subjects[50:]
 subj_11mo = []
 for file in os.listdir():
     if file.endswith('11m'): 
