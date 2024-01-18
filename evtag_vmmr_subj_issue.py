@@ -12,7 +12,7 @@ import matplotlib
 from scipy.stats import norm
 
 ###### Load data
-subj = 'vMMR_202'
+subj = 'vMMR_113'
 
 root_path='/media/tzcheng/storage/vmmr/'
 os.chdir(root_path)
