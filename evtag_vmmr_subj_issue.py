@@ -2,6 +2,8 @@
 # For vMMR_102 and vMMR_202
 # vMMR_102: incomplete recording (missing the first 15s for the second run). Can ignore the output of run2. 
 # vMMR_202: fall into sleep so button press is very messy
+# vMMR_203: incomplete recording (start recording late -- missing 9 events for the third run) 
+# SEQ[9:30] should match the events_stim; CHANGE = CHANGE-9 should make the accuracy normal
 
 ###### Import library
 import mne
@@ -12,7 +14,7 @@ import matplotlib
 from scipy.stats import norm
 
 ###### Load data
-subj = 'vMMR_113'
+subj = 'vMMR_203'
 
 root_path='/media/tzcheng/storage/vmmr/'
 os.chdir(root_path)
