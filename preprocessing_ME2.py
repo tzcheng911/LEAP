@@ -210,7 +210,7 @@ def do_projection(subject, run):
 
     return raw, raw_erm
 
-def do_filtering(subject, data, lp,run):
+def do_filtering(subject, data, lp, run):
     ###### filtering
     root_path = os.getcwd()
     file_in=root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj'
@@ -229,17 +229,12 @@ def do_cov(subject,data,run):
 
 def do_evtag(raw_file,subj,run):
     events = mne.find_events(raw_file,stim_channel='STI001') 
-    root_path='/media/tzcheng/storage/ME2_MEG/'+str(subj)+'/events/'
-    file_name_raw= str(subj) + run +'_events-eve.fif'
-    ###### Write event file
-    path = "/events"
-    isExist = os.path.exists(root_path + subj + path)
-    if not isExist:
-        os.makedirs(root_path + subj + path)
-        mne.write_events(file_name_raw, events, overwrite=True)
     return events 
 
 def do_epoch(data, subject, run, events):
+    root_path = os.getcwd()
+    file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj_fil50'
+
     ###### Read the event files to do epoch    
     event_id = {'Trial_Onset':5}
     reject=dict(grad=4000e-13,mag=4e-12)
@@ -247,10 +242,13 @@ def do_epoch(data, subject, run, events):
     epochs_cortical = mne.Epochs(data, events, event_id,tmin =-1, tmax=11,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
     evoked=epochs_cortical['Trial_Onset'].average()
     
+    epochs_cortical.save(file_out + '_epoch.fif',overwrite=True)
+    evoked.save(file_out + '_evoked.fif',overwrite=True)
+    
     return evoked,epochs_cortical
 
 ########################################
-root_path='/media/tzcheng/storage/ME2_MEG/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo'
 os.chdir(root_path)
 
 #%%## parameters 
@@ -263,6 +261,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('me2_'): 
         subjects.append(file)
+subjects = subjects[9:]
 
 subj_11mo = []
 for file in os.listdir():
@@ -293,7 +292,7 @@ for s in subjects:
         [raw,raw_erm] = do_projection(s,run)
         print ('Doing filtering...')
         raw_filt = do_filtering(s, raw,lp,run)
-        raw_erm_filt = do_filtering(s, raw_erm,lp)
+        raw_erm_filt = do_filtering(s, raw_erm,lp,run)
         print ('calculate cov...')
         do_cov(s,raw_erm_filt,run)
         print ('Doing epoch...')
