@@ -228,7 +228,12 @@ def do_cov(subject,data,run):
     mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
 
 def do_evtag(raw_file,subj,run):
-    events = mne.find_events(raw_file,stim_channel='STI001') 
+    if subj == 'me2_104_7m':
+        events_all = mne.find_events(raw_file,stim_channel='STI101') 
+        events =  events_all[events_all[:,2]==1]
+        events[:,2] = 5
+    else:
+        events = mne.find_events(raw_file,stim_channel='STI001') 
     return events 
 
 def do_epoch(data, subject, run, events):
@@ -248,7 +253,7 @@ def do_epoch(data, subject, run, events):
     return evoked,epochs_cortical
 
 ########################################
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo'
 os.chdir(root_path)
 
 #%%## parameters 
@@ -261,7 +266,6 @@ subjects = []
 for file in os.listdir():
     if file.startswith('me2_'): 
         subjects.append(file)
-subjects = subjects[9:]
 
 subj_11mo = []
 for file in os.listdir():
