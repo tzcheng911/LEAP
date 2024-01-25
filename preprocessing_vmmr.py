@@ -136,7 +136,7 @@ def do_epoch(subject, run):
 
     # remove blinking trials (can't see)
     eog_events = mne.preprocessing.find_eog_events(raw)
-    onsets = eog_events[:, 0] / raw.info["sfreq"] - 0.25
+    onsets = eog_events[:, 0] / raw.info["sfreq"] 
     durations = [0.5] * len(eog_events)
     descriptions = ["bad blink"] * len(eog_events)
     blink_annot = mne.Annotations(

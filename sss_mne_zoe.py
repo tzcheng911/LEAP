@@ -23,19 +23,19 @@ def get_t_window(raw):
     return t_window
 
 ## Load the data
-root_path='/media/tzcheng/storage/CBS_test/'
-subj = 'cbs_b101'
-run = ['1','erm']
+root_path='/media/tzcheng/storage/ME2_MEG/'
+subj = 'me2_212_7m'
+run = ['01']
 
-raw = mne.io.read_raw_fif(root_path + subj + '/raw_fif/' + subj + '_01_otp_raw.fif',allow_maxshield=True,preload=True)
-fine_cal_file = os.path.join(root_path, "sss_cal_truix.dat")
-crosstalk_file = os.path.join(root_path, "ct_sparse_triux2.fif")
+raw_212 = mne.io.read_raw_fif(root_path + subj + '/raw_fif/' + subj + '_01_otp_raw.fif',allow_maxshield=True,preload=True)
+fine_cal_file = os.path.join(root_path, "sss_cal.dat")
+crosstalk_file = os.path.join(root_path, "ct_sparse.fif")
 
 ## compute head position
 chpi_amplitudes = mne.chpi.compute_chpi_amplitudes(raw)
-chpi_locs = mne.chpi.compute_chpi_locs(raw.info, chpi_amplitudes)
+chpi_locs = mne.chpi.compute_chpi_locs(raw.info, chpi_amplitudes_212)
 head_pos_mne = mne.chpi.compute_head_pos(raw.info, chpi_locs, verbose=True)
-mne.chpi.write_head_pos('cbs_b101_head_pos_mne.pos',head_pos_mne)
+mne.chpi.write_head_pos(subj + '_01_otp_raw.pos',head_pos_mne)
 
 ## detect bad channels
 # from the experiment notes

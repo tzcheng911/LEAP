@@ -50,7 +50,7 @@ info = mne.io.read_info(raw_fname)
 # my_subject=sample # or change to whatever your subject called
 # my_NIfTI=/media/tzcheng/storage/vmmr/vMMR_901/sub-JA_T1w.nii.gz
 # recon-all -i $my_NIfTI -s $my_subject -all
-# mne watershed_bem --subject=$my_subject --subjects-dir=SUBJECTS_DIR --overwrite
+# mne _ --subject=$my_subject --subjects-dir=SUBJECTS_DIR --overwrite
 # mne make_scalp_surfaces --subject=$my_subject --overwrite # can use -f to Force creation of the surface even if it has some topological defects.
 
 ## visualize freesurfer output
@@ -139,8 +139,8 @@ mne.write_forward_solution(fname + '_fwd.fif', fwd)
 #%% Inverse modeling
 ## Load the evoked responses (1,2,3,4) of interest
 fwd = mne.read_forward_solution('/media/tzcheng/storage/vmmr/vMMR_901/source/vMMR_901_1_fwd.fif')
-evoked_s = mne.read_evokeds('/media/tzcheng/storage/vmmr/vMMR_901/sss_fif/vMMR_901_4_raw_sss_clean_fil50_evoked_s.fif')[0]
-evoked_d = mne.read_evokeds('/media/tzcheng/storage/vmmr/vMMR_901/sss_fif/vMMR_901_4_raw_sss_clean_fil50_evoked_d.fif')[0]
+evoked_s = mne.read_evokeds('/media/tzcheng/storage/vmmr/vMMR_902/sss_fif/vMMR_902_4_raw_sss_clean_fil50_evoked_s.fif')[0]
+evoked_d = mne.read_evokeds('/media/tzcheng/storage/vmmr/vMMR_902/sss_fif/vMMR_902_4_raw_sss_clean_fil50_evoked_d.fif')[0]
 
 inverse_operator = mne.minimum_norm.make_inverse_operator(clean_sss_raw.info, fwd, cov,loose=0.2,depth=0.8)
 standard = mne.minimum_norm.apply_inverse((evoked_s), inverse_operator)
