@@ -192,7 +192,7 @@ def do_projection(subject, run):
     file_out=file_in + '_proj'
     raw = mne.io.read_raw_fif(file_in + '.fif',allow_maxshield=True,preload=True)
     fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + '_erm_otp_raw_sss'
-    fname_erm_out = root_path + '/' + subject + '/sss_fif/' + subject + '_'+run + '_erm_raw_sss_proj'
+    fname_erm_out = root_path + '/' + subject + '/sss_fif/' + subject +run + '_erm_raw_sss_proj'
     raw_erm = mne.io.read_raw_fif(fname_erm + '.fif',allow_maxshield=True,preload=True)
         
     ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='ECG063', n_grad=1, n_mag=1, reject=None)
@@ -213,20 +213,41 @@ def do_projection(subject, run):
 def do_filtering(subject, data, lp,run):
     ###### filtering
     root_path = os.getcwd()
-    file_in=root_path + '/' + subject + '/sss_fif/' + subject + '_'+run + '_otp_raw_sss_proj'
+    file_in=root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj'
     file_out=file_in + '_fil50'
     data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     data.save(file_out + '.fif',overwrite = True)
-
     return data
 
 def do_cov(subject,data,run):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
-    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + '_'+run + '_erm_otp_raw_sss_proj_fil50'
+    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_otp_raw_sss_proj_fil50'
     fname_erm_out = fname_erm + '-cov'
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
     mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
+
+def do_evtag(raw_file,subj,run):
+    events = mne.find_events(raw_file,stim_channel='STI001') 
+    root_path='/media/tzcheng/storage/ME2_MEG/'+str(subj)+'/events/'
+    file_name_raw= str(subj) + run +'_events-eve.fif'
+    ###### Write event file
+    path = "/events"
+    isExist = os.path.exists(root_path + subj + path)
+    if not isExist:
+        os.makedirs(root_path + subj + path)
+        mne.write_events(file_name_raw, events, overwrite=True)
+    return events 
+
+def do_epoch(data, subject, run, events):
+    ###### Read the event files to do epoch    
+    event_id = {'Trial_Onset':5}
+    reject=dict(grad=4000e-13,mag=4e-12)
+    picks = mne.pick_types(data.info,meg=True,eeg=False) 
+    epochs_cortical = mne.Epochs(data, events, event_id,tmin =-1, tmax=11,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
+    evoked=epochs_cortical['Trial_Onset'].average()
+    
+    return evoked,epochs_cortical
 
 ########################################
 root_path='/media/tzcheng/storage/ME2_MEG/'
@@ -240,9 +261,9 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('me2'): 
+    if file.startswith('me2_'): 
         subjects.append(file)
-subjects = subjects[50:]
+
 subj_11mo = []
 for file in os.listdir():
     if file.endswith('11m'): 
@@ -266,15 +287,16 @@ for file in os.listdir():
 for s in subjects:
     print(s)
     # do_otp(s)
-    do_sss(s,st_correlation,int_order)
-    # for run in runs:
-    #     print ('Doing ECG/EOG projection...')
-    #     [raw,raw_erm] = do_projection(s,run)
-    #     print ('Doing filtering...')
-    #     raw_filt = do_filtering(s, raw,lp,run)
-    #     raw_erm_filt = do_filtering(s, raw_erm,lp)
-    #     print ('calculate cov...')
-    #     do_cov(s,raw_erm_filt,run)
-    #     print ('Doing epoch...')
-    #     # do_epoch_mmr(raw_filt, s, run)
-    #     # do_epoch_cabr(raw_filt, s, run)
+    # do_sss(s,st_correlation,int_order)
+    for run in runs:
+        print ('Doing ECG projection...')
+        [raw,raw_erm] = do_projection(s,run)
+        print ('Doing filtering...')
+        raw_filt = do_filtering(s, raw,lp,run)
+        raw_erm_filt = do_filtering(s, raw_erm,lp)
+        print ('calculate cov...')
+        do_cov(s,raw_erm_filt,run)
+        print ('Doing epoch...')
+        events = do_evtag(raw_filt,s,run)
+        evoked, epochs_cortical = do_epoch(raw_filt, s, run, events)
+        
