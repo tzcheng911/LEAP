@@ -23,11 +23,11 @@ def get_t_window(raw):
     return t_window
 
 ## Load the data
-root_path='/media/tzcheng/storage/ME2_MEG/'
-subj = 'me2_212_7m'
+root_path='/media/tzcheng/storage/ME2_MEG/cHPI_issue/'
+subj = 'me2_102_11m'
 run = ['01']
 
-raw_212 = mne.io.read_raw_fif(root_path + subj + '/raw_fif/' + subj + '_01_otp_raw.fif',allow_maxshield=True,preload=True)
+raw = mne.io.read_raw_fif(root_path + subj + '/raw_fif/' + subj + '_01_otp_raw.fif',allow_maxshield=True,preload=True)
 fine_cal_file = os.path.join(root_path, "sss_cal.dat")
 crosstalk_file = os.path.join(root_path, "ct_sparse.fif")
 

@@ -195,6 +195,7 @@ def do_projection(subject, run):
     fname_erm_out = root_path + '/' + subject + '/sss_fif/' + subject +run + '_erm_raw_sss_proj'
     raw_erm = mne.io.read_raw_fif(fname_erm + '.fif',allow_maxshield=True,preload=True)
         
+    # me2_101_7m used ECG064, the rest used ECG063
     ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='ECG063', n_grad=1, n_mag=1, reject=None)
     ecg_epochs = mne.preprocessing.create_ecg_epochs(raw,ch_name='ECG063').average() # don't really need to assign the ch_name
     # eog_projs, eog_events = mne.preprocessing.compute_proj_eog(raw, ch_name=['EOG002'], n_grad=1, n_mag=1, reject=None) ## adult ['EOG002','EOG003'], infant ['EOG002']
@@ -253,7 +254,7 @@ def do_epoch(data, subject, run, events):
     return evoked,epochs_cortical
 
 ########################################
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo'
 os.chdir(root_path)
 
 #%%## parameters 
@@ -264,7 +265,7 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('me2_'): 
+    if file.startswith('me2_221_7m'): 
         subjects.append(file)
 
 subj_11mo = []
