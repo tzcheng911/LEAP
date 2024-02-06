@@ -233,7 +233,7 @@ def do_epoch_cabr(data, subject, run,time):
     ###### Read the event files (generated from evtag.py) 
     root_path = os.getcwd()
     cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + time + run + '_events_cabr-eve.fif')
-    file_out = root_path + '/' + subject + '/sss_fif/' + subject + time +run + '_otp_raw_sss_proj_fil50'
+    file_out = root_path + '/' + subject + '/sss_fif/' + subject + time + run + '_otp_raw_sss_proj_fil50'
     
     event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
     
@@ -258,8 +258,8 @@ os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = '_t3' # first time (6 mo) or second time (12 mo) coming back 
-do_cabr = False
+time = '_t1' # first time (6 mo) or second time (12 mo) coming back 
+do_cabr = True
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
@@ -268,7 +268,6 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = ['sld_103']
 
 #%%###### do the jobs
 for s in subjects:
@@ -276,8 +275,10 @@ for s in subjects:
     # do_otp(s,time)
     # do_sss(s,st_correlation,int_order,time)
     for run in runs:
-        print ('Doing ECG/EOG projection...')
-        [raw,raw_erm] = do_projection(s,run,time)
+        # print ('Doing ECG/EOG projection...')
+        # [raw,raw_erm] = do_projection(s,run,time)
+        raw = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + time + run + '_otp_raw_sss_proj.fif', allow_maxshield=True,preload=True)
+        raw_erm = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + time + run + '_erm_raw_sss_proj.fif', allow_maxshield=True,preload=True)
         print ('Doing filtering...')
         raw_filt = do_filtering(raw,lp, do_cabr)
         raw_erm_filt = do_filtering(raw_erm,lp, do_cabr)
