@@ -26,7 +26,6 @@ def plot_err(group_stc,color,t):
 
 #%%#######################################   
 root_path='/media/tzcheng/storage/CBS/'
-root_path='/media/tzcheng/storage2/SLD/MEG/'
 os.chdir(root_path)
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
@@ -45,7 +44,7 @@ subject = s
 
 #%%####################################### visualize individual sensor and source
 #%% before morphing from evoked data
-file_in = root_path + '/' + s + '/sss_fif/' + s + time
+file_in = root_path + '/' + s + '/sss_fif/' + s 
 fwd = mne.read_forward_solution(file_in + '-fwd.fif')
 cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50-cov.fif')
 proj = mne.io.read_raw_fif('/media/tzcheng/storage2/SLD/MEG/sld_101/sss_fif/sld_101_t1_01_otp_raw_sss_proj.fif')
@@ -79,6 +78,8 @@ evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_subs
 evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_cabr.fif')[0]
 evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev2_cabr.fif')[0]
 evoked_s.crop(tmin=-0.1, tmax=0.2)
+evoked_d1.crop(tmin=-0.1, tmax=0.2)
+evoked_d2.crop(tmin=-0.1, tmax=0.2)
 mne.viz.plot_compare_evokeds(evoked_s, picks="meg", axes="topo") # plot all of them
 
 ## Visualize source level

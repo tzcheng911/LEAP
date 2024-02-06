@@ -236,9 +236,8 @@ os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
-time = '_t1' # first time (6 mo) or second time (12 mo) coming back 
-# conditions = ['2','1','2','1','1','1','1','3','1','5','1','5','2','1'] # follow the order of CBS subj, see paper runsheet
-conditions =['1','4','2','2','4','3','2','2','2','6','6','2','4','4'] # follow the order of SLD subj, see runsheet here 
+time = '_t3' # first time (6 mo) or second time (12 mo) coming back 
+
 # https://uwnetid-my.sharepoint.com/:x:/r/personal/babyleap_uw_edu/_layouts/15/Doc.aspx?sourcedoc=%7B4CDEB132-CCF5-4641-AFEF-43E17E28C126%7D&file=SLD%20Tracking%20&%20Runsheets.xlsx=&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0&action=default&mobileredirect=true
 
 
@@ -248,16 +247,10 @@ for file in os.listdir():
     if file.startswith('sld'):
         subj.append(file)
 
-## do individual by individual 
-## t1
-# subj = ['sld_114','sld_115','sld_116','sld_117']
-# conditions = ['2','6','4','4']
-subj = ['sld_118','sld_119','sld_121','sld_122']
-conditions = ['3','2','1','5']
+## do individual by individual(s), check the time t1, t2 or t3 too
+subj = ['sld_102','sld_103']
+conditions = ['6','4']
 
-## t2
-# subj = ['sld_103','sld_104','sld_107']
-# conditions = ['4','1','1']
 
 
 ###### do the jobs

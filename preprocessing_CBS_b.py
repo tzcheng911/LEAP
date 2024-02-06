@@ -132,12 +132,19 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_104': ['MEG0312', 'MEG1712'],
     'sld_105': ['MEG0312', 'MEG1712'],
     'sld_107': ['MEG0312', 'MEG1712'],
+    'sld_108': ['MEG0312', 'MEG1712','MEG2612'],
     }
     
+    t3_prebad = {
+    'sld_102': ['MEG0312', 'MEG1712'],
+    'sld_103': ['MEG0312', 'MEG1712','MEG1133', 'MEG2612', 'MEG2433'],
+    }
     if time == '_t1':
         params.mf_prebad = t1_prebad
     elif time == '_t2':
         params.mf_prebad = t2_prebad
+    elif time == '_t3':
+        params.mf_prebad = t3_prebad
     else: 
         print("Check the t1 or t2")
     # make sure you cd to the working directory that have ct and cal files
@@ -182,9 +189,13 @@ def do_projection(subject, run,time):
 
     return raw, raw_erm
 
-def do_filtering(data, lp):
+def do_filtering(data, lp, do_cabr):
     ###### filtering
-    data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
+    if do_cabr == True:
+        data.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5)
+        data.filter(l_freq=80,h_freq=2000,method='iir',iir_params=dict(order=4,ftype='butter'))
+    else:
+        data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
 
 def do_cov(subject,data,time):
@@ -247,8 +258,8 @@ os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = '_t2' # first time (6 mo) or second time (12 mo) coming back 
-
+time = '_t3' # first time (6 mo) or second time (12 mo) coming back 
+do_cabr = False
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
@@ -257,22 +268,24 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = ['sld_107']
+subjects = ['sld_103']
 
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    do_otp(s,time)
-    do_sss(s,st_correlation,int_order,time)
+    # do_otp(s,time)
+    # do_sss(s,st_correlation,int_order,time)
     for run in runs:
         print ('Doing ECG/EOG projection...')
         [raw,raw_erm] = do_projection(s,run,time)
         print ('Doing filtering...')
-        raw_filt = do_filtering(raw,lp)
-        raw_erm_filt = do_filtering(raw_erm,lp)
+        raw_filt = do_filtering(raw,lp, do_cabr)
+        raw_erm_filt = do_filtering(raw_erm,lp, do_cabr)
         print ('calculate cov...')
         do_cov(s,raw_erm_filt,time)
         print ('Doing epoch...')
-        do_epoch_mmr(raw_filt, s, run,time)
-        do_epoch_cabr(raw_filt, s, run,time)
+        if do_cabr == True:
+            do_epoch_cabr(raw_filt, s, run, time)
+        else:
+            do_epoch_mmr(raw_filt, s, run, time)
 
