@@ -37,7 +37,7 @@ def do_inverse(s,morph,ori,run):
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
 
-    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mmr_e.fif')
+    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_epoch.fif')
     noise_cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50_mmr-cov.fif')
     data_cov = mne.compute_covariance(epoch, tmin=0, tmax=None, method="empirical")
     evoked = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked.fif')[0]
