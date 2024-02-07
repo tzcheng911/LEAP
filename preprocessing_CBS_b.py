@@ -258,7 +258,7 @@ os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = '_t1' # first time (6 mo) or second time (12 mo) coming back 
+time = '_t2' # first time (6 mo) or second time (12 mo) coming back 
 do_cabr = True
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
@@ -268,6 +268,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
+subjects = subjects[3:]
 
 #%%###### do the jobs
 for s in subjects:
@@ -277,16 +278,18 @@ for s in subjects:
     for run in runs:
         # print ('Doing ECG/EOG projection...')
         # [raw,raw_erm] = do_projection(s,run,time)
-        raw = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + time + run + '_otp_raw_sss_proj.fif', allow_maxshield=True,preload=True)
-        raw_erm = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + time + run + '_erm_raw_sss_proj.fif', allow_maxshield=True,preload=True)
-        print ('Doing filtering...')
-        raw_filt = do_filtering(raw,lp, do_cabr)
-        raw_erm_filt = do_filtering(raw_erm,lp, do_cabr)
-        print ('calculate cov...')
-        do_cov(s,raw_erm_filt,time)
-        print ('Doing epoch...')
-        if do_cabr == True:
-            do_epoch_cabr(raw_filt, s, run, time)
-        else:
-            do_epoch_mmr(raw_filt, s, run, time)
+        filename = root_path + s + '/sss_fif/' + s + time + run + '_otp_raw_sss_proj.fif'
+        if os.path.exists(filename):
+            raw = mne.io.read_raw_fif(filename, allow_maxshield=True,preload=True)
+            raw_erm = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + time + run + '_erm_raw_sss_proj.fif', allow_maxshield=True,preload=True)
+            print ('Doing filtering...')
+            raw_filt = do_filtering(raw,lp, do_cabr)
+            raw_erm_filt = do_filtering(raw_erm,lp, do_cabr)
+            print ('calculate cov...')
+            do_cov(s,raw_erm_filt,time)
+            print ('Doing epoch...')
+            if do_cabr == True:
+                do_epoch_cabr(raw_filt, s, run, time)
+            else:
+                do_epoch_mmr(raw_filt, s, run, time)
 
