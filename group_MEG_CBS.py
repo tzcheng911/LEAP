@@ -70,6 +70,10 @@ group_dev1_roi = []
 group_dev2_roi = []
 
 # #extract ROIS for morphing data
+src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/ANTS6-0Months3T/bem/ANTS6-0Months3T-vol-5-src.fif') # for morphing data
+fname_aseg = subjects_dir + 'ANTS6-0Months3T' + '/mri/aparc+aseg.mgz'
+
+
 src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif') # for morphing data
 fname_aseg = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
 
