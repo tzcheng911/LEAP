@@ -30,9 +30,9 @@ subjects = []
 for file in os.listdir():
     if file.startswith('me2_'): 
         subjects.append(file)
-
-#%%####################################### visualize individual sensor and source
 subj = subjects[2]
+
+#%%####################################### visualize individual sensor PSD
 for run in runs: 
     epochs = mne.read_epochs(root_path + age + subj + '/sss_fif/' + subj + run + '_otp_raw_sss_proj_fil50_epoch.fif')
     evoked = epochs['Trial_Onset'].average()
@@ -50,3 +50,20 @@ for run in runs:
     fmax=fmax,
     window="boxcar",
     verbose=False,).plot(average=True,picks="data", exclude="bads")
+
+#%%####################################### visualize individual source PSD
+for run in runs: 
+    epochs = mne.read_epochs(root_path + age + subj + '/sss_fif/' + subj + run + '_otp_raw_sss_proj_fil50_epoch.fif')
+    evoked = epochs['Trial_Onset'].average()
+    sfreq = epochs.info["sfreq"]
+    
+    psds, freqs = mne.time_frequency.psd_array_welch(
+    stc.data[0,:],sfreq, # could replace with label time series
+    n_fft=int(sfreq * (tmax - tmin)),
+    n_overlap=0,
+    n_per_seg=None,
+    fmin=fmin,
+    fmax=fmax,)
+    
+    plt.figure()
+    plt.plot(freqs,psds)
