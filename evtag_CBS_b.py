@@ -15,6 +15,7 @@ Notes:
 2. had to change the cbs_b102 (was coded as cbs_902)
 3. sld_111 has issue on process events (last two events duplicate)
 4. sld_105 t2 has 2 recordings
+5. sld_107 t3 cut the last one sound (manually create the event file)
     
 The correspondance between event tage and sound are
 
@@ -248,8 +249,8 @@ for file in os.listdir():
         subj.append(file)
 
 ## do individual by individual(s), check the time t1, t2 or t3 too
-subj = ['sld_102','sld_103']
-conditions = ['6','4']
+subj = ['sld_107']
+conditions = ['5']
 
 
 
