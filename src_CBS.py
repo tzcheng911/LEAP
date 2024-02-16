@@ -16,7 +16,7 @@ import nibabel as nib
 from tqdm import tqdm
 
 def do_foward(s):
-    root_path='/media/tzcheng/storage/CBS/'
+    root_path='/media/tzcheng/storage2/CBS/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
     file_in = root_path + s + '/sss_fif/' 
@@ -31,7 +31,7 @@ def do_foward(s):
 
 def do_inverse(s,morph,ori):
     run = '_01'
-    root_path='/media/tzcheng/storage/CBS/'
+    root_path='/media/tzcheng/storage2/CBS/'
     subject = s
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
@@ -90,20 +90,19 @@ def do_inverse(s,morph,ori):
         # mmr2.save(file_in + '_mmr2_' + str(ori), overwrite=True)
 
 ########################################
-root_path='/media/tzcheng/storage/CBS/'
+root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
 
-morph = True
+morph = False
 ori = None # 'vector', None
 
 runs = ['_01','_02']
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_A122'):
         subj.append(file)
-
 for s in tqdm(subj):
     # for run in runs:
         print(s)
-        # do_foward(s)
+        do_foward(s)
         do_inverse(s,morph,ori)
