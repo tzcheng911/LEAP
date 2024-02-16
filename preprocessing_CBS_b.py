@@ -123,6 +123,7 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_119': ['MEG0312', 'MEG1712'],
     'sld_121': ['MEG0312', 'MEG1712'],
     'sld_122': ['MEG0312', 'MEG1712'],
+    'sld_123': ['MEG0312', 'MEG1712'],
     }
     
     t2_prebad = {
@@ -138,6 +139,7 @@ def do_sss(subject,st_correlation,int_order,time):
     t3_prebad = {
     'sld_102': ['MEG0312', 'MEG1712'],
     'sld_103': ['MEG0312', 'MEG1712','MEG1133', 'MEG2612', 'MEG2433'],
+    'sld_107': ['MEG0312', 'MEG1712'],
     }
     if time == '_t1':
         params.mf_prebad = t1_prebad
@@ -258,17 +260,16 @@ os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = '_t2' # first time (6 mo) or second time (12 mo) coming back 
-do_cabr = True
+time = '_t1' # first time (6 mo) or second time (12 mo) coming back 
+do_cabr = False
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('sld'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
+    if file.startswith('sld_123'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = subjects[3:]
 
 #%%###### do the jobs
 for s in subjects:
@@ -276,8 +277,8 @@ for s in subjects:
     # do_otp(s,time)
     # do_sss(s,st_correlation,int_order,time)
     for run in runs:
-        # print ('Doing ECG/EOG projection...')
-        # [raw,raw_erm] = do_projection(s,run,time)
+        print ('Doing ECG/EOG projection...')
+        [raw,raw_erm] = do_projection(s,run,time)
         filename = root_path + s + '/sss_fif/' + s + time + run + '_otp_raw_sss_proj.fif'
         if os.path.exists(filename):
             raw = mne.io.read_raw_fif(filename, allow_maxshield=True,preload=True)
