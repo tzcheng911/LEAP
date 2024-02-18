@@ -32,31 +32,41 @@ def do_foward(s):
 def do_inverse(s,morph,ori):
     run = '_01'
     root_path='/media/tzcheng/storage2/CBS/'
-    subject = s
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
-    trans = mne.read_trans(file_in +'-trans.fif')
-    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50_mmr-cov.fif')
+    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50-cov.fif')
     epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mmr_e.fif')
     evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
     evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]        
     evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0]
     
     inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
-
-    standard = mne.minimum_norm.apply_inverse((evoked_s), inverse_operator, pick_ori = ori)
-    dev1 = mne.minimum_norm.apply_inverse((evoked_d1), inverse_operator, pick_ori = ori)
-    dev2 = mne.minimum_norm.apply_inverse((evoked_d2), inverse_operator, pick_ori = ori)
-    mmr1 = dev1 - standard
-    mmr2 = dev2 - standard
-    src = inverse_operator['src']
     # src.save(file_in + '_src', overwrite=True)
-
-    if ori == 'vector': # only the mmr (dev - std) needs this part
+    if ori == None:
+        standard = mne.minimum_norm.apply_inverse((evoked_s), inverse_operator, pick_ori = ori)
+        dev1 = mne.minimum_norm.apply_inverse((evoked_d1), inverse_operator, pick_ori = ori)
+        dev2 = mne.minimum_norm.apply_inverse((evoked_d2), inverse_operator, pick_ori = ori)
+        mmr1 = dev1 - standard
+        mmr2 = dev2 - standard
+    elif ori == 'vector': # only the mmr (dev - std) needs this part
+        standard = mne.minimum_norm.apply_inverse((evoked_s), inverse_operator, pick_ori = ori)
+        dev1 = mne.minimum_norm.apply_inverse((evoked_d1), inverse_operator, pick_ori = ori)
+        dev2 = mne.minimum_norm.apply_inverse((evoked_d2), inverse_operator, pick_ori = ori)
+        mmr1 = dev1 - standard
+        mmr2 = dev2 - standard
         mmr1 = mmr1.magnitude()
         mmr2 = mmr2.magnitude()
+    elif ori == 'sensor_sub':
+        tmp_evoked_mmr1 = evoked_d1.data - evoked_s.data
+        evoked_mmr1 = evoked_s.copy()
+        evoked_mmr1.data = tmp_evoked_mmr1
+        tmp_evoked_mmr2 = evoked_d2.data - evoked_s.data
+        evoked_mmr2 = evoked_s.copy()
+        evoked_mmr2.data = tmp_evoked_mmr2
+        mmr1 = mne.minimum_norm.apply_inverse((evoked_mmr1), inverse_operator)
+        mmr2 = mne.minimum_norm.apply_inverse((evoked_mmr2), inverse_operator)
     
     if morph == True:
         print('Morph' + s +  'src space to common cortical space.')
@@ -70,17 +80,17 @@ def do_inverse(s,morph,ori):
             niter_sdr=[10, 10, 5],  # just for speed
             src_to=src_fs,
             verbose=True)
-        standard_fsaverage = morph.apply(standard)
-        dev1_fsaverage = morph.apply(dev1)
-        dev2_fsaverage = morph.apply(dev2)
-        # mmr1_fsaverage = morph.apply(mmr1)
-        # mmr2_fsaverage = morph.apply(mmr2)
+        # standard_fsaverage = morph.apply(standard)
+        # dev1_fsaverage = morph.apply(dev1)
+        # dev2_fsaverage = morph.apply(dev2)
+        mmr1_fsaverage = morph.apply(mmr1)
+        mmr2_fsaverage = morph.apply(mmr2)
         
-        standard_fsaverage.save(file_in + '_std_' + str(ori) +'_morph', overwrite=True)
-        dev1_fsaverage.save(file_in + '_dev1_' + str(ori) +'_morph', overwrite=True)
-        dev2_fsaverage.save(file_in + '_dev2_' + str(ori) +'_morph', overwrite=True)
-        # mmr1_fsaverage.save(file_in + '_mmr1_' + str(ori) +'_morph', overwrite=True)
-        # mmr2_fsaverage.save(file_in + '_mmr2_' + str(ori) +'_morph', overwrite=True)
+        # standard_fsaverage.save(file_in + '_std_' + str(ori) +'_morph', overwrite=True)
+        # dev1_fsaverage.save(file_in + '_dev1_' + str(ori) +'_morph', overwrite=True)
+        # dev2_fsaverage.save(file_in + '_dev2_' + str(ori) +'_morph', overwrite=True)
+        mmr1_fsaverage.save(file_in + '_mmr1_' + str(ori) +'_morph', overwrite=True)
+        mmr2_fsaverage.save(file_in + '_mmr2_' + str(ori) +'_morph', overwrite=True)
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
         standard.save(file_in + '_std_' + str(ori), overwrite=True)
@@ -93,16 +103,16 @@ def do_inverse(s,morph,ori):
 root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
 
-morph = False
-ori = None # 'vector', None
+morph = True
+ori = 'sensor_sub' # 'vector', None. 'sensor_sub' # 'sensor_sub' is doing dev-std subtraction on the sensor level then source localization
 
 runs = ['_01','_02']
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A122'):
+    if file.startswith('cbs_b101'):
         subj.append(file)
 for s in tqdm(subj):
     # for run in runs:
         print(s)
-        do_foward(s)
+        # do_foward(s)
         do_inverse(s,morph,ori)
