@@ -26,7 +26,7 @@ def plot_err(group_stc,color,t):
     plt.plot(t,group_avg,color=color)
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
 
-root_path='/media/tzcheng/storage/CBS/'
+root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 
@@ -36,6 +36,9 @@ MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr
 MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy') # with the mag or vector method
 MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_None_morph.npy') # with the mag or vector method
 MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_None_morph.npy') # with the mag or vector method
+MEG_mmr1_c = np.load(root_path + 'cbsA_meeg_analysis/MEG/convention_method/group_mmr1_sensor_sub_morph.npy') # with the mag or vector method
+MEG_mmr2_c = np.load(root_path + 'cbsA_meeg_analysis/MEG/convention_method/group_mmr2_sensor_sub_morph.npy') # with the mag or vector method
+
 EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr1_eeg.npy')
 EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr2_eeg.npy')
 
@@ -59,6 +62,8 @@ plt.figure()
 plot_err(stats.zscore(EEG_mmr1,axis=1),'k',stc1.times)
 plot_err(stats.zscore(MEG_mmr1_m.mean(axis=1),axis=1),'b',stc1.times)
 plot_err(stats.zscore(MEG_mmr1_v.mean(axis=1),axis=1),'r',stc1.times)
+plot_err(stats.zscore(MEG_mmr1_c.mean(axis=1),axis=1),'orange',stc1.times)
+
 plt.legend(['EEG','','MEG mag','','MEG vector',''])
 plt.xlabel('Time (ms)')
 plt.ylabel('zscore')
@@ -69,6 +74,7 @@ plt.figure()
 plot_err(stats.zscore(EEG_mmr2,axis=1),'k',stc1.times)
 plot_err(stats.zscore(MEG_mmr2_m.mean(axis=1),axis=1),'b',stc1.times)
 plot_err(stats.zscore(MEG_mmr2_v.mean(axis=1),axis=1),'r',stc1.times)
+plot_err(stats.zscore(MEG_mmr2_c.mean(axis=1),axis=1),'orange',stc1.times)
 plt.legend(['EEG','','MEG mag','','MEG vector',''])
 plt.xlabel('Time (ms)')
 plt.ylabel('zscore')
@@ -78,21 +84,27 @@ plt.xlim([-100, 600])
 ## visualization average sub-plot
 times = stc1.times
 plt.figure()
-plt.subplot(311)
+plt.subplot(411)
 plot_err(EEG_mmr1,'grey',stc1.times)
 plot_err(EEG_mmr2,'k',stc1.times)
 plt.title('First-Last direction')
 plt.xlim([-100,600])
 
-plt.subplot(312)
+plt.subplot(412)
 plot_err(MEG_mmr1_m.mean(axis=1),'c',stc1.times)
 plot_err(MEG_mmr2_m.mean(axis=1),'b',stc1.times)
 plt.xlim([-100,600])
 plt.ylabel('Amplitude')
 
-plt.subplot(313)
+plt.subplot(413)
 plot_err(MEG_mmr1_v.mean(axis=1),'m',stc1.times)
 plot_err(MEG_mmr2_v.mean(axis=1),'r',stc1.times)
+plt.xlim([-100,600])
+plt.xlabel('Time (ms)')
+
+plt.subplot(414)
+plot_err(MEG_mmr1_c.mean(axis=1),'y',stc1.times)
+plot_err(MEG_mmr2_c.mean(axis=1),'orange',stc1.times)
 plt.xlim([-100,600])
 plt.xlabel('Time (ms)')
 
