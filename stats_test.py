@@ -31,13 +31,38 @@ def plot_err(group_stc,color,t):
     plt.plot(t,group_avg,color=color)
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
 
-root_path='/media/tzcheng/storage/CBS/'
+root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 ts = 1250 
 te = 2000 
 
-#%% paramatric permutation test on the time window 100 - 250 ms for MMR
+#%% paramatric permutation test on the time window 100 - 250 ms for MEG sensor MMR
+## Load the MEG MMR data
+ts = 500
+te = 2000
+times = np.linspace(-100,600,3501)
+sensor_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/group_mmr1_sensor.npy') 
+sensor_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/group_mmr2_sensor.npy') 
+sensors_ind = [ 81,  87,  90, 93,  96, 126] # central midline around CZ
+
+X = np.mean(sensor_mmr2[:,sensors_ind,ts:te],axis=1) - np.mean(sensor_mmr1[:,sensors_ind,ts:te],axis=1)
+T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(X)
+
+good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
+for i in np.arange(0,len(good_cluster_inds),1):
+    print("The " + str(i+1) + "st significant cluster")
+    print(times[clusters[good_cluster_inds[i]]])
+    
+plt.figure()
+plot_err(np.mean(sensor_mmr1[:,sensors_ind,:],axis=1),'c',1)
+plot_err(np.mean(sensor_mmr2[:,sensors_ind,:],axis=1),'b',1)
+plt.xlim([-100,600])
+plt.title('sensor responses of central midline (nch = 6)')
+plt.legend(['MMR1','MMR2'])
+plt.xlabel('Time (ms)')
+
+#%% paramatric permutation test on the time window 100 - 250 ms for MEG source MMR
 ## Load the MEG MMR data
 # change to condition (traditional, new method etc.), methods (vector vs. magnitude vs. eeg), spatial (sensor, ROIs, whole brain) 
 mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph.npy') 
