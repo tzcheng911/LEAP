@@ -50,6 +50,7 @@ def do_inverse(s,morph,ori):
         dev2 = mne.minimum_norm.apply_inverse((evoked_d2), inverse_operator, pick_ori = ori)
         mmr1 = dev1 - standard
         mmr2 = dev2 - standard
+    
     elif ori == 'vector': # only the mmr (dev - std) needs this part
         standard = mne.minimum_norm.apply_inverse((evoked_s), inverse_operator, pick_ori = ori)
         dev1 = mne.minimum_norm.apply_inverse((evoked_d1), inverse_operator, pick_ori = ori)
@@ -58,6 +59,7 @@ def do_inverse(s,morph,ori):
         mmr2 = dev2 - standard
         mmr1 = mmr1.magnitude()
         mmr2 = mmr2.magnitude()
+    
     elif ori == 'sensor_sub':
         tmp_evoked_mmr1 = evoked_d1.data - evoked_s.data
         evoked_mmr1 = evoked_s.copy()
