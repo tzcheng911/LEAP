@@ -49,8 +49,8 @@ for s in subj:
     
 group_mmr1=np.asarray(group_mmr1)
 group_mmr2=np.asarray(group_mmr2)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_sensor.npy',group_mmr1)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_sensor.npy',group_mmr2)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr1_sensor.npy',group_mmr1)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr2_sensor.npy',group_mmr2)
 
 
 #%% output the source time series in npy files
@@ -143,10 +143,10 @@ group_mmr2_roi=np.asarray(group_mmr2_roi)
 # np.save(root_path + 'cbsA_meeg_analysis/group_dev2_None_morph_roi.npy',group_dev2_roi)
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy',group_std)
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy',group_std_roi)
-np.save(root_path + 'cbsA_meeg_analysis/MEG/group_mmr1_sensor_sub_morph.npy',group_mmr1)
-np.save(root_path + 'cbsA_meeg_analysis/MEG/group_mmr2_sensor_sub_morph.npy',group_mmr2)
-np.save(root_path + 'cbsA_meeg_analysis/MEG/group_mmr1_sensor_sub_morph_roi.npy',group_mmr1_roi)
-np.save(root_path + 'cbsA_meeg_analysis/MEG/group_mmr2_sensor_sub_morph_roi.npy',group_mmr2_roi)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr1_sensor_sub_morph.npy',group_mmr1)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr2_sensor_sub_morph.npy',group_mmr2)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr1_sensor_sub_morph_roi.npy',group_mmr1_roi)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr2_sensor_sub_morph_roi.npy',group_mmr2_roi)
 # np.save(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_std1_reverse_None_morph.npy',group_std1)
 # np.save(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_std2_reverse_None_morph.npy',group_std2)
 # np.save(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_std1_reverse_None_morph_roi.npy',group_std1_roi)
