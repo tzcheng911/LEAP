@@ -113,8 +113,8 @@ T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test
 good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
 for i in np.arange(0,len(good_cluster_inds),1):
     print("The " + str(i+1) + "st significant cluster")
-    print(times[clusters[good_cluster_inds[i]]])
-times[ts:te][clusters[good_cluster_inds]]
+    print(clusters[good_cluster_inds[i]])
+times[ts:te][clusters[good_cluster_inds[i]]]
 
 #%% non-paramatric permutation test on the whole brain
 tic = time.time()
