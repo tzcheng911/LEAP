@@ -235,7 +235,7 @@ import random
 n_perm=100
 scores_perm=[]
 for i in range(n_perm):
-    print('Iteration' + i)
+    print('Iteration' + str(i))
     yp = copy.deepcopy(y)
     random.shuffle(yp)
     clf = make_pipeline(
