@@ -316,36 +316,35 @@ stc1.plot(src,clim=dict(kind="value",pos_lims=[0,12,16]), subject='fsaverage', s
 ## Adults
 scores_observed = np.load(root_path + '/cbsA_meeg_analysis/decoding/adult_roc_auc_vector_morph_kall.npy')
 patterns = np.load(root_path + 'cbsA_meeg_analysis/decoding/adult_patterns_vector_morph_kall.npy')
-scores_observed = np.load(root_path + 'cbsA_meeg_analysis/decoding/adult_roc_auc_None_morph_kall.npy')
-patterns = np.load(root_path + 'cbsA_meeg_analysis/decoding/adult_patterns_None_morph_kall.npy')
+
 ## Babies
 scores_observed = np.load(root_path + 'cbsb_meg_analysis/decoding/baby_roc_auc_vector_morph_kall.npy')
 patterns = np.load(root_path + 'cbsb_meg_analysis/decoding/baby_patterns_vector_morph_kall.npy')
-scores_observed = np.load(root_path + 'cbsb_meg_analysis/decoding/baby_roc_auc_None_morph_kall.npy')
-patterns = np.load(root_path + 'cbsb_meg_analysis/decoding/baby_patterns_None_morph_kall.npy')
 
 ## New method: first - last mba vs. first pa - last pa
 scores_observed = np.load(root_path + 'cbsA_meeg_analysis/decoding/adult_roc_auc_vector_morph_kall_mba_pa.npy')
 patterns = np.load(root_path + 'cbsA_meeg_analysis/decoding/adult_patterns_vector_morph_kall_mba_pa.npy')
-scores_observed = np.load(root_path + 'cbsA_meeg_analysis/decoding/adult_roc_auc_None_morph_kall_mba_pa.npy')
-patterns = np.load(root_path + 'cbsA_meeg_analysis/decoding/adult_patterns_None_morph_kall_mba_pa.npy')
+
+scores_observed = np.load(root_path + 'cbsb_meg_analysis/decoding/baby_roc_auc_vector_morph_kall_mba_pa.npy')
+patterns = np.load(root_path + 'cbsb_meg_analysis/decoding/baby_patterns_vector_morph_kall_mba_pa.npy')
+
 
 ## Plot acc across time
 fig, ax = plt.subplots(1)
 ax.plot(stc1.times, scores_observed.mean(0), label="score")
 ax.axhline(0.5, color="k", linestyle="--", label="chance")
-ax.axhline(np.percentile(scores_observed.mean(0),q = 95), color="grey", linestyle="--", label="95 percentile")
+ax.axhline(np.percentile(scores_observed.mean(0),q = 97.5), color="grey", linestyle="--", label="95 percentile")
 ax.axvline(0, color="k")
 plt.xlabel('Time (s)')
-plt.title('Decoding accuracy')
-plt.xlim([-0.1,0.6])
+plt.title('Decoding accuracy baby new')
+plt.xlim([-0.05,0.5])
 
 ## Plot patterns
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 stc1.data = patterns
-stc1_crop = stc1.copy().crop(tmin= -0.1, tmax=0.4)
+stc1_crop = stc1.copy().crop(tmin= -0.05, tmax=0.5)
 # Plot patterns across sources
 stc1_crop.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 
