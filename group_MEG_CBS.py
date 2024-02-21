@@ -21,7 +21,7 @@ os.chdir(root_path)
 ## parameters 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_b'):
+    if file.startswith('cbs_A'):
         subj.append(file)
 
 runs = ['01','02']
@@ -86,8 +86,8 @@ for s in subj:
     # stc_dev2=mne.read_source_estimate(file_in+'_dev2_None_morph-vl.stc')
     # stc_std1=mne.read_source_estimate(file_in+'_std1_reverse_None_morph-vl.stc')
     # stc_std2=mne.read_source_estimate(file_in+'_std2_reverse_None_morph-vl.stc')
-    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_sensor_sub_morph-vl.stc')
-    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_sensor_sub_morph-vl.stc')
+    stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_mba_vector_morph-vl.stc')
+    stc_mmr2=mne.read_source_estimate(file_in+'_mmr2_pa_vector_morph-vl.stc')
     # group_std.append(stc_std.data)
     # group_dev1.append(stc_dev1.data)
     # group_dev2.append(stc_dev2.data)
@@ -143,10 +143,10 @@ group_mmr2_roi=np.asarray(group_mmr2_roi)
 # np.save(root_path + 'cbsA_meeg_analysis/group_dev2_None_morph_roi.npy',group_dev2_roi)
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy',group_std)
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy',group_std_roi)
-np.save(root_path + 'cbsb_meg_analysis/group_mmr1_sensor_sub_morph.npy',group_mmr1)
-np.save(root_path + 'cbsb_meg_analysis/group_mmr2_sensor_sub_morph.npy',group_mmr2)
-np.save(root_path + 'cbsb_meg_analysis/group_mmr1_sensor_sub_morph_roi.npy',group_mmr1_roi)
-np.save(root_path + 'cbsb_meg_analysis/group_mmr2_sensor_sub_morph_roi.npy',group_mmr2_roi)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr1_mba_vector_morph.npy',group_mmr1)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr2_pa_vector_morph.npy',group_mmr2)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr1_mba_vector_morph_roi.npy',group_mmr1_roi)
+np.save(root_path + 'cbsb_meg_analysis/group_mmr2_pa_vector_morph_roi.npy',group_mmr2_roi)
 # np.save(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_std1_reverse_None_morph.npy',group_std1)
 # np.save(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_std2_reverse_None_morph.npy',group_std2)
 # np.save(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_std1_reverse_None_morph_roi.npy',group_std1_roi)

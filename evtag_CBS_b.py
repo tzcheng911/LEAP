@@ -158,35 +158,63 @@ def check_events(events,condition):  ## processed events
     return check
 
 
-def select_mmr_events(events,subj,block,time): ## load the processed events
+def select_mmr_events(events,subj,block,time,direction): ## load the processed events
     e=[]
     for event in events:
         if event[2] in [1,2,3,5,6,7]:
             e.append(event)
-    std=[]
-    dev1=[]
-    for i in range(len(e)):
-        if e[i][2]==3 and e[i-1][2]==1:
-            dev1.append(e[i])
-            std.append(e[i-1])
-            
-    dev2=[]
-    for i in range(len(e)):
-        if e[i][2]==6 and e[i-1][2]==1:
-            dev2.append(e[i])
-            std.append(e[i-1])
+    if direction == 'ba_to_pa':
+        std=[]
+        dev1=[]
+        for i in range(len(e)):
+            if e[i][2]==3 and e[i-1][2]==1:
+                dev1.append(e[i])
+                std.append(e[i-1])
+                
+        dev2=[]
+        for i in range(len(e)):
+            if e[i][2]==6 and e[i-1][2]==1:
+                dev2.append(e[i])
+                std.append(e[i-1])
+        
+        #randomly select standard trials from the ones that precedes deviants#
+        ###
+        sample_size = int(len(std)/2)
+        substd = [std[i] for i in sorted(random.sample(range(len(std)), sample_size))]
+        
+        mmr_event=np.concatenate((substd,dev1,dev2),axis=0)
+        
+        root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
+        file_name_new=root_path + str(subj) + block + '_events_mmr-eve.fif'
+        mne.write_events(file_name_new,mmr_event,overwrite=True)
     
-    #randomly select standard trials from the ones that precedes deviants#
-    ###
-    sample_size = int(len(std)/2)
-    substd = [std[i] for i in sorted(random.sample(range(len(std)), sample_size))]
-    
-    mmr_event=np.concatenate((substd,dev1,dev2),axis=0)
-    
-    # root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
-    file_name_new=root_path + str(subj) + time + block + '_events_mmr-eve.fif'
-    mne.write_events(file_name_new,mmr_event,overwrite=True)
+    ## For the /mba/ as standard 1 /pa/ as standard 2 and /ba/ as dev
+    elif direction == 'pa_to_ba':
+        std1=[] # /mba/ to /ba/
+        dev=[]
+        for i in range(len(e)-1):
+            if e[i][2]==3 and e[i+1][2]==1: # change from -1 to +1 so get the std and dev order reverse
+                std1.append(e[i])
+                dev.append(e[i+1]) # change from -1 to +1 so get the std and dev order reverse
+                
+        std2=[] # /pa/ to /ba/
+        for i in range(len(e)-1):
+            if e[i][2]==6 and e[i+1][2]==1: # change from -1 to +1 so get the std and dev order reverse
+                std2.append(e[i])
+                dev.append(e[i+1]) # change from -1 to +1 so get the std and dev order reverse
+        
+        #randomly select dev trials from the ones that after standards#
+        ###
+        sample_size = int(len(dev)/2)
+        dev_sample = [dev[i] for i in sorted(random.sample(range(len(dev)), sample_size))]
+        
+        mmr_event=np.concatenate((std1,std2,dev_sample),axis=0)
+        
+        root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
+        file_name_new=root_path + str(subj) + block + '_events_mmr_reverse-eve.fif'
+        mne.write_events(file_name_new,mmr_event,overwrite=True)
+    else:
+        print('Select a direction to do MMR!')
     return mmr_event
 
 
@@ -237,7 +265,8 @@ os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
-time = '_t3' # first time (6 mo) or second time (12 mo) coming back 
+time = 0 # first time (6 mo) or second time (12 mo) coming back, or 0 for cbs
+direction = "pa_to_ba"
 
 # https://uwnetid-my.sharepoint.com/:x:/r/personal/babyleap_uw_edu/_layouts/15/Doc.aspx?sourcedoc=%7B4CDEB132-CCF5-4641-AFEF-43E17E28C126%7D&file=SLD%20Tracking%20&%20Runsheets.xlsx=&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0&action=default&mobileredirect=true
 
@@ -252,8 +281,6 @@ for file in os.listdir():
 subj = ['sld_107']
 conditions = ['5']
 
-
-
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]
@@ -261,14 +288,14 @@ for n,s in enumerate(subj):
     isExist = os.path.exists(root_path + s + '/events')
     if not isExist:
         os.makedirs(root_path + s + '/events')
-        
+
     # raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/' + s + '/raw_fif/' + s + run +'_raw.fif',allow_maxshield=True,preload=True)
     raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s + time + run +'_raw.fif',allow_maxshield=True,preload=True)
     find_events(raw_file, s,run,time)
     events=process_events(s,run,time)
     check=check_events(events,condition)
     check_all.append(check)
-    mmr_event=select_mmr_events(events, s, run,time)
+    mmr_event=select_mmr_events(events, s, run,time,direction)
     cabr_event=select_cabr_events(events, s, run,time)                  
 
 #%% check the sound presentation

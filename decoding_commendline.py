@@ -37,11 +37,11 @@ from mne.decoding import (
 
 #%%####################################### Subject-by-subject decoding for each condition 
 tic = time.time()
-root_path='/media/tzcheng/storage/CBS/'
+root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
-stc1 = mne.read_source_estimate(root_path + 'cbs_b101/sss_fif/cbs_b101_mmr2_None_morph-vl.stc')
+stc1 = mne.read_source_estimate(root_path + 'cbs_b101/sss_fif/cbs_b101_mmr2_vector_morph-vl.stc')
 times = stc1.times
 
 ## parameters
@@ -55,11 +55,11 @@ lh_ROI_label = [72,60,61,62] # STG and frontal pole
 rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 
 if ROI_wholebrain == 'ROI':
-    mmr1 = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_None_morph_roi.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_None_morph_roi.npy',allow_pickle=True)
+    mmr1 = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_mba_vector_morph_roi.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_pa_vector_morph_roi.npy',allow_pickle=True)
 elif ROI_wholebrain == 'wholebrain':
-    mmr1 = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_None_morph.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_None_morph.npy',allow_pickle=True)
+    mmr1 = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_mba_vector_morph.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_pa_vector_morph.npy',allow_pickle=True)
 else:
     print("Need to decide whether to use ROI or whole brain as feature.")
 X = np.concatenate((mmr1,mmr2),axis=0)
@@ -89,7 +89,7 @@ time_decod.fit(X, y)
 # Retrieve patterns after inversing the z-score normalization step:
 patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
 
-np.save(root_path + 'cbsA_meeg_analysis/decoding/baby_roc_auc_None_morph_kall.npy',scores_observed)
-np.save(root_path + 'cbsA_meeg_analysis/decoding/baby_patterns_None_morph_kall.npy',patterns)
+np.save(root_path + 'cbsA_meeg_analysis/decoding/baby_roc_auc_vector_morph_kall_mba_pa.npy',scores_observed)
+np.save(root_path + 'cbsA_meeg_analysis/decoding/baby_patterns_vector_morph_kall_mba_pa.npy',patterns)
 toc = time.time()
 print('It takes ' + str((toc - tic)/60) + 'min to run decoding')
