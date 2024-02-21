@@ -45,51 +45,97 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_b101/sss_fif/cbs_b101_mmr2_vect
 times = stc1.times
 
 ## parameters
+ts = 250 # 0s
+te = 2750 # 0.45s
 ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
 #%%####################################### Load adults
-fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-lh_ROI_label = [72,60,61,62] # STG and frontal pole
-rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
+# fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+# label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+# lh_ROI_label = [72,60,61,62] # STG and frontal pole
+# rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
+
+# if ROI_wholebrain == 'ROI':
+#     mmr1 = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_mba_vector_morph_roi.npy',allow_pickle=True)
+#     mmr2 = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_pa_vector_morph_roi.npy',allow_pickle=True)
+# elif ROI_wholebrain == 'wholebrain':
+#     mmr1 = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_mba_vector_morph.npy',allow_pickle=True)
+#     mmr2 = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_pa_vector_morph.npy',allow_pickle=True)
+# else:
+#     print("Need to decide whether to use ROI or whole brain as feature.")
+# X = np.concatenate((mmr1,mmr2),axis=0)
+# y = np.concatenate((np.repeat(0,len(mmr1)),np.repeat(1,len(mmr1)))) #0 is for mmr1 and 1 is for mmr2
+
+# # prepare a series of classifier applied at each time sample
+# clf = make_pipeline(
+#     StandardScaler(),  # z-score normalization
+#     SelectKBest(f_classif, k=k_feature),  # select features for speed
+#     LinearModel(),
+#     )
+# time_decod = SlidingEstimator(clf, scoring="roc_auc",n_jobs=6)
+
+# # Run cross-validated decoding analyses
+# scores_observed = cross_val_multiscore(time_decod, X, y, cv=5 , n_jobs=None)
+
+# #Plot average decoding scores of 5 splits
+# # TOI = np.linspace(0,450,num=2250)
+# # fig, ax = plt.subplots(1)
+# # ax.plot(TOI, scores_observed.mean(0), label="score")
+# # ax.axhline(0.5, color="k", linestyle="--", label="chance")
+# # ax.axvline(0, color="k")
+# # plt.legend()
+
+# # the training sets
+# time_decod.fit(X, y)
+# # Retrieve patterns after inversing the z-score normalization step:
+# patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
+
+# np.save(root_path + 'cbsA_meeg_analysis/decoding/baby_roc_auc_vector_morph_kall_mba_pa_test_para.npy',scores_observed)
+# np.save(root_path + 'cbsA_meeg_analysis/decoding/baby_patterns_vector_morph_kall_mba_pa_test_para.npy',patterns)
+# toc = time.time()
+# print('It takes ' + str((toc - tic)/60) + 'min to run decoding')
+
+#%%####################################### Run permutation
+filename = 'vector'
+filename_mmr1 = 'group_mmr1_vector_morph'
+filename_mmr2 = 'group_mmr2_vector_morph'
+
+scores_observed = np.load(root_path + '/cbsA_meeg_analysis/decoding/adult_roc_auc_' + filename + '_morph_kall.npy')[:,ts:te] # only get the -0.05 to 0.45 s window
+ind = np.where(scores_observed.mean(axis = 0) > np.percentile(scores_observed.mean(axis = 0),q = 95))
+peaks_time =  times[ts:te][ind]
 
 if ROI_wholebrain == 'ROI':
-    mmr1 = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_mba_vector_morph_roi.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_pa_vector_morph_roi.npy',allow_pickle=True)
+    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/' + filename_mmr1 + '_roi.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/' + filename_mmr2 + '_roi.npy',allow_pickle=True)
 elif ROI_wholebrain == 'wholebrain':
-    mmr1 = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_mba_vector_morph.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_pa_vector_morph.npy',allow_pickle=True)
+    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/' + filename_mmr1 + '.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/' + filename_mmr2 + '.npy',allow_pickle=True)
 else:
     print("Need to decide whether to use ROI or whole brain as feature.")
 X = np.concatenate((mmr1,mmr2),axis=0)
+X = X[:,:,peaks_time] 
 y = np.concatenate((np.repeat(0,len(mmr1)),np.repeat(1,len(mmr1)))) #0 is for mmr1 and 1 is for mmr2
 
-# prepare a series of classifier applied at each time sample
-clf = make_pipeline(
-    StandardScaler(),  # z-score normalization
-    SelectKBest(f_classif, k=k_feature),  # select features for speed
-    LinearModel(),
-    )
-time_decod = SlidingEstimator(clf, scoring="roc_auc")
+import copy
+import random
+n_perm=100
+scores_perm=[]
+for i in range(n_perm):
+    print('Iteration' + str(i))
+    yp = copy.deepcopy(y)
+    random.shuffle(yp)
+    clf = make_pipeline(
+        StandardScaler(),  # z-score normalization
+        SelectKBest(f_classif, k=k_feature),  # select features for speed
+        LinearModel(),
+        )
+    time_decod = SlidingEstimator(clf, scoring="roc_auc")
+    # Run cross-validated decoding analyses:
+    scores = cross_val_multiscore(time_decod, X, yp, cv=5, n_jobs=-1)
+    scores_perm.append(np.mean(scores,axis=0))
+scores_perm_array=np.asarray(scores_perm)
+np.savez(root_path + 'cbsA_meeg_analysis/adult' + filename + '_scores_' + str(n_perm) +'perm_kall_tradition.npy',scores_perm_array =scores_perm_array, peaks_time=peaks_time)
 
-# Run cross-validated decoding analyses
-scores_observed = cross_val_multiscore(time_decod, X, y, cv=5 , n_jobs=None)
-
-#Plot average decoding scores of 5 splits
-# TOI = np.linspace(0,450,num=2250)
-# fig, ax = plt.subplots(1)
-# ax.plot(TOI, scores_observed.mean(0), label="score")
-# ax.axhline(0.5, color="k", linestyle="--", label="chance")
-# ax.axvline(0, color="k")
-# plt.legend()
-
-# the training sets
-time_decod.fit(X, y)
-# Retrieve patterns after inversing the z-score normalization step:
-patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
-
-np.save(root_path + 'cbsA_meeg_analysis/decoding/baby_roc_auc_vector_morph_kall_mba_pa.npy',scores_observed)
-np.save(root_path + 'cbsA_meeg_analysis/decoding/baby_patterns_vector_morph_kall_mba_pa.npy',patterns)
 toc = time.time()
-print('It takes ' + str((toc - tic)/60) + 'min to run decoding')
+print('It takes ' + str((toc - tic)/60) + 'min to run 100 iterations of kall decoding')
