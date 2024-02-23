@@ -29,7 +29,7 @@ import pandas as pd
 import scipy.stats as stats
 from scipy.io import wavfile
 
-root_path='/media/tzcheng/storage/CBS/'
+root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 ## load source
