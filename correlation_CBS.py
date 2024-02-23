@@ -88,18 +88,16 @@ mean_MEG_mmr2_m = MEG_mmr2_m.mean(axis =0).mean(axis=0)
 # pearson r 
 # Tradtional direction: TOI [100 250] 0.89 for MEG_m & EEG and -0.63 for MEG_v & EEG 
 # New direction: TOI [100 300] -0.40 for MEG_m & EEG and -0.26 for MEG_v & EEG 
-corr_p = pearsonr(mean_EEG_mmr2[ts:te], mean_MEG_mmr2_m[ts:te])
+corr_p = pearsonr(mean_EEG_mmr2[ts:te], mean_MEG_mmr2_v[ts:te])
 
 # normalized cross correlation [-1 1]
 # based on https://stackoverflow.com/questions/53436231/normalized-cross-correlation-in-python
-# Tradtional direction: TOI [100 250] 0.91 (lag=0) for MEG_m & EEG and 0.33 (lage = 81.2 ms) for MEG_v & EEG
-a = mean_EEG_mmr2[ts:te]
-b = stc_v[ts:te]
+# Tradtional direction: TOI [100 250]-0.637 (lage = -2.2 ms) for MEG_v & EEG
+a = (mean_EEG_mmr2[ts:te]- np.mean(mean_EEG_mmr2[ts:te]))/np.std(mean_EEG_mmr2[ts:te])
+b = (stc_v[ts:te]- np.mean(stc_v[ts:te]))/np.std(stc_v[ts:te])
 
-norm_a = np.linalg.norm(a)
-a = a / norm_a
-norm_b = np.linalg.norm(b)
-b = b / norm_b
+a = a / np.linalg.norm(a)
+b = b / np.linalg.norm(b)
 
 xcorr = signal.correlate(a,b)
 print(max(abs(xcorr)))
@@ -399,9 +397,9 @@ plt.plot(np.linspace(0,0.13,650),dev2_audio)
 # plt.plot(np.linspace(0,0.13,650),dev2_audio_r)
 
 ## Load real audio
-fs, std_audio = wavfile.read('/media/tzcheng/storage/CBS/stimuli/+10.wav')
-fs, dev1_audio = wavfile.read('/media/tzcheng/storage/CBS/stimuli/-40.wav')
-fs, dev2_audio = wavfile.read('/media/tzcheng/storage/CBS/stimuli/+40.wav')
+fs, std_audio = wavfile.read('/media/tzcheng/storage2/CBS/stimuli/+10.wav')
+fs, dev1_audio = wavfile.read('/media/tzcheng/storage2/CBS/stimuli/-40.wav')
+fs, dev2_audio = wavfile.read('/media/tzcheng/storage2/CBS/stimuli/+40.wav')
 # Downsample
 fs_new = 5000
 num_std = int((len(std_audio)*fs_new)/fs)
