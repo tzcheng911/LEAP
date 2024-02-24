@@ -20,7 +20,7 @@ import os
 import random
 
 def do_otp(subject):
-    root_path='/media/tzcheng/storage/CBS/'+ subject +'/raw_fif/'
+    root_path='/media/tzcheng/storage2/CBS/'+ subject +'/raw_fif/'
     os.chdir(root_path)
     #find all the raw files
     runs=['01','02','erm'] # ['01','02','erm'] for the adults and ['01','erm'] for the infants
@@ -35,14 +35,14 @@ def do_otp(subject):
         raw_otp.save(file_out,overwrite=True)
 
 def do_sss(subject,st_correlation,int_order):
-    root_path='/media/tzcheng/storage/CBS/'
+    root_path='/media/tzcheng/storage2/CBS/'
     os.chdir(root_path)
     params = mnefun.Params(n_jobs=6, n_jobs_mkl=1, proj_sfreq=200, n_jobs_fir='cuda',
                        n_jobs_resample='cuda', filter_length='auto')
 
     params.subjects = [subject]
 
-    params.work_dir = '/media/tzcheng/storage/CBS/'
+    params.work_dir = '/media/tzcheng/storage2/CBS/'
     params.run_names = ['%s_01_otp','%s_02_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
     params.runs_empty = ['%s_erm_otp']
     params.subject_indices = [0] #to run individual participants
@@ -143,11 +143,14 @@ def do_filtering(data, lp, do_cabr):
         data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
 
-def do_cov(subject,data):
+def do_cov(subject,data, do_cabr):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
     fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_otp_raw_sss_proj_fil50'
-    fname_erm_out = fname_erm + '_ffr'+'-cov'
+    if do_cabr == True:     
+        fname_erm_out = fname_erm + '_ffr-cov'
+    else: 
+        fname_erm_out = fname_erm + '_mmr-cov'
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
 #    mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
 
@@ -320,7 +323,7 @@ def do_epoch_cabr_eeg(data, subject, run, n_trials):
     evoked_dev2.save(file_out + '_evoked_dev2_cabr_' + str(n_trials) + '.fif',overwrite=True)
     return evoked_substd,evoked_dev1,evoked_dev2,new_epochs
 ########################################
-root_path='/media/tzcheng/storage/CBS/'
+root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
 
 ## parameters 
@@ -328,11 +331,11 @@ direction = 'ba_to_pa' # traditional direction 'ba_to_pa': ba to pa and ba to mb
 # reverse direction 'pa_to_ba' : is pa to ba and mba to ba; 
 # only comparing /ba/ 'first_last_ba': only comparing /ba/ before and after habituation 
 
-runs = ['_02'] # ['_01','_02'] for the adults and ['_01'] for the infants
+runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
 lp = 50 
-do_cabr = False
+do_cabr = True
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
@@ -340,23 +343,23 @@ for file in os.listdir():
         subj.append(file)
 
 #%%##### do the jobs for MEG
-# for s in subj:
-#     print(s)
-#     # do_otp(s)
-#     # do_sss(s,st_correlation,int_order)
-#     for run in runs:
-#         print ('Doing ECG/EOG projection...')
-#         [raw,raw_erm] = do_projection(s,run)
-#         print ('Doing filtering...')
-#         raw_filt = do_filtering(raw,lp,do_cabr)
-#         raw_erm_filt = do_filtering(raw_erm,lp,do_cabr)
-#         # print ('calculate cov...')
-#         # do_cov(s,raw_erm_filt)
-#         print ('Doing epoch...')
-#         if do_cabr == True:
-#             do_epoch_cabr(raw_filt, s, run)
-#         else:
-#             do_epoch_mmr(raw_filt, s, run, direction)
+for s in subj:
+    print(s)
+    # do_otp(s)
+    # do_sss(s,st_correlation,int_order)
+    for run in runs:
+        print ('Doing ECG/EOG projection...')
+        [raw,raw_erm] = do_projection(s,run)
+        print ('Doing filtering...')
+        raw_filt = do_filtering(raw,lp,do_cabr)
+        raw_erm_filt = do_filtering(raw_erm,lp,do_cabr)
+        print ('calculate cov...')
+        do_cov(s,raw_erm_filt, do_cabr)
+        print ('Doing epoch...')
+        if do_cabr == True:
+            do_epoch_cabr(raw_filt, s, run)
+        else:
+            do_epoch_mmr(raw_filt, s, run, direction)
 
 
 #%%##### do the jobs for EEG MMR
@@ -369,16 +372,16 @@ for file in os.listdir():
 #         do_epoch_mmr_eeg(raw_file, s, run, direction)
 
 #%%##### do the jobs for EEG FFR
-n_trials = 'all' # can be an integer or 'all' using all the sounds
-# randomly select k sounds from each condition
-# each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
-# we have at least 200 sounds for each condition 
+# n_trials = 'all' # can be an integer or 'all' using all the sounds
+# # randomly select k sounds from each condition
+# # each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
+# # we have at least 200 sounds for each condition 
 
-for s in subj:
-    print(s)
-    for run in runs:
-        raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
-        raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('bio'))
-        raw_file.filter(l_freq=80,h_freq=2000,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
-        raw_file.pick_channels(['BIO004'])
-        do_epoch_cabr_eeg(raw_file, s, run, n_trials)
+# for s in subj:
+#     print(s)
+#     for run in runs:
+#         raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
+#         raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('bio'))
+#         raw_file.filter(l_freq=80,h_freq=2000,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
+#         raw_file.pick_channels(['BIO004'])
+#         do_epoch_cabr_eeg(raw_file, s, run, n_trials)

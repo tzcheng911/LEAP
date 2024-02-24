@@ -202,13 +202,16 @@ def do_filtering(data, lp, do_cabr):
         data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
 
-def do_cov(subject,data,time):
+def do_cov(subject,data,time, do_cabr):
     ###### noise covariance for each run based on its eog ecg proj
     if time == 0:
         time =''
     root_path = os.getcwd()
     fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + time +run + '_erm_otp_raw_sss_proj_fil50'
-    fname_erm_out = fname_erm + '-cov'
+    if do_cabr == True:     
+        fname_erm_out = fname_erm + '_ffr-cov'
+    else: 
+        fname_erm_out = fname_erm + '_mmr-cov'
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
     mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
 
@@ -320,8 +323,8 @@ for s in subjects:
         print ('Doing filtering...')
         raw_filt = do_filtering(raw,lp, do_cabr)
         raw_erm_filt = do_filtering(raw_erm,lp, do_cabr)
-        # print ('calculate cov...')
-        # do_cov(s,raw_erm_filt,time)
+        print ('calculate cov...')
+        do_cov(s,raw_erm_filt,time)
         print ('Doing epoch...')
         if do_cabr == True:
             do_epoch_cabr(raw_filt, s, run, time)
