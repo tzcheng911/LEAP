@@ -203,11 +203,11 @@ EEG = EEG_mmr2
 r_m_all_s = []
 r_v_all_s = []
 
-for s in np.arange(0,len(MEG_mmr2_m),1):
-    r,p = pearsonr(stc_m[s,:],EEG[s,ts:te])
-    r_m_all_s.append(r)
+for s in np.arange(0,len(MEG_mmr2_v),1):
     r,p = pearsonr(stc_v[s,:],EEG[s,ts:te])
     r_v_all_s.append(r)
+    r,p = pearsonr(stc_m[s,:],EEG[s,ts:te])
+    r_m_all_s.append(r)
 
 print('abs corr between MEG_m & EEG:' + str(np.abs(r_m_all_s).mean()))
 print('abs corr between MEG_v & EEG:' + str(np.abs(r_v_all_s).mean()))
@@ -245,8 +245,9 @@ xcorr_v_all_s = []
 
 for s in np.arange(0,len(MEG_mmr2_m),1):
     a = (EEG[s,ts:te] - np.mean(EEG[s,ts:te]))/np.std(EEG[s,ts:te])
-    b = (stc_m[s,:] - np.mean(stc_m[s,:]))/np.std(stc_m[s,:])
     c = (stc_v[s,:] - np.mean(stc_v[s,:]))/np.std(stc_v[s,:])
+    b = (stc_m[s,:] - np.mean(stc_m[s,:]))/np.std(stc_m[s,:])
+
     
     ## the way matlab do xcorr normalization: the max is 1 if do a zero lag autocorrealtoin
     a = a / np.linalg.norm(a)
