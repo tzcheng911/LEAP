@@ -171,27 +171,26 @@ r_m_all_t = []
 r_v_all_t = []
 
 for t in np.arange(0,len(stc1.times),1):
-    r,p = pearsonr(stc_m[:,t],EEG[:,t])
-    r_m_all_t.append(r)
     r,p = pearsonr(stc_v[:,t],EEG[:,t])
     r_v_all_t.append(r)
+    r,p = pearsonr(stc_m[:,t],EEG[:,t])
+    r_m_all_t.append(r)
 
 fig, ax = plt.subplots(1)
-ax.plot(stc1.times, r_m_all_t)
 ax.plot(stc1.times, r_v_all_t)
 ax.axhline(0, color="k", linestyle="--")
 ax.axvline(0, color="k")
 plt.title('MMR2')
-plt.legend(['MEG_m','MEG_v'])
+plt.legend(['MEG_v'])
 plt.xlabel('Time (s)')
 plt.ylabel('Pearson r')
 plt.xlim([-0.1,0.6])
 
 plt.figure()
-plt.scatter(stc_m[:,1300],EEG[:,1300])
+plt.scatter(stc_v[:,900],EEG[:,900])
 plt.xlabel('MEG')
 plt.ylabel('EEG')
-plt.title('t = 160ms')
+plt.title('t = 80 ms')
 
 #%%######################################## Done within each subject: correlate time series in a window between EEG & MEG
 ## pearson correlation (corr) between EEG and MEG
