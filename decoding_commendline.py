@@ -45,7 +45,7 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_b101/sss_fif/cbs_b101_mmr2_vect
 times = stc1.times
 
 ## parameters
-ts = 250 # 0s
+ts = 250 # -0.05s
 te = 2750 # 0.45s
 ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
