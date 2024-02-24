@@ -29,14 +29,13 @@ def do_foward(s):
 
     return fwd, src
 
-def do_inverse(s,morph,ori):
-    run = '_01'
+def do_inverse_MMR(s,run, morph,ori):
     root_path='/media/tzcheng/storage2/CBS/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
-    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50-cov.fif')
+    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50_mmr-cov.fif')
     epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mmr_e.fif')
     evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
     evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]        
@@ -101,20 +100,34 @@ def do_inverse(s,morph,ori):
         # mmr1.save(file_in + '_mmr1_' + str(ori), overwrite=True)
         # mmr2.save(file_in + '_mmr2_' + str(ori), overwrite=True)
 
+def do_inverse_cABR(s,run, morph,ori):
+    root_path='/media/tzcheng/storage2/CBS/'
+    subjects_dir = '/media/tzcheng/storage2/subjects/'
+
+    file_in = root_path + s + '/sss_fif/' + s
+    fwd = mne.read_forward_solution(file_in + '-fwd.fif')
+    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50_cabr-cov.fif')
+    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_f_cABR_e.fif')
+    evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+    evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_dev1_cabr.fif')[0]        
+    evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_dev2_cabr.fif')[0]
+
 ########################################
 root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
 
 morph = True
-ori = 'sensor_sub' # 'vector', None. 'sensor_sub' # 'sensor_sub' is doing dev-std subtraction on the sensor level then source localization
+ori = 'vector' # 'vector', None. 'sensor_sub' # 'sensor_sub' is doing dev-std subtraction on the sensor level then source localization
 
 runs = ['_01','_02']
+run = runs[0]
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_b101'):
+    if file.startswith('cbs_A'):
         subj.append(file)
 for s in tqdm(subj):
     # for run in runs:
         print(s)
         # do_foward(s)
-        do_inverse(s,morph,ori)
+        do_inverse_MMR(s,run, morph,ori)
+        do_inverse_cABR(s,run, morph,ori)

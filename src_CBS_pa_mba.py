@@ -26,7 +26,7 @@ def do_inverse(s,morph,ori):
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
     trans = mne.read_trans(file_in +'-trans.fif')
-    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50-cov.fif')
+    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50_mmr-cov.fif')
     epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mmr_e.fif')
     evoked_s1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_substd1_reverse_mmr.fif')[0] # last mba
     evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0] # first mba

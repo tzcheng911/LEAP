@@ -316,22 +316,27 @@ stc1.plot(src,clim=dict(kind="value",pos_lims=[0,12,16]), subject='fsaverage', s
 ## Adults
 scores_observed = np.load(root_path + '/cbsA_meeg_analysis/decoding/adult_roc_auc_vector_morph_kall.npy')
 patterns = np.load(root_path + 'cbsA_meeg_analysis/decoding/adult_patterns_vector_morph_kall.npy')
+scores_permute = np.load(root_path + '/cbsA_meeg_analysis/decoding/adult_vector_scores_100perm_kall_tradition.npz')
 
 ## Babies
 scores_observed = np.load(root_path + 'cbsb_meg_analysis/decoding/baby_roc_auc_vector_morph_kall.npy')
 patterns = np.load(root_path + 'cbsb_meg_analysis/decoding/baby_patterns_vector_morph_kall.npy')
+scores_permute = np.load(root_path + '/cbsb_meg_analysis/decoding/baby_vector_scores_100perm_kall_tradition.npz')
 
 ## New method: first - last mba vs. first pa - last pa
 scores_observed = np.load(root_path + 'cbsA_meeg_analysis/decoding/adult_roc_auc_vector_morph_kall_mba_pa.npy')
 patterns = np.load(root_path + 'cbsA_meeg_analysis/decoding/adult_patterns_vector_morph_kall_mba_pa.npy')
+scores_permute = np.load(root_path + '/cbsA_meeg_analysis/decoding/adult_vector_scores_100perm_kall_new.npz')
 
 scores_observed = np.load(root_path + 'cbsb_meg_analysis/decoding/baby_roc_auc_vector_morph_kall_mba_pa.npy')
 patterns = np.load(root_path + 'cbsb_meg_analysis/decoding/baby_patterns_vector_morph_kall_mba_pa.npy')
+scores_permute = np.load(root_path + '/cbsb_meg_analysis/decoding/baby_vector_scores_100perm_kall_new.npz')
 
 
 ## Plot acc across time
 fig, ax = plt.subplots(1)
 ax.plot(stc1.times, scores_observed.mean(0), label="score")
+ax.plot(scores_permute['peaks_time'],np.percentile(scores_permute['scores_perm_array'],95,axis=0),'g.')
 ax.axhline(0.5, color="k", linestyle="--", label="chance")
 ax.axhline(np.percentile(scores_observed.mean(0),q = 97.5), color="grey", linestyle="--", label="95 percentile")
 ax.axvline(0, color="k")
