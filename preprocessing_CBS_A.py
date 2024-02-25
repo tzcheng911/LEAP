@@ -146,11 +146,11 @@ def do_filtering(data, lp, do_cabr):
 def do_cov(subject,data, do_cabr):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
-    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_otp_raw_sss_proj_fil50'
+    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_otp_raw_sss_proj_f'
     if do_cabr == True:     
         fname_erm_out = fname_erm + '_ffr-cov'
     else: 
-        fname_erm_out = fname_erm + '_mmr-cov'
+        fname_erm_out = fname_erm + 'il50_mmr-cov'
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
 #    mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
 
@@ -335,7 +335,7 @@ runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
 lp = 50 
-do_cabr = True
+do_cabr = False # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():

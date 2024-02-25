@@ -271,7 +271,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('br_'): 
         subjects.append(file)
-subjects = subjects[5:]
+subjects = subjects[-2:]
 
 ## check if there is prebad txt with the raw data: 49 subjects don't have it
 # no_prebadstxt = []

@@ -207,11 +207,11 @@ def do_cov(subject,data,time, do_cabr):
     if time == 0:
         time =''
     root_path = os.getcwd()
-    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + time +run + '_erm_otp_raw_sss_proj_fil50'
+    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + time +run + '_erm_otp_raw_sss_proj_f'
     if do_cabr == True:     
         fname_erm_out = fname_erm + '_ffr-cov'
     else: 
-        fname_erm_out = fname_erm + '_mmr-cov'
+        fname_erm_out = fname_erm + 'il50_mmr-cov'
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
     mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
 
@@ -266,7 +266,7 @@ def do_epoch_cabr(data, subject, run,time):
         time =''
     root_path = os.getcwd()
     cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + time + run + '_events_cabr-eve.fif')
-    file_out = root_path + '/' + subject + '/sss_fif/' + subject + time + run + '_otp_raw_sss_proj_fil50'
+    file_out = root_path + '/' + subject + '/sss_fif/' + subject + time + run + '_otp_raw_sss_proj_f'
     
     event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
     
@@ -293,7 +293,7 @@ os.chdir(root_path)
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 time = 0 # first time (6 mo) or second time (12 mo) coming back, or 0 for cbs
 direction = "pa_to_ba"
-do_cabr = False
+do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
@@ -302,7 +302,6 @@ subjects = []
 for file in os.listdir():
     if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = subjects[1:]
 
 #%%###### do the jobs
 for s in subjects:
@@ -315,6 +314,7 @@ for s in subjects:
         filename = root_path + s + '/sss_fif/' + s + time + run + '_otp_raw_sss_proj.fif'
 
         if os.path.exists(filename):
+            print ('ECG/EOG projection exists, loading...')
             raw = mne.io.read_raw_fif(filename, allow_maxshield=True,preload=True)
             raw_erm = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + time + run + '_erm_raw_sss_proj.fif', allow_maxshield=True,preload=True)
         else:
@@ -324,7 +324,7 @@ for s in subjects:
         raw_filt = do_filtering(raw,lp, do_cabr)
         raw_erm_filt = do_filtering(raw_erm,lp, do_cabr)
         print ('calculate cov...')
-        do_cov(s,raw_erm_filt,time)
+        do_cov(s,raw_erm_filt,time,do_cabr)
         print ('Doing epoch...')
         if do_cabr == True:
             do_epoch_cabr(raw_filt, s, run, time)

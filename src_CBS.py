@@ -106,7 +106,7 @@ def do_inverse_cABR(s,run, morph,ori):
 
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
-    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50_cabr-cov.fif')
+    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50_ffr-cov.fif')
     epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_f_cABR_e.fif')
     evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
     evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_dev1_cabr.fif')[0]        
