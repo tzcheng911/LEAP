@@ -295,7 +295,8 @@ MEG_mmr2_m = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_None_morph.npy')
 MEG_mmr1_v = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_vector_morph.npy')
 MEG_mmr2_v = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_vector_morph.npy')
 
-## New method: first - last mba vs. first pa - last pa
+## New method: first - last mba vs. first pa - last pascores_observed = np.load(root_path + '/cbsA_meeg_analysis/decoding/adult_roc_auc_vector_morph_kall.npy')
+
 MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph.npy')
 MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_None_morph.npy')
 MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy')
@@ -335,7 +336,7 @@ scores_permute = np.load(root_path + '/cbsb_meg_analysis/decoding/baby_vector_sc
 
 ## Plot acc across time
 fig, ax = plt.subplots(1)
-ax.plot(stc1.times, scores_observed.mean(0), label="score")
+ax.plot(stc1.times[500:2750], scores_observed.mean(0), label="score")
 ax.plot(scores_permute['peaks_time'],np.percentile(scores_permute['scores_perm_array'],95,axis=0),'g.')
 ax.axhline(0.5, color="k", linestyle="--", label="chance")
 ax.axhline(np.percentile(scores_observed.mean(0),q = 97.5), color="grey", linestyle="--", label="95 percentile")
