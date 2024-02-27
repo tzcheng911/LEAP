@@ -100,17 +100,49 @@ def do_inverse_MMR(s,run, morph,ori):
         # mmr1.save(file_in + '_mmr1_' + str(ori), overwrite=True)
         # mmr2.save(file_in + '_mmr2_' + str(ori), overwrite=True)
 
-def do_inverse_cABR(s,run, morph,ori):
+def do_inverse_cABR(s,run, morph):
     root_path='/media/tzcheng/storage2/CBS/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
-    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50_ffr-cov.fif')
+    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_f_ffr-cov.fif')
     epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_f_cABR_e.fif')
     evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
     evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_dev1_cabr.fif')[0]        
     evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_dev2_cabr.fif')[0]
+    
+    inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
+
+    ori = None # cabr should use None
+    standard = mne.minimum_norm.apply_inverse((evoked_s), inverse_operator, pick_ori = ori)
+    dev1 = mne.minimum_norm.apply_inverse((evoked_d1), inverse_operator, pick_ori = ori)
+    dev2 = mne.minimum_norm.apply_inverse((evoked_d2), inverse_operator, pick_ori = ori)
+    
+    if morph == True:
+        print('Morph ' + s +  ' src space to common cortical space.')
+        fname_src_fsaverage = subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif'
+        src_fs = mne.read_source_spaces(fname_src_fsaverage)
+        morph = mne.compute_source_morph(
+            inverse_operator["src"],
+            subject_from=s,
+            subjects_dir=subjects_dir,
+            niter_affine=[10, 10, 5],
+            niter_sdr=[10, 10, 5],  # just for speed
+            src_to=src_fs,
+            verbose=True)
+        standard_fsaverage = morph.apply(standard)
+        dev1_fsaverage = morph.apply(dev1)
+        dev2_fsaverage = morph.apply(dev2)
+        standard_fsaverage.save(file_in + '_ba_cabr_morph', overwrite=True)
+        dev1_fsaverage.save(file_in + '_mba_cabr_morph', overwrite=True)
+        dev2_fsaverage.save(file_in + '_pa_cabr_morph', overwrite=True)
+
+    else: 
+        print('No morphing has been performed. The individual results may not be good to average.')
+        standard.save(file_in + '_ba_cabr' + str(ori), overwrite=True)
+        dev1.save(file_in + '_mba_cabr' + str(ori), overwrite=True)
+        dev2.save(file_in + '_pa_cabr' + str(ori), overwrite=True)
 
 ########################################
 root_path='/media/tzcheng/storage2/CBS/'
@@ -123,11 +155,11 @@ runs = ['_01','_02']
 run = runs[0]
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_b'):
         subj.append(file)
 for s in tqdm(subj):
     # for run in runs:
         print(s)
         # do_foward(s)
         do_inverse_MMR(s,run, morph,ori)
-        do_inverse_cABR(s,run, morph,ori)
+        # do_inverse_cABR(s,run, morph)

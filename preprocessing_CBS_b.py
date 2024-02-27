@@ -8,7 +8,7 @@ Need to manually enter bad channels for sss from the experiment notes.
 Need to change parameters st_correlation and int_order in sss for adult/infants
 Didn't save the product from ecg, eog project and filtering to save some space
 Could be used to run SLD too (change the root path, subject name, add the pre_bads)
-
+1. cbs_b118 emptyroom is sampled at 1000 Hz instead of 5000 Hz
 @author: tzcheng
 """
 
@@ -300,7 +300,7 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
+    if file.startswith('cbs_b106'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
 
 #%%###### do the jobs

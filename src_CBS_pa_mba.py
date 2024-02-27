@@ -90,7 +90,7 @@ ori = 'vector' # 'vector', None
 runs = ['_01','_02']
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_b'):
+    if file.startswith('cbs_A'):
         subj.append(file)
 
 for s in tqdm(subj):
