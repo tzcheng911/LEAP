@@ -81,11 +81,11 @@ clf = make_pipeline(
     StandardScaler(),  # z-score normalization
     LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
 )
-scores = cross_val_multiscore(clf, X, y, cv=LeaveOneOut(), n_jobs=None) # takes about 10 mins to run
+scores = cross_val_multiscore(clf, X, y, cv=5, n_jobs=None) # takes about 10 mins to run
 score = np.mean(scores, axis=0)
 print("Accuracy: %0.1f%%" % (100 * score,))
 
-## if preserve the subject MMR1 and MMR2 relationship but randomize the order within each group
+#%%# if preserve the subject MMR1 and MMR2 relationship but randomize the order within each group
 rand_ind = np.arange(0,len(MMR1))
 random.shuffle(rand_ind)
 X = np.concatenate((MMR1[rand_ind,:],MMR2[rand_ind,:]),axis=0)
@@ -156,10 +156,10 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_b101/sss_fif/cbs_b101_mmr2_vect
 times = stc1.times
 
 ## parameters
-ts = 500 # 0s
+ts = 250 # -0.05s
 te = 2750 # 0.45s
 ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
-k_feature = 50 # ROI: 'all' features; whole brain: 500 features
+k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
 #%%####################################### Load adults
 filename = 'vector'
@@ -169,7 +169,6 @@ filename_mmr2 = 'group_mmr2_vector_morph_mmr-cov'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [72,60,61,62] # Simport random
-TG and frontal pole
 rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 
 if ROI_wholebrain == 'ROI':
