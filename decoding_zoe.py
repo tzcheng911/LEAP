@@ -11,12 +11,14 @@ import matplotlib.pyplot as plt
 
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, LeaveOneOut
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.svm import SVC
 import time
+import random
+
 
 import mne
 from mne.minimum_norm import apply_inverse_epochs, read_inverse_operator
@@ -61,12 +63,34 @@ dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev2_eeg.npy')
 MMR1 = dev1 - std
 MMR2 = dev2 - std
 
+#%%
 X = np.concatenate((MMR1,MMR2),axis=0)
 X = X[:,ts:te]
 y = np.concatenate((np.repeat(0,len(dev1)),np.repeat(1,len(dev2))))
 
-X = np.concatenate((std,dev1,dev2),axis=0)
-y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
+# X = np.concatenate((std,dev1,dev2),axis=0)
+# y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
+
+## randomization
+rand_ind = np.arange(0,len(X))
+random.shuffle(rand_ind)
+X = X[rand_ind,:]
+y = y[rand_ind]
+
+clf = make_pipeline(
+    StandardScaler(),  # z-score normalization
+    LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
+)
+scores = cross_val_multiscore(clf, X, y, cv=LeaveOneOut(), n_jobs=None) # takes about 10 mins to run
+score = np.mean(scores, axis=0)
+print("Accuracy: %0.1f%%" % (100 * score,))
+
+## if preserve the subject MMR1 and MMR2 relationship but randomize the order within each group
+rand_ind = np.arange(0,len(MMR1))
+random.shuffle(rand_ind)
+X = np.concatenate((MMR1[rand_ind,:],MMR2[rand_ind,:]),axis=0)
+X = X[:,ts:te]
+y = np.concatenate((np.repeat(0,len(dev1)),np.repeat(1,len(dev2))))
 
 clf = make_pipeline(
     StandardScaler(),  # z-score normalization
@@ -144,7 +168,8 @@ filename_mmr2 = 'group_mmr2_vector_morph_mmr-cov'
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-lh_ROI_label = [72,60,61,62] # STG and frontal pole
+lh_ROI_label = [72,60,61,62] # Simport random
+TG and frontal pole
 rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 
 if ROI_wholebrain == 'ROI':
@@ -179,8 +204,9 @@ ax.axhline(0.5, color="k", linestyle="--", label="chance")
 ax.axvline(0, color="k")
 plt.legend()
 
+# The fitting needs not be cross validated because the weights are based on
 # the training sets
-time_decod.fit(X, y)
+time_decod.fit(X, y) # not changed after shuffling the initial
 # Retrieve patterns after inversing the z-score normalization step:
 patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
 
