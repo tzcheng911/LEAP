@@ -14,7 +14,7 @@ import time
 
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, LeaveOneOut
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix
@@ -74,10 +74,10 @@ X = X[:,:,ts:te]
 y = np.concatenate((np.repeat(0,len(mmr1)),np.repeat(1,len(mmr1)))) #0 is for mmr1 and 1 is for mmr2
 
 ## random shuffle X and y
-rand_ind = np.arange(0,len(X))
-random.Random(1).shuffle(rand_ind)
-X = X[rand_ind,:,:]
-y = y[rand_ind]
+# rand_ind = np.arange(0,len(X))
+# random.Random(1).shuffle(rand_ind)
+# X = X[rand_ind,:,:]
+# y = y[rand_ind]
 
 # prepare a series of classifier applied at each time sample
 clf = make_pipeline(
@@ -95,36 +95,8 @@ score = np.mean(scores_observed, axis=0)
 toc = time.time()
 print('It takes ' + str((toc - tic)/60) + 'min to run decoding')
 
-np.save(root_path + 'cbsA_meeg_analysis/decoding/adult_roc_auc_' + filename + '_morph_kall_5fold_rand1.npy',scores_observed)
+np.save(root_path + 'cbsA_meeg_analysis/decoding/adult_roc_auc_' + filename + '_morph_kall_rep.npy',scores_observed)
 
-print('2nd run of rand1 for replication purpose')
-X = np.concatenate((mmr1,mmr2),axis=0)
-X = X[:,:,ts:te] 
-y = np.concatenate((np.repeat(0,len(mmr1)),np.repeat(1,len(mmr1)))) #0 is for mmr1 and 1 is for mmr2
-
-## random shuffle X and y
-rand_ind = np.arange(0,len(X))
-random.Random(1).shuffle(rand_ind)
-X = X[rand_ind,:,:]
-y = y[rand_ind]
-
-# prepare a series of classifier applied at each time sample
-clf = make_pipeline(
-    StandardScaler(),  # z-score normalization
-    SelectKBest(f_classif, k=k_feature),  # select features for speed
-    LinearModel(),
-    )
-time_decod = SlidingEstimator(clf, scoring="roc_auc")
-    
-# Run cross-validated decoding analyses
-
-scores_observed = cross_val_multiscore(time_decod, X, y, cv=n_cv,n_jobs=2)
-score = np.mean(scores_observed, axis=0)
-
-toc = time.time()
-print('It takes ' + str((toc - tic)/60) + 'min to run decoding')
-
-np.save(root_path + 'cbsA_meeg_analysis/decoding/adult_roc_auc_' + filename + '_morph_kall_5fold_rand1_2.npy',scores_observed)
 # #%%####################################### Run permutation
 # filename = 'vector'
 # filename_mmr1 = 'group_mmr1_vector_morph'
