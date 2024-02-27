@@ -76,7 +76,7 @@ scores = cross_val_multiscore(clf, X, y, cv=5, n_jobs=None) # takes about 10 min
 score = np.mean(scores, axis=0)
 print("Accuracy: %0.1f%%" % (100 * score,))
 
-## Run permutation
+#%%#######################################Run permutation
 import copy
 import random
 n_perm=500
@@ -135,12 +135,12 @@ times = stc1.times
 ts = 500 # 0s
 te = 2750 # 0.45s
 ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
-k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
+k_feature = 50 # ROI: 'all' features; whole brain: 500 features
 
 #%%####################################### Load adults
 filename = 'vector'
-filename_mmr1 = 'group_mmr1_vector_morph'
-filename_mmr2 = 'group_mmr2_vector_morph'
+filename_mmr1 = 'group_mmr1_vector_morph_mmr-cov'
+filename_mmr2 = 'group_mmr2_vector_morph_mmr-cov'
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
@@ -168,7 +168,7 @@ clf = make_pipeline(
 time_decod = SlidingEstimator(clf, scoring="roc_auc")
 
 # Run cross-validated decoding analyses
-scores_observed = cross_val_multiscore(time_decod, X, y, cv=5 , n_jobs=None)
+scores_observed = cross_val_multiscore(time_decod, X, y, cv=18, n_jobs=None) # leave one out
 score = np.mean(scores_observed, axis=0)
 
 #Plot average decoding scores of 5 splits
@@ -187,8 +187,8 @@ patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
 toc = time.time()
 print('It takes ' + str((toc - tic)/60) + 'min to run decoding')
 
-np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_k500_' + filename + '.npy',scores_observed)
-np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_k500_' + filename + '.npy',patterns)
+# np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_kall_' + filename + '.npy',scores_observed)
+# np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_' + filename + '.npy',patterns)
 
 #%%####################################### Load babies
 # fname_aseg = subjects_dir + 'ANTS15-0Months3T/mri/aparc+aseg.mgz'
