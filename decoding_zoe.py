@@ -216,41 +216,41 @@ print('It takes ' + str((toc - tic)/60) + 'min to run decoding')
 # np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_' + filename + '.npy',patterns)
 
 #%%####################################### Load babies
-# fname_aseg = subjects_dir + 'ANTS15-0Months3T/mri/aparc+aseg.mgz'
-# label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-# lh_ROI_label = [61,63] # STG and frontal pole
-# rh_ROI_label = [96,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
+fname_aseg = subjects_dir + 'ANTS15-0Months3T/mri/aparc+aseg.mgz'
+label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+lh_ROI_label = [61,63] # STG and frontal pole
+rh_ROI_label = [96,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 
-# if ROI_wholebrain == 'ROI':
-#     mmr1 = np.load(root_path + 'cbsb_meeg_analysis/'  + filename_mmr1 + '_roi.npy',allow_pickle=True)
-#     mmr2 = np.load(root_path + 'cbsb_meeg_analysis/' + filename_mmr2 + '_roi.npy',allow_pickle=True)
-# elif ROI_wholebrain == 'wholebrain':
-#     mmr1 = np.load(root_path + 'cbsb_meg_analysis/'  + filename_mmr1 + '.npy',allow_pickle=True)
-#     mmr2 = np.load(root_path + 'cbsb_meg_analysis/'  + filename_mmr2 + '.npy',allow_pickle=True)
-# else:
-#     print("Need to decide whether to use ROI or whole brain as feature.")
+if ROI_wholebrain == 'ROI':
+    mmr1 = np.load(root_path + 'cbsb_meeg_analysis/MEG/'  + filename_mmr1 + '_roi.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsb_meeg_analysis/MEG/' + filename_mmr2 + '_roi.npy',allow_pickle=True)
+elif ROI_wholebrain == 'wholebrain':
+    mmr1 = np.load(root_path + 'cbsb_meg_analysis/MEG/'  + filename_mmr1 + '.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsb_meg_analysis/MEG/'  + filename_mmr2 + '.npy',allow_pickle=True)
+else:
+    print("Need to decide whether to use ROI or whole brain as feature.")
 
-# X=np.concatenate((mmr1,mmr2),axis=0)
-# y = np.concatenate((np.repeat(0,len(mmr1)),np.repeat(1,len(mmr2)))) #0 is for ba and 1 is for ga
+X=np.concatenate((mmr1,mmr2),axis=0)
+y = np.concatenate((np.repeat(0,len(mmr1)),np.repeat(1,len(mmr2)))) #0 is for ba and 1 is for ga
 
-# # prepare a series of classifier applied at each time sample
-# clf = make_pipeline(
-#     StandardScaler(),  # z-score normalization
-#     SelectKBest(f_classif, k=k_feature),  # select features for speed
-#     LinearModel(),
-#     )
-# time_decod = SlidingEstimator(clf, scoring="roc_auc")
+# prepare a series of classifier applied at each time sample
+clf = make_pipeline(
+    StandardScaler(),  # z-score normalization
+    SelectKBest(f_classif, k=k_feature),  # select features for speed
+    LinearModel(),
+    )
+time_decod = SlidingEstimator(clf, scoring="roc_auc")
 
-# # Run cross-validated decoding analyses
-# scores_observed = cross_val_multiscore(time_decod, X, y, cv=5 , n_jobs=None)
-# score = np.mean(scores_observed, axis=0)
-# #Plot average decoding scores of 5 splits
-# fig, ax = plt.subplots(1)
-# ax.plot(stc1.times, scores_observed.mean(0), label="score")
-# ax.axhline(0.5, color="k", linestyle="--", label="chance")
-# ax.axvline(0, color="k")
-# plt.xlim([-0.1, 0.6])
-# plt.legend()
+# Run cross-validated decoding analyses
+scores_observed = cross_val_multiscore(time_decod, X, y, cv=5 , n_jobs=None)
+score = np.mean(scores_observed, axis=0)
+#Plot average decoding scores of 5 splits
+fig, ax = plt.subplots(1)
+ax.plot(stc1.times, scores_observed.mean(0), label="score")
+ax.axhline(0.5, color="k", linestyle="--", label="chance")
+ax.axvline(0, color="k")
+plt.xlim([-0.1, 0.6])
+plt.legend()
 
 #%% create a permutation of scores
 # prepare a series of classifier applied at each time sample
