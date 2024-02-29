@@ -51,8 +51,8 @@ k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 n_cv = 5 # number of folds in SKfold
 #%%####################################### Load adults
 filename = 'vector'
-filename_mmr1 = 'group_mmr1_vector_morph'
-filename_mmr2 = 'group_mmr2_vector_morph'
+filename_mmr1 = 'group_mmr1_mba_vector_morph'
+filename_mmr2 = 'group_mmr2_pa_vector_morph'
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
@@ -60,15 +60,20 @@ lh_ROI_label = [72,60,61,62] # STG and frontal pole
 rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 
 if ROI_wholebrain == 'ROI':
-    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/' + filename_mmr1 + '_roi.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/' + filename_mmr2 + '_roi.npy',allow_pickle=True)
+    mmr1 = np.load(root_path + 'cbsb_meg_analysis/MEG/' + filename_mmr1 + '_roi.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsb_meg_analysis/MEG/' + filename_mmr2 + '_roi.npy',allow_pickle=True)
 elif ROI_wholebrain == 'wholebrain':
-    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/' + filename_mmr1 + '.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/' + filename_mmr2 + '.npy',allow_pickle=True)
+    mmr1 = np.load(root_path + 'cbsb_meg_analysis/MEG/' + filename_mmr1 + '.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsb_meg_analysis/MEG/' + filename_mmr2 + '.npy',allow_pickle=True)
 else:
     print("Need to decide whether to use ROI or whole brain as feature.")
 
-print('First run of rand1')
+
+## preserve the subject order
+# rand_ind = np.arange(0,len(mmr1))
+# random.Random(0).shuffle(rand_ind)
+# X = np.concatenate((mmr1[rand_ind,:],mmr2[rand_ind,:]),axis=0)
+
 X = np.concatenate((mmr1,mmr2),axis=0)
 X = X[:,:,ts:te] 
 y = np.concatenate((np.repeat(0,len(mmr1)),np.repeat(1,len(mmr1)))) #0 is for mmr1 and 1 is for mmr2
@@ -92,10 +97,15 @@ time_decod = SlidingEstimator(clf, scoring="roc_auc")
 scores_observed = cross_val_multiscore(time_decod, X, y, cv=n_cv,n_jobs=2)
 score = np.mean(scores_observed, axis=0)
 
+time_decod.fit(X, y) # not changed after shuffling the initial
+# # Retrieve patterns after inversing the z-score normalization step:
+patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
+
 toc = time.time()
 print('It takes ' + str((toc - tic)/60) + 'min to run decoding')
 
-np.save(root_path + 'cbsA_meeg_analysis/decoding/adult_roc_auc_' + filename + '_morph_kall_rep.npy',scores_observed)
+np.save(root_path + 'cbsb_meg_analysis/decoding/baby_roc_auc_' + filename + '_morph_kall_mba_pa.npy',scores_observed)
+np.save(root_path + 'cbsb_meg_analysis/decoding/baby_patterns_' + filename + '_morph_kall_mba_pa.npy', patterns)
 
 # #%%####################################### Run permutation
 # filename = 'vector'
