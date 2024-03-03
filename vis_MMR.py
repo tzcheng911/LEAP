@@ -32,20 +32,25 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morp
 #%%####################################### Traditional or new direction
 ## Load vertex: traditional method 
 # adults 
-MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph.npy') # with the mag or vector method
-MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy') # with the mag or vector method
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph.npy') 
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy') 
 EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr1_eeg.npy')
 EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr2_eeg.npy')
 
 # infants
-MEG_mmr1_v = np.load(root_path + 'cbsb_meg_analysis/MEG/vector_method/group_mmr1_vector_morph.npy') # with the mag or vector method
-MEG_mmr2_v = np.load(root_path + 'cbsb_meg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy') # with the mag or vector method
+MEG_mmr1_v = np.load(root_path + 'cbsb_meg_analysis/MEG/group_mmr1_vector_morph.npy') 
+MEG_mmr2_v = np.load(root_path + 'cbsb_meg_analysis/MEG/group_mmr2_vector_morph.npy') 
 
 ## Load vertex: new method
-MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy') # with the mag or vector method
-MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph.npy') # with the mag or vector method
+# adults 
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy') 
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph.npy')
 EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr1_mba_eeg.npy')
 EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr2_pa_eeg.npy')
+
+# infants
+MEG_mmr1_v = np.load(root_path + 'cbsb_meg_analysis/MEG/group_mmr1_mba_vector_morph.npy') 
+MEG_mmr2_v = np.load(root_path + 'cbsb_meg_analysis/MEG/group_mmr2_pa_vector_morph.npy') 
 
 subject = 'fsaverage'
 src = mne.read_source_spaces(subjects_dir + subject + '/bem/fsaverage-vol-5-src.fif')
@@ -58,9 +63,7 @@ rh_ROI_label = [96,97,98,108] # STG and IFG (parsopercularis, parsorbitalis, par
 ## visualization average same-plot
 plt.figure()
 plot_err(stats.zscore(EEG_mmr1,axis=1),'k',stc1.times)
-plot_err(stats.zscore(MEG_mmr1_m.mean(axis=1),axis=1),'b',stc1.times)
 plot_err(stats.zscore(MEG_mmr1_v.mean(axis=1),axis=1),'r',stc1.times)
-plot_err(stats.zscore(MEG_mmr1_c.mean(axis=1),axis=1),'orange',stc1.times)
 
 plt.legend(['EEG','','MEG vector',''])
 plt.xlabel('Time (s)')
@@ -70,14 +73,21 @@ plt.xlim([-0.05, 0.45])
 
 plt.figure()
 plot_err(stats.zscore(EEG_mmr2,axis=1),'k',stc1.times)
-plot_err(stats.zscore(MEG_mmr2_m.mean(axis=1),axis=1),'b',stc1.times)
 plot_err(stats.zscore(MEG_mmr2_v.mean(axis=1),axis=1),'r',stc1.times)
-plot_err(stats.zscore(MEG_mmr2_c.mean(axis=1),axis=1),'orange',stc1.times)
-plt.legend(['EEG','','MEG mag','','MEG vector',''])
+plt.legend(['EEG','','MEG vector',''])
 plt.xlabel('Time (ms)')
 plt.ylabel('zscore')
 plt.title('Traditional method MMR2')
 plt.xlim([-0.05, 0.45])
+
+## visualize MMR1 with MMR2
+plt.figure()
+plot_err(EEG_mmr1,'c',stc1.times)
+plot_err(EEG_mmr2,'b',stc1.times)
+
+plt.figure()
+plot_err(MEG_mmr1_v.mean(axis=1),'c',stc1.times)
+plot_err(MEG_mmr2_v.mean(axis=1),'b',stc1.times)
 
 ## visualization average sub-plot
 times = stc1.times
@@ -318,21 +328,22 @@ patterns = np.load(root_path + 'cbsb_meg_analysis/decoding/baby_patterns_vector_
 scores_permute = np.load(root_path + '/cbsb_meg_analysis/decoding/baby_vector_scores_100perm_kall_tradition.npz')
 
 ## New method: first - last mba vs. first pa - last pa
+## Adults
 scores_observed = np.load(root_path + 'cbsA_meeg_analysis/decoding/adult_roc_auc_vector_morph_kall_mba_pa.npy')
 patterns = np.load(root_path + 'cbsA_meeg_analysis/decoding/adult_patterns_vector_morph_kall_mba_pa.npy')
 scores_permute = np.load(root_path + '/cbsA_meeg_analysis/decoding/adult_vector_scores_100perm_kall_new.npz')
 
+## Babies
 scores_observed = np.load(root_path + 'cbsb_meg_analysis/decoding/baby_roc_auc_vector_morph_kall_mba_pa.npy')
 patterns = np.load(root_path + 'cbsb_meg_analysis/decoding/baby_patterns_vector_morph_kall_mba_pa.npy')
 scores_permute = np.load(root_path + '/cbsb_meg_analysis/decoding/baby_vector_scores_100perm_kall_new.npz')
-
 
 ## Plot acc across time
 fig, ax = plt.subplots(1)
 ax.plot(stc1.times, scores_observed.mean(0), label="score")
 ax.plot(scores_permute['peaks_time'],np.percentile(scores_permute['scores_perm_array'],95,axis=0),'g.')
 ax.axhline(0.5, color="k", linestyle="--", label="chance")
-ax.axhline(np.percentile(scores_observed.mean(0),q = 97.5), color="grey", linestyle="--", label="95 percentile")
+ax.axhline(np.percentile(scores_observed.mean(0),q = 95), color="grey", linestyle="--", label="95 percentile")
 ax.axvline(0, color="k")
 plt.xlabel('Time (s)')
 plt.title('Decoding accuracy baby new')
