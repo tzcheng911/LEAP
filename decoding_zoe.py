@@ -152,7 +152,7 @@ root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
-stc1 = mne.read_source_estimate(root_path + 'cbs_b101/sss_fif/cbs_b101_mmr2_vector_morph-vl.stc')
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
 times = stc1.times
 
 ## parameters
@@ -163,8 +163,11 @@ k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
 #%%####################################### Load adults
 filename = 'vector'
-filename_mmr1 = 'group_mmr1_vector_morph_mmr-cov'
-filename_mmr2 = 'group_mmr2_vector_morph_mmr-cov'
+filename_mmr1 = 'group_mmr1_vector_morph'
+filename_mmr2 = 'group_mmr2_vector_morph'
+filename_cabr_ba = 'group_ba_morph'
+filename_cabr_mba = 'group_mba_morph'
+filename_cabr_pa = 'group_pa_morph'
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
