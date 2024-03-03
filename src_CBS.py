@@ -161,5 +161,5 @@ for s in tqdm(subj):
     # for run in runs:
         print(s)
         # do_foward(s)
-        do_inverse_MMR(s,run, morph,ori)
-        # do_inverse_cABR(s,run, morph)
+        # do_inverse_MMR(s,run, morph,ori)
+        do_inverse_cABR(s,run, morph)
