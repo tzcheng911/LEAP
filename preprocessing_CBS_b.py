@@ -272,7 +272,7 @@ def do_epoch_cabr(data, subject, run,time):
     
     reject=dict(grad=4000e-13,mag=4e-12)
     picks = mne.pick_types(data.info,meg=True,eeg=False) 
-    epochs = mne.Epochs(data, cabr_events, event_id,tmin =-0.01, tmax=0.18, baseline=(-0.01,0),reject=reject,picks=picks)
+    epochs = mne.Epochs(data, cabr_events, event_id,tmin =-0.02, tmax=0.2, baseline=(-0.01,0),reject=reject,picks=picks)
 
     evoked_substd=epochs['Standardp','Standardn'].average()
     evoked_dev1=epochs['Deviant1p','Deviant1n'].average()
@@ -292,7 +292,7 @@ os.chdir(root_path)
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 time = 0 # first time (6 mo) or second time (12 mo) coming back, or 0 for cbs
-direction = "pa_to_ba"
+direction = "ba_to_pa"
 do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
@@ -300,7 +300,7 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('cbs_b106'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
+    if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
 
 #%%###### do the jobs
@@ -323,8 +323,8 @@ for s in subjects:
         print ('Doing filtering...')
         raw_filt = do_filtering(raw,lp, do_cabr)
         raw_erm_filt = do_filtering(raw_erm,lp, do_cabr)
-        print ('calculate cov...')
-        do_cov(s,raw_erm_filt,time,do_cabr)
+        # print ('calculate cov...')
+        # do_cov(s,raw_erm_filt,time,do_cabr)
         print ('Doing epoch...')
         if do_cabr == True:
             do_epoch_cabr(raw_filt, s, run, time)
