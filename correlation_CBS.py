@@ -44,7 +44,6 @@ rh_ROI_label = [96,97,98,108] # STG and IFG (parsopercularis, parsorbitalis, par
 
 def plot_err(group_data,color,t):
     group_avg=np.mean(group_data,axis=0)
-   #plt.figure()
     err=np.std(group_data,axis=0)/np.sqrt(group_data.shape[0])
     up=group_avg+err
     lw=group_avg-err
