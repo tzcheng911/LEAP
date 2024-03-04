@@ -192,6 +192,18 @@ plt.xlabel('MEG')
 plt.ylabel('EEG')
 plt.title('t = 80 ms')
 
+## for the whole brain 
+stc_v = MEG_mmr2_v
+EEG = EEG_mmr2
+for v in np.arange(0,np.shape(stc_v)[1],1):
+    print('Now starting vertice ' + str(v))
+    for t in np.arange(0,np.shape(stc_v)[2],1):
+        r,p = pearsonr(stc_v[:,v,t],EEG[:,t])
+        r_v_all_t.append([v,r])
+df_r_v_all_t = pd.DataFrame(columns = ["Vertno", "Corr MEG & EEG"], data = r_v_all_t)
+df_r_v_all_t.to_pickle('df_ttcorr_mmr2_v.pkl')
+
+    
 #%%######################################## Done within each subject: correlate time series in a window between EEG & MEG
 ## pearson correlation (corr) between EEG and MEG
 stc_m = MEG_mmr2_m[:,:,ts:te].mean(axis=1)
