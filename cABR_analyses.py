@@ -68,6 +68,7 @@ def plot_err(group_stc,color,t):
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_pa_cabr_morph-vl.stc')
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
 #%%####################################### Load audio and cABR
 ## audio 
@@ -88,18 +89,21 @@ EEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_ee
 EEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')
 EEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')
 
-## MEG: more than 200 trials for now
+## MEG source: more than 200 trials for now
 # adults
-MEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/' + 'group_ba_cabr_morph.npy')
-MEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/' + 'group_mba_cabr_morph.npy')
-MEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/' + 'group_pa_cabr_morph.npy')
+MEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_ba_cabr_morph.npy')
+MEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_mba_cabr_morph.npy')
+MEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_pa_cabr_morph.npy')
 
 # infants 
-MEG_ba_cABR = np.load(root_path + 'cbsb_meg_analysis/MEG/' + 'group_ba_cabr_morph.npy')
-MEG_mba_cABR = np.load(root_path + 'cbsb_meg_analysis/MEG/' + 'group_mba_cabr_morph.npy')
-MEG_pa_cABR = np.load(root_path + 'cbsb_meg_analysis/MEG/' + 'group_pa_cabr_morph.npy')
+MEG_ba_cABR = np.load(root_path + 'cbsb_meg_analysis/MEG/cABR/' + 'group_ba_cabr_morph.npy')
+MEG_mba_cABR = np.load(root_path + 'cbsb_meg_analysis/MEG/cABR/' + 'group_mba_cabr_morph.npy')
+MEG_pa_cABR = np.load(root_path + 'cbsb_meg_analysis/MEG/cABR/' + 'group_pa_cabr_morph.npy')
 
-#%%####################################### visualize cABR of ba, mba and pa in EEG
+## MEG sensor: more than 200 trials for now
+
+
+#%%####################################### visualize cABR of ba, mba and pa
 plt.figure()
 plt.subplot(311)
 plot_err(EEG_ba_cABR,'k',stc1.times)
@@ -115,7 +119,23 @@ plot_err(EEG_pa_cABR,'r',stc1.times)
 plt.xlim([-0.02,0.2])
 plt.xlabel('Time (s)')
 
-## visualize cABR of ba, mba and pa in MEG
+## visualize cABR of ba, mba and pa in MEG sensor
+plt.figure()
+plt.subplot(311)
+plot_err(MEG_ba_cABR.mean(axis=1),'k',stc1.times)
+plt.xlim([-0.02,0.2])
+
+plt.subplot(312)
+plot_err(MEG_mba_cABR.mean(axis=1),'b',stc1.times)
+plt.xlim([-0.02,0.2])
+plt.ylabel('Amplitude')
+
+plt.subplot(313)
+plot_err(MEG_pa_cABR.mean(axis=1),'r',stc1.times)
+plt.xlim([-0.02,0.2])
+plt.xlabel('Time (s)') 
+
+## visualize cABR of ba, mba and pa in MEG source 
 plt.figure()
 plt.subplot(311)
 plot_err(MEG_ba_cABR.mean(axis=1),'k',stc1.times)
@@ -130,6 +150,20 @@ plt.subplot(313)
 plot_err(MEG_pa_cABR.mean(axis=1),'r',stc1.times)
 plt.xlim([-0.02,0.2])
 plt.xlabel('Time (s)')
+
+## visualize MEG source activity
+stc1.data = MEG_ba_cABR.mean(axis=0)
+stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
+
+## visualize source activity based on the cross-correlation
+df_v = pd.read_pickle(root_path + 'correlation/cabr_df_xcorr_v.pkl')
+v_hack = pd.concat([df_v['abs XCorr MEG & audio_ba'],df_v['abs XCorr MEG & audio_mba'],df_v['abs XCorr MEG & audio_pa']],axis=1)
+stc1.data = v_hack
+stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
+
+ind = np.where(stc1.vertices[0] == 18493)
+plot_err(np.squeeze(MEG_ba_cABR[:,ind[0],:]),'k',np.linspace(-0.02,0.2,1101))
+plt.xlim([0,0.2])
 
 #%%####################################### Sliding estimator decoding
 tic = time.time()
@@ -199,7 +233,8 @@ print('It takes ' + str((toc - tic)/60) + 'min to run decoding')
 np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_kall_' + filename + '.npy',scores_observed)
 np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_' + filename + '.npy',patterns)
 
-#%%####################################### Cross-correlation
+
+#%%####################################### Cross-correlation audio and MEG sensor and source
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
@@ -207,8 +242,7 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_m
 times = stc1.times
 
 ## parameter
-ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
-k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
+ROI_wholebrain = 'ROI' # ROI or wholebrain or sensor
 ts = 100
 te = 1100
 
@@ -220,23 +254,43 @@ filename_cabr_pa = 'group_pa_cabr_morph'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 
+## cABR relevant ROIs
+lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+
 if ROI_wholebrain == 'ROI':
-    cabr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/' + filename_cabr_ba + '_roi.npy',allow_pickle=True)
-    cabr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/' + filename_cabr_mba + '_roi.npy',allow_pickle=True)
-    cabr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/' + filename_cabr_pa + '_roi.npy',allow_pickle=True)
+    cabr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_ba + '_roi.npy',allow_pickle=True)
+    cabr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_mba + '_roi.npy',allow_pickle=True)
+    cabr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_pa + '_roi.npy',allow_pickle=True)
 elif ROI_wholebrain == 'wholebrain':
-    cabr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/' + filename_cabr_ba + '.npy',allow_pickle=True)
-    cabr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/' + filename_cabr_mba + '.npy',allow_pickle=True)
-    cabr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/' + filename_cabr_pa + '.npy',allow_pickle=True)
+    cabr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_ba + '.npy',allow_pickle=True)
+    cabr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_mba + '.npy',allow_pickle=True)
+    cabr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_pa + '.npy',allow_pickle=True)
+elif ROI_wholebrain == 'sensor':
+    cabr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/group_ba_sensor.npy',allow_pickle=True)
+    cabr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/group_mba_sensor.npy',allow_pickle=True)
+    cabr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/group_pa_sensor.npy',allow_pickle=True)
 else:
     print("Need to decide whether to use ROI or whole brain as feature.")
 
 ## Only need to calculate audio once 
-a_ba = (audio_ba - np.mean(audio_ba))/np.std(audio_ba)
+# a_ba = (audio_ba - np.mean(audio_ba))/np.std(audio_ba)
+# a_ba = a_ba / np.linalg.norm(a_ba)
+# a_mba = (audio_mba - np.mean(audio_mba))/np.std(audio_mba)
+# a_mba = a_mba / np.linalg.norm(a_mba)
+# a_pa = (audio_pa - np.mean(audio_pa))/np.std(audio_pa)
+# a_pa = a_pa / np.linalg.norm(a_pa)
+
+## Get the EEG
+mean_EEG_ba_cABR = EEG_ba_cABR.mean(axis=0)
+mean_EEG_mba_cABR = EEG_mba_cABR.mean(axis=0)
+mean_EEG_pa_cABR = EEG_pa_cABR.mean(axis=0)
+
+a_ba = (mean_EEG_ba_cABR - np.mean(mean_EEG_ba_cABR))/np.std(mean_EEG_ba_cABR)
 a_ba = a_ba / np.linalg.norm(a_ba)
-a_mba = (audio_mba - np.mean(audio_mba))/np.std(audio_mba)
+a_mba = (mean_EEG_mba_cABR - np.mean(mean_EEG_mba_cABR))/np.std(mean_EEG_mba_cABR)
 a_mba = a_mba / np.linalg.norm(a_mba)
-a_pa = (audio_pa - np.mean(audio_pa))/np.std(audio_pa)
+a_pa = (mean_EEG_pa_cABR - np.mean(mean_EEG_pa_cABR))/np.std(mean_EEG_pa_cABR)
 a_pa = a_pa / np.linalg.norm(a_pa)
 
 ## Xcorr between audio and each vertice in MEG for averaged across subjects
@@ -266,9 +320,12 @@ df_v = pd.DataFrame(columns = ["Vertno", "abs XCorr MEG & audio_ba", "max Lag ME
                                "abs XCorr MEG & audio_mba", "max Lag MEG & audio_mba", 
                                "abs XCorr MEG & audio_pa", "max Lag MEG & audio_pa"], data = xcorr_all_v)
 if ROI_wholebrain == 'ROI':
-    df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_roi.pkl')
+    df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_roi.pkl')
 elif ROI_wholebrain == 'wholebrain': 
-    df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_v.pkl')
+    df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_v.pkl')
+elif ROI_wholebrain == 'sensor':
+    df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_sensor.pkl')
+
 
 ## Xcorr between audio and each vertice in MEG for each individual
 xcorr_all_v_s = []
@@ -294,7 +351,8 @@ df_v_s = pd.DataFrame(columns = ["Subject","Vertno", "abs XCorr MEG & audio_ba",
                                    "abs XCorr MEG & audio_mba", "max Lag MEG & audio_mba", 
                                    "abs XCorr MEG & audio_pa", "max Lag MEG & audio_pa"], data = xcorr_all_v_s)
 if ROI_wholebrain == 'ROI':
-    df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_roi_s.pkl')
+    df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_roi_s.pkl')
 elif ROI_wholebrain == 'wholebrain': 
-    df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_v_s.pkl')
-
+    df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_v_s.pkl')
+elif ROI_wholebrain == 'sensor':
+    df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_sensor_s.pkl')
