@@ -21,37 +21,50 @@ os.chdir(root_path)
 ## parameters 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_b'):
+    if file.startswith('cbs_A'):
         subj.append(file)
-subj = subj[:-1]
 runs = ['01','02']
 run = runs [0]
 
 #%% output the sensor time series in npy files
-group_mmr1=[]
-group_mmr2=[]
+group_mmr1 = []
+group_mmr2 = []
+group_ba = []
+group_mba = []
+group_pa = []
 
 for s in subj:
     print('Extracting ' + s + ' data')
     file_in = root_path + s + '/sss_fif/' + s
     
-    # stc_std=mne.read_source_estimate(file_in+'_std_vector_morph-vl.stc')
-    dev1=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]
-    dev2=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0]
-    std=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
+    ## MMR
+    # dev1=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]
+    # dev2=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0]
+    # std=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
    
-    mmr1 = dev1.data - std.data
-    mmr2 = dev2.data - std.data
+    # mmr1 = dev1.data - std.data
+    # mmr2 = dev2.data - std.data
     
-    # group_std.append(stc_std.data)
-    group_mmr1.append(mmr1)
-    group_mmr2.append(mmr2)
+    # group_mmr1.append(mmr1)
+    # group_mmr2.append(mmr2)
     
-group_mmr1=np.asarray(group_mmr1)
-group_mmr2=np.asarray(group_mmr2)
-np.save(root_path + 'cbsb_meg_analysis/group_mmr1_sensor.npy',group_mmr1)
-np.save(root_path + 'cbsb_meg_analysis/group_mmr2_sensor.npy',group_mmr2)
-
+    ## cABR
+    dev1=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f_evoked_dev1_cabr.fif')[0]
+    dev2=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f_evoked_dev2_cabr.fif')[0]
+    std=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+    group_ba.append(std.data)
+    group_mba.append(dev1.data)
+    group_pa.append(dev2.data)
+# group_mmr1=np.asarray(group_mmr1)
+# group_mmr2=np.asarray(group_mmr2)
+# np.save(root_path + 'cbsb_meg_analysis/group_mmr1_sensor.npy',group_mmr1)
+# np.save(root_path + 'cbsb_meg_analysis/group_mmr2_sensor.npy',group_mmr2)
+group_ba=np.asarray(group_ba)
+group_mba=np.asarray(group_mba)
+group_pa=np.asarray(group_pa)
+np.save(root_path + 'cbsA_meeg_analysis/MEG/cABR/group_ba_sensor.npy',group_ba)
+np.save(root_path + 'cbsA_meeg_analysis/MEG/cABR/group_mba_sensor.npy',group_mba)
+np.save(root_path + 'cbsA_meeg_analysis/MEG/cABR/group_pa_sensor.npy',group_pa)
 
 #%% output the source time series in npy files
 group_mmr1 = []
