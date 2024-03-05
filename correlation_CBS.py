@@ -55,7 +55,7 @@ def plot_err(group_data,color,t):
 # MMR
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 stc2 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
-MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph.npy') # with the mag or vector method
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr1_vector_morph.npy') # with the mag or vector method
 MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy') # with the mag or vector method
 MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_None_morph.npy') # with the mag or vector method
 MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_None_morph.npy') # with the mag or vector method
@@ -202,7 +202,17 @@ for v in np.arange(0,np.shape(stc_v)[1],1):
 df_r_v_all_t = pd.DataFrame(columns = ["Vertno", "Corr MEG & EEG"], data = r_v_all_t)
 df_r_v_all_t.to_pickle('df_ttcorr_mmr2_v.pkl')
 
-    
+## visualize whole brain ttcorr
+ttcorr = np.load('ttcorr_mmr2.npy')
+
+subjects_dir = '/media/tzcheng/storage2/subjects/'
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
+times = stc1.times
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+stc1.data = ttcorr
+stc1_crop = stc1.copy().crop(tmin= -0.05, tmax=0.45)
+stc1_crop.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
+
 #%%######################################## Done within each subject: correlate time series in a window between EEG & MEG
 ## pearson correlation (corr) between EEG and MEG
 stc_m = MEG_mmr2_m[:,:,ts:te].mean(axis=1)
