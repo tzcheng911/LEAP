@@ -165,6 +165,50 @@ ind = np.where(stc1.vertices[0] == 18493)
 plot_err(np.squeeze(MEG_ba_cABR[:,ind[0],:]),'k',np.linspace(-0.02,0.2,1101))
 plt.xlim([0,0.2])
 
+## visualize roi
+MEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_ba_cabr_morph_roi.npy')
+MEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_mba_cabr_morph_roi.npy')
+MEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_pa_cabr_morph_roi.npy')
+
+roi_ind = 76
+plt.figure()
+plt.subplot(311)
+plot_err(MEG_ba_cABR[:,roi_ind,:],'k',stc1.times)
+plt.xlim([-0.02,0.2])
+
+plt.subplot(312)
+plot_err(MEG_mba_cABR[:,roi_ind,:],'b',stc1.times)
+plt.xlim([-0.02,0.2])
+plt.ylabel('Amplitude')
+
+plt.subplot(313)
+plot_err(MEG_pa_cABR[:,roi_ind,:],'r',stc1.times)
+plt.xlim([-0.02,0.2])
+plt.xlabel('Time (s)') 
+
+## visualize sensor
+raw = mne.io.read_raw_fif(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss.fif',allow_maxshield=True,preload=False)
+raw.plot_sensors(kind = '3d')
+MEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_ba_sensor.npy')
+MEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_mba_sensor.npy')
+MEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_pa_sensor.npy')
+
+sensor_ind = np.where(np.array(raw.ch_names) == 'MEG0731')
+
+plt.figure()
+plt.subplot(311)
+plot_err(np.squeeze(MEG_ba_cABR[:,sensor_ind,:]),'k',stc1.times)
+plt.xlim([-0.02,0.2])
+
+plt.subplot(312)
+plot_err(np.squeeze(MEG_mba_cABR[:,sensor_ind,:]),'b',stc1.times)
+plt.xlim([-0.02,0.2])
+plt.ylabel('Amplitude')
+
+plt.subplot(313)
+plot_err(np.squeeze(MEG_pa_cABR[:,sensor_ind,:]),'r',stc1.times)
+plt.xlim([-0.02,0.2])
+plt.xlabel('Time (s)') 
 #%%####################################### Sliding estimator decoding
 tic = time.time()
 root_path='/media/tzcheng/storage2/CBS/'
@@ -184,8 +228,8 @@ filename_cabr_pa = 'group_pa_cabr_morph'
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-lh_ROI_label = [72,60,61,62] # Simport random
-rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
+lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
 if ROI_wholebrain == 'ROI':
     cabr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/' + filename_cabr_ba + '_roi.npy',allow_pickle=True)
