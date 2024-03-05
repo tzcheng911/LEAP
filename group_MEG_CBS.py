@@ -21,8 +21,9 @@ os.chdir(root_path)
 ## parameters 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_b'):
         subj.append(file)
+subj = subj[:-1]
 runs = ['01','02']
 run = runs [0]
 
@@ -62,9 +63,9 @@ for s in subj:
 group_ba=np.asarray(group_ba)
 group_mba=np.asarray(group_mba)
 group_pa=np.asarray(group_pa)
-np.save(root_path + 'cbsA_meeg_analysis/MEG/cABR/group_ba_sensor.npy',group_ba)
-np.save(root_path + 'cbsA_meeg_analysis/MEG/cABR/group_mba_sensor.npy',group_mba)
-np.save(root_path + 'cbsA_meeg_analysis/MEG/cABR/group_pa_sensor.npy',group_pa)
+np.save(root_path + 'cbsb_meg_analysis/MEG/cABR/group_ba_sensor.npy',group_ba)
+np.save(root_path + 'cbsb_meg_analysis/MEG/cABR/group_mba_sensor.npy',group_mba)
+np.save(root_path + 'cbsb_meg_analysis/MEG/cABR/group_pa_sensor.npy',group_pa)
 
 #%% output the source time series in npy files
 group_mmr1 = []
