@@ -285,21 +285,21 @@ plt.xlim([-100,600])
 #%%####################################### MMR result whole brain
 ## Traditional direction: ba to mba vs. ba to pa
 ## Adults
-MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_None_morph.npy')
-MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_None_morph.npy')
-MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph.npy')
-MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy')
+MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/magnitude_method/group_mmr1_None_morph.npy')
+MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/magnitude_method/group_mmr2_None_morph.npy')
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr1_vector_morph.npy')
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr2_vector_morph.npy')
 ## Babies
-MEG_mmr1_m = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_None_morph.npy')
-MEG_mmr2_m = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_None_morph.npy')
-MEG_mmr1_v = np.load(root_path + 'cbsb_meg_analysis/group_mmr1_vector_morph.npy')
-MEG_mmr2_v = np.load(root_path + 'cbsb_meg_analysis/group_mmr2_vector_morph.npy')
+MEG_mmr1_m = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr1_None_morph.npy')
+MEG_mmr2_m = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr2_None_morph.npy')
+MEG_mmr1_v = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr1_vector_morph.npy')
+MEG_mmr2_v = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr2_vector_morph.npy')
 
 ## New method: first - last mba vs. first pa - last pascores_observed = np.load(root_path + '/cbsA_meeg_analysis/decoding/adult_roc_auc_vector_morph_kall.npy')
-MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_mba_None_morph.npy')
-MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_pa_None_morph.npy')
-MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy')
-MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph.npy')
+MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/magnitude_method/group_mmr1_mba_None_morph.npy')
+MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/magnitude_method/group_mmr2_pa_None_morph.npy')
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr1_mba_vector_morph.npy')
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr2_pa_vector_morph.npy')
 
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
