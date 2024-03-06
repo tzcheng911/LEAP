@@ -21,9 +21,8 @@ os.chdir(root_path)
 ## parameters 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_b'):
+    if file.startswith('cbs_A'):
         subj.append(file)
-subj = subj[:-1]
 runs = ['01','02']
 run = runs [0]
 
@@ -50,9 +49,9 @@ for s in subj:
     # group_mmr2.append(mmr2)
     
     ## cABR
-    dev1=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f_evoked_dev1_cabr.fif')[0]
-    dev2=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f_evoked_dev2_cabr.fif')[0]
-    std=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+    dev1=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f80450_evoked_dev1_cabr.fif')[0]
+    dev2=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f80450_evoked_dev2_cabr.fif')[0]
+    std=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f80450_evoked_substd_cabr.fif')[0]
     group_ba.append(std.data)
     group_mba.append(dev1.data)
     group_pa.append(dev2.data)
@@ -63,9 +62,9 @@ for s in subj:
 group_ba=np.asarray(group_ba)
 group_mba=np.asarray(group_mba)
 group_pa=np.asarray(group_pa)
-np.save(root_path + 'cbsb_meg_analysis/MEG/cABR/group_ba_sensor.npy',group_ba)
-np.save(root_path + 'cbsb_meg_analysis/MEG/cABR/group_mba_sensor.npy',group_mba)
-np.save(root_path + 'cbsb_meg_analysis/MEG/cABR/group_pa_sensor.npy',group_pa)
+np.save(root_path + 'cbsb_meg_analysis/MEG/cABR/group_ba_f80450_sensor.npy',group_ba)
+np.save(root_path + 'cbsb_meg_analysis/MEG/cABR/group_mba_f80450_sensor.npy',group_mba)
+np.save(root_path + 'cbsb_meg_analysis/MEG/cABR/group_pa_f80450_sensor.npy',group_pa)
 
 #%% output the source time series in npy files
 group_mmr1 = []
@@ -94,9 +93,9 @@ for s in subj:
     print('Extracting ' + s + ' data')
     file_in = root_path + s + '/sss_fif/' + s
     
-    stc_std=mne.read_source_estimate(file_in+'_ba_cabr_morph-vl.stc')
-    stc_dev1=mne.read_source_estimate(file_in+'_mba_cabr_morph-vl.stc')
-    stc_dev2=mne.read_source_estimate(file_in+'_pa_cabr_morph-vl.stc')
+    stc_std=mne.read_source_estimate(file_in+'_ba_cabr_f80450_morph-vl.stc')
+    stc_dev1=mne.read_source_estimate(file_in+'_mba_cabr_f80450_morph-vl.stc')
+    stc_dev2=mne.read_source_estimate(file_in+'_pa_cabr_f80450_morph-vl.stc')
     # stc_std1=mne.read_source_estimate(file_in+'_std1_reverse_None_morph-vl.stc')
     # stc_std2=mne.read_source_estimate(file_in+'_std2_reverse_None_morph-vl.stc')
     # stc_mmr1=mne.read_source_estimate(file_in+'_mmr1_mba_vector_morph-vl.stc')
@@ -147,12 +146,12 @@ group_dev2_roi = np.asarray(group_dev2_roi)
 # group_mmr1_roi=np.asarray(group_mmr1_roi)
 # group_mmr2_roi=np.asarray(group_mmr2_roi)
 
-np.save(root_path + 'cbsb_meg_analysis/group_ba_cabr_morph.npy',group_std)
-np.save(root_path + 'cbsb_meg_analysis/group_mba_cabr_morph.npy',group_dev1)
-np.save(root_path + 'cbsb_meg_analysis/group_pa_cabr_morph.npy',group_dev2)
-np.save(root_path + 'cbsb_meg_analysis/group_ba_cabr_morph_roi.npy',group_std_roi)
-np.save(root_path + 'cbsb_meg_analysis/group_mba_cabr_morph_roi.npy',group_dev1_roi)
-np.save(root_path + 'cbsb_meg_analysis/group_pa_cabr_morph_roi.npy',group_dev2_roi)
+np.save(root_path + 'cbsb_meg_analysis/group_ba_cabr_f80450_morph.npy',group_std)
+np.save(root_path + 'cbsb_meg_analysis/group_mba_cabr_f80450_morph.npy',group_dev1)
+np.save(root_path + 'cbsb_meg_analysis/group_pa_cabr_f80450_morph.npy',group_dev2)
+np.save(root_path + 'cbsb_meg_analysis/group_ba_cabr_f80450_morph_roi.npy',group_std_roi)
+np.save(root_path + 'cbsb_meg_analysis/group_mba_cabr_morph_f80450_roi.npy',group_dev1_roi)
+np.save(root_path + 'cbsb_meg_analysis/group_pa_cabr_morph_f80450_roi.npy',group_dev2_roi)
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph.npy',group_std)
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_vector_morph_roi.npy',group_std_roi)
 # np.save(root_path + 'cbsb_meg_analysis/group_mmr1_mba_vector_morph.npy',group_mmr1)
