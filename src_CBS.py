@@ -106,11 +106,11 @@ def do_inverse_cABR(s,run, morph):
 
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
-    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_f_ffr-cov.fif')
-    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_f_cABR_e.fif')
-    evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
-    evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_dev1_cabr.fif')[0]        
-    evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_dev2_cabr.fif')[0]
+    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_f80450_ffr-cov.fif')
+    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_f80450_cABR_e.fif')
+    evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f80450_evoked_substd_cabr.fif')[0]
+    evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f80450_evoked_dev1_cabr.fif')[0]        
+    evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f80450_evoked_dev2_cabr.fif')[0]
     
     inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
 
@@ -134,9 +134,9 @@ def do_inverse_cABR(s,run, morph):
         standard_fsaverage = morph.apply(standard)
         dev1_fsaverage = morph.apply(dev1)
         dev2_fsaverage = morph.apply(dev2)
-        standard_fsaverage.save(file_in + '_ba_cabr_morph', overwrite=True)
-        dev1_fsaverage.save(file_in + '_mba_cabr_morph', overwrite=True)
-        dev2_fsaverage.save(file_in + '_pa_cabr_morph', overwrite=True)
+        standard_fsaverage.save(file_in + '_ba_cabr_f80450_morph', overwrite=True)
+        dev1_fsaverage.save(file_in + '_mba_cabr_f80450_morph', overwrite=True)
+        dev2_fsaverage.save(file_in + '_pa_cabr_f80450_morph', overwrite=True)
 
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
@@ -155,7 +155,7 @@ runs = ['_01','_02']
 run = runs[0]
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_b'):
+    if file.startswith('cbs_A'):
         subj.append(file)
 for s in tqdm(subj):
     # for run in runs:
