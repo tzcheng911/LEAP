@@ -140,7 +140,7 @@ def do_filtering(data, lp, hp, do_cabr):
     ###### filtering
     if do_cabr == True:
         data.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5)
-        data.filter(l_freq=80,h_freq=hp,method='iir',iir_params=dict(order=4,ftype='butter'))
+        data.filter(l_freq=hp,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     else:
         data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
@@ -154,7 +154,7 @@ def do_cov(subject,data, do_cabr):
     else: 
         fname_erm_out = fname_erm + 'il50_mmr-cov'
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
-#    mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
+    mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
 
 def do_epoch_mmr(data, subject, run, direction):
     ###### Read the event files to do epoch    
@@ -332,12 +332,11 @@ os.chdir(root_path)
 direction = 'ba_to_pa' # traditional direction 'ba_to_pa': ba to pa and ba to mba
 # reverse direction 'pa_to_ba' : is pa to ba and mba to ba; 
 # only comparing /ba/ 'first_last_ba': only comparing /ba/ before and after habituation 
-
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
-lp = 50 
-hp = 450
+lp = 450 
+hp = 80
 do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
 subj = [] # A104 got some technical issue
@@ -351,7 +350,7 @@ for s in subj:
     # do_otp(s)
     # do_sss(s,st_correlation,int_order)
     for run in runs:
-        filename = root_path + s + '/sss_fif/' + s + run + '_raw_otp_sss_projxxx.fif'
+        filename = root_path + s + '/sss_fif/' + s + run + '_raw_otp_sss_proj.fif'
 
         if os.path.exists(filename):
             print ('ECG/EOG projection exists, loading...')
