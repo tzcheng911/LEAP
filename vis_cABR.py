@@ -30,7 +30,6 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_pa_cabr_m
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
 #%%####################################### Load audio and cABR
-#%%####################################### Load audio and cABR
 ## audio 
 fs, ba_audio = wavfile.read('/media/tzcheng/storage2/CBS/stimuli/+10.wav')
 fs, mba_audio = wavfile.read('/media/tzcheng/storage2/CBS/stimuli/-40.wav')
@@ -120,7 +119,34 @@ plot_err(MEG_pa_cABR.mean(axis=1),'r',stc1.times)
 plt.xlim([-0.02,0.2])
 plt.xlabel('Time (s)')
 
-## visualize sensor activity based on the cross-correlation
+#%%####################################### visualize MEG source activity
+stc1.data = MEG_mba_cABR.mean(axis=0)
+stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
+
+#%%#######################################  visualize sensor
+evoked = mne.read_evokeds(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+evoked.plot_sensors(kind = '3d')
+
+sensor_ind = np.where(np.array(evoked.ch_names) == 'MEG0731')
+
+plt.figure()
+plt.subplot(311)
+plot_err(np.squeeze(MEG_ba_cABR[:,sensor_ind,:]),'k',stc1.times)
+plt.xlim([-0.02,0.2])
+
+plt.subplot(312)
+plot_err(np.squeeze(MEG_mba_cABR[:,sensor_ind,:]),'b',stc1.times)
+plt.xlim([-0.02,0.2])
+plt.ylabel('Amplitude')
+
+plt.subplot(313)
+plot_err(np.squeeze(MEG_pa_cABR[:,sensor_ind,:]),'r',stc1.times)
+plt.xlim([-0.02,0.2])
+plt.xlabel('Time (s)') 
+
+#%%####################################### visualize sensor activity based on the cross-correlation
+## Load the EEG
+## Load the MEG sensor
 df_MEGEEG = pd.read_pickle(root_path + 'cbsA_meeg_analysis/correlation/cabr_df_xcorr_MEGEEG_sensor_s.pkl')
 df_MEGaudio = pd.read_pickle(root_path + 'cbsA_meeg_analysis/correlation/cabr_df_xcorr_MEGaudio_sensor_s.pkl')
 
@@ -169,13 +195,9 @@ plt.subplot(212)
 plt.plot(stc1.times,np.array(subj_pa_array).mean(0))
 plt.xlim([-0.02,0.2])
 
-## visualize MEG source activity
-stc1.data = MEG_mba_cABR.mean(axis=0)
-stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
-
-## visualize source activity based on the cross-correlation
-df = pd.read_pickle(root_path + 'cbsA_meeg_analysis/correlation/cabr_df_xcorr_MEGEEG_roi.pkl')
-v_hack = pd.concat([df['abs XCorr MEG & audio_ba'],df['abs XCorr MEG & audio_mba'],df['abs XCorr MEG & audio_pa']],axis=1)
+#%%####################################### visualize source activity based on the cross-correlation
+df = pd.read_pickle(root_path + 'cbsA_meeg_analysis/correlation/cabr_df_xcorr_MEGEEG_v.pkl')
+v_hack = pd.concat([df['abs XCorr MEG & ba'],df['abs XCorr MEG & mba'],df['abs XCorr MEG & pa']],axis=1)
 stc1.data = v_hack
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 
@@ -200,23 +222,25 @@ plot_err(MEG_pa_cABR[:,roi_ind,:],'r',stc1.times)
 plt.xlim([-0.02,0.2])
 plt.xlabel('Time (s)') 
 
-## visualize sensor
-evoked = mne.read_evokeds(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
-evoked.plot_sensors(kind = '3d')
+#%%####################################### visualize sliding estimator decoding results 
+## Adults
+scores_observed = np.load(root_path + '/cbsA_meeg_analysis/decoding/roc_auc_kall_cabr.npy')
+patterns = np.load(root_path + '/cbsA_meeg_analysis/decoding/patterns_kall_cabr.npy')
 
-sensor_ind = np.where(np.array(evoked.ch_names) == 'MEG0731')
-
-plt.figure()
-plt.subplot(311)
-plot_err(np.squeeze(MEG_ba_cABR[:,sensor_ind,:]),'k',stc1.times)
+## Plot acc across time
+fig, ax = plt.subplots(1)
+ax.plot(stc1.times, scores_observed.mean(0), label="score")
+ax.axhline(0.33, color="k", linestyle="--", label="chance")
+ax.axhline(np.percentile(scores_observed.mean(0),q = 95), color="grey", linestyle="--", label="95 percentile")
+ax.axvline(0, color="k")
+plt.xlabel('Time (s)')
+plt.title('Decoding accuracy adults cABR')
 plt.xlim([-0.02,0.2])
+plt.ylim([0,1])
 
-plt.subplot(312)
-plot_err(np.squeeze(MEG_mba_cABR[:,sensor_ind,:]),'b',stc1.times)
-plt.xlim([-0.02,0.2])
-plt.ylabel('Amplitude')
-
-plt.subplot(313)
-plot_err(np.squeeze(MEG_pa_cABR[:,sensor_ind,:]),'r',stc1.times)
-plt.xlim([-0.02,0.2])
-plt.xlabel('Time (s)') 
+## Plot patterns
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_pa_cabr_morph-vl.stc')
+stc1.data = patterns[:,1,:] # The comparison between the first two
+stc1_crop = stc1.copy().crop(tmin= -0.02, tmax=0.2)
+stc1_crop.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
