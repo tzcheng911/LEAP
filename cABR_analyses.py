@@ -18,6 +18,8 @@ Level
 """
 
 import mne
+from mne.decoding import UnsupervisedSpatialFilter
+from mne.preprocessing import ICA
 import matplotlib.pyplot as plt 
 import numpy as np
 import os
@@ -33,7 +35,7 @@ import scipy.stats as stats
 from scipy.io import wavfile
 import time
 
-
+from sklearn.decomposition import PCA, FastICA
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import StratifiedKFold, LeaveOneOut
@@ -100,115 +102,6 @@ MEG_ba_cABR = np.load(root_path + 'cbsb_meg_analysis/MEG/cABR/' + 'group_ba_cabr
 MEG_mba_cABR = np.load(root_path + 'cbsb_meg_analysis/MEG/cABR/' + 'group_mba_cabr_morph.npy')
 MEG_pa_cABR = np.load(root_path + 'cbsb_meg_analysis/MEG/cABR/' + 'group_pa_cabr_morph.npy')
 
-## MEG sensor: more than 200 trials for now
-
-
-#%%####################################### visualize cABR of ba, mba and pa
-plt.figure()
-plt.subplot(311)
-plot_err(EEG_ba_cABR,'k',stc1.times)
-plt.xlim([-0.02,0.2])
-
-plt.subplot(312)
-plot_err(EEG_mba_cABR,'b',stc1.times)
-plt.xlim([-0.02,0.2])
-plt.ylabel('Amplitude')
-
-plt.subplot(313)
-plot_err(EEG_pa_cABR,'r',stc1.times)
-plt.xlim([-0.02,0.2])
-plt.xlabel('Time (s)')
-
-## visualize cABR of ba, mba and pa in MEG sensor
-plt.figure()
-plt.subplot(311)
-plot_err(MEG_ba_cABR.mean(axis=1),'k',stc1.times)
-plt.xlim([-0.02,0.2])
-
-plt.subplot(312)
-plot_err(MEG_mba_cABR.mean(axis=1),'b',stc1.times)
-plt.xlim([-0.02,0.2])
-plt.ylabel('Amplitude')
-
-plt.subplot(313)
-plot_err(MEG_pa_cABR.mean(axis=1),'r',stc1.times)
-plt.xlim([-0.02,0.2])
-plt.xlabel('Time (s)') 
-
-## visualize cABR of ba, mba and pa in MEG source 
-plt.figure()
-plt.subplot(311)
-plot_err(MEG_ba_cABR.mean(axis=1),'k',stc1.times)
-plt.xlim([-0.02,0.2])
-
-plt.subplot(312)
-plot_err(MEG_mba_cABR.mean(axis=1),'b',stc1.times)
-plt.xlim([-0.02,0.2])
-plt.ylabel('Amplitude')
-
-plt.subplot(313)
-plot_err(MEG_pa_cABR.mean(axis=1),'r',stc1.times)
-plt.xlim([-0.02,0.2])
-plt.xlabel('Time (s)')
-
-## visualize MEG source activity
-stc1.data = MEG_ba_cABR.mean(axis=0)
-stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
-
-## visualize source activity based on the cross-correlation
-df_v = pd.read_pickle(root_path + 'correlation/cabr_df_xcorr_v.pkl')
-v_hack = pd.concat([df_v['abs XCorr MEG & audio_ba'],df_v['abs XCorr MEG & audio_mba'],df_v['abs XCorr MEG & audio_pa']],axis=1)
-stc1.data = v_hack
-stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
-
-ind = np.where(stc1.vertices[0] == 18493)
-plot_err(np.squeeze(MEG_ba_cABR[:,ind[0],:]),'k',np.linspace(-0.02,0.2,1101))
-plt.xlim([0,0.2])
-
-## visualize roi
-MEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_ba_cabr_morph_roi.npy')
-MEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_mba_cabr_morph_roi.npy')
-MEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_pa_cabr_morph_roi.npy')
-
-roi_ind = 76
-plt.figure()
-plt.subplot(311)
-plot_err(MEG_ba_cABR[:,roi_ind,:],'k',stc1.times)
-plt.xlim([-0.02,0.2])
-
-plt.subplot(312)
-plot_err(MEG_mba_cABR[:,roi_ind,:],'b',stc1.times)
-plt.xlim([-0.02,0.2])
-plt.ylabel('Amplitude')
-
-plt.subplot(313)
-plot_err(MEG_pa_cABR[:,roi_ind,:],'r',stc1.times)
-plt.xlim([-0.02,0.2])
-plt.xlabel('Time (s)') 
-
-## visualize sensor
-raw = mne.io.read_raw_fif(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss.fif',allow_maxshield=True,preload=False)
-raw.plot_sensors(kind = '3d')
-MEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_ba_sensor.npy')
-MEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_mba_sensor.npy')
-MEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_pa_sensor.npy')
-
-sensor_ind = np.where(np.array(raw.ch_names) == 'MEG0731')
-
-plt.figure()
-plt.subplot(311)
-plot_err(np.squeeze(MEG_ba_cABR[:,sensor_ind,:]),'k',stc1.times)
-plt.xlim([-0.02,0.2])
-
-plt.subplot(312)
-plot_err(np.squeeze(MEG_mba_cABR[:,sensor_ind,:]),'b',stc1.times)
-plt.xlim([-0.02,0.2])
-plt.ylabel('Amplitude')
-
-plt.subplot(313)
-plot_err(np.squeeze(MEG_pa_cABR[:,sensor_ind,:]),'r',stc1.times)
-plt.xlim([-0.02,0.2])
-plt.xlabel('Time (s)') 
 #%%####################################### Sliding estimator decoding
 tic = time.time()
 root_path='/media/tzcheng/storage2/CBS/'
@@ -286,7 +179,7 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_m
 times = stc1.times
 
 ## parameter
-ROI_wholebrain = 'ROI' # ROI or wholebrain or sensor
+ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
 ts = 100
 te = 1100
 
@@ -331,6 +224,9 @@ mean_EEG_mba_cABR = EEG_mba_cABR.mean(axis=0)
 mean_EEG_pa_cABR = EEG_pa_cABR.mean(axis=0)
 
 a_ba = (mean_EEG_ba_cABR - np.mean(mean_EEG_ba_cABR))/np.std(mean_EEG_ba_cABR)
+EEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg_200.npy')
+EEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')
+EEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')
 a_ba = a_ba / np.linalg.norm(a_ba)
 a_mba = (mean_EEG_mba_cABR - np.mean(mean_EEG_mba_cABR))/np.std(mean_EEG_mba_cABR)
 a_mba = a_mba / np.linalg.norm(a_mba)
@@ -360,9 +256,9 @@ for v in np.arange(0,np.shape(cabr_ba)[1],1):
     
     xcorr_all_v.append([v,max(abs(xcorr_ba)),lags_time[np.argmax(abs(xcorr_ba))],max(abs(xcorr_mba)),
                         lags_time[np.argmax(abs(xcorr_mba))], max(abs(xcorr_pa)),lags_time[np.argmax(abs(xcorr_pa))]])
-df_v = pd.DataFrame(columns = ["Vertno", "abs XCorr MEG & audio_ba", "max Lag MEG & audio_ba", 
-                               "abs XCorr MEG & audio_mba", "max Lag MEG & audio_mba", 
-                               "abs XCorr MEG & audio_pa", "max Lag MEG & audio_pa"], data = xcorr_all_v)
+df_v = pd.DataFrame(columns = ["Vertno", "abs XCorr MEG & ba", "max Lag MEG & ba", 
+                               "abs XCorr MEG & mba", "max Lag MEG & mba", 
+                               "abs XCorr MEG & pa", "max Lag MEG & pa"], data = xcorr_all_v)
 if ROI_wholebrain == 'ROI':
     df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_roi.pkl')
 elif ROI_wholebrain == 'wholebrain': 
@@ -391,12 +287,27 @@ for s in np.arange(0,len(cabr_ba),1):
         
         xcorr_all_v_s.append([s,v,max(abs(xcorr_ba)),lags_time[np.argmax(abs(xcorr_ba))],max(abs(xcorr_mba)),
                             lags_time[np.argmax(abs(xcorr_mba))], max(abs(xcorr_pa)),lags_time[np.argmax(abs(xcorr_pa))]])
-df_v_s = pd.DataFrame(columns = ["Subject","Vertno", "abs XCorr MEG & audio_ba", "max Lag MEG & audio_ba", 
-                                   "abs XCorr MEG & audio_mba", "max Lag MEG & audio_mba", 
-                                   "abs XCorr MEG & audio_pa", "max Lag MEG & audio_pa"], data = xcorr_all_v_s)
+df_v_s = pd.DataFrame(columns = ["Subject","Vertno", "abs XCorr MEG & ba", "max Lag MEG & ba", 
+                                   "abs XCorr MEG & mba", "max Lag MEG & mba", 
+                                   "abs XCorr MEG & pa", "max Lag MEG & pa"], data = xcorr_all_v_s)
 if ROI_wholebrain == 'ROI':
     df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_roi_s.pkl')
 elif ROI_wholebrain == 'wholebrain': 
     df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_v_s.pkl')
 elif ROI_wholebrain == 'sensor':
-    df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_sensor_s.pkl')
+    df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_sensor_s.pkl')
+
+#%%####################################### apply dimension reduction
+evokeds = mne.read_evokeds(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+X = evokeds.get_data()
+X = X[np.newaxis,:, :]
+pca = UnsupervisedSpatialFilter(PCA(30), average=False)
+pca_data = pca.fit_transform(X)
+plt.figure()
+plt.plot(stc1.times,np.squeeze(pca_data[:,0,:]).transpose())
+plt.xlim([-0.02,0.2])
+ica = UnsupervisedSpatialFilter(FastICA(30, whiten="unit-variance"), average=False)
+ica_data = ica.fit_transform(X)
+plt.figure()
+plt.plot(stc1.times,np.squeeze(ica_data[:,0,:]).transpose())
+plt.xlim([-0.02,0.2])
