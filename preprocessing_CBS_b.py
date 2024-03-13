@@ -21,8 +21,8 @@ import numpy as np
 import os
 
 def do_otp(subject,time):
-    root_path='/media/tzcheng/storage2/CBS/'+ subject +'/raw_fif/'
-    # root_path='/media/tzcheng/storage2/SLD/MEG/'+ subject +'/raw_fif/'
+    # root_path='/media/tzcheng/storage2/CBS/'+ subject +'/raw_fif/'
+    root_path='/media/tzcheng/storage2/SLD/MEG/'+ subject +'/raw_fif/'
 
     os.chdir(root_path)
     #find all the raw files
@@ -38,8 +38,8 @@ def do_otp(subject,time):
         raw_otp.save(file_out,overwrite=True)
 
 def do_sss(subject,st_correlation,int_order,time):
-    root_path='/media/tzcheng/storage2/CBS/'
-    # root_path='/media/tzcheng/storage2/SLD/MEG/'
+    # root_path='/media/tzcheng/storage2/CBS/'
+    root_path='/media/tzcheng/storage2/SLD/MEG/'
 
     os.chdir(root_path)
     params = mnefun.Params(n_jobs=6, n_jobs_mkl=1, proj_sfreq=200, n_jobs_fir='cuda',
@@ -47,8 +47,8 @@ def do_sss(subject,st_correlation,int_order,time):
 
     params.subjects = [subject]
 
-    params.work_dir = '/media/tzcheng/storage/CBS/'
-    # params.work_dir = '/media/tzcheng/storage2/SLD/MEG/'
+    # params.work_dir = '/media/tzcheng/storage/CBS/'
+    params.work_dir = '/media/tzcheng/storage2/SLD/MEG/'
     params.run_names = ['%s' + time + '_01_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
     params.runs_empty = ['%s' + time + '_erm_otp']
     params.subject_indices = [0] #to run individual participants
@@ -124,6 +124,7 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_121': ['MEG0312', 'MEG1712'],
     'sld_122': ['MEG0312', 'MEG1712'],
     'sld_123': ['MEG0312', 'MEG1712'],
+    'sld_124': ['MEG0312', 'MEG1712','MEG2512', 'MEG2641']
     }
     
     t2_prebad = {
@@ -284,30 +285,30 @@ def do_epoch_cabr(data, subject, run,time):
     return evoked_substd,evoked_dev1,evoked_dev2,epochs
 
 ########################################
-root_path='/media/tzcheng/storage2/CBS/'
-# root_path='/media/tzcheng/storage2/SLD/MEG/'
+# root_path='/media/tzcheng/storage2/CBS/'
+root_path='/media/tzcheng/storage2/SLD/MEG/'
 
 os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = 0 # first time (6 mo) or second time (12 mo) coming back, or 0 for cbs
+time = '_t1' # first time (6 mo) or second time (12 mo) coming back, or 0 for cbs
 direction = "ba_to_pa"
-do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
+do_cabr = False # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
+    if file.startswith('sld_124'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
         subjects.append(file)
 
 #%%###### do the jobs
 for s in subjects:
     print(s)
     # do_otp(s,time)
-    # do_sss(s,st_correlation,int_order,time)
+    do_sss(s,st_correlation,int_order,time)
     for run in runs:
         if time == 0:
             time = ""
@@ -323,8 +324,8 @@ for s in subjects:
         print ('Doing filtering...')
         raw_filt = do_filtering(raw,lp, do_cabr)
         raw_erm_filt = do_filtering(raw_erm,lp, do_cabr)
-        # print ('calculate cov...')
-        # do_cov(s,raw_erm_filt,time,do_cabr)
+        print ('calculate cov...')
+        do_cov(s,raw_erm_filt,time,do_cabr)
         print ('Doing epoch...')
         if do_cabr == True:
             do_epoch_cabr(raw_filt, s, run, time)
