@@ -91,7 +91,7 @@ EEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_ee
 EEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')
 EEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')
 
-## MEG source: more than 200 trials for now
+## MEG source vertices: more than 200 trials for now
 # adults
 MEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_ba_cabr_morph.npy')
 MEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_mba_cabr_morph.npy')
@@ -101,6 +101,18 @@ MEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_pa_cab
 MEG_ba_cABR = np.load(root_path + 'cbsb_meg_analysis/MEG/cABR/' + 'group_ba_cabr_morph.npy')
 MEG_mba_cABR = np.load(root_path + 'cbsb_meg_analysis/MEG/cABR/' + 'group_mba_cabr_morph.npy')
 MEG_pa_cABR = np.load(root_path + 'cbsb_meg_analysis/MEG/cABR/' + 'group_pa_cabr_morph.npy')
+
+## MEG source ROI: more than 200 trials for now
+# adults
+MEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_ba_cabr_f80450_morph_roi.npy')
+MEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_mba_cabr_f80450_morph_roi.npy')
+MEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_pa_cabr_f80450_morph_roi.npy')
+
+## MEG sensor: more than 200 trials for now
+# adults
+MEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_ba_sensor.npy')
+MEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_mba_sensor.npy')
+MEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_pa_sensor.npy')
 
 #%%####################################### Sliding estimator decoding
 tic = time.time()
@@ -297,17 +309,27 @@ elif ROI_wholebrain == 'wholebrain':
 elif ROI_wholebrain == 'sensor':
     df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_sensor_s.pkl')
 
-#%%####################################### apply dimension reduction
-evokeds = mne.read_evokeds(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
-X = evokeds.get_data()
-X = X[np.newaxis,:, :]
+#%%####################################### apply dimension reduction on the sensor, source level
+X = MEG_ba_cABR
 pca = UnsupervisedSpatialFilter(PCA(30), average=False)
 pca_data = pca.fit_transform(X)
-plt.figure()
-plt.plot(stc1.times,np.squeeze(pca_data[:,0,:]).transpose())
-plt.xlim([-0.02,0.2])
 ica = UnsupervisedSpatialFilter(FastICA(30, whiten="unit-variance"), average=False)
 ica_data = ica.fit_transform(X)
+
 plt.figure()
-plt.plot(stc1.times,np.squeeze(ica_data[:,0,:]).transpose())
+plt.subplot(211)
+plot_err(EEG_ba_cABR,'k',stc1.times)
+plt.title('ba')
+plt.xlim([-0.02,0.2])
+plt.subplot(212)
+plot_err(pca_data[:,0,:],'k',stc1.times)
+plt.xlim([-0.02,0.2])
+
+plt.figure()
+plt.subplot(211)
+plot_err(EEG_ba_cABR,'k',stc1.times)
+plt.title('ba')
+plt.xlim([-0.02,0.2])
+plt.subplot(212)
+plot_err(ica_data[:,0,:],'k',stc1.times)
 plt.xlim([-0.02,0.2])
