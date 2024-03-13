@@ -50,7 +50,7 @@ EEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_e
 
 ## MEG source vertices: more than 200 trials for now
 # adults
-MEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_ba_cabr_morph.npy')
+MEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_ba_cabr_f80450_morph.npy')
 MEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_mba_cabr_morph.npy')
 MEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_pa_cabr_morph.npy')
 
@@ -120,7 +120,7 @@ plt.xlim([-0.02,0.2])
 plt.xlabel('Time (s)')
 
 #%%####################################### visualize MEG source activity
-stc1.data = MEG_mba_cABR.mean(axis=0)
+stc1.data = MEG_ba_cABR.mean(axis=0)
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 
 #%%#######################################  visualize sensor
