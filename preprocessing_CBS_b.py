@@ -231,7 +231,7 @@ def do_epoch_mmr(data, subject, run, time, direction):
     
     
     if direction == 'ba_to_pa':
-        mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_mmr-eve.fif')
+        mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + time + run + '_events_mmr-eve.fif')
         event_id = {'Standard':1,'Deviant1':3,'Deviant2':6}
         
         epochs_cortical = mne.Epochs(data, mmr_events, event_id,tmin =-0.1, tmax=0.6,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
@@ -246,7 +246,7 @@ def do_epoch_mmr(data, subject, run, time, direction):
         evoked_dev2.save(file_out + '_evoked_dev2_mmr.fif',overwrite=True)
     
     elif direction == 'pa_to_ba':
-        mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_mmr_reverse-eve.fif')
+        mmr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + time + run + '_events_mmr_reverse-eve.fif')
         event_id = {'Standard1':3,'Standard2':6,'Deviant':1}
         
         epochs_cortical = mne.Epochs(data, mmr_events, event_id,tmin =-0.1, tmax=0.6,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
@@ -308,7 +308,7 @@ for file in os.listdir():
 for s in subjects:
     print(s)
     # do_otp(s,time)
-    do_sss(s,st_correlation,int_order,time)
+    # do_sss(s,st_correlation,int_order,time)
     for run in runs:
         if time == 0:
             time = ""
