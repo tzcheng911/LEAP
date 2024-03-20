@@ -32,25 +32,25 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morp
 #%%####################################### Traditional or new direction
 ## Load vertex: traditional method 
 # adults 
-MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph.npy') 
-MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy') 
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr1_vector_morph.npy') 
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr2_vector_morph.npy') 
 EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr1_eeg.npy')
 EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr2_eeg.npy')
 
 # infants
-MEG_mmr1_v = np.load(root_path + 'cbsb_meg_analysis/MEG/group_mmr1_vector_morph.npy') 
-MEG_mmr2_v = np.load(root_path + 'cbsb_meg_analysis/MEG/group_mmr2_vector_morph.npy') 
+MEG_mmr1_v = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr1_vector_morph.npy') 
+MEG_mmr2_v = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr2_vector_morph.npy') 
 
 ## Load vertex: new method
 # adults 
-MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_mba_vector_morph.npy') 
-MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_pa_vector_morph.npy')
+MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr1_mba_vector_morph.npy') 
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr2_pa_vector_morph.npy')
 EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr1_mba_eeg.npy')
 EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr2_pa_eeg.npy')
 
 # infants
-MEG_mmr1_v = np.load(root_path + 'cbsb_meg_analysis/MEG/group_mmr1_mba_vector_morph.npy') 
-MEG_mmr2_v = np.load(root_path + 'cbsb_meg_analysis/MEG/group_mmr2_pa_vector_morph.npy') 
+MEG_mmr1_v = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr1_mba_vector_morph.npy') 
+MEG_mmr2_v = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr2_pa_vector_morph.npy') 
 
 subject = 'fsaverage'
 src = mne.read_source_spaces(subjects_dir + subject + '/bem/fsaverage-vol-5-src.fif')
@@ -88,6 +88,10 @@ plot_err(EEG_mmr2,'b',stc1.times)
 plt.figure()
 plot_err(MEG_mmr1_v.mean(axis=1),'c',stc1.times)
 plot_err(MEG_mmr2_v.mean(axis=1),'b',stc1.times)
+plt.legend(['MMR1','','MMR2',''])
+plt.xlabel('Time (s)')
+plt.title('Controlled method infant')
+plt.xlim([-0.05, 0.45])
 
 ## visualization average sub-plot
 times = stc1.times
@@ -311,9 +315,11 @@ stc1.data = MEG_mmr2_v.mean(axis=0) - MEG_mmr1_v.mean(axis=0)
 stc1_crop = stc1.copy().crop(tmin= -0.05, tmax=0.45)
 stc1_crop.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 
-
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 stc1.plot(src,clim=dict(kind="value",pos_lims=[0,12,16]), subject='fsaverage', subjects_dir=subjects_dir)
+
+## plot certain vertice (hot spot)
+
 
 #%%####################################### decoding result
 ## Traditional direction: ba to mba vs. ba to pa
