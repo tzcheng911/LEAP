@@ -146,7 +146,8 @@ plt.xlabel('Time (s)')
 plt.legend(['pa'])
 
 
-#%%####################################### Subject-by-subject decoding for each condition 
+#%%####################################### Subject-by-subject MEG decoding for each condition 
+#%%####################################### MEG decoding sliding estimator
 tic = time.time()
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -165,13 +166,11 @@ k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 filename = 'vector'
 filename_mmr1 = 'group_mmr1_vector_morph'
 filename_mmr2 = 'group_mmr2_vector_morph'
-filename_cabr_ba = 'group_ba_morph'
-filename_cabr_mba = 'group_mba_morph'
-filename_cabr_pa = 'group_pa_morph'
+
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-lh_ROI_label = [72,60,61,62] # Simport random
+lh_ROI_label = [72,60,61,62] # 
 rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 
 if ROI_wholebrain == 'ROI':
