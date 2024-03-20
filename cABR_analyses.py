@@ -114,6 +114,7 @@ MEG_ba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_ba_sen
 MEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_mba_sensor.npy')
 MEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_pa_sensor.npy')
 
+#%%####################################### Subject-by-subject MEG decoding for each condition 
 #%%####################################### Sliding estimator decoding
 tic = time.time()
 root_path='/media/tzcheng/storage2/CBS/'
@@ -182,6 +183,81 @@ print('It takes ' + str((toc - tic)/60) + 'min to run decoding')
 np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_kall_' + filename + '.npy',scores_observed)
 np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_' + filename + '.npy',patterns)
 
+#%%####################################### MEG decoding across time
+root_path='/media/tzcheng/storage2/CBS/'
+subjects_dir = '/media/tzcheng/storage2/subjects/'
+os.chdir(root_path)
+
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
+times = stc1.times
+
+filename_cabr_ba = 'group_ba_cabr'
+filename_cabr_mba = 'group_mba_cabr'
+filename_cabr_pa = 'group_pa_cabr'
+
+fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+
+## cABR relevant ROIs
+lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+
+baby_or_adult = 'cbsb_meg_analysis' # baby or adult
+ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
+k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
+
+if ROI_wholebrain == 'sensor':
+    cabr_ba = np.load(root_path + baby_or_adult + '/MEG/cABR/' + filename_cabr_ba + '_sensor.npy',allow_pickle=True)
+    cabr_mba = np.load(root_path + baby_or_adult +'/MEG/cABR/' + filename_cabr_mba + '_sensor.npy',allow_pickle=True)
+    cabr_pa = np.load(root_path + baby_or_adult +'/MEG/cABR/' + filename_cabr_pa + '_sensor.npy',allow_pickle=True)
+elif ROI_wholebrain == 'ROI':
+    cabr_ba = np.load(root_path + baby_or_adult +'/MEG/cABR/' + filename_cabr_ba + '_morph_roi.npy',allow_pickle=True)
+    cabr_mba = np.load(root_path + baby_or_adult +'/MEG/cABR/' + filename_cabr_mba + '_morph_roi.npy',allow_pickle=True)
+    cabr_pa = np.load(root_path + baby_or_adult +'/MEG/cABR/' + filename_cabr_pa + '_morph_roi.npy',allow_pickle=True)
+elif ROI_wholebrain == 'wholebrain':
+    cabr_ba = np.load(root_path + baby_or_adult +'/MEG/cABR/' + filename_cabr_ba + '_morph.npy',allow_pickle=True)
+    cabr_mba = np.load(root_path + baby_or_adult +'/MEG/cABR/' + filename_cabr_mba + '_morph.npy',allow_pickle=True)
+    cabr_pa = np.load(root_path + baby_or_adult +'/MEG/cABR/' + filename_cabr_pa + '_morph.npy',allow_pickle=True)
+else:
+    print("Need to decide whether to use ROI or whole brain as feature.")
+
+all_score = []
+X = np.concatenate((cabr_ba,cabr_mba,cabr_pa),axis=0)
+y = np.concatenate((np.repeat(0,len(cabr_ba)),np.repeat(1,len(cabr_mba)),np.repeat(2,len(cabr_pa))))
+
+rand_ind = np.arange(0,len(X))
+random.shuffle(rand_ind)
+X = X[rand_ind,:,:]
+y = y[rand_ind]
+
+clf = make_pipeline(
+    StandardScaler(),  # z-score normalization
+    LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
+)    
+#%%####################################### for each sensor, ROI or vertice
+for n in np.arange(0,np.shape(X)[1],1):
+        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=None) # takes about 10 mins to run
+        score = np.mean(scores, axis=0)
+        print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
+        all_score.append(score)
+
+acc_ind = np.where(np.array(all_score) > 0.4)
+
+## visualize sensor
+evoked = mne.read_evokeds(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+ch_name = np.array(evoked.ch_names)
+evoked.info['bads'] = ch_name[acc_ind[0]].tolist() # hack the evoked.info['bads'] to visualize the high decoding accuracy sensor
+evoked.plot_sensors(ch_type='all',kind = '3d')
+
+## visualize ROI
+label_names[acc_ind] # ctx-rh-bankssts reached 0.46363636 decoding accuracy for adults, ctx-rh-middletemporal reached 0.48214286 for infants
+np.sort(all_score) 
+np.argsort(all_score)
+
+## visualize vertice
+stc1.data = [all_score,all_score]
+stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
+
 
 #%%####################################### Cross-correlation audio and MEG sensor and source
 root_path='/media/tzcheng/storage2/CBS/'
@@ -207,18 +283,18 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-if ROI_wholebrain == 'ROI':
-    cabr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_ba + '_roi.npy',allow_pickle=True)
-    cabr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_mba + '_roi.npy',allow_pickle=True)
-    cabr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_pa + '_roi.npy',allow_pickle=True)
+if ROI_wholebrain == 'sensor':
+    cabr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_ba + '_sensor.npy',allow_pickle=True)
+    cabr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_mba + '_sensor.npy',allow_pickle=True)
+    cabr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_pa + '_sensor.npy',allow_pickle=True)
+elif ROI_wholebrain == 'ROI':
+    cabr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_ba + '_morph_roi.npy',allow_pickle=True)
+    cabr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_mba + '_morph_roi.npy',allow_pickle=True)
+    cabr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_pa + '_morph_roi.npy',allow_pickle=True)
 elif ROI_wholebrain == 'wholebrain':
-    cabr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_ba + '.npy',allow_pickle=True)
-    cabr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_mba + '.npy',allow_pickle=True)
-    cabr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_pa + '.npy',allow_pickle=True)
-elif ROI_wholebrain == 'sensor':
-    cabr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/group_ba_sensor.npy',allow_pickle=True)
-    cabr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/group_mba_sensor.npy',allow_pickle=True)
-    cabr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/group_pa_sensor.npy',allow_pickle=True)
+    cabr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_ba + '_morph.npy',allow_pickle=True)
+    cabr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_mba + '_morph.npy',allow_pickle=True)
+    cabr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + filename_cabr_pa + '_morph.npy',allow_pickle=True)
 else:
     print("Need to decide whether to use ROI or whole brain as feature.")
 
