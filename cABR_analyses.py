@@ -202,8 +202,8 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-baby_or_adult = 'cbsb_meg_analysis' # baby or adult
-ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
+baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
+ROI_wholebrain = 'sensor' # ROI or wholebrain or sensor
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
 if ROI_wholebrain == 'sensor':
@@ -241,13 +241,13 @@ for n in np.arange(0,np.shape(X)[1],1):
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
 
-acc_ind = np.where(np.array(all_score) > 0.4)
+acc_ind = np.where(np.array(all_score) > 0.5)
 
 ## visualize sensor
 evoked = mne.read_evokeds(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
 ch_name = np.array(evoked.ch_names)
 evoked.info['bads'] = ch_name[acc_ind[0]].tolist() # hack the evoked.info['bads'] to visualize the high decoding accuracy sensor
-evoked.plot_sensors(ch_type='all',kind = '3d')
+evoked.plot_sensors(ch_type='all',kind ='3d')
 
 ## visualize ROI
 label_names[acc_ind] # ctx-rh-bankssts reached 0.46363636 decoding accuracy for adults, ctx-rh-middletemporal reached 0.48214286 for infants
@@ -255,9 +255,8 @@ np.sort(all_score)
 np.argsort(all_score)
 
 ## visualize vertice
-stc1.data = [all_score,all_score]
+stc1.data = np.array([all_score,all_score]).transpose()
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
-
 
 #%%####################################### Cross-correlation audio and MEG sensor and source
 root_path='/media/tzcheng/storage2/CBS/'
