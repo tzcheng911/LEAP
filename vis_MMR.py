@@ -84,6 +84,10 @@ plt.xlim([-0.05, 0.45])
 plt.figure()
 plot_err(EEG_mmr1,'c',stc1.times)
 plot_err(EEG_mmr2,'b',stc1.times)
+plt.legend(['MMR1','','MMR2',''])
+plt.xlabel('Time (s)')
+plt.title('Controlled method adult')
+plt.xlim([-0.05, 0.45])
 
 plt.figure()
 plot_err(MEG_mmr1_v.mean(axis=1),'c',stc1.times)
@@ -289,21 +293,21 @@ plt.xlim([-100,600])
 #%%####################################### MMR result whole brain
 ## Traditional direction: ba to mba vs. ba to pa
 ## Adults
-MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/magnitude_method/group_mmr1_None_morph.npy')
-MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/magnitude_method/group_mmr2_None_morph.npy')
 MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr1_vector_morph.npy')
 MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr2_vector_morph.npy')
+
 ## Babies
-MEG_mmr1_m = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr1_None_morph.npy')
-MEG_mmr2_m = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr2_None_morph.npy')
 MEG_mmr1_v = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr1_vector_morph.npy')
 MEG_mmr2_v = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr2_vector_morph.npy')
 
 ## New method: first - last mba vs. first pa - last pascores_observed = np.load(root_path + '/cbsA_meeg_analysis/decoding/adult_roc_auc_vector_morph_kall.npy')
-MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/magnitude_method/group_mmr1_mba_None_morph.npy')
-MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/magnitude_method/group_mmr2_pa_None_morph.npy')
+## Adults
 MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr1_mba_vector_morph.npy')
 MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr2_pa_vector_morph.npy')
+
+## Babies
+MEG_mmr1_v = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr1_mba_vector_morph.npy')
+MEG_mmr2_v = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/group_mmr2_pa_vector_morph.npy')
 
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
@@ -318,9 +322,24 @@ stc1_crop.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsav
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 stc1.plot(src,clim=dict(kind="value",pos_lims=[0,12,16]), subject='fsaverage', subjects_dir=subjects_dir)
 
-## plot certain vertice (hot spot)
+## plot certain vertice (manually look up the hot spot with stc.plot above)
+v_ind = np.where(src[0]['vertno'] == 25056) # conv_adult 25056, cont_adult 20041, conv_infant 23669, cont_infant 19842 
+plt.figure()
+plot_err(np.squeeze(MEG_mmr1_v[:,v_ind,:]),'c',stc1.times)
+plot_err(np.squeeze(MEG_mmr2_v[:,v_ind,:]),'b',stc1.times)
+plt.legend(['MMR1','','MMR2',''])
+plt.xlabel('Time (s)')
+plt.title('Traditional method adult 25056')
+plt.xlim([-0.05, 0.45])
 
-
+sub = 11
+plt.figure()
+plt.plot(stc1.times,np.squeeze(MEG_mmr1_v[sub,v_ind,:]),'c')
+plt.plot(stc1.times,np.squeeze(MEG_mmr2_v[sub,v_ind,:]),'b')
+plt.legend(['MMR1','','MMR2',''])
+plt.xlabel('Time (s)')
+plt.title('Traditional method adult')
+plt.xlim([-0.05, 0.45])
 #%%####################################### decoding result
 ## Traditional direction: ba to mba vs. ba to pa
 ## Adults
