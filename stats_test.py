@@ -85,10 +85,10 @@ X = X[:,ts:te].mean(axis=1)
 stats.ttest_1samp(X,0)
 
 #%% non-paramatric permutation test on EEG
-root_path='/media/tzcheng/storage/CBS/'
+root_path='/media/tzcheng/storage2/CBS/'
 times = np.linspace(-0.1,0.6,3501) # For MMR
 times = np.linspace(-0.02,0.2,1101) # For FFR
-ts = 500
+ts = 750
 te = 1750
 
 std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_eeg.npy')
@@ -110,7 +110,7 @@ X = dev2 - std
 
 T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(X)
 
-good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
+good_cluster_inds = np.where(cluster_p_values < 0.07)[0]
 for i in np.arange(0,len(good_cluster_inds),1):
     print("The " + str(i+1) + "st significant cluster")
     print(clusters[good_cluster_inds[i]])
