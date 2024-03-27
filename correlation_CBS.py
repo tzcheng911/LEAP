@@ -56,13 +56,13 @@ def plot_err(group_data,color,t):
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 stc2 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 MEG_mmr1_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr1_vector_morph.npy') # with the mag or vector method
-MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy') # with the mag or vector method
-MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_None_morph.npy') # with the mag or vector method
-MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_None_morph.npy') # with the mag or vector method
-MEG_mmr1_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph_roi.npy') # with the mag or vector method
-MEG_mmr2_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph_roi.npy') # with the mag or vector method
-MEG_mmr1_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr1_None_morph_roi.npy') # with the mag or vector method
-MEG_mmr2_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/magnitude_method/group_mmr2_None_morph_roi.npy') # with the mag or vector method
+MEG_mmr2_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr2_vector_morph.npy') # with the mag or vector method
+MEG_mmr1_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/magnitude_method/group_mmr1_None_morph.npy') # with the mag or vector method
+MEG_mmr2_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/magnitude_method/group_mmr2_None_morph.npy') # with the mag or vector method
+MEG_mmr1_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr1_vector_morph_roi.npy') # with the mag or vector method
+MEG_mmr2_roi_v = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr2_vector_morph_roi.npy') # with the mag or vector method
+MEG_mmr1_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/magnitude_method/group_mmr1_None_morph_roi.npy') # with the mag or vector method
+MEG_mmr2_roi_m = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/magnitude_method/group_mmr2_None_morph_roi.npy') # with the mag or vector method
 EEG_mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr1_eeg.npy')
 EEG_mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_mmr2_eeg.npy')
 
@@ -186,10 +186,10 @@ plt.ylabel('Pearson r')
 plt.xlim([-0.05,0.45])
 
 plt.figure()
-plt.scatter(stc_v[:,900],EEG[:,900])
+plt.scatter(stc_v[:,880],EEG[:,880])
 plt.xlabel('MEG')
 plt.ylabel('EEG')
-plt.title('t = 80 ms')
+plt.title('t = 76 ms') # 1220 for t = 0.144
 
 ## for the whole brain 
 stc_v = MEG_mmr2_v
@@ -215,7 +215,6 @@ stc1_crop.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsav
 
 #%%######################################## Done within each subject: correlate time series in a window between EEG & MEG
 ## pearson correlation (corr) between EEG and MEG
-stc_m = MEG_mmr2_m[:,:,ts:te].mean(axis=1)
 stc_v = MEG_mmr2_v[:,:,ts:te].mean(axis=1)
 EEG = EEG_mmr2
 
@@ -260,37 +259,29 @@ df_v.to_pickle('df_corr_MEGEEG_mmr2_v.pkl')
 
 #%%######################################## Done within each subject: cross-correlate (xcorr) time series in a window between EEG & MEG
 # Cross-correlation (xcorr) between EEG and MEG
-xcorr_m_all_s = []
 xcorr_v_all_s = []
 
-for s in np.arange(0,len(MEG_mmr2_m),1):
+for s in np.arange(0,len(MEG_mmr2_v),1):
     a = (EEG[s,ts:te] - np.mean(EEG[s,ts:te]))/np.std(EEG[s,ts:te])
     c = (stc_v[s,:] - np.mean(stc_v[s,:]))/np.std(stc_v[s,:])
-    b = (stc_m[s,:] - np.mean(stc_m[s,:]))/np.std(stc_m[s,:])
 
     
     ## the way matlab do xcorr normalization: the max is 1 if do a zero lag autocorrealtoin
     a = a / np.linalg.norm(a)
-    b = b / np.linalg.norm(b)
     c = c / np.linalg.norm(c)
 
-    xcorr = signal.correlate(a,b)
-    xcorr_m_all_s.append(xcorr)
     
     xcorr = signal.correlate(a,c)
     xcorr_v_all_s.append(xcorr)
 
-lags = signal.correlation_lags(len(a),len(b))
+lags = signal.correlation_lags(len(a),len(c))
 lags_time = lags/5000
 
-np.argmax(abs(xcorr_m_all_s),axis=1)
 
-print('abs xcorr between MEG_m & EEG:' + str(np.max(np.abs(xcorr_m_all_s),axis=1).mean()))
 print('abs xcorr between MEG_v & EEG:' + str(np.max(np.abs(xcorr_v_all_s),axis=1).mean()))
-print('max lag of abs xcorr between MEG_m & EEG:' + str(lags_time[np.argmax(np.abs(xcorr_m_all_s),axis=1)].mean()))
 print('max lag of abs xcorr between MEG_v & EEG:' + str(lags_time[np.argmax(np.abs(xcorr_v_all_s),axis=1)].mean()))
-X = np.max(np.abs(xcorr_v_all_s),axis=1) - np.max(np.abs(xcorr_m_all_s),axis=1)
-stats.ttest_1samp(X,0)
+print('abs xcorr between MEG_v & EEG:' + str(np.max(np.abs(xcorr_v_all_s),axis=1).std()))
+print('max lag of abs xcorr between MEG_v & EEG:' + str(lags_time[np.argmax(np.abs(xcorr_v_all_s),axis=1)].std()))
 
 ## xcorr between EEG and MEG ROI: only store the max xcorr and the lag
 xcorr_all_s = []
@@ -320,30 +311,29 @@ df_ROI_lag = pd.DataFrame(columns = ["Subject", "ROI", "Lag XCorr MEG_m & EEG", 
 df_ROI_lag.to_pickle('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/correlation/df_xcorr_lag_MEGEEG_mmr2_ROI.pkl')
 
 # xcorr between EEG and each vertice: only store the max xcorr and the lag
+stc_v = MEG_mmr1_v
+EEG = EEG_mmr1
 xcorr_v_all_s = []
 lag_v_all_s = []
 
-for s in np.arange(0,len(MEG_mmr2_m),1):
+for s in np.arange(0,len(MEG_mmr2_v),1):
     print('Now starting sub' + str(s))
-    for v in np.arange(0,np.shape(MEG_mmr2_m)[1],1):
+    for v in np.arange(0,np.shape(MEG_mmr2_v)[1],1):
         a = (EEG[s,ts:te] - np.mean(EEG[s,ts:te]))/np.std(EEG[s,ts:te])
-        b = (MEG_mmr2_m[s,v,ts:te] - np.mean(MEG_mmr2_m[s,v,ts:te]))/np.std(MEG_mmr2_m[s,v,ts:te])     
-        c = (MEG_mmr2_v[s,v,ts:te] - np.mean(MEG_mmr2_v[s,v,ts:te]))/np.std(MEG_mmr2_v[s,v,ts:te])
+        c = (stc_v[s,v,ts:te] - np.mean(stc_v[s,v,ts:te]))/np.std(stc_v[s,v,ts:te])
 
         ## the way matlab do xcorr normalization: the max is 1 if do a zero lag autocorrealtoin
         a = a / np.linalg.norm(a)
-        b = b / np.linalg.norm(b)
         c = c / np.linalg.norm(c)
         
-        xcorr_m = signal.correlate(a,b)
         xcorr_v = signal.correlate(a,c)
-        xcorr_v_all_s.append([s,v,max(abs(xcorr_m)),max(abs(xcorr_v))])
-        lag_v_all_s.append([s,v,lags_time[np.argmax(abs(xcorr_m))],lags_time[np.argmax(abs(xcorr_v))]])
+        xcorr_v_all_s.append([s,v,max(abs(xcorr_v))])
+        lag_v_all_s.append([s,v,lags_time[np.argmax(abs(xcorr_v))]])
     
-df_v = pd.DataFrame(columns = ["Subject", "Vertno", "XCorr MEG_m & EEG", "XCorr MEG_v & EEG"], data = xcorr_v_all_s)
-df_v.to_pickle('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/correlation/df_xcorr_MEGEEG_mmr2_v.pkl')
-df_lag = pd.DataFrame(columns = ["Subject", "Vertno", "Lag XCorr MEG_m & EEG", "Lag XCorr MEG_v & EEG"], data = lag_v_all_s)
-df_v.to_pickle('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/correlation/df_xcorr_lag_MEGEEG_mmr2_v.pkl')
+df_v = pd.DataFrame(columns = ["Subject", "Vertno","XCorr MEG_v & EEG"], data = xcorr_v_all_s)
+df_v.to_pickle('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/correlation/df_xcorr_MEGEEG_mmr1_v.pkl')
+df_lag = pd.DataFrame(columns = ["Subject", "Vertno", "Lag XCorr MEG_v & EEG"], data = lag_v_all_s)
+df_v.to_pickle('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/correlation/df_xcorr_lag_MEGEEG_mmr1_v.pkl')
 
 #%%######################################## Analyze pre-saved pickle files
 ## corr 
@@ -362,7 +352,7 @@ src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.f
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 
 stc_corr = stc1.copy()
-v_hack = pd.concat([corr_v_mean["Corr MEG_v & EEG"],corr_v_mean["Corr MEG_m & EEG"]],axis=1) # the first time point is MEG_v & EEG, the second is MEG_m & EEG
+v_hack = pd.concat([corr_v_mean["Corr MEG_v & EEG"],[corr_v_mean["Corr MEG_v & EEG"]]],axis=1) # the first time point is MEG_v & EEG, the second is MEG_m & EEG
 stc_corr.data = v_hack
 stc_corr.plot(src,subject=subject, subjects_dir=subjects_dir)
 
@@ -378,7 +368,7 @@ src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.f
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
 
 stc_corr = stc1.copy()
-v_hack = pd.concat([xcorr_v_mean["XCorr MEG_v & EEG"],xcorr_v_mean["XCorr MEG_m & EEG"]],axis=1) # the first time point is MEG_v & EEG, the second is MEG_m & EEG
+v_hack = pd.concat([xcorr_v_mean["XCorr MEG_v & EEG"],xcorr_v_mean["XCorr MEG_v & EEG"]],axis=1) # the first time point is MEG_v & EEG, the second is MEG_m & EEG
 stc_corr.data = v_hack
 stc_corr.plot(src,clim=dict(kind="percent",lims=[90,95,99]),subject=subject, subjects_dir=subjects_dir)
 
