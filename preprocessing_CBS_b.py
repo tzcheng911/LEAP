@@ -286,14 +286,14 @@ def do_epoch_cabr(data, subject, run,time):
     return evoked_substd,evoked_dev1,evoked_dev2,epochs
 
 ########################################
-# root_path='/media/tzcheng/storage2/CBS/'
-root_path='/media/tzcheng/storage2/SLD/MEG/'
+root_path='/media/tzcheng/storage2/CBS/'
+# root_path='/media/tzcheng/storage2/SLD/MEG/'
 
 os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = '_t3' # first time (6 mo) or second time (12 mo) coming back, or 0 for cbs
+time = 0 # first time (6 mo) or second time (12 mo) coming back, or 0 for cbs
 direction = "ba_to_pa"
 do_cabr = False # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
@@ -302,14 +302,14 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('sld_108'): # cbs_A for the adults and cbs_b for the infants, sld for SLD infants
+    if file.startswith('cbs_b118'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
 
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    do_otp(s,time)
-    do_sss(s,st_correlation,int_order,time)
+    # do_otp(s,time)
+    # do_sss(s,st_correlation,int_order,time)
     for run in runs:
         if time == 0:
             time = ""
@@ -333,3 +333,9 @@ for s in subjects:
         else:
             do_epoch_mmr(raw_filt, s, run, time, direction)
         del raw,raw_erm,raw_filt,raw_erm_filt
+
+#%%###### get the cbsb_118 cov from the baseline
+epochs = mne.read_epochs(root_path + s + '/sss_fif/' + s + time + run + '_otp_raw_sss_proj_f_cABR_e.fif')
+noise_cov = mne.compute_covariance(epochs, tmin = None, tmax=0.0)
+fname_erm_out = root_path + '/' + s + '/sss_fif/' + s + time +run + '_erm_otp_raw_sss_proj_f_ffr-cov'
+mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
