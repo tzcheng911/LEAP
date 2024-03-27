@@ -408,3 +408,41 @@ plt.xlim([-0.02,0.2])
 plt.subplot(212)
 plot_err(ica_data[:,0,:],'k',stc1.times)
 plt.xlim([-0.02,0.2])
+
+#%%####################################### Spectrum analysis
+tmin = 0
+tmax = 0.13
+fmin = 50
+fmax = 150
+
+subject = 'fsaverage'
+src = mne.read_source_spaces(subjects_dir + subject + '/bem/fsaverage-vol-5-src.fif')
+fname_aseg = subjects_dir + subject + '/mri/aparc+aseg.mgz'
+label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+    
+## For one subject
+epochs = mne.read_epochs(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_cABR_e.fif')
+evoked = mne.read_evokeds(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+sfreq = epochs.info["sfreq"]
+evoked.compute_psd("welch",
+   n_fft=int(sfreq * (tmax - tmin)),
+   n_overlap=0,
+   n_per_seg=None,
+   tmin=tmin,
+   tmax=tmax,
+   fmin=fmin,
+   fmax=fmax,
+   window="boxcar",
+   verbose=False,).plot(average=True,picks="data", exclude="bads")
+
+## For group results
+psds, freqs = mne.time_frequency.psd_array_welch(
+    audio_mba,sfreq, # could replace with label time series
+    n_fft=int(sfreq * (tmax - tmin)),
+    n_overlap=0,
+    n_per_seg=None,
+    fmin=fmin,
+    fmax=fmax,)
+        
+plt.figure()
+plt.plot(freqs,psds)
