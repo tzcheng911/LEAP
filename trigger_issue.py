@@ -15,7 +15,7 @@ import itertools
 
 
 #%%######################################## SLD112
-s = 'sld_113'
+s = 'sld_112'
 soa = np.load('/media/tzcheng/storage2/SLD/MEG/soas2_cbsb_200.npy',allow_pickle=True)
 seq = np.load('/media/tzcheng/storage2/SLD/MEG/seq2_200.npy')
 raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s +'_t1_01_raw.fif',allow_maxshield=True,preload=True)
