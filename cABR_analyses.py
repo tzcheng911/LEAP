@@ -202,7 +202,7 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-baby_or_adult = 'cbsb_meg_analysis' # baby or adult
+baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
 ROI_wholebrain = 'ROI' # ROI or wholebrain or sensor
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
