@@ -14,10 +14,11 @@ Notes:
 1. cbs_b113 has very short recording, cbs_b115 has no recording
 2. had to change the cbs_b102 (was coded as cbs_902)
 3. sld_111 has issue on process events (last two events duplicate)
-4. sld_105 t2 has 2 recordings
-5. sld_107 t3 cut the last one sound (manually create the event file)
-6. sld_124 t1 cut the last few sounds (manually create the event file)
-
+4. sld_112 has broken triggers (use trigger_issue.py to repair)
+5. sld_105 t2 has 2 recordings
+6. sld_107 t3 cut the last one sound (manually create the event file)
+7. sld_124 t1 cut the last few sounds (manually create the event file)
+8. sld_125 t1 only get through 175 trials: cut out the last trial raw_file = raw.copy().crop(tmin=None, tmax=836.6) (manually create the event file)
     
 The correspondance between event tage and sound are
 
@@ -268,7 +269,7 @@ os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
-time = '_t3' # '_t1' first time (6 mo) or '_t2' second time (12 mo) or '_t3' third time coming back, or 0 for cbs
+time = '_t1' # '_t1' first time (6 mo) or '_t2' second time (12 mo) or '_t3' third time coming back, or 0 for cbs
 direction = "ba_to_pa"
 
 # https://uwnetid-my.sharepoint.com/:x:/r/personal/babyleap_uw_edu/_layouts/15/Doc.aspx?sourcedoc=%7B4CDEB132-CCF5-4641-AFEF-43E17E28C126%7D&file=SLD%20Tracking%20&%20Runsheets.xlsx=&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0&action=default&mobileredirect=true
@@ -281,8 +282,8 @@ for file in os.listdir():
         subj.append(file)
 
 ## do individual by individual(s), check the time t1, t2 or t3 too
-subj = ['sld_108']
-conditions = ['6']
+subj = ['sld_112']
+conditions = ['2']
 
 ###### do the jobs
 for n,s in enumerate(subj):
@@ -294,6 +295,7 @@ for n,s in enumerate(subj):
 
     # raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/' + s + '/raw_fif/' + s + run +'_raw.fif',allow_maxshield=True,preload=True)
     raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s + time + run +'_raw.fif',allow_maxshield=True,preload=True)
+    # raw_file = raw_file.copy().crop(tmax=836.6) # for sld_125 t1 
     find_events(raw_file, s,run,time)
     events=process_events(s,run,time)
     check=check_events(events,condition)
