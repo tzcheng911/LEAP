@@ -19,7 +19,7 @@ Notes:
 6. sld_107 t3 cut the last one sound (manually create the event file)
 7. sld_124 t1 cut the last few sounds (manually create the event file)
 8. sld_125 t1 only get through 175 trials: cut out the last trial raw_file = raw.copy().crop(tmin=None, tmax=836.6) (manually create the event file)
-    
+9. sld_113 t2 only get through 146 trials: manually fix the last trial (13 sounds recorded add 13: [3, 5, 7, 9, 11] to alt_set_length) before the stop
 The correspondance between event tage and sound are
 
                         TTl                  event code
@@ -151,7 +151,7 @@ def check_events(events,condition):  ## processed events
     echeck=list(itertools.chain(*echeck))
     
     check=[]
-    if np.array_equal(e2,echeck[0:len(e2)]):
+    if np.array_equal(e2,echeck[0:len(e2)]): # can account for the cut-out recording
         print('-------------------------all events are correct-----------------------------------')
         check.append('correct')
     else:
@@ -269,7 +269,7 @@ os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
-time = '_t1' # '_t1' first time (6 mo) or '_t2' second time (12 mo) or '_t3' third time coming back, or 0 for cbs
+time = '_t2' # '_t1' first time (6 mo) or '_t2' second time (12 mo) or '_t3' third time coming back, or 0 for cbs
 direction = "ba_to_pa"
 
 # https://uwnetid-my.sharepoint.com/:x:/r/personal/babyleap_uw_edu/_layouts/15/Doc.aspx?sourcedoc=%7B4CDEB132-CCF5-4641-AFEF-43E17E28C126%7D&file=SLD%20Tracking%20&%20Runsheets.xlsx=&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0&action=default&mobileredirect=true
@@ -282,8 +282,8 @@ for file in os.listdir():
         subj.append(file)
 
 ## do individual by individual(s), check the time t1, t2 or t3 too
-subj = ['sld_112']
-conditions = ['2']
+subj = ['sld_113']
+conditions = ['6']
 
 ###### do the jobs
 for n,s in enumerate(subj):
