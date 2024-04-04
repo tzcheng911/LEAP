@@ -32,6 +32,8 @@ subjects = []
 for file in os.listdir():
     if file.startswith('me2_'): 
         subjects.append(file)
+
+#%%####################################### individual analysis
 subj = subjects[2]
 
 #%%####################################### visualize individual sensor PSD
