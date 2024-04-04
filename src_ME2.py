@@ -30,7 +30,7 @@ def do_foward(s):
 
     return fwd, src
 
-def do_inverse(s,morph,ori,run):
+def do_inverse(s,morph,run):
     root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
@@ -38,8 +38,8 @@ def do_inverse(s,morph,ori,run):
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
 
     epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_epoch.fif')
-    noise_cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50_mmr-cov.fif')
-    data_cov = mne.compute_covariance(epoch, tmin=0, tmax=None, method="empirical")
+    noise_cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50-cov.fif')
+    data_cov = mne.compute_covariance(epoch, tmin=0, tmax=None)
     evoked = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_evoked.fif')[0]
     
     ## can experiment on pick_ori
@@ -51,14 +51,17 @@ def do_inverse(s,morph,ori,run):
     noise_cov=noise_cov,
     pick_ori="max-power",
     weight_norm="unit-noise-gain",
-    rank=None,
+    rank='info',
 )
     
-    stc = apply_lcmv(evoked, filters)
+    stc_lcmv = apply_lcmv(evoked, filters)
     src = fwd['src']
    
+    inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, noise_cov,loose=1,depth=0.8)
+    stc_mne = mne.minimum_norm.apply_inverse((evoked), inverse_operator, pick_ori = None)
+
     if morph == True:
-        print('Morph' + s +  'src space to common cortical space.')
+        print('Morph ' + s +  ' src space to common cortical space.')
         fname_src_fsaverage = subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif'
         src_fs = mne.read_source_spaces(fname_src_fsaverage)
         morph = mne.compute_source_morph(
@@ -69,19 +72,21 @@ def do_inverse(s,morph,ori,run):
             niter_sdr=[10, 10, 5],  # just for speed
             src_to=src_fs,
             verbose=True)
-        stc_fsaverage = morph.apply(stc)
-        stc_fsaverage.save(file_in + 'stc_morph', overwrite=True)
+        stc_lcmv_fsaverage = morph.apply(stc_lcmv)
+        stc_lcmv_fsaverage.save(file_in + run + '_stc_lcmv_morph', overwrite=True)
+        stc_mne_fsaverage = morph.apply(stc_mne)
+        stc_mne_fsaverage.save(file_in + run + '_stc_mne_morph', overwrite=True)
 
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
-        stc.save(file_in + '_stc', overwrite=True)
+        stc_lcmv.save(file_in + '_stc_lcmv', overwrite=True)
+        stc_mne.save(file_in + '_stc_mne', overwrite=True)
 
-########################################
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
+#%%#######################################   
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
 os.chdir(root_path)
 
 morph = True
-ori = None # 'vector', None
 
 runs = ['_01','_02','_03','_04']
 subj = [] 
@@ -93,4 +98,4 @@ for s in tqdm(subj):
     do_foward(s)
     for run in runs:
         print(s)
-        do_inverse(s,run,morph)
+        do_inverse(s,morph,run)
