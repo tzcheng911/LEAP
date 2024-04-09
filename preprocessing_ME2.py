@@ -258,7 +258,8 @@ def do_epoch(data, subject, run, events):
     return evoked,epochs_cortical
 
 ########################################
-root_path='/media/tzcheng/storage/BabyRhythm/'
+# root_path='/media/tzcheng/storage/BabyRhythm/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
 os.chdir(root_path)
 
 #%%## parameters 
@@ -269,9 +270,8 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('br_'): 
+    if file.startswith('me2_111_7m'): 
         subjects.append(file)
-subjects = subjects[-2:]
 
 ## check if there is prebad txt with the raw data: 49 subjects don't have it
 # no_prebadstxt = []
@@ -285,8 +285,8 @@ subjects = subjects[-2:]
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    do_otp(s)
-    do_sss(s,st_correlation,int_order)
+    # do_otp(s)
+    # do_sss(s,st_correlation,int_order)
     for run in runs:
         print ('Doing ECG projection...')
         [raw,raw_erm] = do_projection(s,run)
