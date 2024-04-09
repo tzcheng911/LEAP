@@ -125,7 +125,9 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_122': ['MEG0312', 'MEG1712'],
     'sld_123': ['MEG0312', 'MEG1712'],
     'sld_124': ['MEG0312', 'MEG1712','MEG2512', 'MEG2641'],
-    'sld_125': ['MEG0312', 'MEG1712','MEG0911', 'MEG1721', 'MEG0642','MEG0441', 'MEG2543']
+    'sld_125': ['MEG0312', 'MEG1712','MEG0911', 'MEG1721', 'MEG0642','MEG0441', 'MEG2543'],
+    'sld_126': ['MEG0312', 'MEG1712'],
+    'sld_127': ['MEG0312', 'MEG1712']
     }
     
     t2_prebad = {
@@ -305,7 +307,7 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('sld_112'): # cbs_b for the infants, sld for SLD infants
+    if file.startswith('sld_127'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
 
 #%%###### do the jobs
