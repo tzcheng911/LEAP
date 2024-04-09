@@ -17,12 +17,14 @@ from mne.beamformer import apply_lcmv, make_lcmv
 from tqdm import tqdm
 
 def do_foward(s):
-    root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
+    # root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/'
+    root_path = '/media/tzcheng/storage/BabyRhythm/'
+
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
     file_in = root_path + s + '/sss_fif/' 
     raw_file = mne.io.read_raw_fif(file_in  + s + '_01_otp_raw_sss.fif')
-    trans=mne.read_trans(file_in + s + '_trans.fif')
+    trans=mne.read_trans(file_in + s + '-trans.fif')
     src=mne.read_source_spaces(subjects_dir + s + '/bem/' + s + '-vol-5-src.fif')
     bem=mne.read_bem_solution(subjects_dir +  s + '/bem/' + s + '-5120-5120-5120-bem-sol.fif')
     fwd=mne.make_forward_solution(raw_file.info,trans,src,bem,meg=True,eeg=False)
@@ -31,7 +33,9 @@ def do_foward(s):
     return fwd, src
 
 def do_inverse(s,morph,run):
-    root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
+    # root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/'
+    root_path = '/media/tzcheng/storage/BabyRhythm/'
+
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
     file_in = root_path + s + '/sss_fif/' + s
@@ -83,7 +87,12 @@ def do_inverse(s,morph,run):
         stc_mne.save(file_in + '_stc_mne', overwrite=True)
 
 #%%#######################################   
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
+## manually coregister to get the trans, bem and src.
+# subjects_dir = '/media/tzcheng/storage2/subjects'
+# mne.gui.coregistration(subject='fsaverage', subjects_dir=subjects_dir)
+
+# root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
+root_path = '/media/tzcheng/storage/BabyRhythm/'
 os.chdir(root_path)
 
 morph = True
@@ -91,8 +100,9 @@ morph = True
 runs = ['_01','_02','_03','_04']
 subj = [] 
 for file in os.listdir():
-    if file.startswith('me2_'):
+    if file.startswith('br_'):
         subj.append(file)
+subj = subj[1:]
 
 for s in tqdm(subj):
     do_foward(s)
