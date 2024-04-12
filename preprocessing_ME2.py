@@ -7,7 +7,8 @@ See a list of problemetic subjects from notion page.
 Focus on getting 7 mo from 100 and 200, 11 mo from 300
 Need manually fix:
 1. 108_7m, 202_7m, 208_7m, 316_11m only have run 1,2,4
-
+2. me2_104_7m does not have STI001, need to use STI101 to get event timing; sampled at 2000 Hz instead of 1000 Hz -> resample
+3. me2_320_11m and me2_324_11m have very small epoch files → dropped all the bad epochs 
 @author: tzcheng
 """
 
@@ -100,7 +101,7 @@ def do_sss(subject,st_correlation,int_order):
     # 'me2_119_11m': ['MEG1433', 'MEG1743'],
     # 'me2_120_7m': ['MEG1842', 'MEG1431', 'MEG2431'],
     # 'me2_122_7m': ['MEG1842'],
-    # 'me2_122_11m':  ['MEG1433', 'MEG1743', 'MEG1842'],
+    # 'me2_122_11m':  ['MEG1433', 'MEG1743', 'MEG1842'],vents = mne.find_events(raw_file,stim_channel='STI001') 
     # 'me2_124_7m': ['MEG1842'],
     # 'me2_124_11m': ['MEG1433', 'MEG1743'],
     # 'me2_125_7m': ['MEG1842'],
@@ -215,6 +216,7 @@ def do_projection(subject, run):
 
     return raw, raw_erm
 
+
 def do_filtering(subject, data, lp, run):
     ###### filtering
     root_path = os.getcwd()
@@ -259,7 +261,7 @@ def do_epoch(data, subject, run, events):
 
 ########################################
 # root_path='/media/tzcheng/storage/BabyRhythm/'
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/'
 os.chdir(root_path)
 
 #%%## parameters 
@@ -270,7 +272,7 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('me2_111_7m'): 
+    if file.startswith('me2_'): 
         subjects.append(file)
 
 ## check if there is prebad txt with the raw data: 49 subjects don't have it
@@ -290,6 +292,10 @@ for s in subjects:
     for run in runs:
         print ('Doing ECG projection...')
         [raw,raw_erm] = do_projection(s,run)
+        if s == 'me2_104_7m':
+            print ('Doing resampling...')
+            raw = raw.copy().resample(sfreq=1000)
+            raw_erm = raw_erm.copy().resample(sfreq=1000)
         print ('Doing filtering...')
         raw_filt = do_filtering(s, raw,lp,run)
         raw_erm_filt = do_filtering(s, raw_erm,lp,run)
