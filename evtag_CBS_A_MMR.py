@@ -264,4 +264,10 @@ for n,s in enumerate(subj):
     # check=check_events(events,condition)
     # check_all.append(check)
     mmr_event=select_mmr_events(events, s, run, direction)
-# %%
+
+# %% get the MEG soa from the event files
+events=mne.read_events('/media/tzcheng/storage2/CBS/cbs_A107/events/cbs_A107_01_events_raw-eve.fif') 
+onset = mne.pick_events(events, include=1)
+soa = np.diff(onset[:,0])/5000
+print(np.min(soa))
+print(np.max(soa))
