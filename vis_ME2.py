@@ -101,5 +101,5 @@ times = stc1.times
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
 stc1.data = br_mne.mean(axis=0)
-# stc1.data = br_lcmv.mean(axis=0)
+stc1.data = br_lcmv.mean(axis=0)
 stc1.plot(src = src)
