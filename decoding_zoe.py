@@ -34,15 +34,14 @@ from mne.decoding import (
     CSP,
 )
 
+root_path='/media/tzcheng/storage2/CBS/'
+ts = 500
+te = 2250
 
 #%%####################################### decoding for single channel EEG
 ## Could apply to MMR or FFR, just load different group file
-root_path='/media/tzcheng/storage2/CBS/'
 # times = np.linspace(-0.02,0.2,1101)
 # times = np.linspace(-0.1,0.6,3501)
-
-ts = 500
-te = 1750
 
 ## 1st run
 std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg_200.npy')
@@ -64,27 +63,42 @@ MMR1 = dev1 - std
 MMR2 = dev2 - std
 
 #%%
+times = np.linspace(-0.1,0.6,3501) # For MMR
+
+MMR1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_mmr1_eeg.npy')
+MMR2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_mmr2_eeg.npy')
+
 X = np.concatenate((MMR1,MMR2),axis=0)
 X = X[:,ts:te]
-y = np.concatenate((np.repeat(0,len(dev1)),np.repeat(1,len(dev2))))
+y = np.concatenate((np.repeat(0,len(MMR1)),np.repeat(1,len(MMR2))))
 
 # X = np.concatenate((std,dev1,dev2),axis=0)
 # y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
 
 ## randomization
-rand_ind = np.arange(0,len(X))
-random.shuffle(rand_ind)
-X = X[rand_ind,:]
-y = y[rand_ind]
+acc_randseed = []
+n_perm = 5000
 
-clf = make_pipeline(
-    StandardScaler(),  # z-score normalization
-    LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
-)
-scores = cross_val_multiscore(clf, X, y, cv=5, n_jobs=None) # takes about 10 mins to run
-score = np.mean(scores, axis=0)
-print("Accuracy: %0.1f%%" % (100 * score,))
+for i in range(n_perm):
+    rand_ind = np.arange(0,len(X))
+    random.shuffle(rand_ind)
+    X = X[rand_ind,:]
+    y = y[rand_ind]
 
+    clf = make_pipeline(
+        StandardScaler(),  # z-score normalization
+        LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
+    )
+    scores = cross_val_multiscore(clf, X, y, cv=5, n_jobs=None) # takes about 10 mins to run
+    score = np.mean(scores, axis=0)
+    acc_randseed.append(score)
+    print("Iteration " + str(i))
+plt.figure()
+plt.hist(acc_randseed,bins=15,color='k')
+plt.title('Conventional MMR decoding accuracy')
+
+print("Accuracy: %0.1f%%" % (100 * np.mean(acc_randseed),))
+np.std(acc_randseed)
 #%%# if preserve the subject MMR1 and MMR2 relationship but randomize the order within each group
 rand_ind = np.arange(0,len(MMR1))
 random.shuffle(rand_ind)
