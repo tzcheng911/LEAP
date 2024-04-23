@@ -37,6 +37,69 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 ts = 1250 
 te = 2000 
 
+#%% paramatric ttest test on EEG
+root_path='/media/tzcheng/storage2/CBS/'
+times = np.linspace(-0.1,0.6,3501) # For MMR
+
+ts = 1250
+te = 1750
+
+mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_mmr1_eeg.npy')
+mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_mmr2_eeg.npy')
+
+X = mmr1-mmr2
+# X = X[:,ts:te]
+X = X[:,ts:te].mean(axis=1)
+t,p = stats.ttest_1samp(X,0)
+
+fig, ax = plt.subplots(1)
+ax.plot(times,p)
+ax.axhline(0.05, color="k", linestyle="--", label="threshold")
+
+#%% Compare the distribution of randseed accuracy and the null dist
+null_dist = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'null_perm5000_FFR.npy')
+randseed_dist = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'acc_randseed5000_FFR.npy')
+t,p = stats.ttest_1samp(randseed_dist-null_dist,0)
+
+plt.figure()
+plt.hist(null_dist,bins=15,color='grey')
+plt.hist(randseed_dist,bins=15,color='k')
+plt.legend(['Null','Randseed accuracy'])
+plt.vlines(np.mean(null_dist),ymin=0,ymax=1000,color='m',linewidth=2)
+plt.vlines(np.mean(randseed_dist),ymin=0,ymax=1000,color='r',linewidth=2)
+plt.xlim([0,1])
+plt.ylabel('Count',fontsize=20)
+plt.xlabel('Accuracy',fontsize=20)
+plt.title('FFR')
+
+#%% non-paramatric permutation test on EEG
+root_path='/media/tzcheng/storage2/CBS/'
+times = np.linspace(-0.1,0.6,3501) # For MMR
+times = np.linspace(-0.02,0.2,1101) # For FFR
+ts = 750
+te = 1500
+
+mmr1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_mmr1_mba_eeg.npy')
+mmr2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_mmr2_pa_eeg.npy')
+std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg_200.npy')
+dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')
+dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')
+
+X = mmr1-mmr2
+X = X[:,ts:te]
+
+## FFR 
+X = dev2 - dev1
+X = dev2 - std
+
+T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(X, seed = 0)
+
+good_cluster_inds = np.where(cluster_p_values < 0.07)[0]
+for i in np.arange(0,len(good_cluster_inds),1):
+    print("The " + str(i+1) + "st significant cluster")
+    print(clusters[good_cluster_inds[i]])
+times[ts:te][clusters[good_cluster_inds[i]]]
+
 #%% paramatric permutation test on the time window 100 - 250 ms for MEG sensor MMR
 ## Load the MEG MMR data
 ts = 500
@@ -84,37 +147,7 @@ X = mmr2-mmr1
 X = X[:,ts:te].mean(axis=1)
 stats.ttest_1samp(X,0)
 
-#%% non-paramatric permutation test on EEG
-root_path='/media/tzcheng/storage2/CBS/'
-times = np.linspace(-0.1,0.6,3501) # For MMR
-times = np.linspace(-0.02,0.2,1101) # For FFR
-ts = 750
-te = 1750
 
-std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_eeg.npy')
-dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_eeg.npy')
-dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_eeg.npy')
-std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg_200.npy')
-dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')
-dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')
-
-MMR1 = dev1 - std
-MMR2 = dev2 - std
-
-X = MMR1-MMR2
-X = X[:,ts:te]
-
-## FFR 
-X = dev2 - dev1
-X = dev2 - std
-
-T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(X)
-
-good_cluster_inds = np.where(cluster_p_values < 0.07)[0]
-for i in np.arange(0,len(good_cluster_inds),1):
-    print("The " + str(i+1) + "st significant cluster")
-    print(clusters[good_cluster_inds[i]])
-times[ts:te][clusters[good_cluster_inds[i]]]
 
 #%% non-paramatric permutation test on the whole brain
 tic = time.time()
