@@ -50,7 +50,7 @@ def plot_err(group_data,color,t):
     #t=np.linspace(-100,600,3501)
     plt.plot(t,group_avg,color=color)
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
-    stc1.times
+
 #%%######################################## load data MMR
 # MMR
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
