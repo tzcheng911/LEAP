@@ -31,7 +31,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('me2_'): 
         subjects.append(file)
-
+subjects = subjects[15:]
 for run in runs:
     #%% output the sensor time series in npy files
     group = []
@@ -42,7 +42,7 @@ for run in runs:
         evoked = mne.read_evokeds(file_in + '_otp_raw_sss_proj_fil50_evoked.fif')[0]
         group.append(evoked.data)
     group=np.asarray(group)
-    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_group' + run + '_sensor.npy',group)
+    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_15_32_group' + run + '_sensor.npy',group)
     
     #%% output the source time series in npy files
     group_stc_lcmv = []
@@ -72,8 +72,8 @@ for run in runs:
     group_stc_lcmv_roi = np.asarray(group_stc_lcmv_roi)
     group_stc_mne_roi = np.asarray(group_stc_mne_roi)
             
-    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_group' + run + '_stc_lcmv.npy',group_stc_lcmv)
-    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_group' + run + '_stc_mne.npy',group_stc_mne)
-    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_group' + run + '_stc_lcmv_roi.npy',group_stc_lcmv_roi)
-    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_group' + run + '_stc_mne_roi.npy',group_stc_mne_roi)
+    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_15_32_group' + run + '_stc_lcmv.npy',group_stc_lcmv)
+    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_15_32_group' + run + '_stc_mne.npy',group_stc_mne)
+    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_15_32_group' + run + '_stc_lcmv_roi.npy',group_stc_lcmv_roi)
+    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_15_32_group' + run + '_stc_mne_roi.npy',group_stc_mne_roi)
 
