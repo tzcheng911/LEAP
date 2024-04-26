@@ -389,9 +389,9 @@ print(min(r_all))
 
 #%%######################################## load EEG FFR
 ## Load FFR from 0
-std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg_200.npy')[:,100:]
-dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')[:,100:]
-dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')[:,100:]
+std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_ffr_eeg_200.npy')[:,100:]
+dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_ffr_eeg_200.npy')[:,100:]
+dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_ffr_eeg_200.npy')[:,100:]
 
 ## Load recorded  audio
 # std_audio = np.load(root_path + 'stimuli/cbs_A123_ba.npy')[100:750]
