@@ -44,17 +44,17 @@ te = 2250
 # times = np.linspace(-0.1,0.6,3501)
 
 ## 1st run
-std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_cabr_eeg_200.npy')
-dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_cabr_eeg_200.npy')
-dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_cabr_eeg_200.npy')
+std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_ffr_eeg_200.npy')
+dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_ffr_eeg_200.npy')
+dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_ffr_eeg_200.npy')
 std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_eeg.npy')
 dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_eeg.npy')
 dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_eeg.npy')
 
 ## 2nd run
-std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_std_cabr_eeg_all.npy')
-dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev1_cabr_eeg_all.npy')
-dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev2_cabr_eeg_all.npy')
+std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_std_ffr_eeg_all.npy')
+dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev1_ffr_eeg_all.npy')
+dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev2_ffr_eeg_all.npy')
 std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_std_eeg.npy')
 dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev1_eeg.npy')
 dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev2_eeg.npy')
@@ -167,7 +167,7 @@ root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
-stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_ffr_morph-vl.stc')
 times = stc1.times
 
 ## parameters
