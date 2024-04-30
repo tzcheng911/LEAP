@@ -50,33 +50,33 @@ ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 n_cv = 5 # number of folds in SKfold
 #%%####################################### Load adults
-# filename = 'vector'
-# filename_mmr1 = 'group_mmr1_mba_vector_morph'
-# filename_mmr2 = 'group_mmr2_pa_vector_morph'
+filename = 'vector'
+filename_mmr1 = 'group_mmr1_mba_vector_morph'
+filename_mmr2 = 'group_mmr2_pa_vector_morph'
 
-# fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-# label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-# lh_ROI_label = [72,60,61,62] # STG and frontal pole
-# rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
+fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+lh_ROI_label = [72,60,61,62] # STG and frontal pole
+rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 
-# if ROI_wholebrain == 'ROI':
-#     mmr1 = np.load(root_path + 'cbsb_meg_analysis/MEG/' + filename_mmr1 + '_roi.npy',allow_pickle=True)
-#     mmr2 = np.load(root_path + 'cbsb_meg_analysis/MEG/' + filename_mmr2 + '_roi.npy',allow_pickle=True)
-# elif ROI_wholebrain == 'wholebrain':
-#     mmr1 = np.load(root_path + 'cbsb_meg_analysis/MEG/' + filename_mmr1 + '.npy',allow_pickle=True)
-#     mmr2 = np.load(root_path + 'cbsb_meg_analysis/MEG/' + filename_mmr2 + '.npy',allow_pickle=True)
-# else:
-#     print("Need to decide whether to use ROI or whole brain as feature.")
+if ROI_wholebrain == 'ROI':
+    mmr1 = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/' + filename_mmr1 + '_roi.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/' + filename_mmr2 + '_roi.npy',allow_pickle=True)
+elif ROI_wholebrain == 'wholebrain':
+    mmr1 = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/' + filename_mmr1 + '.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsb_meg_analysis/MEG/MMR/' + filename_mmr2 + '.npy',allow_pickle=True)
+else:
+    print("Need to decide whether to use ROI or whole brain as feature.")
 
 
 # ## preserve the subject order
-# # rand_ind = np.arange(0,len(mmr1))
-# # random.Random(0).shuffle(rand_ind)
-# # X = np.concatenate((mmr1[rand_ind,:],mmr2[rand_ind,:]),axis=0)
+rand_ind = np.arange(0,len(mmr1))
+random.Random(0).shuffle(rand_ind)
+X = np.concatenate((mmr1[rand_ind,:],mmr2[rand_ind,:]),axis=0)
 
-# X = np.concatenate((mmr1,mmr2),axis=0)
-# X = X[:,:,ts:te] 
-# y = np.concatenate((np.repeat(0,len(mmr1)),np.repeat(1,len(mmr1)))) #0 is for mmr1 and 1 is for mmr2
+X = np.concatenate((mmr1,mmr2),axis=0)
+X = X[:,:,ts:te] 
+y = np.concatenate((np.repeat(0,len(mmr1)),np.repeat(1,len(mmr1)))) #0 is for mmr1 and 1 is for mmr2
 
 # ## random shuffle X and y
 # # rand_ind = np.arange(0,len(X))
