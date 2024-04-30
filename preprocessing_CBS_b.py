@@ -127,7 +127,9 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_124': ['MEG0312', 'MEG1712','MEG2512', 'MEG2641'],
     'sld_125': ['MEG0312', 'MEG1712','MEG0911', 'MEG1721', 'MEG0642','MEG0441', 'MEG2543'],
     'sld_126': ['MEG0312', 'MEG1712'],
-    'sld_127': ['MEG0312', 'MEG1712']
+    'sld_127': ['MEG0312', 'MEG1712'],
+    'sld_128': ['MEG0312', 'MEG1712'],
+    'sld_129': ['MEG0312', 'MEG1712']
     }
     
     t2_prebad = {
@@ -141,6 +143,7 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_110': ['MEG0312', 'MEG1712','MEG1721','MEG0411', 'MEG0943','MEG0911'],
     'sld_112': ['MEG0312', 'MEG1712','MEG1721', 'MEG0642','MEG0441', 'MEG2543'],
     'sld_113': ['MEG0312', 'MEG1712','MEG0642','MEG2543'],
+    'sld_115': ['MEG0312', 'MEG1712','MEG1041'],
     }
     
     t3_prebad = {
@@ -309,7 +312,7 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('sld_110'): # cbs_b for the infants, sld for SLD infants
+    if file.startswith('sld_115'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
 
 #%%###### do the jobs
