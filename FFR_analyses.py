@@ -391,7 +391,7 @@ elif ROI_wholebrain == 'sensor':
 
 #%%####################################### apply dimension reduction on the sensor, source level
 X = MEG_ba_FFR
-pca = UnsupervisedSpatialFilter(PCA(30), average=False)
+pca = UnsupervisedSpatialFilter(PCA(1), average=False)
 pca_data = pca.fit_transform(X)
 ica = UnsupervisedSpatialFilter(FastICA(30, whiten="unit-variance"), average=False)
 ica_data = ica.fit_transform(X)
@@ -481,6 +481,15 @@ evk_spectrum = evoked.compute_psd("welch",
    verbose=False,)
 
 evk_spectrum.plot_topo(color="k", fig_facecolor="w", axis_facecolor="w")
+
+# MEG sensor PCA
+psds, freqs = mne.time_frequency.psd_array_welch(
+    pca_data.mean(0),sfreq, # could replace with label time series
+    n_fft=int(sfreq * (tmax - tmin)),
+    n_overlap=0,
+    n_per_seg=None,
+    fmin=fmin,
+    fmax=fmax,)
 
 # MEG source
 psds, freqs = mne.time_frequency.psd_array_welch(
