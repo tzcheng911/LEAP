@@ -35,8 +35,8 @@ from mne.decoding import (
 )
 
 root_path='/media/tzcheng/storage2/CBS/'
-ts = 500
-te = 2250
+ts = 1000
+te = 1750
 
 #%%####################################### decoding for single channel EEG
 ## Could apply to MMR or FFR, just load different group file
@@ -52,12 +52,12 @@ dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_eeg.npy')
 dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_eeg.npy')
 
 ## 2nd run
-std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_std_ffr_eeg_all.npy')
-dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev1_ffr_eeg_all.npy')
-dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev2_ffr_eeg_all.npy')
-std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_std_eeg.npy')
-dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev1_eeg.npy')
-dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev2_eeg.npy')
+# std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_std_ffr_eeg_all.npy')
+# dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev1_ffr_eeg_all.npy')
+# dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev2_ffr_eeg_all.npy')
+# std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_std_eeg.npy')
+# dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev1_eeg.npy')
+# dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_02_dev2_eeg.npy')
 
 MMR1 = dev1 - std
 MMR2 = dev2 - std
@@ -65,25 +65,34 @@ MMR2 = dev2 - std
 #%%
 times = np.linspace(-0.1,0.6,3501) # For MMR
 
+## conventional 
 MMR1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_mmr1_eeg.npy')
 MMR2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_mmr2_eeg.npy')
 
+## control
+MMR1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_mmr1_mba_eeg.npy')
+MMR2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_mmr2_pa_eeg.npy')
+
+# no randomization
 X = np.concatenate((MMR1,MMR2),axis=0)
 X = X[:,ts:te]
 y = np.concatenate((np.repeat(0,len(MMR1)),np.repeat(1,len(MMR2))))
 
-# X = np.concatenate((std,dev1,dev2),axis=0)
-# y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
-
-## randomization
+## initial shuffle
 acc_randseed = []
 n_perm = 5000
 
 for i in range(n_perm):
-    rand_ind = np.arange(0,len(X))
-    random.shuffle(rand_ind)
-    X = X[rand_ind,:]
-    y = y[rand_ind]
+    # preserve the subject correspondance randomization
+    rand_ind = np.arange(0,len(MMR1))
+    random.Random(0).shuffle(rand_ind)
+    X = np.concatenate((MMR1[rand_ind,:],MMR2[rand_ind,:]),axis=0)
+    
+    # complete randomization
+    # rand_ind = np.arange(0,len(X))
+    # random.shuffle(rand_ind)
+    # X = X[rand_ind,:]
+    # y = y[rand_ind]
 
     clf = make_pipeline(
         StandardScaler(),  # z-score normalization
@@ -99,6 +108,7 @@ plt.title('Conventional MMR decoding accuracy')
 
 print("Accuracy: %0.1f%%" % (100 * np.mean(acc_randseed),))
 np.std(acc_randseed)
+
 #%%# if preserve the subject MMR1 and MMR2 relationship but randomize the order within each group
 rand_ind = np.arange(0,len(MMR1))
 random.shuffle(rand_ind)
