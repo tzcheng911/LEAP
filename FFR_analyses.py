@@ -17,6 +17,7 @@ Level
 @author: tzcheng
 """
 
+## Import library  
 import mne
 from mne.decoding import UnsupervisedSpatialFilter
 from mne.preprocessing import ICA
@@ -44,7 +45,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.svm import SVC
 import random
-import mne
 from mne.minimum_norm import apply_inverse_epochs, read_inverse_operator
 from mne.preprocessing import Xdawn
 from mne.decoding import (
@@ -69,7 +69,7 @@ def plot_err(group_stc,color,t):
 
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
-stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_pa_ffr_morph-vl.stc')
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_pa_cabr_morph-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
 #%%####################################### Load audio and FFR
@@ -389,12 +389,48 @@ elif ROI_wholebrain == 'wholebrain':
 elif ROI_wholebrain == 'sensor':
     df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_sensor_s.pkl')
 
+#%%####################################### quick pca test between the two methods
+X = MEG_pa_FFR
+X0 = np.reshape(X[0,:,:],[1,306,1101])
+pca_m1 = UnsupervisedSpatialFilter(PCA(60))
+pca_data_m1 = pca_m1.fit_transform(X0)
+pca_data_m1 = np.squeeze(pca_data_m1)
+
+pca_m2 = PCA(60)
+pca_data_m2 = pca_m2.fit_transform(X[0,:,:].transpose()) # combine the fit and transform functions
+
 #%%####################################### apply dimension reduction on the sensor, source level
-X = MEG_ba_FFR
-pca = UnsupervisedSpatialFilter(PCA(1), average=False)
+## UnsupervisedSpatialFilter
+X = MEG_pa_FFR
+pca = UnsupervisedSpatialFilter(PCA(60))
 pca_data = pca.fit_transform(X)
 ica = UnsupervisedSpatialFilter(FastICA(30, whiten="unit-variance"), average=False)
 ica_data = ica.fit_transform(X)
+
+## PCA direct function
+# Transpose first sample x feature
+X = MEG_pa_FFR.mean(0).transpose()
+pca = PCA(60)
+pca.fit(X) # combine the fit and transform functions
+pca_data = pca.fit_transform(X) # combine the fit and transform functions
+
+## Inverse transform with selected PCs
+# 1. zero out the unwanted PCs then use inverse_transform function
+X_pcainv = pca.inverse_transform(pca_data)
+# 2. perform by in-house script to select the wanted PCs
+ind_components = [0,6,12]
+Xhat = np.dot(pca.transform(X)[:,ind_components], pca.components_[ind_components,:])
+Xhat += np.mean(X.mean(0), axis=0)        
+
+## prove that Xhat and X_pcainv are the same
+plt.figure()
+plt.plot(X.mean(0)[0,:])
+plt.plot(X_pcainv[0,:])
+plt.plot(Xhat[0,:])
+
+pca.explained_variance_ratio_.cumsum() # should be close to 1
+plt.figure()
+plt.plot(pca.explained_variance_ratio_)
 
 plt.figure()
 plt.subplot(211)
@@ -484,7 +520,7 @@ evk_spectrum.plot_topo(color="k", fig_facecolor="w", axis_facecolor="w")
 
 # MEG sensor PCA
 psds, freqs = mne.time_frequency.psd_array_welch(
-    pca_data.mean(0),sfreq, # could replace with label time series
+    pca_data.transpose(),sfreq, # could replace with label time series
     n_fft=int(sfreq * (tmax - tmin)),
     n_overlap=0,
     n_per_seg=None,
