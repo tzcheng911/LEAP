@@ -143,6 +143,7 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_110': ['MEG0312', 'MEG1712','MEG1721','MEG0411', 'MEG0943','MEG0911'],
     'sld_112': ['MEG0312', 'MEG1712','MEG1721', 'MEG0642','MEG0441', 'MEG2543'],
     'sld_113': ['MEG0312', 'MEG1712','MEG0642','MEG2543'],
+    'sld_114': ['MEG0312', 'MEG1712'],
     'sld_115': ['MEG0312', 'MEG1712','MEG1041'],
     }
     
