@@ -313,7 +313,7 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('sld_115'): # cbs_b for the infants, sld for SLD infants
+    if file.startswith('sld_114'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
 
 #%%###### do the jobs
