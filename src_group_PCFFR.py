@@ -49,13 +49,13 @@ def select_PC(data,sfreq,tmin,tmax,fmin,fmax):
     ## peak detection
     ind_components = np.argsort(psds[:,5:7].mean(axis=1))[-3:] # do top three PCs for now
     
-    plt.figure()
-    plt.plot(freqs,psds.transpose())
-    plt.plot(freqs,psds[ind_components,:].transpose(),color='red',linestyle='dashed')
+    # plt.figure()
+    # plt.plot(freqs,psds.transpose())
+    # plt.plot(freqs,psds[ind_components,:].transpose(),color='red',linestyle='dashed')
     
     Xhat = np.dot(pca.transform(X)[:,ind_components], pca.components_[ind_components,:])
     Xhat += np.mean(X, axis=0) 
-    Xhat = Xhat.transpose()       
+    Xhat = Xhat.transpose()    
     return pca_data,ind_components,Xhat
 
 def do_inverse_FFR(s,evokeds_inv,run,nspeech,morph):
@@ -90,11 +90,53 @@ def do_inverse_FFR(s,evokeds_inv,run,nspeech,morph):
         print('No morphing has been performed. The individual results may not be good to average.')
         evokeds_inv_stc.save(file_in + '_' + nspeech + '_pcffr' + str(ori), overwrite=True)
 
+def group_stc(subj):
+    group_std = []
+    group_dev1 = []
+    group_dev2 = []
+    group_std_roi = []
+    group_dev1_roi = []
+    group_dev2_roi = []
+    root_path='/media/tzcheng/storage2/CBS/'
+    subjects_dir = '/media/tzcheng/storage2/subjects/'
+    src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif') # for morphing data
+    fname_aseg = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
+
+    for s in subj:
+        print('Extracting ' + s + ' data')
+        file_in = root_path + s + '/sss_fif/' + s
+        
+        stc_std=mne.read_source_estimate(file_in+'_substd_pcffr_morph-vl.stc')
+        stc_dev1=mne.read_source_estimate(file_in+'_dev1_pcffr_morph-vl.stc')
+        stc_dev2=mne.read_source_estimate(file_in+'_dev2_pcffr_morph-vl.stc')
+        group_std.append(stc_std.data)
+        group_dev1.append(stc_dev1.data)
+        group_dev2.append(stc_dev2.data)
+            
+        std_roi=mne.extract_label_time_course(stc_std,fname_aseg,src,mode='mean',allow_empty=True)
+        dev1_roi=mne.extract_label_time_course(stc_dev1,fname_aseg,src,mode='mean',allow_empty=True)
+        dev2_roi=mne.extract_label_time_course(stc_dev2,fname_aseg,src,mode='mean',allow_empty=True)
+        group_std_roi.append(std_roi)
+        group_dev1_roi.append(dev1_roi)
+        group_dev2_roi.append(dev2_roi)
+  
+            
+    group_std = np.asarray(group_std)
+    group_dev1 = np.asarray(group_dev1)
+    group_dev2 = np.asarray(group_dev2)
+    group_std_roi = np.asarray(group_std_roi)
+    group_dev1_roi = np.asarray(group_dev1_roi)
+    group_dev2_roi = np.asarray(group_dev2_roi)
+    np.save(root_path + 'cbsA_meeg_analysis/MEG/FFR/group_ba_pcffr_morph.npy',group_std)
+    np.save(root_path + 'cbsA_meeg_analysis/MEG/FFR/group_mba_pcffr_morph.npy',group_dev1)
+    np.save(root_path + 'cbsA_meeg_analysis/MEG/FFR/group_pa_pcffr_morph.npy',group_dev2)
+    np.save(root_path + 'cbsA_meeg_analysis/MEG/FFR/group_ba_pcffr_morph_roi.npy',group_std_roi)
+    np.save(root_path + 'cbsA_meeg_analysis/MEG/FFR/group_mba_pcffr_morph_roi.npy',group_dev1_roi)
+    np.save(root_path + 'cbsA_meeg_analysis/MEG/FFR/group_pa_pcffr_morph_roi.npy',group_dev2_roi)
 
 #%%#######################################
 root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
-
 ## Parameters
 tmin = 0
 tmax = 0.13 
@@ -103,23 +145,29 @@ fmax = 150
 sfreq = 5000
 
 runs = ['_01','_02']
-speech = ['substd','dev1','dev2']
+cond = ['substd','dev1','dev2']
 run = runs[0]
 morph = True
+source = False
 
 subjects = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A101'):
+    if file.startswith('cbs_A'):
         subjects.append(file)
 
-for s in subjects:
+group_sensor = np.empty([len(subjects),3,306,1101])
+
+for ns,s in enumerate(subjects):
     print(s)
-    for nspeech in speech:
+    for nspeech, speech in enumerate(cond):
         file_in = root_path + s + '/sss_fif/' + s
-        evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_' + nspeech + '_cabr.fif')[0]
+        evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_' + speech + '_cabr.fif')[0]
         data = evokeds.get_data()
         pca_data,ind_components,data_topPC = select_PC(data,sfreq,tmin,tmax,fmin,fmax)
         evokeds.data = data_topPC
-        do_inverse_FFR(s,evokeds,run,nspeech,morph)
+        group_sensor[ns,nspeech,:,:] = data_topPC
+        # do_inverse_FFR(s,evokeds,run,speech,morph)
+# group_stc(subjects)
+np.save('group_sensor_pcffr.npy',group_sensor)
         
         
