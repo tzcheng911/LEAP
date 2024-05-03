@@ -484,7 +484,7 @@ evoked.compute_psd("welch",
    fmin=fmin,
    fmax=fmax,
    window="boxcar",
-   verbose=False,).plot(average=True,picks="data", exclude="bads")
+   verbose=False,).plot(average=False,picks="data", exclude="bads")
 
 ## For group results
 # EEG
