@@ -183,28 +183,26 @@ times = stc1.times
 ## parameters
 ts = 250 # -0.05s
 te = 2750 # 0.45s
-ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
+input_data = 'wholebrain' # ROI or wholebrain or sensor
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
 #%%####################################### Load adults
-filename = 'vector'
-filename_mmr1 = 'group_mmr1_vector_morph'
-filename_mmr2 = 'group_mmr2_vector_morph'
-
-
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [72,60,61,62] # 
 rh_ROI_label = [108,96,97,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 
-if ROI_wholebrain == 'ROI':
-    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/' + filename_mmr1 + '_roi.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/' + filename_mmr2 + '_roi.npy',allow_pickle=True)
-elif ROI_wholebrain == 'wholebrain':
-    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/' + filename_mmr1 + '.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/' + filename_mmr2 + '.npy',allow_pickle=True)
+if input_data == 'ROI':
+    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr1_vector_morph_roi.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr2_vector_morph_roi.npy',allow_pickle=True)
+elif input_data == 'wholebrain':
+    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr1_vector_morph.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr2_vector_morph.npy',allow_pickle=True)
+elif input_data == 'sensor':
+    mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/sensor/group_mmr1_sensor.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/sensor/group_mmr2_sensor.npy',allow_pickle=True)
 else:
-    print("Need to decide whether to use ROI or whole brain as feature.")
+    print("Need to decide feature.")
 X = np.concatenate((mmr1,mmr2),axis=0)
 X = X[:,:,ts:te] 
 y = np.concatenate((np.repeat(0,len(mmr1)),np.repeat(1,len(mmr1)))) #0 is for mmr1 and 1 is for mmr2
@@ -247,15 +245,18 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [61,63] # STG and frontal pole
 rh_ROI_label = [96,98] # STG and IFG (parsopercularis, parsorbitalis, parstriangularis)
 
-if ROI_wholebrain == 'ROI':
-    mmr1 = np.load(root_path + 'cbsb_meeg_analysis/MEG/'  + filename_mmr1 + '_roi.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsb_meeg_analysis/MEG/' + filename_mmr2 + '_roi.npy',allow_pickle=True)
-elif ROI_wholebrain == 'wholebrain':
-    mmr1 = np.load(root_path + 'cbsb_meg_analysis/MEG/'  + filename_mmr1 + '.npy',allow_pickle=True)
-    mmr2 = np.load(root_path + 'cbsb_meg_analysis/MEG/'  + filename_mmr2 + '.npy',allow_pickle=True)
+if input_data == 'ROI':
+    mmr1 = np.load(root_path + 'cbsb_meeg_analysis/MEG/MMR/vector_method/group_mmr1_vector_morph_roi.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsb_meeg_analysis/MEG/MMR/vector_method/group_mmr2_vector_morph_roi.npy',allow_pickle=True)
+elif input_data == 'wholebrain':
+    mmr1 = np.load(root_path + 'cbsb_meeg_analysis/MEG/MMR/vector_method/group_mmr1_vector_morph.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsb_meeg_analysis/MEG/MMR/vector_method/group_mmr2_vector_morph.npy',allow_pickle=True)
+elif input_data == 'sensor':
+    mmr1 = np.load(root_path + 'cbsb_meeg_analysis/MEG/MMR/sensor/group_mmr1_sensor.npy',allow_pickle=True)
+    mmr2 = np.load(root_path + 'cbsb_meeg_analysis/MEG/MMR/sensor/group_mmr2_sensor.npy',allow_pickle=True)
 else:
-    print("Need to decide whether to use ROI or whole brain as feature.")
-
+    print("Need to decide feature.")
+    
 X=np.concatenate((mmr1,mmr2),axis=0)
 y = np.concatenate((np.repeat(0,len(mmr1)),np.repeat(1,len(mmr2)))) #0 is for ba and 1 is for ga
 
