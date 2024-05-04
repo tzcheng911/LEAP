@@ -196,9 +196,10 @@ os.chdir(root_path)
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
 times = stc1.times
 
-filename_ffr_ba = 'group_ba_ffr'
-filename_ffr_mba = 'group_mba_ffr'
-filename_ffr_pa = 'group_pa_ffr'
+did_pca = '_ffr' # without or with pca "_pcffr"
+filename_ffr_ba = 'group_ba' + did_pca
+filename_ffr_mba = 'group_mba' + did_pca
+filename_ffr_pa = 'group_pa' + did_pca
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
@@ -208,18 +209,18 @@ lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemp
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
 baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
-ROI_wholebrain = 'ROI' # ROI or wholebrain or sensor
+input_data = 'wholebrain' # ROI or wholebrain or sensor or pcffr
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
-if ROI_wholebrain == 'sensor':
+if input_data == 'sensor':
     ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + filename_ffr_ba + '_sensor.npy',allow_pickle=True)
     ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_mba + '_sensor.npy',allow_pickle=True)
     ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_pa + '_sensor.npy',allow_pickle=True)
-elif ROI_wholebrain == 'ROI':
+elif input_data == 'ROI':
     ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_ba + '_morph_roi.npy',allow_pickle=True)
     ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_mba + '_morph_roi.npy',allow_pickle=True)
     ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_pa + '_morph_roi.npy',allow_pickle=True)
-elif ROI_wholebrain == 'wholebrain':
+elif input_data == 'wholebrain':
     ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_ba + '_morph.npy',allow_pickle=True)
     ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_mba + '_morph.npy',allow_pickle=True)
     ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_pa + '_morph.npy',allow_pickle=True)
@@ -245,7 +246,7 @@ for n in np.arange(0,np.shape(X)[1],1):
         score = np.mean(scores, axis=0)
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
-
+np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/decoding/PCFFR_decoding_accuracy_v.npy',all_score)
 acc_ind = np.where(np.array(all_score) > 0.5)
 
 ## visualize sensor
