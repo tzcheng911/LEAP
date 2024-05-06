@@ -74,9 +74,9 @@ src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.f
 
 #%%####################################### Load audio and FFR
 ## audio 
-fs, ba_audio = wavfile.read('/media/tzcheng/storage2/CBS/stimuli/+10.wav')
-fs, mba_audio = wavfile.read('/media/tzcheng/storage2/CBS/stimuli/-40.wav')
-fs, pa_audio = wavfile.read('/media/tzcheng/storage2/CBS/stimuli/+40.wav')
+fs, ba_audio = wavfile.read(root_path + 'stimuli/+10.wav')
+fs, mba_audio = wavfile.read(root_path + 'stimuli/-40.wav')
+fs, pa_audio = wavfile.read(root_path + 'stimuli/+40.wav')
 
 # Downsample
 fs_new = 5000
@@ -196,7 +196,7 @@ os.chdir(root_path)
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
 times = stc1.times
 
-did_pca = '_ffr' # without or with pca "_pcffr"
+did_pca = '_pcffr' # without or with pca "_pcffr"
 filename_ffr_ba = 'group_ba' + did_pca
 filename_ffr_mba = 'group_mba' + did_pca
 filename_ffr_pa = 'group_pa' + did_pca
@@ -209,7 +209,7 @@ lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemp
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
 baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
-input_data = 'wholebrain' # ROI or wholebrain or sensor or pcffr
+input_data = 'sensor' # ROI or wholebrain or sensor or pcffr
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
 if input_data == 'sensor':
@@ -246,8 +246,8 @@ for n in np.arange(0,np.shape(X)[1],1):
         score = np.mean(scores, axis=0)
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
-np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/decoding/PCFFR_decoding_accuracy_v.npy',all_score)
-acc_ind = np.where(np.array(all_score) > 0.5)
+np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/decoding/PCFFR_decoding_accuracy_sensor.npy',all_score)
+acc_ind = np.where(np.array(all_score) >= 0.5)
 
 ## visualize sensor
 evoked = mne.read_evokeds(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
@@ -263,7 +263,6 @@ np.argsort(all_score)
 ## visualize vertice
 stc1.data = np.array([all_score,all_score]).transpose()
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
-
 #%%####################################### Cross-correlation audio and MEG sensor and source
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -464,8 +463,8 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 
 ## For audio
 psds, freqs = mne.time_frequency.psd_array_welch(
-    mba_audio,fs, # could replace with label time series
-    n_fft=len(mba_audio),
+    ba_audio,fs, # could replace with label time series
+    n_fft=len(ba_audio),
     n_overlap=0,
     n_per_seg=None,
     fmin=fmin,
@@ -473,8 +472,8 @@ psds, freqs = mne.time_frequency.psd_array_welch(
 plt.plot(freqs,psds)
 
 ## For one subject
-epochs = mne.read_epochs(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_cABR_e.fif')
-evoked = mne.read_evokeds(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+epochs = mne.read_epochs(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_cABR_e.fif')
+evoked = mne.read_evokeds(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
 sfreq = epochs.info["sfreq"]
 evoked.compute_psd("welch",
    n_fft=int(sfreq * (tmax - tmin)),
