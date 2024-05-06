@@ -39,8 +39,8 @@ def select_PC(data,sfreq,tmin,tmax,fmin,fmax):
     pca_data = pca.fit_transform(X) 
     
     psds, freqs = mne.time_frequency.psd_array_welch(
-        pca_data.transpose(),sfreq, # could replace with label time series
-        n_fft=int(sfreq * (tmax - tmin)),
+        pca_data.transpose()[:,100:],sfreq, # could replace with label time series
+        n_fft=len(pca_data.transpose()[0,100:]), # the higher the better freq resolution
         n_overlap=0,
         n_per_seg=None,
         fmin=fmin,
