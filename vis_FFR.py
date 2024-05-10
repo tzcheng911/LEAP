@@ -42,8 +42,8 @@ filename_ffr_ba = 'group_ba' + did_pca
 filename_ffr_mba = 'group_mba' + did_pca
 filename_ffr_pa = 'group_pa' + did_pca
 
-baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
-input_data = 'ROI' # ROI or wholebrain or sensor or pcffr
+baby_or_adult = 'cbsb_meg_analysis' # baby or adult
+input_data = 'wholebrain' # ROI or wholebrain or sensor or pcffr
 
 if input_data == 'sensor':
     ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + filename_ffr_ba + '_sensor.npy',allow_pickle=True)
@@ -55,8 +55,8 @@ elif input_data == 'ROI':
     ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_ba + '_morph_roi.npy',allow_pickle=True)
     ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_mba + '_morph_roi.npy',allow_pickle=True)
     ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_pa + '_morph_roi.npy',allow_pickle=True)
-    FFR_accuracy = np.load(root_path + baby_or_adult + '/decoding/FFR_decoding_accuracy_ROI.npy')
-    PCFFR_accuracy = np.load(root_path + baby_or_adult + '/decoding/PCFFR_decoding_accuracy_ROI.npy')
+    FFR_accuracy = np.load(root_path + baby_or_adult + '/decoding/FFR_decoding_accuracy_roi.npy')
+    PCFFR_accuracy = np.load(root_path + baby_or_adult + '/decoding/PCFFR_decoding_accuracy_roi.npy')
 elif input_data == 'wholebrain':
     ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_ba + '_morph.npy',allow_pickle=True)
     ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_mba + '_morph.npy',allow_pickle=True)
@@ -116,7 +116,7 @@ plt.xlim([-0.02, 0.2])
 plt.xlabel('Time (s)')
 
 ## plot certain vertice time series
-nv = 14709
+nv = 13295
 v_ind = np.where(src[0]['vertno'] == nv) # conv_adult 25056, cont_adult 20041, conv_infant 23669, cont_infant 19842 
 plt.figure()
 plt.subplot(311)
