@@ -80,7 +80,7 @@ fs, pa_audio = wavfile.read(root_path + 'stimuli/+40.wav')
 
 # Downsample
 fs_new = 5000
-num_std = int((len(ba_audio)*fs_new)/fs)
+num_std = int((len(ba_audio)*fs_new)/fs)randseed(3)
 num_dev = int((len(pa_audio)*fs_new)/fs)  # #sample_new/fs_new=#sample/fs find number of samples in the resampled data
 audio_ba = signal.resample(ba_audio, num_std, t=None, axis=0, window=None)
 audio_mba = signal.resample(mba_audio, num_dev, t=None, axis=0, window=None)
@@ -96,7 +96,10 @@ MEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_ba_ffr_s
 MEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_mba_ffr_sensor.npy')
 MEG_pa_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_pa_ffr_sensor.npy')
 
-## MEG source vertices: more than 200 trials for now
+## MEG source vertices: more than 200 trials for nowrand_ind = np.arange(0,len(X))
+random.Random(0).shuffle(rand_ind)
+X = X[rand_ind,:,:]
+y = y[rand_ind]
 # adults
 MEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_ba_ffr_morph.npy')
 MEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_mba_ffr_morph.npy')
@@ -142,7 +145,7 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-if ROI_wholebrain == 'ROI':
+if ROI_wholebrain == 'ROI':randseed(3)
     ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_ba + '_roi.npy',allow_pickle=True)
     ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_mba + '_roi.npy',allow_pickle=True)
     ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_pa + '_roi.npy',allow_pickle=True)
@@ -208,8 +211,8 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
-input_data = 'sensor' # ROI or wholebrain or sensor or pcffr
+baby_or_adult = 'cbsb_meg_analysis' # baby or adult
+input_data = 'wholebrain' # ROI or wholebrain or sensor or pcffr
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
 if input_data == 'sensor':
@@ -246,7 +249,7 @@ for n in np.arange(0,np.shape(X)[1],1):
         score = np.mean(scores, axis=0)
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
-np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/decoding/PCFFR_decoding_accuracy_sensor.npy',all_score)
+np.save(root_path + baby_or_adult +'/decoding/PCFFR_decoding_accuracy_v.npy',all_score)
 acc_ind = np.where(np.array(all_score) >= 0.5)
 
 ## visualize sensor
