@@ -90,7 +90,7 @@ def do_inverse_FFR(s,evokeds_inv,run,nspeech,morph):
         print('No morphing has been performed. The individual results may not be good to average.')
         evokeds_inv_stc.save(file_in + '_' + nspeech + '_pcffr' + str(ori), overwrite=True)
 
-def group_stc(subj):
+def group_stc(subj,baby_or_adult):
     group_std = []
     group_dev1 = []
     group_dev2 = []
@@ -127,12 +127,12 @@ def group_stc(subj):
     group_std_roi = np.asarray(group_std_roi)
     group_dev1_roi = np.asarray(group_dev1_roi)
     group_dev2_roi = np.asarray(group_dev2_roi)
-    np.save(root_path + 'cbsA_meeg_analysis/MEG/FFR/group_ba_pcffr_morph.npy',group_std)
-    np.save(root_path + 'cbsA_meeg_analysis/MEG/FFR/group_mba_pcffr_morph.npy',group_dev1)
-    np.save(root_path + 'cbsA_meeg_analysis/MEG/FFR/group_pa_pcffr_morph.npy',group_dev2)
-    np.save(root_path + 'cbsA_meeg_analysis/MEG/FFR/group_ba_pcffr_morph_roi.npy',group_std_roi)
-    np.save(root_path + 'cbsA_meeg_analysis/MEG/FFR/group_mba_pcffr_morph_roi.npy',group_dev1_roi)
-    np.save(root_path + 'cbsA_meeg_analysis/MEG/FFR/group_pa_pcffr_morph_roi.npy',group_dev2_roi)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr_morph.npy',group_std)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr_morph.npy',group_dev1)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr_morph.npy',group_dev2)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr_morph_roi.npy',group_std_roi)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr_morph_roi.npy',group_dev1_roi)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr_morph_roi.npy',group_dev2_roi)
 
 #%%#######################################
 root_path='/media/tzcheng/storage2/CBS/'
@@ -146,6 +146,8 @@ sfreq = 5000
 
 runs = ['_01','_02']
 cond = ['substd','dev1','dev2']
+baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
+
 run = runs[0]
 morph = True
 source = False
@@ -166,8 +168,13 @@ for ns,s in enumerate(subjects):
         pca_data,ind_components,data_topPC = select_PC(data,sfreq,tmin,tmax,fmin,fmax)
         evokeds.data = data_topPC
         group_sensor[ns,nspeech,:,:] = data_topPC
-        # do_inverse_FFR(s,evokeds,run,speech,morph)
-# group_stc(subjects)
-np.save('group_sensor_pcffr.npy',group_sensor)
+        do_inverse_FFR(s,evokeds,run,speech,morph)
+group_stc(subjects,baby_or_adult)
+np.save(root_path + baby_or_adult + '/MEG/FFR/group_sensor_pcffr.npy',group_sensor)
+np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr_sensor.npy',group_sensor[:,0,:,:])
+np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr_sensor.npy',group_sensor[:,1,:,:])
+np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr_sensor.npy',group_sensor[:,2,:,:])
+
+
         
         
