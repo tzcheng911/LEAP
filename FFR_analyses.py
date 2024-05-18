@@ -186,7 +186,6 @@ time_decod.fit(X, y) # not changed after shuffling the initial
 patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
 
 toc = time.time()
-print('It takes ' + str((toc - tic)/60) + 'min to run decoding')
 
 np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_kall_' + filename + '.npy',scores_observed)
 np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_' + filename + '.npy',patterns)
@@ -211,8 +210,8 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-baby_or_adult = 'cbsb_meg_analysis' # baby or adult
-input_data = 'wholebrain' # ROI or wholebrain or sensor or pcffr
+baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
+input_data = 'ROI' # ROI or wholebrain or sensor or pcffr
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
 if input_data == 'sensor':
@@ -235,7 +234,7 @@ X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0)
 y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba)),np.repeat(2,len(ffr_pa))))
 
 rand_ind = np.arange(0,len(X))
-random.Random(3).shuffle(rand_ind)
+random.Random(15).shuffle(rand_ind)
 X = X[rand_ind,:,:]
 y = y[rand_ind]
 
@@ -249,7 +248,7 @@ for n in np.arange(0,np.shape(X)[1],1):
         score = np.mean(scores, axis=0)
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
-np.save(root_path + baby_or_adult +'/decoding/PCFFR_decoding_accuracy_v.npy',all_score)
+np.save(root_path + baby_or_adult +'/decoding/randseed/PCFFR_decoding_accuracy_roi_r15.npy',all_score)
 acc_ind = np.where(np.array(all_score) >= 0.5)
 
 ## visualize sensor
@@ -266,6 +265,7 @@ np.argsort(all_score)
 ## visualize vertice
 stc1.data = np.array([all_score,all_score]).transpose()
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
+
 #%%####################################### Cross-correlation audio and MEG sensor and source
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
