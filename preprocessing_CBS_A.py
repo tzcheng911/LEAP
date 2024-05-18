@@ -148,7 +148,7 @@ def do_filtering(data, lp, hp, do_cabr):
 def do_cov(subject,data, do_cabr):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
-    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_otp_raw_sss_proj_f80450'
+    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_otp_raw_sss_proj_f'
     if do_cabr == True:     
         fname_erm_out = fname_erm + '_ffr-cov'
     else: 
@@ -261,25 +261,48 @@ def do_epoch_mmr_eeg(data, subject, run, direction):
         evoked_dev1.save(file_out + '_evoked_dev1_ba_mmr.fif',overwrite=True)
         evoked_dev2.save(file_out + '_evoked_dev2_ba_mmr.fif',overwrite=True)
 
-def do_epoch_cabr(data, subject, run):  
+def do_epoch_cabr(data, subject, run, n_trials):  
     ###### Read the event files (generated from evtag.py) 
     root_path = os.getcwd()
     cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_cabr-eve.fif')
-    file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj_f80450'
+    file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj_f'
     
     event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
     
     reject=dict(grad=4000e-13,mag=4e-12)
     picks = mne.pick_types(data.info,meg=True,eeg=False) 
     epochs = mne.Epochs(data, cabr_events, event_id,tmin =-0.02, tmax=0.2, baseline=(-0.02,0),reject=reject,picks=picks)
-
-    evoked_substd=epochs['Standardp','Standardn'].average()
-    evoked_dev1=epochs['Deviant1p','Deviant1n'].average()
-    evoked_dev2=epochs['Deviant2p','Deviant2n'].average()
-    epochs.save(file_out + '_cABR_e.fif',overwrite=True)
-    evoked_substd.save(file_out + '_evoked_substd_cabr.fif',overwrite=True)
-    evoked_dev1.save(file_out + '_evoked_dev1_cabr.fif',overwrite=True)
-    evoked_dev2.save(file_out + '_evoked_dev2_cabr.fif',overwrite=True)
+    new_epochs = epochs.copy().drop_bad()
+    
+    ## match the trial number for each sound
+    ## get random number of sounds from all sounds
+    ## neet to find p and n len after dropping bad, use the smaller one to be the full len
+    if n_trials == 'all':
+        evoked_substd=epochs['Standardp','Standardn'].average()
+        evoked_dev1=epochs['Deviant1p','Deviant1n'].average()
+        evoked_dev2=epochs['Deviant2p','Deviant2n'].average()
+    else:
+        rand_ind = random.sample(range(min(len(new_epochs['Standardp'].events),len(new_epochs['Standardn'].events))),n_trials//2) 
+        evoked_substd_p=epochs['Standardp'][rand_ind].average()
+        evoked_substd_n=epochs['Standardn'][rand_ind].average()
+        evoked_substd = mne.combine_evoked([evoked_substd_p,evoked_substd_n], weights='equal')
+        del rand_ind
+    
+        rand_ind = random.sample(range(min(len(new_epochs['Deviant1p'].events),len(new_epochs['Deviant1n'].events))),n_trials//2) 
+        evoked_dev1_p=new_epochs['Deviant1p'][rand_ind].average()
+        evoked_dev1_n=new_epochs['Deviant1n'][rand_ind].average()
+        evoked_dev1 = mne.combine_evoked([evoked_dev1_p,evoked_dev1_n], weights='equal')
+        del rand_ind
+    
+        rand_ind = random.sample(range(min(len(new_epochs['Deviant2p'].events),len(new_epochs['Deviant2n'].events))),n_trials//2) 
+        evoked_dev2_p=new_epochs['Deviant2p'][rand_ind].average()
+        evoked_dev2_n=new_epochs['Deviant2n'][rand_ind].average()
+        evoked_dev2 = mne.combine_evoked([evoked_dev2_p,evoked_dev2_n], weights='equal')
+        
+        epochs.save(file_out + '_ffr_e.fif',overwrite=True)
+        evoked_substd.save(file_out + '_evoked_substd_ffr.fif',overwrite=True)
+        evoked_dev1.save(file_out + '_evoked_dev1_ffr.fif',overwrite=True)
+        evoked_dev2.save(file_out + '_evoked_dev2_ffr.fif',overwrite=True)
     return evoked_substd,evoked_dev1,evoked_dev2,epochs
 
 def do_epoch_cabr_eeg(data, subject, run, n_trials):  
@@ -335,7 +358,7 @@ direction = 'ba_to_pa' # traditional direction 'ba_to_pa': ba to pa and ba to mb
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
-lp = 450 
+lp = 2000 
 hp = 80
 do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
@@ -345,6 +368,11 @@ for file in os.listdir():
         subj.append(file)
 
 #%%##### do the jobs for MEG
+
+n_trials = 200 # can be an integer or 'all' using all the sounds
+# randomly select k sounds from each condition
+# each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
+# we have at least 200 sounds for each condition 
 for s in subj:
     print(s)
     # do_otp(s)
@@ -367,7 +395,7 @@ for s in subj:
         do_cov(s,raw_erm_filt, do_cabr)
         print ('Doing epoch...')
         if do_cabr == True:
-            do_epoch_cabr(raw_filt, s, run)
+            do_epoch_cabr(raw_filt, s, run, n_trials)
         else:
             do_epoch_mmr(raw_filt, s, run, direction)
 
@@ -382,10 +410,6 @@ for s in subj:
 #         do_epoch_mmr_eeg(raw_file, s, run, direction)
 
 #%%##### do the jobs for EEG FFR
-# n_trials = 'all' # can be an integer or 'all' using all the sounds
-# # randomly select k sounds from each condition
-# # each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
-# # we have at least 200 sounds for each condition 
 
 # for s in subj:
 #     print(s)
