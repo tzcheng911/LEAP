@@ -129,7 +129,8 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_126': ['MEG0312', 'MEG1712'],
     'sld_127': ['MEG0312', 'MEG1712'],
     'sld_128': ['MEG0312', 'MEG1712'],
-    'sld_129': ['MEG0312', 'MEG1712']
+    'sld_129': ['MEG0312', 'MEG1712'],
+    'sld_131': ['MEG0312', 'MEG1712']
     }
     
     t2_prebad = {
@@ -304,7 +305,7 @@ os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = '_t2' # first time (6 mo) or second time (12 mo) or third time (14mo) coming back, or 0 for cbs
+time = '_t1' # first time (6 mo) or second time (12 mo) or third time (14mo) coming back, or 0 for cbs
 direction = "ba_to_pa"
 do_cabr = False # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
@@ -313,7 +314,7 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('sld_114'): # cbs_b for the infants, sld for SLD infants
+    if file.startswith('sld_131'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
 
 #%%###### do the jobs
