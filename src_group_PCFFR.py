@@ -176,7 +176,7 @@ for ns,s in enumerate(subjects):
         group_pca[ns,nspeech,:,:] = pca_data
         group_pc_info[ns,nspeech,:,0] = ind_components
         group_pc_info[ns,nspeech,:,1] = explained_variance_ratio
-        do_inverse_FFR(s,evokeds,run,speech,morph)
+        do_inverse_FFR(s,evokeds,run,speech,morph,n_top)
 group_stc(subjects,baby_or_adult,n_top)
 np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr' + str(n_top) + '_sensor.npy',group_sensor[:,0,:,:])
 np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr' + str(n_top) + '_sensor.npy',group_sensor[:,1,:,:])
