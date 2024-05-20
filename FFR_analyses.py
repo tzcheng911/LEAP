@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Feb 28 16:49:00 2024
-FFR analysis
+FFR analysis still under development
 
 Analysis
-1. cross-correlation
-2. decoding
+1. Decoding
+2. X-corr
 3. PCA
+4. spectrum
 
 Level
 1. sensor
@@ -80,7 +81,7 @@ fs, pa_audio = wavfile.read(root_path + 'stimuli/+40.wav')
 
 # Downsample
 fs_new = 5000
-num_std = int((len(ba_audio)*fs_new)/fs)randseed(3)
+num_std = int((len(ba_audio)*fs_new)/fs)
 num_dev = int((len(pa_audio)*fs_new)/fs)  # #sample_new/fs_new=#sample/fs find number of samples in the resampled data
 audio_ba = signal.resample(ba_audio, num_std, t=None, axis=0, window=None)
 audio_mba = signal.resample(mba_audio, num_dev, t=None, axis=0, window=None)
@@ -145,7 +146,7 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-if ROI_wholebrain == 'ROI':randseed(3)
+if ROI_wholebrain == 'ROI':
     ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_ba + '_roi.npy',allow_pickle=True)
     ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_mba + '_roi.npy',allow_pickle=True)
     ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_pa + '_roi.npy',allow_pickle=True)
@@ -195,10 +196,12 @@ root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
+n_top = ''
+n_trial = 'ntrial_200/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
 times = stc1.times
 
-did_pca = '_pcffr' # without or with pca "_pcffr"
+did_pca = '_ffr' # without or with pca "_pcffr"
 filename_ffr_ba = 'group_ba' + did_pca
 filename_ffr_mba = 'group_mba' + did_pca
 filename_ffr_pa = 'group_pa' + did_pca
@@ -211,21 +214,21 @@ lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemp
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
 baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
-input_data = 'ROI' # ROI or wholebrain or sensor or pcffr
+input_data = 'wholebrain' # ROI or wholebrain or sensor or pcffr
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
 if input_data == 'sensor':
-    ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + filename_ffr_ba + '_sensor.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_mba + '_sensor.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_pa + '_sensor.npy',allow_pickle=True)
+    ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + n_trial + filename_ffr_ba + str(n_top) +'_sensor.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + baby_or_adult + '/MEG/FFR/'+ n_trial + filename_ffr_mba + str(n_top) + '_sensor.npy',allow_pickle=True)
+    ffr_pa = np.load(root_path + baby_or_adult + '/MEG/FFR/'+ n_trial + filename_ffr_pa + str(n_top) + '_sensor.npy',allow_pickle=True)
 elif input_data == 'ROI':
-    ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_ba + '_morph_roi.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_mba + '_morph_roi.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_pa + '_morph_roi.npy',allow_pickle=True)
+    ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ n_trial + filename_ffr_ba + str(n_top) + '_morph_roi.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ n_trial + filename_ffr_mba + str(n_top) + '_morph_roi.npy',allow_pickle=True)
+    ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ n_trial + filename_ffr_pa + str(n_top) + '_morph_roi.npy',allow_pickle=True)
 elif input_data == 'wholebrain':
-    ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_ba + '_morph.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_mba + '_morph.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_pa + '_morph.npy',allow_pickle=True)
+    ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + n_trial + filename_ffr_ba + str(n_top) + '_morph.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + n_trial + filename_ffr_mba + str(n_top) + '_morph.npy',allow_pickle=True)
+    ffr_pa = np.load(root_path + baby_or_adult + '/MEG/FFR/' + n_trial + filename_ffr_pa + str(n_top) + '_morph.npy',allow_pickle=True)
 else:
     print("Need to decide whether to use ROI or whole brain as feature.")
 
@@ -242,13 +245,14 @@ clf = make_pipeline(
     StandardScaler(),  # z-score normalization
     LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
 )    
-#%%####################################### for each sensor, ROI or vertice
 for n in np.arange(0,np.shape(X)[1],1):
-        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=None) # takes about 10 mins to run
+        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
         score = np.mean(scores, axis=0)
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
-np.save(root_path + baby_or_adult +'/decoding/randseed/PCFFR_decoding_accuracy_roi_r15.npy',all_score)
+np.save(root_path + baby_or_adult +'/decoding/PCFFR'+ str(n_top) + '_' + n_trial[:-1] + '_decoding_accuracy_' + input_data +'_r15.npy',all_score)
+
+#%%####################################### check acc for each sensor, ROI or vertice
 acc_ind = np.where(np.array(all_score) >= 0.5)
 
 ## visualize sensor
