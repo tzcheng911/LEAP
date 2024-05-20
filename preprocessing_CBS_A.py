@@ -132,7 +132,7 @@ def do_projection(subject, run):
     raw_erm.add_proj(ecg_projs)
     raw_erm.add_proj(eog_projs)
 
-    # raw.save(file_out + '.fif',overwrite = True)
+    raw.save(file_out + '.fif',overwrite = True)
     raw_erm.save(fname_erm_out + '.fif',overwrite = True)
     return raw, raw_erm
 
@@ -299,10 +299,10 @@ def do_epoch_cabr(data, subject, run, n_trials):
         evoked_dev2_n=new_epochs['Deviant2n'][rand_ind].average()
         evoked_dev2 = mne.combine_evoked([evoked_dev2_p,evoked_dev2_n], weights='equal')
         
-        epochs.save(file_out + '_ffr_e.fif',overwrite=True)
-        evoked_substd.save(file_out + '_evoked_substd_ffr.fif',overwrite=True)
-        evoked_dev1.save(file_out + '_evoked_dev1_ffr.fif',overwrite=True)
-        evoked_dev2.save(file_out + '_evoked_dev2_ffr.fif',overwrite=True)
+    epochs.save(file_out + '_ffr_e_' + str(n_trials) + '.fif',overwrite=True)
+    evoked_substd.save(file_out + '_evoked_substd_ffr_' + str(n_trials) + '.fif',overwrite=True)
+    evoked_dev1.save(file_out + '_evoked_dev1_ffr_' + str(n_trials) + '.fif',overwrite=True)
+    evoked_dev2.save(file_out + '_evoked_dev2_ffr_' + str(n_trials) + '.fif',overwrite=True)
     return evoked_substd,evoked_dev1,evoked_dev2,epochs
 
 def do_epoch_cabr_eeg(data, subject, run, n_trials):  
@@ -342,10 +342,10 @@ def do_epoch_cabr_eeg(data, subject, run, n_trials):
         evoked_dev2_n=new_epochs['Deviant2n'][rand_ind].average(picks=('bio'))
         evoked_dev2 = mne.combine_evoked([evoked_dev2_p,evoked_dev2_n], weights='equal')
 
-    new_epochs.save(file_out + '_cABR_e_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_substd.save(file_out + '_evoked_substd_cabr_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_dev1.save(file_out + '_evoked_dev1_cabr_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_dev2.save(file_out + '_evoked_dev2_cabr_' + str(n_trials) + '.fif',overwrite=True)
+    new_epochs.save(file_out + '_ffr_e_' + str(n_trials) + '.fif',overwrite=True)
+    evoked_substd.save(file_out + '_evoked_substd_ffr_' + str(n_trials) + '.fif',overwrite=True)
+    evoked_dev1.save(file_out + '_evoked_dev1_ffr_' + str(n_trials) + '.fif',overwrite=True)
+    evoked_dev2.save(file_out + '_evoked_dev2_ffr_' + str(n_trials) + '.fif',overwrite=True)
     return evoked_substd,evoked_dev1,evoked_dev2,new_epochs
 ########################################
 root_path='/media/tzcheng/storage2/CBS/'
@@ -368,8 +368,7 @@ for file in os.listdir():
         subj.append(file)
 
 #%%##### do the jobs for MEG
-
-n_trials = 200 # can be an integer or 'all' using all the sounds
+n_trials = 'all' # can be an integer or 'all' using all the sounds
 # randomly select k sounds from each condition
 # each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
 # we have at least 200 sounds for each condition 
@@ -378,7 +377,7 @@ for s in subj:
     # do_otp(s)
     # do_sss(s,st_correlation,int_order)
     for run in runs:
-        filename = root_path + s + '/sss_fif/' + s + run + '_raw_otp_sss_proj.fif'
+        filename = root_path + s + '/sss_fif/' + s + run + '_otp_raw_sss_proj.fif'
 
         if os.path.exists(filename):
             print ('ECG/EOG projection exists, loading...')
