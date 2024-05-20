@@ -145,19 +145,18 @@ fmax = 150
 sfreq = 5000
 lb = 90
 hb = 100
-n_top = 3 # change to 10
+n_top = 10 # change to 10
 
 runs = ['_01','_02']
 cond = ['substd','dev1','dev2']
-baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
+baby_or_adult = 'cbsb_meg_analysis' # baby or adult
 
 run = runs[0]
 morph = True
-source = False
 
 subjects = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_b'):
         subjects.append(file)
 
 group_sensor = np.empty([len(subjects),3,306,1101])
