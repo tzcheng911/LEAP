@@ -22,7 +22,6 @@ from numpy.linalg import norm
 from scipy.stats import pearsonr
 import scipy as sp
 import os
-import seaborn as sns
 import pandas as pd
 import scipy.stats as stats
 from scipy.io import wavfile
@@ -52,23 +51,23 @@ def select_PC(data,sfreq,fmin,fmax,lb,hb,n_top):
     ind_components = np.argsort(psds[:,fl:fh].mean(axis=1))[::-1][:n_top] # do top three PCs for now
     explained_variance_ratio = pca.explained_variance_ratio_[ind_components]
     
-    plt.figure()
-    plt.plot(freqs,psds.transpose())
-    plt.plot(freqs,psds[ind_components,:].transpose(),color='red',linestyle='dashed')
+    # plt.figure()
+    # plt.plot(freqs,psds.transpose())
+    # plt.plot(freqs,psds[ind_components,:].transpose(),color='red',linestyle='dashed')
     
     Xhat = np.dot(pca.transform(X)[:,ind_components], pca.components_[ind_components,:])
     Xhat += np.mean(X, axis=0) 
     Xhat = Xhat.transpose()    
     return pca_data.transpose(),ind_components,explained_variance_ratio,Xhat
 
-def do_inverse_FFR(s,evokeds_inv,run,nspeech,morph,n_top):
+def do_inverse_FFR(s,evokeds_inv,run,nspeech,morph,n_top,n_trial):
     root_path='/media/tzcheng/storage2/CBS/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
     cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_f_ffr-cov.fif')
-    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_f_cABR_e.fif')
+    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_f_ffr_e_' + str(n_trial) + '.fif')
     inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
 
     evokeds_inv_stc = mne.minimum_norm.apply_inverse((evokeds_inv), inverse_operator, pick_ori = None)
@@ -146,17 +145,17 @@ sfreq = 5000
 lb = 90
 hb = 100
 n_top = 10 # change to 10
-
+n_trial = '200'
 runs = ['_01','_02']
 cond = ['substd','dev1','dev2']
-baby_or_adult = 'cbsb_meg_analysis' # baby or adult
+baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
 
 run = runs[0]
 morph = True
 
 subjects = [] 
 for file in os.listdir():
-    if file.startswith('cbs_b'):
+    if file.startswith('cbs_A'):
         subjects.append(file)
 
 group_sensor = np.empty([len(subjects),3,306,1101])
@@ -167,7 +166,7 @@ for ns,s in enumerate(subjects):
     print(s)
     for nspeech, speech in enumerate(cond):
         file_in = root_path + s + '/sss_fif/' + s
-        evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_' + speech + '_cabr.fif')[0]
+        evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f_evoked_' + speech + '_ffr_' + str(n_trial) +'.fif')[0]
         data = evokeds.get_data()
         pca_data,ind_components,explained_variance_ratio,data_topPC = select_PC(data,sfreq,fmin,fmax,lb,hb,n_top)
         evokeds.data = data_topPC
@@ -175,11 +174,11 @@ for ns,s in enumerate(subjects):
         group_pca[ns,nspeech,:,:] = pca_data
         group_pc_info[ns,nspeech,:,0] = ind_components
         group_pc_info[ns,nspeech,:,1] = explained_variance_ratio
-        do_inverse_FFR(s,evokeds,run,speech,morph,n_top)
+        do_inverse_FFR(s,evokeds,run,speech,morph,n_top,n_trial)
 group_stc(subjects,baby_or_adult,n_top)
-np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr' + str(n_top) + '_sensor.npy',group_sensor[:,0,:,:])
-np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr' + str(n_top) + '_sensor.npy',group_sensor[:,1,:,:])
-np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr' + str(n_top) + '_sensor.npy',group_sensor[:,2,:,:])
+np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr' + str(n_top) + '_' + str(n_trial) + '_sensor.npy',group_sensor[:,0,:,:])
+np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr' + str(n_top) + '_' + str(n_trial) +'_sensor.npy',group_sensor[:,1,:,:])
+np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr' + str(n_top) + '_' + str(n_trial) +'_sensor.npy',group_sensor[:,2,:,:])
 
-np.save(root_path + baby_or_adult + '/MEG/FFR/group_top_' + str(n_top) + 'pc_data.npy',group_pca)
-np.save(root_path + baby_or_adult + '/MEG/FFR/group_top_' + str(n_top) + 'pc_info.npy',group_pc_info)
+np.save(root_path + baby_or_adult + '/MEG/FFR/group_top_' + str(n_top) + '_' + str(n_trial) +'pc_data.npy',group_pca)
+np.save(root_path + baby_or_adult + '/MEG/FFR/group_top_' + str(n_top) + '_' + str(n_trial) +'pc_info.npy',group_pc_info)
