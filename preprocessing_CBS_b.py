@@ -8,7 +8,7 @@ Need to manually enter bad channels for sss from the experiment notes.
 Need to change parameters st_correlation and int_order in sss for adult/infants
 Didn't save the product from ecg, eog project and filtering to save some space
 Could be used to run SLD too (change the root path, subject name, add the pre_bads)
-1. cbs_b118 emptyroom is sampled at 1000 Hz instead of 5000 Hz
+1. cbs_b118 emptyroom is sampled at 1000 Hz instead of 5000 Hz -> need to use the baseline for the empty room
 @author: tzcheng
 """
 
@@ -305,23 +305,23 @@ os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = '_t1' # first time (6 mo) or second time (12 mo) or third time (14mo) coming back, or 0 for cbs
+time = 0 # first time (6 mo) or second time (12 mo) or third time (14mo) coming back, or 0 for cbs
 direction = "ba_to_pa"
-do_cabr = False # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
+do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('sld_131'): # cbs_b for the infants, sld for SLD infants
+    if file.startswith('cbs_b118'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
 
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    do_otp(s,time)
-    do_sss(s,st_correlation,int_order,time)
+    # do_otp(s,time)
+    # do_sss(s,st_correlation,int_order,time)
     for run in runs:
         if time == 0:
             time = ""
@@ -351,3 +351,16 @@ for s in subjects:
 # noise_cov = mne.compute_covariance(epochs, tmin = None, tmax=0.0)
 # fname_erm_out = root_path + '/' + s + '/sss_fif/' + s + time +run + '_erm_otp_raw_sss_proj_f_ffr-cov'
 # mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
+
+#%%###### delete the cbs_118 from the group file
+files = []
+
+for file in os.listdir():
+    if file.endswith('morph.npy'): # cbs_b for the infants, sld for SLD infants
+        files.append(file)
+for f in files:
+    print(f)
+    data = np.load(f)
+    if np.shape(data)[0] == 14:
+        new_data = np.delete(data,-1,axis=0)
+    np.save(f,new_data)
