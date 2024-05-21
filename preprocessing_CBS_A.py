@@ -368,10 +368,11 @@ for file in os.listdir():
         subj.append(file)
 
 #%%##### do the jobs for MEG
-n_trials = 'all' # can be an integer or 'all' using all the sounds
+n_trials = 200 # can be an integer or 'all' using all the sounds
 # randomly select k sounds from each condition
 # each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
 # we have at least 200 sounds for each condition 
+
 for s in subj:
     print(s)
     # do_otp(s)
@@ -389,9 +390,9 @@ for s in subj:
 
         print ('Doing filtering...')
         raw_filt = do_filtering(raw,lp,hp,do_cabr)
-        raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
-        print ('calculate cov...')
-        do_cov(s,raw_erm_filt, do_cabr)
+        # raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
+        # print ('calculate cov...')
+        # do_cov(s,raw_erm_filt, do_cabr)
         print ('Doing epoch...')
         if do_cabr == True:
             do_epoch_cabr(raw_filt, s, run, n_trials)
