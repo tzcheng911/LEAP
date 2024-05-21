@@ -196,12 +196,12 @@ root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
-n_top = ''
-n_trial = 'ntrial_200/'
+n_top = 10
+n_trial = '' # 'ntrial_200/' or 'ntrial_all/' or ''
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
 times = stc1.times
 
-did_pca = '_ffr' # without or with pca "_pcffr"
+did_pca = '_pcffr'  # without or with pca "_pcffr"
 filename_ffr_ba = 'group_ba' + did_pca
 filename_ffr_mba = 'group_mba' + did_pca
 filename_ffr_pa = 'group_pa' + did_pca
@@ -213,7 +213,7 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
+baby_or_adult = 'cbsb_meg_analysis' # baby or adult
 input_data = 'wholebrain' # ROI or wholebrain or sensor or pcffr
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
@@ -233,8 +233,15 @@ else:
     print("Need to decide whether to use ROI or whole brain as feature.")
 
 all_score = []
-X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0)
-y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba)),np.repeat(2,len(ffr_pa))))
+## Three way classification using ovr
+# X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0)
+# y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba)),np.repeat(2,len(ffr_pa))))
+
+X = np.concatenate((ffr_ba,ffr_mba),axis=0)
+y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba))))
+
+# X = np.concatenate((ffr_ba,ffr_pa),axis=0)
+# y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(2,len(ffr_pa))))
 
 rand_ind = np.arange(0,len(X))
 random.Random(15).shuffle(rand_ind)
@@ -250,7 +257,7 @@ for n in np.arange(0,np.shape(X)[1],1):
         score = np.mean(scores, axis=0)
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
-np.save(root_path + baby_or_adult +'/decoding/PCFFR'+ str(n_top) + '_' + n_trial[:-1] + '_decoding_accuracy_' + input_data +'_r15.npy',all_score)
+np.save(root_path + baby_or_adult +'/decoding/PCFFR'+ str(n_top) + '_' + n_trial[:-1] + 'ba_mba_decoding_accuracy_' + input_data +'_r15.npy',all_score)
 
 #%%####################################### check acc for each sensor, ROI or vertice
 acc_ind = np.where(np.array(all_score) >= 0.5)
