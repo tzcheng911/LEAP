@@ -197,7 +197,7 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
 n_top = 10
-n_trial = '' # 'ntrial_200/' or 'ntrial_all/' or ''
+n_trial = 'all' # 'ntrial_200/' or 'ntrial_all/' or ''
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
 times = stc1.times
 
@@ -218,27 +218,27 @@ input_data = 'wholebrain' # ROI or wholebrain or sensor or pcffr
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
 if input_data == 'sensor':
-    ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + n_trial + filename_ffr_ba + str(n_top) +'_sensor.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + baby_or_adult + '/MEG/FFR/'+ n_trial + filename_ffr_mba + str(n_top) + '_sensor.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + baby_or_adult + '/MEG/FFR/'+ n_trial + filename_ffr_pa + str(n_top) + '_sensor.npy',allow_pickle=True)
+    ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + 'ntrial_' + str(n_trial)+ '/' + filename_ffr_ba + str(n_top) + '_' + str(n_trial) +'_sensor.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + baby_or_adult + '/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_mba + str(n_top) + '_' + str(n_trial) + '_sensor.npy',allow_pickle=True)
+    ffr_pa = np.load(root_path + baby_or_adult + '/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_sensor.npy',allow_pickle=True)
 elif input_data == 'ROI':
-    ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ n_trial + filename_ffr_ba + str(n_top) + '_morph_roi.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ n_trial + filename_ffr_mba + str(n_top) + '_morph_roi.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ n_trial + filename_ffr_pa + str(n_top) + '_morph_roi.npy',allow_pickle=True)
+    ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_ba + str(n_top) + '_' + str(n_trial) +'_morph_roi.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_mba + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',allow_pickle=True)
+    ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',allow_pickle=True)
 elif input_data == 'wholebrain':
-    ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + n_trial + filename_ffr_ba + str(n_top) + '_morph.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + n_trial + filename_ffr_mba + str(n_top) + '_morph.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + baby_or_adult + '/MEG/FFR/' + n_trial + filename_ffr_pa + str(n_top) + '_morph.npy',allow_pickle=True)
+    ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + 'ntrial_' + str(n_trial) + '/'  + filename_ffr_ba + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + 'ntrial_' + str(n_trial) + '/'  + filename_ffr_mba + str(n_top) + '_' + str(n_trial) +'_morph.npy',allow_pickle=True)
+    ffr_pa = np.load(root_path + baby_or_adult + '/MEG/FFR/' + 'ntrial_' + str(n_trial) + '/'  + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
 else:
     print("Need to decide whether to use ROI or whole brain as feature.")
 
 all_score = []
 ## Three way classification using ovr
-# X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0)
-# y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba)),np.repeat(2,len(ffr_pa))))
+X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0)
+y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba)),np.repeat(2,len(ffr_pa))))
 
-X = np.concatenate((ffr_ba,ffr_mba),axis=0)
-y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba))))
+# X = np.concatenate((ffr_ba,ffr_mba),axis=0)
+# y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba))))
 
 # X = np.concatenate((ffr_ba,ffr_pa),axis=0)
 # y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(2,len(ffr_pa))))
@@ -246,6 +246,11 @@ y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba))))
 rand_ind = np.arange(0,len(X))
 random.Random(15).shuffle(rand_ind)
 X = X[rand_ind,:,:]
+
+## 1st vs. 2nd half decoding
+# X1 = X[rand_ind,:,:np.shape(X)[-1]//2]
+# X2 = X[rand_ind,:,np.shape(X)[-1]//2:]
+
 y = y[rand_ind]
 
 clf = make_pipeline(
@@ -257,7 +262,7 @@ for n in np.arange(0,np.shape(X)[1],1):
         score = np.mean(scores, axis=0)
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
-np.save(root_path + baby_or_adult +'/decoding/PCFFR'+ str(n_top) + '_' + n_trial[:-1] + 'ba_mba_decoding_accuracy_' + input_data +'_r15.npy',all_score)
+np.save(root_path + baby_or_adult +'/decoding/PCFFR'+ str(n_top) + '_ntrial_' + str(n_trial) + '_decoding_accuracy_' + input_data +'_r15.npy',all_score)
 
 #%%####################################### check acc for each sensor, ROI or vertice
 acc_ind = np.where(np.array(all_score) >= 0.5)
