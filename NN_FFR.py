@@ -128,6 +128,9 @@ from ssqueezepy.visuals import plot, imshow
 from keras import layers
 from scipy import signal
 
+root_path='/media/tzcheng/storage2/CBS/'
+
+
 #%%###################################### preprocess the data
 tmin = 0
 tmax = 0.13
@@ -152,6 +155,15 @@ sfreq = 5000
 # plt.xlabel('Time [sec]')
 # plt.ylim([0,2500])
 # plt.show()
+
+filename_ffr_ba = 'group_ba_ffr_200_morph'
+filename_ffr_mba = 'group_mba_ffr_200_morph'
+filename_ffr_pa = 'group_pa_ffr_200_morph'
+ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/' + filename_ffr_ba + '.npy',allow_pickle=True)
+ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/' + filename_ffr_mba + '.npy',allow_pickle=True)
+ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/' + filename_ffr_pa + '.npy',allow_pickle=True)
+X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0).mean(axis=1)
+y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_ba)),np.repeat(2,len(ffr_ba)))) #0 is for mmr1 and 1 is for mmr2
 
 X_tf = []
 
@@ -203,6 +215,11 @@ model = keras.Sequential(
 )
 
 model.summary()
+## Training and testing 
+batch_size = 1
+epochs = 5
+model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+history = model.fit(X_train, y_train, batch_size=batch_size, epochs=epochs, validation_split=0.1)
 
 #%%####################################### Pretrained networks 
 # Load the pre-trained EfficientNet B0 model
