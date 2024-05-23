@@ -5,7 +5,9 @@ Created on Tue Aug 8 11:28:12 2023
 Preprocessing for CBS MEG and EEG. Need to have events file ready from evtag.py
 Need to manually enter bad channels for sss from the experiment notes. 
 Need to check parameters st_correlation and int_order in sss for adult/infants
-Didn't save the product from ecg, eog project and filtering to save some space
+Didn't save the product from filtering to save some space
+
+Could be used on cbsb too after otp and sss!
 
 @author: tzcheng
 """
@@ -145,12 +147,12 @@ def do_filtering(data, lp, hp, do_cabr):
         data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
 
-def do_cov(subject,data, do_cabr):
+def do_cov(subject,data, do_cabr,hp,lp):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
     fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_otp_raw_sss_proj_f'
     if do_cabr == True:     
-        fname_erm_out = fname_erm + '_ffr-cov'
+        fname_erm_out = fname_erm + str(hp) + str(lp) + '_ffr-cov'
     else: 
         fname_erm_out = fname_erm + 'il50_mmr-cov'
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
@@ -261,11 +263,11 @@ def do_epoch_mmr_eeg(data, subject, run, direction):
         evoked_dev1.save(file_out + '_evoked_dev1_ba_mmr.fif',overwrite=True)
         evoked_dev2.save(file_out + '_evoked_dev2_ba_mmr.fif',overwrite=True)
 
-def do_epoch_cabr(data, subject, run, n_trials):  
+def do_epoch_cabr(data, subject, run, n_trials ,hp,lp):  
     ###### Read the event files (generated from evtag.py) 
     root_path = os.getcwd()
     cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_cabr-eve.fif')
-    file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj_f'
+    file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp)
     
     event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
     
@@ -358,13 +360,13 @@ direction = 'ba_to_pa' # traditional direction 'ba_to_pa': ba to pa and ba to mb
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
-lp = 2000 
+lp = 450 
 hp = 80
 do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
+    if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 
 #%%##### do the jobs for MEG
@@ -390,15 +392,14 @@ for s in subj:
 
         print ('Doing filtering...')
         raw_filt = do_filtering(raw,lp,hp,do_cabr)
-        # raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
-        # print ('calculate cov...')
-        # do_cov(s,raw_erm_filt, do_cabr)
+        raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
+        print ('calculate cov...')
+        do_cov(s,raw_erm_filt, do_cabr,hp,lp)
         print ('Doing epoch...')
         if do_cabr == True:
-            do_epoch_cabr(raw_filt, s, run, n_trials)
+            do_epoch_cabr(raw_filt, s, run, n_trials,hp,lp)
         else:
             do_epoch_mmr(raw_filt, s, run, direction)
-
 
 #%%##### do the jobs for EEG MMR
 # for s in subj:
