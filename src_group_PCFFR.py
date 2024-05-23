@@ -85,11 +85,11 @@ def do_inverse_FFR(s,evokeds_inv,run,nspeech,morph,n_top,n_trial):
             src_to=src_fs,
             verbose=True)
         evokeds_inv_stc_fsaverage = morph.apply(evokeds_inv_stc)
-        evokeds_inv_stc_fsaverage.save(file_in + '_' + nspeech +'_pcffr' + str(n_top) + str(n_trial) + '_morph', overwrite=True)
+        evokeds_inv_stc_fsaverage.save(file_in + '_' + nspeech +'_pcffr80450_' + str(n_top) + str(n_trial) + '_morph', overwrite=True)
 
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
-        evokeds_inv_stc.save(file_in + '_' + nspeech + '_pcffr' + str(n_top), overwrite=True)
+        evokeds_inv_stc.save(file_in + '_' + nspeech + '_pcffr80450_' + str(n_top), overwrite=True)
 
 def group_stc(subj,baby_or_adult,n_top, n_trial):
     group_std = []
@@ -107,9 +107,9 @@ def group_stc(subj,baby_or_adult,n_top, n_trial):
         print('Extracting ' + s + ' data')
         file_in = root_path + s + '/sss_fif/' + s
         
-        stc_std=mne.read_source_estimate(file_in+'_substd_pcffr' + str(n_top) + str(n_trial) + '_morph-vl.stc')
-        stc_dev1=mne.read_source_estimate(file_in+'_dev1_pcffr' + str(n_top) + str(n_trial) + '_morph-vl.stc')
-        stc_dev2=mne.read_source_estimate(file_in+'_dev2_pcffr' + str(n_top) + str(n_trial) + '_morph-vl.stc')
+        stc_std=mne.read_source_estimate(file_in+'_substd_pcffr80450_' + str(n_top) + str(n_trial) + '_morph-vl.stc')
+        stc_dev1=mne.read_source_estimate(file_in+'_dev1_pcffr80450_' + str(n_top) + str(n_trial) + '_morph-vl.stc')
+        stc_dev2=mne.read_source_estimate(file_in+'_dev2_pcffr80450_' + str(n_top) + str(n_trial) + '_morph-vl.stc')
         group_std.append(stc_std.data)
         group_dev1.append(stc_dev1.data)
         group_dev2.append(stc_dev2.data)
@@ -128,12 +128,12 @@ def group_stc(subj,baby_or_adult,n_top, n_trial):
     group_std_roi = np.asarray(group_std_roi)
     group_dev1_roi = np.asarray(group_dev1_roi)
     group_dev2_roi = np.asarray(group_dev2_roi)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr' + str(n_top) + '_' + str(n_trial) +'_morph.npy',group_std)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr' + str(n_top) + '_' + str(n_trial) + '_morph.npy',group_dev1)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr' + str(n_top) + '_' + str(n_trial) + '_morph.npy',group_dev2)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_std_roi)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_dev1_roi)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_dev2_roi)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr80450_' + str(n_top) + '_' + str(n_trial) +'_morph.npy',group_std)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr80450_' + str(n_top) + '_' + str(n_trial) + '_morph.npy',group_dev1)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr80450_' + str(n_top) + '_' + str(n_trial) + '_morph.npy',group_dev2)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr80450_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_std_roi)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr80450_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_dev1_roi)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr80450_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_dev2_roi)
 
 #%%#######################################' + str(n_top) + '
 root_path='/media/tzcheng/storage2/CBS/'
@@ -145,7 +145,7 @@ sfreq = 5000
 lb = 90
 hb = 100
 n_top = 10 # change to 10
-n_trial = ''
+n_trial = 'all'
 runs = ['_01','_02']
 cond = ['substd','dev1','dev2']
 baby_or_adult = 'cbsb_meg_analysis' # baby or adult
