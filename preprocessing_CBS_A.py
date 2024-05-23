@@ -370,7 +370,7 @@ for file in os.listdir():
         subj.append(file)
 
 #%%##### do the jobs for MEG
-n_trials = 200 # can be an integer or 'all' using all the sounds
+n_trials =  200 # can be an integer or 'all' using all the sounds
 # randomly select k sounds from each condition
 # each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
 # we have at least 200 sounds for each condition 
