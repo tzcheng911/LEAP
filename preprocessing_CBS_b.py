@@ -9,6 +9,7 @@ Need to change parameters st_correlation and int_order in sss for adult/infants
 Didn't save the product from ecg, eog project and filtering to save some space
 Could be used to run SLD too (change the root path, subject name, add the pre_bads)
 1. cbs_b118 emptyroom is sampled at 1000 Hz instead of 5000 Hz -> need to use the baseline for the empty room
+2. cbs_b116 has fewer data points
 @author: tzcheng
 """
 
@@ -361,6 +362,6 @@ for file in os.listdir():
 for f in files:
     print(f)
     data = np.load(f)
-    if np.shape(data)[0] == 14:
-        new_data = np.delete(data,-1,axis=0)
-    np.save(f,new_data)
+    if np.shape(data)[0] == 13:
+        new_data = np.delete(data,5,axis=0)
+    np.save('/media/tzcheng/storage2/CBS/cbsb_meg_analysis/MEG/FFR/ntrial_all/exclude_cbs_b116/' + f,new_data)
