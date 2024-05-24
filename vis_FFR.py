@@ -116,7 +116,7 @@ plt.xlim([-0.02, 0.2])
 plt.xlabel('Time (s)')
 
 ## plot certain vertice time series
-nv = 13295
+nv = 16017
 v_ind = np.where(src[0]['vertno'] == nv) # conv_adult 25056, cont_adult 20041, conv_infant 23669, cont_infant 19842 
 plt.figure()
 plt.subplot(311)
@@ -135,3 +135,16 @@ plot_err(np.squeeze(ffr_pa[:,v_ind,:]),'k',times)
 plt.legend(['pa'])
 plt.xlim([-0.02, 0.2])
 plt.xlabel('Time (s)')
+
+nv = 17236
+v_ind = np.where(src[0]['vertno'] == nv) # conv_adult 25056, cont_adult 20041, conv_infant 23669, cont_infant 19842 
+plt.figure()
+plt.subplot(211)
+plt.plot(times,EEG_pa_FFR.mean(0))
+plt.xlim([-0.02, 0.2])
+plt.title('pa EEG/MEG')
+plt.subplot(212)
+plt.plot(times,np.squeeze(data[:,v_ind,:].mean(0)),'k')
+plt.xlim([-0.02, 0.2])
+plt.legend(['v' + str(nv)])
+
