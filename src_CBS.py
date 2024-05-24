@@ -107,10 +107,10 @@ def do_inverse_cABR(s,run, morph):
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
     cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_f80450_ffr-cov.fif')
-    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_f80450_ffr_e_200.fif')
-    evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f80450_evoked_substd_ffr_200.fif')[0]
-    evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f80450_evoked_dev1_ffr_200.fif')[0]        
-    evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f80450_evoked_dev2_ffr_200.fif')[0]
+    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_f80450_ffr_e_all.fif')
+    evoked_s = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f80450_evoked_substd_ffr_all.fif')[0]
+    evoked_d1 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f80450_evoked_dev1_ffr_all.fif')[0]        
+    evoked_d2 = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f80450_evoked_dev2_ffr_all.fif')[0]
     
     inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
 
@@ -134,15 +134,15 @@ def do_inverse_cABR(s,run, morph):
         standard_fsaverage = morph.apply(standard)
         dev1_fsaverage = morph.apply(dev1)
         dev2_fsaverage = morph.apply(dev2)
-        standard_fsaverage.save(file_in + '_ba_ffr80450_200_morph', overwrite=True)
-        dev1_fsaverage.save(file_in + '_mba_ffr80450_200_morph', overwrite=True)
-        dev2_fsaverage.save(file_in + '_pa_ffr80450_200_morph', overwrite=True)
+        standard_fsaverage.save(file_in + '_ba_ffr80450_all_morph', overwrite=True)
+        dev1_fsaverage.save(file_in + '_mba_ffr80450_all_morph', overwrite=True)
+        dev2_fsaverage.save(file_in + '_pa_ffr80450_all_morph', overwrite=True)
 
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
-        standard.save(file_in + '_ba_ffr_200', overwrite=True)
-        dev1.save(file_in + '_mba_ffr_200', overwrite=True)
-        dev2.save(file_in + '_pa_ffr_200', overwrite=True)
+        standard.save(file_in + '_ba_ffr_all', overwrite=True)
+        dev1.save(file_in + '_mba_ffr_all', overwrite=True)
+        dev2.save(file_in + '_pa_ffr_all', overwrite=True)
 
 ########################################
 root_path='/media/tzcheng/storage2/CBS/'
@@ -155,7 +155,7 @@ runs = ['_01','_02']
 run = runs[0]
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_b'):
         subj.append(file)
 for s in tqdm(subj):
     # for run in runs:
