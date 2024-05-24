@@ -196,12 +196,12 @@ root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
-n_top = 10
+n_top = 3
 n_trial = 'all' # 'ntrial_200/' or 'ntrial_all/' or ''
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
 times = stc1.times
 
-did_pca = '_pcffr'  # without or with pca "_pcffr"
+did_pca = '_pcffr80450_'  # without or with pca "_pcffr"
 filename_ffr_ba = 'group_ba' + did_pca
 filename_ffr_mba = 'group_mba' + did_pca
 filename_ffr_pa = 'group_pa' + did_pca
@@ -262,7 +262,7 @@ for n in np.arange(0,np.shape(X)[1],1):
         score = np.mean(scores, axis=0)
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
-np.save(root_path + baby_or_adult +'/decoding/PCFFR'+ str(n_top) + '_ntrial_' + str(n_trial) + '_decoding_accuracy_' + input_data +'_r15.npy',all_score)
+np.save(root_path + baby_or_adult +'/decoding/PCFFR80450_'+ str(n_top) + '_ntrial_' + str(n_trial) + '_decoding_accuracy_' + input_data +'_r15.npy',all_score)
 
 #%%####################################### check acc for each sensor, ROI or vertice
 acc_ind = np.where(np.array(all_score) >= 0.5)
