@@ -144,7 +144,7 @@ def do_inverse_cABR(s,run, morph):
         dev1.save(file_in + '_mba_ffr_all', overwrite=True)
         dev2.save(file_in + '_pa_ffr_all', overwrite=True)
 
-########################################
+#%%########################################
 root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
 
@@ -161,5 +161,5 @@ for s in tqdm(subj):
     # for run in runs:
         print(s)
         # do_foward(s)
-        # do_inverse_MMR(s,run, morph,ori)
-        do_inverse_cABR(s,run, morph)
+        do_inverse_MMR(s,run, morph,ori)
+        # do_inverse_cABR(s,run, morph)
