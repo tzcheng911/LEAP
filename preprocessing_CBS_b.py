@@ -8,7 +8,7 @@ Need to manually enter bad channels for sss from the experiment notes.
 Need to change parameters st_correlation and int_order in sss for adult/infants
 Didn't save the product from ecg, eog project and filtering to save some space
 Could be used to run SLD too (change the root path, subject name, add the pre_bads)
-1. cbs_b118 emptyroom is sampled at 1000 Hz instead of 5000 Hz -> need to use the baseline for the empty room
+1. cbs_b118 emptyroom is sampled at 1000 Hz instead of 5000 Hz -> need to use the baseline for the empty room or the file from the day before or after
 2. cbs_b116 has fewer data points
 @author: tzcheng
 """
@@ -43,7 +43,7 @@ def do_sss(subject,st_correlation,int_order,time):
     root_path='/media/tzcheng/storage2/SLD/MEG/'
 
     os.chdir(root_path)
-    params = mnefun.Params(n_jobs=6, n_jobs_mkl=1, proj_sfreq=200, n_jobs_fir='cuda',
+    params = mnefun.Params(n_jobs=6, n_jobs_mkl=1, n_jobs_fir='cuda',
                        n_jobs_resample='cuda', filter_length='auto')
 
     params.subjects = [subject]
@@ -131,7 +131,10 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_127': ['MEG0312', 'MEG1712'],
     'sld_128': ['MEG0312', 'MEG1712'],
     'sld_129': ['MEG0312', 'MEG1712'],
-    'sld_131': ['MEG0312', 'MEG1712']
+    'sld_130': ['MEG0312', 'MEG1712'],
+    'sld_131': ['MEG0312', 'MEG1712'],
+    'sld_133': ['MEG0312', 'MEG1712'],
+    'sld_135': ['MEG0312', 'MEG1712'],
     }
     
     t2_prebad = {
@@ -147,6 +150,9 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_113': ['MEG0312', 'MEG1712','MEG0642','MEG2543'],
     'sld_114': ['MEG0312', 'MEG1712'],
     'sld_115': ['MEG0312', 'MEG1712','MEG1041'],
+    'sld_118': ['MEG0312', 'MEG1712'],
+    'sld_119': ['MEG0312', 'MEG1712'],
+    'sld_122': ['MEG0312', 'MEG1712'],
     }
     
     t3_prebad = {
@@ -306,23 +312,23 @@ os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = 0 # first time (6 mo) or second time (12 mo) or third time (14mo) coming back, or 0 for cbs
+time = '_t2' # first time (6 mo) '_t1' or second time (12 mo) '_t2' or third time (14mo) '_t3' coming back, or 0 for cbs
 direction = "ba_to_pa"
-do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
+do_cabr = False # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('cbs_b118'): # cbs_b for the infants, sld for SLD infants
+    if file.startswith('sld_130'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-
+subjects = ['sld_122']
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    # do_otp(s,time)
-    # do_sss(s,st_correlation,int_order,time)
+    do_otp(s,time)
+    do_sss(s,st_correlation,int_order,time)
     for run in runs:
         if time == 0:
             time = ""
@@ -338,7 +344,7 @@ for s in subjects:
         print ('Doing filtering...')
         raw_filt = do_filtering(raw,lp, do_cabr)
         raw_erm_filt = do_filtering(raw_erm,lp, do_cabr)
-        print ('calculate cov...')
+        print ('Calculate cov...')
         do_cov(s,raw_erm_filt,time,do_cabr)
         print ('Doing epoch...')
         if do_cabr == True:
@@ -354,14 +360,14 @@ for s in subjects:
 # mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
 
 #%%###### delete the cbs_118 from the group file
-files = []
+# files = []
 
-for file in os.listdir():
-    if file.endswith('morph.npy'): # cbs_b for the infants, sld for SLD infants
-        files.append(file)
-for f in files:
-    print(f)
-    data = np.load(f)
-    if np.shape(data)[0] == 13:
-        new_data = np.delete(data,5,axis=0)
-    np.save('/media/tzcheng/storage2/CBS/cbsb_meg_analysis/MEG/FFR/ntrial_all/exclude_cbs_b116/' + f,new_data)
+# for file in os.listdir():
+#     if file.endswith('morph.npy'): # cbs_b for the infants, sld for SLD infants
+#         files.append(file)
+# for f in files:
+#     print(f)
+#     data = np.load(f)
+#     if np.shape(data)[0] == 13:
+#         new_data = np.delete(data,5,axis=0)
+    # np.save('/media/tzcheng/storage2/CBS/cbsb_meg_analysis/MEG/FFR/ntrial_all/exclude_cbs_b116/' + f,new_data)
