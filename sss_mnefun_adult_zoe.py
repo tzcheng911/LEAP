@@ -16,12 +16,12 @@ import os
 params = mnefun.Params(n_jobs=6, n_jobs_mkl=1, proj_sfreq=200, n_jobs_fir='cuda',
                        n_jobs_resample='cuda', filter_length='auto')
 
-params.subjects = [
-    'cbs_b101']
-
-params.work_dir = '/media/tzcheng/storage/CBS_test/'
-params.run_names = ['%s_01_otp']
-params.runs_empty = ['%s_erm_otp']
+# params.subjects = ['cbs_b101']
+params.subjects = ['sld_stim_240604']
+# params.work_dir = '/media/tzcheng/storage/CBS_test/'
+params.work_dir = '/media/tzcheng/storage2/SLD/stim_test/240604/'
+params.run_names = ['%s_otp']
+# params.runs_empty = ['%s_erm_otp']
 params.subject_indices = [0] #to run individual participants
 #params.subject_indices = np.arange(0,len(params.subjects)) #to run all subjects
 
@@ -65,6 +65,7 @@ params.mf_prebad = {'cbs_A101': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
 # 'vMMR_901': ['MEG0312','MEG2241','MEG1712'],
 # 'cbs_b101': ['MEG0312', 'MEG1712', 'MEG1841', 'MEG1831','MEG2021', 'MEG2231']}
 
+params.mf_prebad = {'sld_stim_240604': ['MEG0312', 'MEG1712']}
 
 # make sure you cd to the working directory that have ct and cal files
 mnefun.do_processing(
