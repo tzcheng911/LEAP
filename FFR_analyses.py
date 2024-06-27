@@ -282,6 +282,93 @@ np.argsort(all_score)
 stc1.data = np.array([all_score,all_score]).transpose()
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 
+#%%####################################### Trial-by-trial EEG decoding for each individual
+subjects_dir = '/media/tzcheng/storage2/subjects/'
+root_path='/media/tzcheng/storage2/CBS/'
+os.chdir(root_path)
+n_trials = 200
+all_score_lr = []
+all_score_svm = []
+subj = [] # A104 got some technical issue
+for file in os.listdir():
+    if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
+        subj.append(file)
+for s in subj:
+    file_in = root_path + '/' + s + '/eeg/' + s
+
+    ##%% extract the FFR time series
+    epochs = mne.read_epochs(file_in +'_01_cABR_e_' + str(n_trials) + '.fif')
+    rand_ind = random.sample(range(min(len(epochs['Standardp'].events),len(epochs['Standardn'].events))),n_trials//2) 
+    std_e = mne.concatenate_epochs([epochs['Standardp'][rand_ind],epochs['Standardn'][rand_ind]])
+    std_e = mne.epochs.combine_event_ids(std_e, ['Standardp', 'Standardn'], {'Standard': 8})
+    rand_ind = random.sample(range(min(len(epochs['Deviant1p'].events),len(epochs['Deviant1n'].events))),n_trials//2) 
+    dev1_e = mne.concatenate_epochs([epochs['Deviant1p'][rand_ind],epochs['Deviant1n'][rand_ind]])
+    dev1_e = mne.epochs.combine_event_ids(dev1_e, ['Deviant1p', 'Deviant1n'], {'Deviant1': 9})
+    rand_ind = random.sample(range(min(len(epochs['Deviant2p'].events),len(epochs['Deviant2n'].events))),n_trials//2) 
+    dev2_e = mne.concatenate_epochs([epochs['Deviant2p'][rand_ind],epochs['Deviant2n'][rand_ind]])
+    dev2_e = mne.epochs.combine_event_ids(dev2_e, ['Deviant2p', 'Deviant2n'], {'Deviant2': 10})
+    epochs = mne.concatenate_epochs([std_e,dev1_e,dev2_e])
+    
+    X = np.squeeze(epochs.get_data())  # MEG signals features: n_epochs, n_meg_channels, n_times make sure the first dimension is epoch
+    y = epochs.events[:, 2]  # target: standard, deviant1 and 2
+    
+    ## Three way classification using ovr
+
+    clf = make_pipeline(
+        StandardScaler(),  # z-score normalization
+        LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
+    )
+    scores = cross_val_multiscore(clf, X, y, cv=5, n_jobs=None)
+    score = np.mean(scores, axis=0)
+    print("Trial-by-trial decoding accuracy: %0.1f%%" % (100 * score,))
+    all_score_lr.append(score)
+    
+    ## SVM showed higher accuracy in trial-by-trial decoding
+    clf = make_pipeline(
+        StandardScaler(),
+        SVC(kernel='rbf',gamma='auto')  
+    )
+    scores = cross_val_multiscore(clf, X, y, cv=5, n_jobs=None) # takes about 10 mins to run
+    score = np.mean(scores, axis=0)
+    print("Trial-by-trial decoding accuracy: %0.1f%%" % (100 * score,))
+    all_score_svm.append(score)
+
+#%%
+## SlidingEstimator
+clf = make_pipeline(
+    StandardScaler(), LinearModel(LogisticRegression(solver="liblinear"))
+)
+time_decod = SlidingEstimator(clf, n_jobs=None, scoring="roc_auc", verbose=True)
+scores = cross_val_multiscore(time_decod, X, y, cv=5, n_jobs=None)
+time_decod.fit(X, y)
+
+coef = get_coef(time_decod, "patterns_", inverse_transform=True)
+evoked_time_gen = mne.EvokedArray(coef, epochs.info, tmin=epochs.times[0])
+joint_kwargs = dict(ts_args=dict(time_unit="s"), topomap_args=dict(time_unit="s"))
+evoked_time_gen.plot_joint(
+    times=np.arange(0.100, 0.300, 0.05), title="patterns", **joint_kwargs
+)
+
+# Plot decoding accuracy for each time instance
+fig, ax = plt.subplots()
+ax.plot(epochs.times, np.mean(scores, axis=0), label="score")
+ax.axhline(0.5, color="k", linestyle="--", label="chance")
+ax.set_xlabel("Times")
+ax.set_ylabel("AUC")  # Area Under the Curve
+ax.legend()
+ax.axvline(0.0, color="k", linestyle="-")
+ax.set_title("Sensor space decoding")
+
+# Projecting sensor-space patterns to source space
+cov = mne.read_cov(file_in + '_01_erm_otp_raw_sss_proj_fil50-cov.fif')
+fwd = mne.read_forward_solution(file_in + '-fwd.fif')
+inv = mne.minimum_norm.make_inverse_operator(evoked_time_gen.info, fwd, cov, loose=1,depth=0.8)
+src = inv['src']
+stc = mne.minimum_norm.apply_inverse(evoked_time_gen, inv, 1.0 / 9.0, "dSPM")
+brain = stc.plot(src=src, subjects_dir=subjects_dir
+)
+
+
 #%%####################################### Cross-correlation audio and MEG sensor and source
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
