@@ -415,6 +415,7 @@ plt.vlines(np.percentile(Adis,97.5),ymin=0,ymax=300,color='r',linewidth=3)
 plt.ylabel('Count',fontsize=20)
 plt.xlabel('R2 score bins',fontsize=20)
 
+
 #%%####################################### Trial-by-trial decoding for each individual
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/CBS/'
