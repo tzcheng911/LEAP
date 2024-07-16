@@ -11,7 +11,7 @@ import mne
 import matplotlib.pyplot as plt
 import numpy as np
 
-raw0 = mne.io.read_raw_curry('/media/tzcheng/storage/RASP/Acquisition20240628 01.cdt', preload=True)
+raw0 = mne.io.read_raw_curry('/media/tzcheng/storage/RASP/Acquisition20240628 0201.cdt', preload=True)
 raw0.plot()
 # raw = mne.io.read_raw_fif('/home/tzcheng/Downloads/irregular_cz.fif', preload=True)
 
