@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from scipy import stats,signal
+from scipy.io import savemat
 from numpy import dot
 from numpy.linalg import norm
 from scipy.stats import pearsonr
@@ -307,10 +308,18 @@ for s in subj:
     rand_ind = random.sample(range(min(len(epochs['Deviant2p'].events),len(epochs['Deviant2n'].events))),n_trials//2) 
     dev2_e = mne.concatenate_epochs([epochs['Deviant2p'][rand_ind],epochs['Deviant2n'][rand_ind]])
     dev2_e = mne.epochs.combine_event_ids(dev2_e, ['Deviant2p', 'Deviant2n'], {'Deviant2': 10})
+    
+    
     epochs = mne.concatenate_epochs([std_e,dev1_e,dev2_e])
+    
     
     X = np.squeeze(epochs.get_data())  # MEG signals features: n_epochs, n_meg_channels, n_times make sure the first dimension is epoch
     y = epochs.events[:, 2]  # target: standard, deviant1 and 2
+    
+    mdic = {"condition":y,"data":X}
+    fname = s +'_epoch'
+    savemat(fname + '.mat', mdic)
+    del mdic, epochs
     
     ## Three way classification using ovr
 
@@ -644,3 +653,6 @@ psds, freqs = mne.time_frequency.psd_array_welch(
         
 plt.figure()
 plt.plot(freqs,psds.transpose())
+
+
+    
