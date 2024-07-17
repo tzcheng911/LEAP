@@ -654,5 +654,20 @@ psds, freqs = mne.time_frequency.psd_array_welch(
 plt.figure()
 plt.plot(freqs,psds.transpose())
 
+#%%####################################### SNR analysis
+std = np.load(root_path + 'group_std_ffr_eeg_200.npy')
+dev1 = np.load(root_path + 'group_dev1_ffr_eeg_200.npy')
+dev2 = np.load(root_path + 'group_dev2_ffr_eeg_200.npy')
 
-    
+EEG = dev1
+ind_noise = np.where(times<0)
+ind_signal = np.where(np.logical_and(times>=0, times<=0.13)) # 0.1 for ba and 0.13 for mba and pa
+
+
+rms_noise_s = []
+rms_signal_s = []
+
+for s in range(len(std)):
+    rms_noise_s.append(np.sqrt(np.mean(EEG[s,ind_noise]**2)))
+    rms_signal_s.append(np.sqrt(np.mean(EEG[s,ind_signal]**2)))
+SNR = np.array(rms_signal_s)/np.array(rms_noise_s)
