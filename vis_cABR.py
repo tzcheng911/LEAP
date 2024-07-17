@@ -72,6 +72,7 @@ MEG_mba_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_mba_s
 MEG_pa_cABR = np.load(root_path + 'cbsA_meeg_analysis/MEG/cABR/' + 'group_pa_sensor.npy')
 
 #%%####################################### visualize cABR of ba, mba and pa
+## visualize cABR of ba, mba and pa in EEG 
 plt.figure()
 plt.subplot(311)
 plot_err(EEG_ba_cABR,'k',stc1.times)
@@ -103,6 +104,12 @@ plot_err(MEG_pa_cABR.mean(axis=1),'r',stc1.times)
 plt.xlim([-0.02,0.2])
 plt.xlabel('Time (s)') 
 
+## All subjects
+fig, axs = plt.subplots(18)
+fig.suptitle('mba FFR')
+for n in range(18):
+    axs[n].plot(times, dev2[n,:])
+        
 ## visualize cABR of ba, mba and pa in MEG source 
 plt.figure()
 plt.subplot(311)
