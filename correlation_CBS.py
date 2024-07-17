@@ -393,7 +393,7 @@ std = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_ffr_eeg_200.npy
 dev1 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_ffr_eeg_200.npy')[:,100:]
 dev2 = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_ffr_eeg_200.npy')[:,100:]
 
-## Load recorded  audio
+## Load recorded audio
 # std_audio = np.load(root_path + 'stimuli/cbs_A123_ba.npy')[100:750]
 # dev1_audio = np.load(root_path + 'stimuli/cbs_A123_mba.npy')[100:750]
 # dev2_audio = np.load(root_path + 'stimuli/cbs_A123_pa.npy')[100:750]
@@ -420,10 +420,21 @@ std_audio = signal.resample(std_audio, num_std, t=None, axis=0, window=None)
 dev1_audio = signal.resample(dev1_audio, num_dev, t=None, axis=0, window=None)
 dev2_audio = signal.resample(dev2_audio, num_dev, t=None, axis=0, window=None)
 
-audio0 = dev2_audio
-EEG0 = dev2
+## need to change to different conditions
+audio0 = dev1_audio
+EEG0 = dev1
 times0_audio = np.linspace(0,len(audio0)/5000,len(audio0))
 times0_eeg = np.linspace(0,len(EEG0[0])/5000,len(EEG0[0]))
+
+## std: noise burst from 0 ms (100th points)
+ts = 100
+te = 500
+audio = audio0[ts:te] # try 0.02 to 0.1 s for std
+EEG = EEG0[:,ts:te]
+times_audio = times0_audio[ts:te]
+times_eeg = times0_eeg[ts:te]
+lags = signal.correlation_lags(len(audio),len(EEG[0]))
+lags_s = lags/5000
 
 ## dev 1: noise burst from 40 ms (200th points)
 ts = 200 + 100
@@ -445,27 +456,16 @@ times_eeg = times0_eeg[ts:te]
 lags = signal.correlation_lags(len(audio),len(EEG[0]))
 lags_s = lags/5000
 
-## std: noise burst from 0 ms (100th points)
-ts = 100
-te = 500
-audio = audio0[ts:te] # try 0.02 to 0.1 s for std
-EEG = EEG0[:,ts:te]
-times_audio = times0_audio[ts:te]
-times_eeg = times0_eeg[ts:te]
-lags = signal.correlation_lags(len(audio),len(EEG[0]))
-lags_s = lags/5000
-
 ## Initialize 
 xcorr_all_s = []
 xcorr_lag_all_s = []
 
-
-plt.figure()
-plt.plot(times_audio,audio)
-
-plt.figure()
-plt.plot(times_eeg,EEG.mean(axis=0))
-
+## All subjects
+fig, axs = plt.subplots(2)
+fig.suptitle('Audio and FFR')
+axs[0].plot(times_audio,audio)
+axs[1].plot(times_eeg,EEG.mean(axis=0))
+    
 a = (audio - np.mean(audio))/np.std(audio)
 a = a / np.linalg.norm(a)
 
@@ -505,8 +505,14 @@ for s in np.arange(0,len(std),1):
     xcorr_all_s.append(np.max(xcorr))
     xcorr_lag_all_s.append(np.argmax(xcorr))
 
-print('abs xcorr between FFR & audio: ' + str(np.array(xcorr_all_s).mean()) + '(' + str(np.array(xcorr_all_s).std()) +')')
-print('abs xcorr lag between FFR & audio (ms): ' + str(np.array(lags_s[xcorr_lag_all_s]*1000).mean())+ '(' + str(np.array(lags_s[xcorr_lag_all_s]*1000).std()) +')')
+print('abs xcorr between FFR & audio: ' + str(np.array(xcorr_all_s).mean()) + '(' + str(np.array(xcorr_all_s).std()/np.sqrt(len(std))) +')')
+print('abs xcorr lag between FFR & audio (ms): ' + str(np.array(lags_s[xcorr_lag_all_s]*1000).mean())+ '(' + str(np.array(lags_s[xcorr_lag_all_s]*1000).std()/np.sqrt(len(std))) +')')
+arr = np.array(xcorr_all_s)
+rounded_arr = np.around(arr, decimals=3)
+print(rounded_arr)
+print(lags_s[xcorr_lag_all_s]*1000)
+
+
 
 fig,axs = plt.subplots(len(EEG),1,sharex=True,sharey=True)
 fig.suptitle('FFR')
