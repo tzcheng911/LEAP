@@ -577,19 +577,25 @@ fname_aseg = subjects_dir + subject + '/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 
 ## For audio
+audio = pa_audio
 psds, freqs = mne.time_frequency.psd_array_welch(
-    ba_audio,fs, # could replace with label time series
-    n_fft=len(ba_audio),
+    audio,fs, # could replace with label time series
+    n_fft=len(audio),
     n_overlap=0,
     n_per_seg=None,
     fmin=fmin,
     fmax=fmax,)
+plt.figure()
+plt.title('pa audio spectrum')
 plt.plot(freqs,psds)
+plt.xlim([60, 140])
 
-## For one subject
+## For each individual
+# MEG
 epochs = mne.read_epochs(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_cABR_e.fif')
 evoked = mne.read_evokeds(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
 sfreq = epochs.info["sfreq"]
+
 evoked.compute_psd("welch",
    n_fft=int(sfreq * (tmax - tmin)),
    n_overlap=0,
@@ -601,15 +607,31 @@ evoked.compute_psd("welch",
    window="boxcar",
    verbose=False,).plot(average=False,picks="data", exclude="bads")
 
+# EEG
+EEG = EEG_pa_FFR
+psds, freqs = mne.time_frequency.psd_array_welch(
+    EEG,sfreq, # could replace with label time series
+    n_fft=len(EEG[1,:]),
+    n_overlap=0,
+    n_per_seg=None,
+    fmin=fmin,
+    fmax=fmax,)
+plt.figure()
+plt.title('ba spectrum')
+plot_err(psds,'k',freqs)
+plt.xlim([60, 140])
+
 ## For group results
 # EEG
 psds, freqs = mne.time_frequency.psd_array_welch(
-    EEG_pa_FFR.mean(0),sfreq, # could replace with label time series
+    EEG_ba_FFR.mean(0),sfreq, # could replace with label time series
     n_fft=int(sfreq * (tmax - tmin)),
     n_overlap=0,
     n_per_seg=None,
     fmin=fmin,
     fmax=fmax,)
+plt.figure()
+plt.plot(freqs,psds)
 
 # MEG sensor
 psds, freqs = mne.time_frequency.psd_array_welch(
@@ -655,19 +677,21 @@ plt.figure()
 plt.plot(freqs,psds.transpose())
 
 #%%####################################### SNR analysis
-std = np.load(root_path + 'group_std_ffr_eeg_200.npy')
-dev1 = np.load(root_path + 'group_dev1_ffr_eeg_200.npy')
-dev2 = np.load(root_path + 'group_dev2_ffr_eeg_200.npy')
-
-EEG = dev1
+EEG = EEG_pa_FFR
 ind_noise = np.where(times<0)
 ind_signal = np.where(np.logical_and(times>=0, times<=0.13)) # 0.1 for ba and 0.13 for mba and pa
 
+## Group
+rms_noise_s = np.sqrt(np.mean(EEG.mean(0)[ind_noise]**2))
+rms_signal_s = np.sqrt(np.mean(EEG.mean(0)[ind_signal]**2))
+SNR = rms_signal_s/rms_noise_s
 
+## Individual
 rms_noise_s = []
 rms_signal_s = []
 
-for s in range(len(std)):
+for s in range(len(EEG_pa_FFR)):
     rms_noise_s.append(np.sqrt(np.mean(EEG[s,ind_noise]**2)))
     rms_signal_s.append(np.sqrt(np.mean(EEG[s,ind_signal]**2)))
 SNR = np.array(rms_signal_s)/np.array(rms_noise_s)
+print('SNR: ' + str(np.array(SNR).mean()) + '(' + str(np.array(SNR).std()/np.sqrt(len(EEG_pa_FFR))) +')')
