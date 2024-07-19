@@ -106,9 +106,11 @@ plt.xlabel('Time (s)')
 
 ## All subjects
 fig, axs = plt.subplots(18)
-fig.suptitle('mba FFR')
+fig.suptitle('MMR')
 for n in range(18):
-    axs[n].plot(times, dev2[n,:])
+    axs[n].plot(times, EEG_mmr1[n,:])
+    axs[n].plot(times, EEG_mmr2[n,:])
+
         
 ## visualize cABR of ba, mba and pa in MEG source 
 plt.figure()
