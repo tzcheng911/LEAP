@@ -305,7 +305,7 @@ for n,s in enumerate(subj):
 #%% check the sound presentation
 raw_file.pick_channels(['MISC001'])
 event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
-epochs = mne.Epochs(raw_file, cabr_event, event_id,tmin =-0.05, tmax=0.15,baseline=(-0.05,0))
+epochs = mne.Epochs(raw_file, cabr_event, event_id,tmin =-0.02, tmax=0.2,baseline=(-0.02,0))
 evoked_substd=epochs['Standardp'].average(picks=('misc'))
 evoked_dev1=epochs['Deviant1p'].average(picks=('misc'))
 evoked_dev2=epochs['Deviant2p'].average(picks=('misc'))
