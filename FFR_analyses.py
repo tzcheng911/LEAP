@@ -283,6 +283,78 @@ np.argsort(all_score)
 stc1.data = np.array([all_score,all_score]).transpose()
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 
+#%%####################################### Check for the EM artifats (averaging respectively across positive polarity and negative polarity)
+subjects_dir = '/media/tzcheng/storage2/subjects/'
+root_path='/media/tzcheng/storage2/CBS/'
+os.chdir(root_path)
+std_p  = []
+std_n = []
+dev1_p  = []
+dev1_n = []
+dev2_p  = []
+dev2_n = []
+
+subj = [] # A104 got some technical issue
+for file in os.listdir():
+    if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
+        subj.append(file)
+
+for s in subj:
+    file_in = root_path + '/' + s + '/eeg/' + s
+    raw_file = mne.io.Raw(root_path + s + '/raw_fif/' + s + '_01_raw.fif',allow_maxshield=True,preload=True)
+    raw_file.pick_channels(['MISC001'])
+    event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
+    cabr_event = mne.read_events(root_path + '/' + s + '/events/' + s + '_01_events_cabr-eve.fif')
+    epochs = mne.Epochs(raw_file, cabr_event, event_id,tmin =-0.02, tmax=0.2,baseline=(-0.02,0))
+    
+    ##%% extract the FFR time series
+    epochs = mne.read_epochs(file_in +'_01_cABR_e_all.fif')
+    evoked_substd_p = epochs['Standardp'].average(picks=('bio'))
+    evoked_substd_n = epochs['Standardn'].average(picks=('bio'))
+    evoked_substd = epochs['Standardp','Standardn'].average(picks=('bio'))
+    evoked_dev1_p = epochs['Deviant1p'].average(picks=('bio'))
+    evoked_dev1_n = epochs['Deviant1n'].average(picks=('bio'))
+    evoked_dev1 = epochs['Deviant1p','Deviant1n'].average(picks=('bio'))
+    evoked_dev2_p = epochs['Deviant2p'].average(picks=('bio'))
+    evoked_dev2_n = epochs['Deviant2n'].average(picks=('bio'))
+    evoked_dev2 = epochs['Deviant2p','Deviant2n'].average(picks=('bio'))
+    
+    epochs_misc = mne.Epochs(raw_file, cabr_event, event_id,tmin =-0.02, tmax=0.2,baseline=(-0.02,0))
+    misc_substd=epochs_misc['Standardp'].average(picks=('misc'))
+    misc_dev1=epochs_misc['Deviant1p'].average(picks=('misc'))
+    misc_dev2=epochs_misc['Deviant2p'].average(picks=('misc'))
+    plt.figure()
+    plt.plot(epochs.times,np.squeeze(evoked_substd.get_data()))
+    plt.plot(epochs.times,np.squeeze(misc_substd.get_data()*3*1e-6),color='k')
+    plt.title('std')
+    plt.legend(['EEG FFR','misc'])
+    
+    plt.figure()
+    plt.plot(epochs.times,np.squeeze(evoked_dev1.get_data()))
+    plt.plot(epochs.times,np.squeeze(misc_dev1.get_data()*3*1e-6),color='k')
+    plt.title('dev1')
+    plt.legend(['EEG FFR','misc'])
+    
+    plt.figure()
+    plt.plot(epochs.times,np.squeeze(evoked_dev2.get_data()))
+    plt.plot(epochs.times,np.squeeze(misc_dev2.get_data()*3*1e-6),color='k')
+    plt.title('dev2')
+    plt.legend(['EEG FFR','misc'])
+    
+    std_p.append(evoked_substd_p.get_data())
+    std_n.append(evoked_substd_n.get_data())
+    dev1_p.append(evoked_dev1_p.get_data())
+    dev1_n.append(evoked_dev1_n.get_data())
+    dev2_p.append(evoked_dev2_p.get_data())
+    dev2_n.append(evoked_dev2_n.get_data())
+    
+    # evoked_substd.plot()
+    # evoked_substd_p.plot()
+    # evoked_substd_n.plot()
+    # evoked_dev1.plot()
+    # evoked_dev2.plot()
+    
+    
 #%%####################################### Trial-by-trial EEG decoding for each individual
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage2/CBS/'
@@ -313,7 +385,7 @@ for s in subj:
     epochs = mne.concatenate_epochs([std_e,dev1_e,dev2_e])
     
     
-    X = np.squeeze(epochs.get_data())  # MEG signals features: n_epochs, n_meg_channels, n_times make sure the first dimension is epoch
+    X = np.squeeze(epochs.get_data())  
     y = epochs.events[:, 2]  # target: standard, deviant1 and 2
     
     mdic = {"condition":y,"data":X}
