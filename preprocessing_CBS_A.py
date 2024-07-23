@@ -344,10 +344,10 @@ def do_epoch_cabr_eeg(data, subject, run, n_trials):
         evoked_dev2_n=new_epochs['Deviant2n'][rand_ind].average(picks=('bio'))
         evoked_dev2 = mne.combine_evoked([evoked_dev2_p,evoked_dev2_n], weights='equal')
 
-    new_epochs.save(file_out + '_ffr_e_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_substd.save(file_out + '_evoked_substd_ffr_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_dev1.save(file_out + '_evoked_dev1_ffr_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_dev2.save(file_out + '_evoked_dev2_ffr_' + str(n_trials) + '.fif',overwrite=True)
+    new_epochs.save(file_out + '_cabr_e_' + str(n_trials) + '.fif',overwrite=True)
+    evoked_substd.save(file_out + '_evoked_substd_cabr_' + str(n_trials) + '.fif',overwrite=True)
+    evoked_dev1.save(file_out + '_evoked_dev1_cabr_' + str(n_trials) + '.fif',overwrite=True)
+    evoked_dev2.save(file_out + '_evoked_dev2_cabr_' + str(n_trials) + '.fif',overwrite=True)
     return evoked_substd,evoked_dev1,evoked_dev2,new_epochs
 ########################################
 root_path='/media/tzcheng/storage2/CBS/'
@@ -357,7 +357,7 @@ os.chdir(root_path)
 direction = 'ba_to_pa' # traditional direction 'ba_to_pa': ba to pa and ba to mba
 # reverse direction 'pa_to_ba' : is pa to ba and mba to ba; 
 # only comparing /ba/ 'first_last_ba': only comparing /ba/ before and after habituation 
-runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
+runs = ['_02'] # ['_01','_02'] for the adults and ['_01'] for the infants
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
 lp = 450 
@@ -366,7 +366,7 @@ do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use th
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
+    if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 
 #%%##### do the jobs for MEG
@@ -402,21 +402,20 @@ for s in subj:
             do_epoch_mmr(raw_filt, s, run, direction)
 
 #%%##### do the jobs for EEG MMR
-# for s in subj:
-#     print(s)
-#     for run in runs:
-#         raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
-#         raw_file.filter(l_freq=0,h_freq=50,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
-#         raw_file.pick_channels(['BIO004'])
-#         do_epoch_mmr_eeg(raw_file, s, run, direction)
+for s in subj:
+    print(s)
+    for run in runs:
+        raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
+        raw_file.filter(l_freq=0,h_freq=50,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
+        raw_file.pick_channels(['BIO004'])
+        do_epoch_mmr_eeg(raw_file, s, run, direction)
 
 #%%##### do the jobs for EEG FFR
-
-# for s in subj:
-#     print(s)
-#     for run in runs:
-#         raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
-#         raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('bio'))
-#         raw_file.filter(l_freq=80,h_freq=2000,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
-#         raw_file.pick_channels(['BIO004'])
-#         do_epoch_cabr_eeg(raw_file, s, run, n_trials)
+for s in subj:
+    print(s)
+    for run in runs:
+        raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
+        raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('bio'))
+        raw_file.filter(l_freq=80,h_freq=2000,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
+        raw_file.pick_channels(['BIO004'])
+        do_epoch_cabr_eeg(raw_file, s, run, n_trials)
