@@ -354,7 +354,7 @@ root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
 
 ## parameters 
-direction = 'ba_to_pa' # traditional direction 'ba_to_pa': ba to pa and ba to mba
+direction = 'pa_to_ba' # traditional direction 'ba_to_pa': ba to pa and ba to mba
 # reverse direction 'pa_to_ba' : is pa to ba and mba to ba; 
 # only comparing /ba/ 'first_last_ba': only comparing /ba/ before and after habituation 
 runs = ['_02'] # ['_01','_02'] for the adults and ['_01'] for the infants
@@ -370,7 +370,7 @@ for file in os.listdir():
         subj.append(file)
 
 #%%##### do the jobs for MEG
-n_trials =  200 # can be an integer or 'all' using all the sounds
+n_trials =  150 # can be an integer or 'all' using all the sounds
 # randomly select k sounds from each condition
 # each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
 # we have at least 200 sounds for each condition 
@@ -419,3 +419,33 @@ for s in subj:
         raw_file.filter(l_freq=80,h_freq=2000,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
         raw_file.pick_channels(['BIO004'])
         do_epoch_cabr_eeg(raw_file, s, run, n_trials)
+
+#%%##### check the number of avg in evoked files
+nave_mmr_std = []
+nave_mmr_dev1 = []
+nave_mmr_dev2 = []
+nave_ffr_std = []
+nave_ffr_dev1 = []
+nave_ffr_dev2 = []
+
+
+for s in subj:
+    print(s)
+    for run in runs:
+        std_mmr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_substd_mmr.fif',allow_maxshield=True)
+        dev1_mmr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev1_mmr.fif',allow_maxshield=True)
+        dev2_mmr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev2_mmr.fif',allow_maxshield=True)
+        std_ffr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_substd_cabr_all.fif',allow_maxshield=True)
+        dev1_ffr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev1_cabr_all.fif',allow_maxshield=True)
+        dev2_ffr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev2_cabr_all.fif',allow_maxshield=True)
+
+        nave_mmr_std.append(std_mmr[0].nave)
+        nave_mmr_dev1.append(dev1_mmr[0].nave)
+        nave_mmr_dev2.append(dev2_mmr[0].nave)
+        nave_ffr_std.append(std_ffr[0].nave)
+        nave_ffr_dev1.append(dev1_ffr[0].nave)
+        nave_ffr_dev2.append(dev2_ffr[0].nave)
+
+print(np.mean(nave_mmr_std))
+print(np.mean(nave_mmr_dev1))
+print(np.mean(nave_mmr_dev2))
