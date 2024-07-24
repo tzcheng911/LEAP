@@ -25,7 +25,8 @@ def do_otp(subject):
     root_path='/media/tzcheng/storage2/CBS/'+ subject +'/raw_fif/'
     os.chdir(root_path)
     #find all the raw files
-    runs=['01','02','erm'] # ['01','02','erm'] for the adults and ['01','erm'] for the infants
+#    runs=['01','02','erm'] # ['01','02','erm'] for the adults and ['01','erm'] for the infants
+    runs=['unplug','plug','erm'] # for the stimuli leakage test
     for run in runs:
         # file_in=root_path+'cbs'+str(subj)+'_'+str(run)+'_raw.fif'
         # file_out=root_path+'cbs'+str(subj)+'_'+str(run)+'_otp_raw.fif'
@@ -46,6 +47,7 @@ def do_sss(subject,st_correlation,int_order):
 
     params.work_dir = '/media/tzcheng/storage2/CBS/'
     params.run_names = ['%s_01_otp','%s_02_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
+    params.run_names = ['%s_unplug_otp','%s_plug_otp'] # for the stimuli leakage test
     params.runs_empty = ['%s_erm_otp']
     params.subject_indices = [0] #to run individual participants
     #params.subject_indices = np.arange(0,len(params.subjects)) #to run all subjects
@@ -96,7 +98,8 @@ def do_sss(subject,st_correlation,int_order):
     'cbs_b114': ['MEG0312', 'MEG1712', 'MEG2612'],
     'cbs_b116': ['MEG0312', 'MEG1712'],
     'cbs_b117': ['MEG0312', 'MEG1712', 'MEG2011', 'MEG2241'],
-    'cbs_b118': ['MEG0312', 'MEG1712']
+    'cbs_b118': ['MEG0312', 'MEG1712'],
+    'cbs_zoe':['MEG0312', 'MEG1712'],
     }
     # make sure you cd to the working directory that have ct and cal files
     mnefun.do_processing(
@@ -354,10 +357,11 @@ root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
 
 ## parameters 
-direction = 'pa_to_ba' # traditional direction 'ba_to_pa': ba to pa and ba to mba
+direction = 'ba_to_pa' # traditional direction 'ba_to_pa': ba to pa and ba to mba
 # reverse direction 'pa_to_ba' : is pa to ba and mba to ba; 
 # only comparing /ba/ 'first_last_ba': only comparing /ba/ before and after habituation 
-runs = ['_02'] # ['_01','_02'] for the adults and ['_01'] for the infants
+# runs = ['_02'] # ['_01','_02'] for the adults and ['_01'] for the infants
+runs = ['_unplug','_plug'] # for stimuli leakage test
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
 lp = 450 
@@ -368,17 +372,18 @@ subj = [] # A104 got some technical issue
 for file in os.listdir():
     if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
+subj = ['cbs_zoe']
 
 #%%##### do the jobs for MEG
-n_trials =  150 # can be an integer or 'all' using all the sounds
+n_trials =  200 # can be an integer or 'all' using all the sounds
 # randomly select k sounds from each condition
 # each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
 # we have at least 200 sounds for each condition 
 
 for s in subj:
     print(s)
-    # do_otp(s)
-    # do_sss(s,st_correlation,int_order)
+    do_otp(s)
+    do_sss(s,st_correlation,int_order)
     for run in runs:
         filename = root_path + s + '/sss_fif/' + s + run + '_otp_raw_sss_proj.fif'
 
@@ -405,7 +410,8 @@ for s in subj:
 for s in subj:
     print(s)
     for run in runs:
-        raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
+        # raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
+        raw_file = mne.io.Raw('/media/tzcheng/storage2/CBS/cbs_zoe/raw_fif/cbs_zoe' + run + '_raw.fif',allow_maxshield=True,preload=True) # for stimuli leakage test
         raw_file.filter(l_freq=0,h_freq=50,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
         raw_file.pick_channels(['BIO004'])
         do_epoch_mmr_eeg(raw_file, s, run, direction)
@@ -414,7 +420,8 @@ for s in subj:
 for s in subj:
     print(s)
     for run in runs:
-        raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
+        # raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
+        raw_file = mne.io.Raw('/media/tzcheng/storage2/CBS/cbs_zoe/raw_fif/cbs_zoe' + run + '_raw.fif',allow_maxshield=True,preload=True) # for stimuli leakage test
         raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('bio'))
         raw_file.filter(l_freq=80,h_freq=2000,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
         raw_file.pick_channels(['BIO004'])
