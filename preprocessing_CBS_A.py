@@ -410,8 +410,8 @@ for s in subj:
 for s in subj:
     print(s)
     for run in runs:
-        # raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
-        raw_file = mne.io.Raw('/media/tzcheng/storage2/CBS/cbs_zoe/raw_fif/cbs_zoe' + run + '_raw.fif',allow_maxshield=True,preload=True) # for stimuli leakage test
+        raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
+        # raw_file = mne.io.Raw('/media/tzcheng/storage2/CBS/cbs_zoe/raw_fif/cbs_zoe' + run + '_raw.fif',allow_maxshield=True,preload=True) # for stimuli leakage test
         raw_file.filter(l_freq=0,h_freq=50,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
         raw_file.pick_channels(['BIO004'])
         do_epoch_mmr_eeg(raw_file, s, run, direction)
@@ -420,8 +420,8 @@ for s in subj:
 for s in subj:
     print(s)
     for run in runs:
-        # raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
-        raw_file = mne.io.Raw('/media/tzcheng/storage2/CBS/cbs_zoe/raw_fif/cbs_zoe' + run + '_raw.fif',allow_maxshield=True,preload=True) # for stimuli leakage test
+        raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
+        # raw_file = mne.io.Raw('/media/tzcheng/storage2/CBS/cbs_zoe/raw_fif/cbs_zoe' + run + '_raw.fif',allow_maxshield=True,preload=True) # for stimuli leakage test
         raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('bio'))
         raw_file.filter(l_freq=80,h_freq=2000,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
         raw_file.pick_channels(['BIO004'])
@@ -434,7 +434,6 @@ nave_mmr_dev2 = []
 nave_ffr_std = []
 nave_ffr_dev1 = []
 nave_ffr_dev2 = []
-
 
 for s in subj:
     print(s)
