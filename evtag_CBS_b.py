@@ -45,15 +45,15 @@ def find_events(raw_file,subj,block,time):
     STI4[:,2] = 8 # 250
     events = np.concatenate((STI1,STI3,STI4),axis=0)
     events = events[events[:,0].argsort()] # sort by the latency
-    root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
-    # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+    # root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
     file_name_raw=root_path + str(subj) + time + str(block) +'_events_raw-eve.fif'
     mne.write_events(file_name_raw,events,overwrite=True)  ###write out raw events for double checking
     
 def process_events(subj,block,time):
      #find events
-    root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-    # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+    # root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
     file_name_raw=root_path + str(subj) + time + str(block) +'_events_raw-eve.fif'
     events=mne.read_events(file_name_raw)  ###write out raw events for double checking
     
@@ -132,8 +132,8 @@ def check_events(events,condition):  ## processed events
         elif event[2]==6 or event[2]==7:
             e2.append(3)
             
-    # path='/media/tzcheng/storage2/SLD/MEG/'
-    path='/media/tzcheng/storage2/CBS/'
+    path='/media/tzcheng/storage2/SLD/MEG/'
+    # path='/media/tzcheng/storage2/CBS/'
     seq_file=path + 'seq'+ condition+'_200.npy'
     seq=np.load(seq_file)
     soa_file=path + 'soas' + condition + '_cbsb_200.npy'
@@ -187,8 +187,8 @@ def select_mmr_events(events,subj,block,time,direction): ## load the processed e
         
         mmr_event=np.concatenate((substd,dev1,dev2),axis=0)
         
-        # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
-        root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
+        root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+        # root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
         file_name_new=root_path + str(subj) + time + block + '_events_mmr-eve.fif'
         mne.write_events(file_name_new,mmr_event,overwrite=True)
     
@@ -213,8 +213,8 @@ def select_mmr_events(events,subj,block,time,direction): ## load the processed e
         dev_sample = [dev[i] for i in sorted(random.sample(range(len(dev)), sample_size))]
         
         mmr_event=np.concatenate((std1,std2,dev_sample),axis=0)
-        # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
-        root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
+        root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+        # root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
         file_name_new=root_path + str(subj) + time + block + '_events_mmr_reverse-eve.fif'
         mne.write_events(file_name_new,mmr_event,overwrite=True)
     else:
@@ -254,22 +254,22 @@ def select_cabr_events(events,subj,block,time): ## load the processed events
     substd2 = [std2[i] for i in sorted(random.sample(range(len(std2)), sample_size))]
     
     cabr_event=np.concatenate((substd1,substd2,dev1,dev2),axis=0)
-    # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
-    root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+    # root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
     file_name_new=root_path + str(subj) + time + block + '_events_cabr-eve.fif'
     mne.write_events(file_name_new, cabr_event,overwrite=True)
     return cabr_event
 
 #%% 
 ########################################
-root_path='/media/tzcheng/storage2/CBS/'
-# root_path='/media/tzcheng/storage2/SLD/MEG/'
+# root_path='/media/tzcheng/storage2/CBS/'
+root_path='/media/tzcheng/storage2/SLD/MEG/'
 
 os.chdir(root_path)
 
 ## parameters 
-run = '' # ['_01','_02'] for adults and ['_01'] for infants
-time = '' # '_t1' first time (6 mo) or '_t2' second time (12 mo) or '_t3' third time coming back, or 0 for cbs
+run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
+time = '_t2' # '_t1' first time (6 mo) or '_t2' second time (12 mo) or '_t3' third time coming back, or 0 for cbs
 direction = "ba_to_pa"
 
 # https://uwnetid-my.sharepoint.com/:x:/r/personal/babyleap_uw_edu/_layouts/15/Doc.aspx?sourcedoc=%7B4CDEB132-CCF5-4641-AFEF-43E17E28C126%7D&file=SLD%20Tracking%20&%20Runsheets.xlsx=&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0&action=default&mobileredirect=true
@@ -282,8 +282,8 @@ for file in os.listdir():
         subj.append(file)
 
 ## do individual by individual(s), check the time t1, t2 or t3 too
-subj = ['cbs_zoe']
-conditions = ['1']
+subj = ['sld_123']
+conditions = ['4']
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]
