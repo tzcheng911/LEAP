@@ -11,10 +11,11 @@ import mne
 import matplotlib.pyplot as plt
 import numpy as np
 
-raw0 = mne.io.read_raw_curry('/media/tzcheng/storage/RASP/Acquisition_pilot2_rasp.cdt', preload=True)
-raw0.plot()
+raw0 = mne.io.read_raw_curry('/media/tzcheng/storage/RASP/20240730/Acquisition_soundmod_Pilot3.cdt', preload=True)
+raw0.set_montage("standard_1020", match_case=False,on_missing='warn')
+raw0.plot_sensors(show_names = True,sphere="eeglab")
+# raw0.plot()
 raw = raw0.copy()
-
 #%% Do some artifact removal
 raw.drop_channels(["FT11","Cz","CPz"])
 
@@ -48,8 +49,8 @@ ica.apply(reconst_raw)
 ## Repairing with SSP
 ecg_epochs = mne.preprocessing.create_ecg_epochs(raw,ch_name='EMG1').average()
 ecg_epochs.plot_joint(times=[-0.25, -0.025, 0, 0.025, 0.25])
-ecg_epochs = mne.preprocessing.create_eog_epochs(raw,ch_name=['VEOG','HEOG']).average()
-ecg_epochs.plot_joint(times=[-0.25, -0.025, 0, 0.025, 0.25])
+eog_epochs = mne.preprocessing.create_eog_epochs(raw,ch_name=['VEOG','HEOG']).average()
+eog_epochs.plot_joint(times=[-0.25, -0.025, 0, 0.025, 0.25])
 ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='EMG1', reject=None)
 eog_projs, eog_events = mne.preprocessing.compute_proj_eog(raw, ch_name=['VEOG','HEOG'], reject=None)
 
@@ -66,7 +67,7 @@ raw_avg_ref = raw.copy().set_eeg_reference(ref_channels="average",ch_type='eeg')
 raw_avg_ref.filter(l_freq=0.1,h_freq=50,method='iir',iir_params=dict(order=4,ftype='butter'))
 
 #%% Do epoch based on the events
-epoch = mne.Epochs(raw_avg_ref,events, event_id=6,tmin=-0.1,tmax=2,baseline=(-0.1,0))
+epoch = mne.Epochs(raw_avg_ref,events, event_id=2,tmin=-0.1,tmax=0.5,baseline=(-0.1,0))
 evoked = epoch.average()
 
 #%% check the stim2 and stimtracker timing
