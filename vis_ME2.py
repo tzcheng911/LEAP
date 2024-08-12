@@ -93,8 +93,8 @@ for run in runs:
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
 
-br_mne = np.load(root_path + 'br_group_02_stc_mne.npy')
-br_lcmv = np.load(root_path + 'br_group_02_stc_lcmv.npy')
+br_mne = np.load(root_path + 'br_group_03_stc_mne.npy')
+br_lcmv = np.load(root_path + 'br_group_03_stc_lcmv.npy')
 
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
 times = stc1.times
@@ -102,4 +102,17 @@ src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.f
 
 stc1.data = br_mne.mean(axis=0)
 stc1.data = br_lcmv.mean(axis=0)
-stc1.plot(src = src)
+stc1.plot(src = src,clim=dict(kind="value",lims=[5,5.5,8]))
+
+#%% temp for plotting
+subjects_dir = '/media/tzcheng/storage2/subjects/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
+
+stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
+times = stc1.times
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+
+seven_mo_mne1 = np.load('7mo_0_15_group_04_stc_mne.npy')
+seven_mo_mne2 = np.load('7mo_15_32_group_04_stc_mne.npy')
+stc1.data = 0.5*(seven_mo_mne1.mean(0) + seven_mo_mne2.mean(0))
+stc1.plot(src = src,clim=dict(kind="value",lims=[5,5.5,8]))
