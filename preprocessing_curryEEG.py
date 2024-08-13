@@ -12,50 +12,50 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 raw0 = mne.io.read_raw_curry('/media/tzcheng/storage/RASP/20240730/Acquisition_soundmod_Pilot3.cdt', preload=True)
-raw0.set_montage("standard_1020", match_case=False,on_missing='warn')
-raw0.plot_sensors(show_names = True,sphere="eeglab")
+# raw0.set_montage("standard_1020", match_case=False,on_missing='warn')
+# raw0.plot_sensors(show_names = True,sphere="eeglab")
 # raw0.plot()
 raw = raw0.copy()
 #%% Do some artifact removal
-raw.drop_channels(["FT11","Cz","CPz"])
+# raw.drop_channels(["FT11","Cz","CPz"])
 
 ## Repairing with ICA
-filt_raw = raw.copy().filter(l_freq=0.1, h_freq=None)
+# filt_raw = raw.copy().filter(l_freq=0.1, h_freq=None)
 
-ica = mne.preprocessing.ICA(n_components=15, max_iter="auto", random_state=97)
-ica.fit(filt_raw)
-ica
-explained_var_ratio = ica.get_explained_variance_ratio(filt_raw)
-raw.load_data()
+# ica = mne.preprocessing.ICA(n_components=15, max_iter="auto", random_state=97)
+# ica.fit(filt_raw)
+# ica
+# explained_var_ratio = ica.get_explained_variance_ratio(filt_raw)
+# raw.load_data()
 
-# Using an EOG channel to select ICA components
-ica.exclude = []
-# find which ICs match the EOG pattern
-eog_indices, eog_scores = ica.find_bads_eog(raw)
-ica.exclude = eog_indices
-ecg_indices, ecg_scores = ica.find_bads_ecg(raw, method="correlation", threshold="auto")
-ica.exclude = ecg_indices
-reconst_raw = raw.copy()
-ica.apply(reconst_raw)
+# # Using an EOG channel to select ICA components
+# ica.exclude = []
+# # find which ICs match the EOG pattern
+# eog_indices, eog_scores = ica.find_bads_eog(raw)
+# ica.exclude = eog_indices
+# ecg_indices, ecg_scores = ica.find_bads_ecg(raw, method="correlation", threshold="auto")
+# ica.exclude = ecg_indices
+# reconst_raw = raw.copy()
+# ica.apply(reconst_raw)
 
-# manual IC selection 
-ica.plot_sources(raw, show_scrollbars=False)
-ica.plot_components()
-ica.plot_properties(raw, picks=[0, 1])
-ica.exclude = [0, 1]
-reconst_raw = raw.copy()
-ica.apply(reconst_raw)
+# # manual IC selection 
+# ica.plot_sources(raw, show_scrollbars=False)
+# ica.plot_components()
+# ica.plot_properties(raw, picks=[0, 1])
+# ica.exclude = [0, 1]
+# reconst_raw = raw.copy()
+# ica.apply(reconst_raw)
 
 ## Repairing with SSP
-ecg_epochs = mne.preprocessing.create_ecg_epochs(raw,ch_name='EMG1').average()
-ecg_epochs.plot_joint(times=[-0.25, -0.025, 0, 0.025, 0.25])
-eog_epochs = mne.preprocessing.create_eog_epochs(raw,ch_name=['VEOG','HEOG']).average()
-eog_epochs.plot_joint(times=[-0.25, -0.025, 0, 0.025, 0.25])
-ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='EMG1', reject=None)
-eog_projs, eog_events = mne.preprocessing.compute_proj_eog(raw, ch_name=['VEOG','HEOG'], reject=None)
+# ecg_epochs = mne.preprocessing.create_ecg_epochs(raw,ch_name='EMG1').average()
+# ecg_epochs.plot_joint(times=[-0.25, -0.025, 0, 0.025, 0.25])
+# eog_epochs = mne.preprocessing.create_eog_epochs(raw,ch_name=['VEOG','HEOG']).average()
+# eog_epochs.plot_joint(times=[-0.25, -0.025, 0, 0.025, 0.25])
+# ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='EMG1', reject=None)
+# eog_projs, eog_events = mne.preprocessing.compute_proj_eog(raw, ch_name=['VEOG','HEOG'], reject=None)
 
-raw.add_proj(ecg_projs)
-raw.add_proj(eog_projs)
+# raw.add_proj(ecg_projs)
+# raw.add_proj(eog_projs)
 
 #%% Get events
 events,event_id = mne.events_from_annotations(raw)
