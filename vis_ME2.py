@@ -13,6 +13,8 @@ import os
 import mne
 from mne.datasets import somato
 from mne.time_frequency import tfr_morlet
+from scipy.io import wavfile
+from scipy import stats,signal
 
 #%%#######################################   
 tmin = 1.0
@@ -89,7 +91,7 @@ for run in runs:
     plt.plot(freqs,psds[55,:])
     plt.title(label[55])
 
-#%%####################################### visualize group results
+#%%####################################### visualize group results time series
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
 
@@ -104,17 +106,41 @@ stc1.data = br_mne.mean(axis=0)
 stc1.data = br_lcmv.mean(axis=0)
 stc1.plot(src = src,clim=dict(kind="value",lims=[5,5.5,8]))
 
-#%% temp for plotting
-subjects_dir = '/media/tzcheng/storage2/subjects/'
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
+#%%####################################### visualize audio in frequency
+fs, random_audio = wavfile.read('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/Stimuli/Random.wav')
+fs, duple_audio = wavfile.read('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/Stimuli/Duple300.wav')
+fs, triple_audio = wavfile.read('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/Stimuli/Triple300.wav')
+plt.figure()
+plt.plot(np.linspace(0,len(random_audio)/fs,len(random_audio)),random_audio)
+plt.figure()
+plt.plot(np.linspace(0,len(duple_audio)/fs,len(duple_audio)),duple_audio)
+plt.figure()
+plt.plot(np.linspace(0,len(triple_audio)/fs,len(triple_audio)),triple_audio)
 
-stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
-times = stc1.times
-src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+psds, freqs = mne.time_frequency.psd_array_welch(
+random_audio,fs, # could replace with label time series
+n_fft=len(random_audio),
+n_overlap=0,
+n_per_seg=None,
+fmin=fmin,
+fmax=fmax,)
 
-# seven_mo_mne1 = np.load('7mo_0_15_group_04_stc_mne.npy')
-# seven_mo_mne2 = np.load('7mo_15_32_group_04_stc_mne.npy')
-# stc1.data = 0.5*(seven_mo_mne1.mean(0) + seven_mo_mne2.mean(0))
-eleven_mo_mne = np.load('11mo_group_01_stc_mne.npy')
-stc1.data = eleven_mo_mne.mean(0)
-stc1.plot(src = src,clim=dict(kind="value",lims=[5,5.5,8]))
+plt.figure()
+plt.plot(freqs,psds)
+
+# Downsample
+fs_new = 1000
+num_random = int((len(random_audio)*fs_new)/fs)
+num_duple = int((len(duple_audio)*fs_new)/fs) 
+num_triple = int((len(triple_audio)*fs_new)/fs)  
+            
+random_audio = signal.resample(random_audio, num_random, t=None, axis=0, window=None)
+duple_audio = signal.resample(duple_audio, num_duple, t=None, axis=0, window=None)
+triple_audio = signal.resample(triple_audio, num_triple, t=None, axis=0, window=None)
+
+plt.figure()
+plt.plot(np.linspace(0,len(random_audio)/fs_new,len(random_audio)),random_audio)
+plt.figure()
+plt.plot(np.linspace(0,len(duple_audio)/fs_new,len(duple_audio)),duple_audio)
+plt.figure()
+plt.plot(np.linspace(0,len(triple_audio)/fs_new,len(triple_audio)),triple_audio)
