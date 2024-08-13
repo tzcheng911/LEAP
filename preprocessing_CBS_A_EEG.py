@@ -254,6 +254,7 @@ event_id = {'Standard':1,'Deviant1':3,'Deviant2':6}
 epochs = mne.Epochs(raw_file, mmr_event, event_id,tmin =-0.05, tmax=0.15,baseline=(-0.05,0))
 evoked_substd=epochs['Standard'].average(picks=('misc'))
 evoked_substd.plot()
+
 #%% analyze cabr data
 cabr_event=mne.read_events('/media/tzcheng/storage/CBS/'+subj+'/events/'+subj+'_'+block+'_events_cabr-eve.fif')
 
