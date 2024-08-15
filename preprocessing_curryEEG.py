@@ -10,10 +10,16 @@ Used for analyzing Curry EEG system.
 import mne 
 import matplotlib.pyplot as plt
 import numpy as np
+import curryreader as cr
 
 root_path = '/media/tzcheng/storage/RASP/'
+
+## load the data with cr_read()
+currydata = cr.read(root_path + '20240730/Acquisition_random_Pilot3.cdt')
+
+## load the data with read_raw_curry
 raw0 = mne.io.read_raw_curry(root_path + '20240730/Acquisition_random_Pilot3.cdt', preload=True)
-montage = mne.channels.read_custom_montage(root_path + 'SynAmps2_Quik-Cap64.loc')
+montage = mne.channels.read_custom_montage(root_path + 'SynAmps2_Quik-Cap64_curryreader.loc')
 # raw0.set_montage("standard_1020", match_case=False,on_missing='warn')
 # raw0.plot_sensors(show_names = True,sphere="eeglab")
 # raw0.plot()
@@ -24,6 +30,7 @@ raw.rename_channels({'Fp1':'FP1','Fp2':'FP2','Fpz':'FPZ','Cb1':'CB1','Cb2':'CB2'
                      'POz':'POZ','Oz':'OZ','FT11':'FT7','FT12':'FT8'})
 raw.drop_channels(['Trigger','F11','F12','CB1','CB2'] + bad_channels)
 raw.set_montage(montage)
+
 
 #%% Get events
 events,event_id = mne.events_from_annotations(raw)
