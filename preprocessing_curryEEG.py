@@ -15,11 +15,11 @@ import curryreader as cr
 root_path = '/media/tzcheng/storage/RASP/'
 
 ## load the data with cr_read()
-currydata = cr.read(root_path + '20240730/Acquisition_random_Pilot3.cdt')
+# currydata = cr.read(root_path + '20240815/Acquisition_Pilot4_clicks.cdt')
 
-## load the data with read_raw_curry
-raw0 = mne.io.read_raw_curry(root_path + '20240730/Acquisition_random_Pilot3.cdt', preload=True)
-montage = mne.channels.read_custom_montage(root_path + 'SynAmps2_Quik-Cap64_curryreader.loc')
+## load the data with read_raw_curry()
+raw0 = mne.io.read_raw_curry(root_path + '20240815/Acquisition_Pilot4_clicks.cdt', preload=True)
+montage = mne.channels.read_custom_montage(root_path + 'SynAmps2_Quik-Cap64.loc')
 # raw0.set_montage("standard_1020", match_case=False,on_missing='warn')
 # raw0.plot_sensors(show_names = True,sphere="eeglab")
 # raw0.plot()
@@ -69,11 +69,11 @@ events,event_id = mne.events_from_annotations(raw)
 # ecg_epochs.plot_joint(times=[-0.25, -0.025, 0, 0.025, 0.25])
 # eog_epochs = mne.preprocessing.create_eog_epochs(raw,ch_name=['VEOG','HEOG']).average()
 # eog_epochs.plot_joint(times=[-0.25, -0.025, 0, 0.025, 0.25])
-ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='EMG1', reject=None)
-eog_projs, eog_events = mne.preprocessing.compute_proj_eog(raw, ch_name=['VEOG','HEOG'], reject=None)
+# ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='EMG1', reject=None)
+# eog_projs, eog_events = mne.preprocessing.compute_proj_eog(raw, ch_name=['VEOG','HEOG'], reject=None)
 
-raw.add_proj(ecg_projs)
-raw.add_proj(eog_projs)
+# raw.add_proj(ecg_projs)
+# raw.add_proj(eog_projs)
 
 #%% Referencing
 raw_avg_ref = raw.copy().set_eeg_reference(ref_channels="average",ch_type='eeg', projection=True)
