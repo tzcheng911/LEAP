@@ -147,7 +147,7 @@ def do_filtering(data, lp, hp, do_cabr):
         data.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5)
         data.filter(l_freq=hp,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     else:
-        data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
+        data.filter(l_freq=0,h_freq=50,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
 
 def do_cov(subject,data, do_cabr,hp,lp):
@@ -366,7 +366,7 @@ st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
 lp = 450 
 hp = 80
-do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
+do_cabr = False # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
