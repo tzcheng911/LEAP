@@ -155,7 +155,7 @@ runs = ['_01','_02']
 run = runs[0]
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_b'):
+    if file.startswith('cbs_A'):
         subj.append(file)
 for s in tqdm(subj):
     # for run in runs:
