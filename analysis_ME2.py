@@ -80,6 +80,7 @@ fmax=fmax,)
 
 plt.figure()
 plot_err(psds[:,nROI,:],'k',freqs)
+plt.title(label_names[nROI])
 
 psds, freqs = mne.time_frequency.psd_array_welch(
 MEG_v,MEG_fs, # take about 2 mins
@@ -96,7 +97,7 @@ plot_err(psds[:,nV,:],'k',freqs)
 stc1.data = psds.mean(axis=0)
 stc1.tmin = freqs[0] # hack into the time with freqs
 stc1.tstep = np.diff(freqs)[0] # hack into the time with freqs
-stc1.plot(src = src,clim=dict(kind="value",lims=[5,5.5,8]))
+stc1.plot(src = src,clim=dict(kind="value",lims=[1,3,5]))
 
 #%%####################################### Connectivity analysis
 con_methods = ["pli", "wpli2_debiased", "ciplv"]
