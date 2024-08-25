@@ -36,24 +36,45 @@ group_std = []
 group_ba = []
 group_mba = []
 group_pa = []
+last_ba_nave = []
+last_mba_nave = []
+last_pa_nave = []
+first_mba_nave = []
+first_pa_nave = []
+FFR_ba_nave = []
+FFR_mba_nave = []
+FFR_pa_nave = []
 
 for s in subj:
     print('Extracting ' + s + ' data')
     file_in = root_path + s + '/sss_fif/' + s
     
-    ## MMR
+    ## conventional MMR
     dev1=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_dev1_mmr.fif')[0]
     dev2=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_dev2_mmr.fif')[0]
     std=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_substd_mmr.fif')[0]
    
-    mmr1 = dev1.data - std.data
-    mmr2 = dev2.data - std.data
+    last_ba_nave.append(std.nave)
+    first_mba_nave.append(dev1.nave)
+    first_pa_nave.append(dev2.nave)
+
+    # mmr1 = dev1.data - std.data
+    # mmr2 = dev2.data - std.data
     
-    group_dev1.append(dev1.data)
-    group_dev2.append(dev2.data)
-    group_std.append(std.data)
-    group_mmr1.append(mmr1)
-    group_mmr2.append(mmr2)
+    # group_dev1.append(dev1.data)
+    # group_dev2.append(dev2.data)
+    # group_std.append(std.data)
+    # group_mmr1.append(mmr1)
+    # group_mmr2.append(mmr2)
+    
+    # for the reverse
+    std1 = mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_substd1_reverse_mmr.fif',allow_maxshield = True)[0]
+    std2 = mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_substd2_reverse_mmr.fif',allow_maxshield = True)[0]
+    last_mba_nave.append(std1.nave)
+    last_pa_nave.append(std2.nave)
+    # dev = mne.read_evokeds(root_path + s +'/eeg/' + s + '_' + run + '_evoked_dev_reverse_mmr.fif',allow_maxshield = True)[0]
+    # mmr1 = dev.data - std1.data
+    # mmr2 = dev.data - std2.data
     
     ## cABR
     # dev1=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f80450_evoked_dev1_ffr_all.fif')[0]
@@ -63,16 +84,16 @@ for s in subj:
     # group_mba.append(dev1.data)
     # group_pa.append(dev2.data)
 
-group_dev1= np.asarray(group_dev1)
-group_dev2= np.asarray(group_dev2)
-group_std= np.asarray(group_std)
-group_mmr1=np.asarray(group_mmr1)
-group_mmr2=np.asarray(group_mmr2)
-np.save(root_path + 'cbsA_meeg_analysis/group_dev1_sensor.npy',group_dev1)
-np.save(root_path + 'cbsA_meeg_analysis/group_dev2_sensor.npy',group_dev2)
-np.save(root_path + 'cbsA_meeg_analysis/group_std_sensor.npy',group_std)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_sensor.npy',group_mmr1)
-np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_sensor.npy',group_mmr2)
+# group_dev1= np.asarray(group_dev1)
+# group_dev2= np.asarray(group_dev2)
+# group_std= np.asarray(group_std)
+# group_mmr1=np.asarray(group_mmr1)
+# group_mmr2=np.asarray(group_mmr2)
+# np.save(root_path + 'cbsA_meeg_analysis/group_dev1_sensor.npy',group_dev1)
+# np.save(root_path + 'cbsA_meeg_analysis/group_dev2_sensor.npy',group_dev2)
+# np.save(root_path + 'cbsA_meeg_analysis/group_std_sensor.npy',group_std)
+# np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_sensor.npy',group_mmr1)
+# np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_sensor.npy',group_mmr2)
 # group_ba=np.asarray(group_ba)
 # group_mba=np.asarray(group_mba)
 # group_pa=np.asarray(group_pa)
