@@ -1,2 +1,2 @@
 # LEAP
- Scrtips for adults and infants MEEG processing
+ Scripts for adults and infants MEEG processing
