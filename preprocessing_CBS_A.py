@@ -14,7 +14,7 @@ Could be used on cbsb too after otp and sss!
 
 ###### Import library 
 import mne
-import mnefun
+# import mnefun
 import matplotlib
 from mne.preprocessing import maxwell_filter
 import numpy as np
@@ -361,7 +361,7 @@ direction = 'ba_to_pa' # traditional direction 'ba_to_pa': ba to pa and ba to mb
 # reverse direction 'pa_to_ba' : is pa to ba and mba to ba; 
 # only comparing /ba/ 'first_last_ba': only comparing /ba/ before and after habituation 
 # runs = ['_02'] # ['_01','_02'] for the adults and ['_01'] for the infants
-runs = ['_unplug','_plug'] # for stimuli leakage test
+runs = ['_plug'] # for stimuli leakage test
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
 lp = 450 
@@ -382,8 +382,8 @@ n_trials =  200 # can be an integer or 'all' using all the sounds
 
 for s in subj:
     print(s)
-    do_otp(s)
-    do_sss(s,st_correlation,int_order)
+    # do_otp(s)
+    # do_sss(s,st_correlation,int_order)
     for run in runs:
         filename = root_path + s + '/sss_fif/' + s + run + '_otp_raw_sss_proj.fif'
 
