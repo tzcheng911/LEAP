@@ -360,8 +360,8 @@ os.chdir(root_path)
 direction = 'ba_to_pa' # traditional direction 'ba_to_pa': ba to pa and ba to mba
 # reverse direction 'pa_to_ba' : is pa to ba and mba to ba; 
 # only comparing /ba/ 'first_last_ba': only comparing /ba/ before and after habituation 
-# runs = ['_02'] # ['_01','_02'] for the adults and ['_01'] for the infants
-runs = ['_plug'] # for stimuli leakage test
+runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
+# runs = ['_unplug'] # for stimuli leakage test
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
 lp = 450 
@@ -372,7 +372,7 @@ subj = [] # A104 got some technical issue
 for file in os.listdir():
     if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
-subj = ['cbs_zoe']
+# subj = ['cbs_zoe']
 
 #%%##### do the jobs for MEG
 n_trials =  200 # can be an integer or 'all' using all the sounds
