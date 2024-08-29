@@ -156,36 +156,51 @@ src=mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsave
 
 times = stc1.times
 
-mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr1_vector_morph.npy')
-mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/vector_method/group_mmr2_vector_morph.npy')
+mmr1 = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr1_vector_morph.npy')
+mmr2 = np.load(root_path + 'cbsA_meeg_analysis/MEG/MMR/vector_method/group_mmr2_vector_morph.npy')
 
 X = mmr1-mmr2
 Xt = np.transpose(X,[0,2,1])
 
 print('Computing adjecency')
-adjecency = spatial_src_adjacency(src)
+adjacency = spatial_src_adjacency(src)
 
 #    Now let's actually do the clustering. This can take a long time...
 #    Here we set the threshold quite high to reduce computation.
 # p_threshold = 0.01
 # t_threshold=-stats.distributions.t.ppf(p_threshold/2.,35-1)
+
+## From mne tutorial https://mne.tools/dev/auto_tutorials/stats-source-space/20_cluster_1samp_spatiotemporal.html
+p_threshold = 0.001
+df = 18 - 1  # degrees of freedom for the test
+t_threshold = stats.distributions.t.ppf(1 - p_threshold / 2, df=df)
+
+T_obs, clusters, cluster_p_values, H0 = clu = spatio_temporal_cluster_1samp_test(
+    X,
+    adjacency=adjacency,
+    n_jobs=None,
+    threshold=t_threshold,
+    buffer_size=None,
+    verbose=True,
+)
 print('Clustering.')
 
 # T_obs, clusters, cluster_p_values, H0 = clu =\
 #     spatio_temporal_cluster_1samp_test(Xt, adjacency=adjecency, n_jobs=4,threshold=None, buffer_size=None,n_permutations=512)
 
 ## will kill the kernal
-T_obs, clusters, cluster_p_values, H0 = clu =\
-    spatio_temporal_cluster_1samp_test(Xt, adjacency=adjecency, n_jobs=4,threshold=dict(start=0,step=0.5), buffer_size=None,n_permutations=512)
+# T_obs, clusters, cluster_p_values, H0 = clu =\
+#     spatio_temporal_cluster_1samp_test(Xt, adjacency=adjecency, n_jobs=4,threshold=dict(start=0,step=0.5), buffer_size=None,n_permutations=512)
 #    Now select the clusters that are sig. at p < 0.05 (note that this value
 #    is multiple-comparisons corrected).
-good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
+# good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
+
 
 toc = time.time()
 print('it takes ' +str((toc-tic)/60) +'mins')
-np.save('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/tfce_p_values',cluster_p_values)
-np.save('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/tfce_t',T_obs)
-np.save('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/tfce_h0',H0)
+# np.save('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/tfce_p_values',cluster_p_values)
+# np.save('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/tfce_t',T_obs)
+# np.save('/media/tzcheng/storage/CBS/cbsA_meeg_analysis/tfce_h0',H0)
 
 #%% visualize clusters
 stc=mne.read_source_estimate('/CBS/cbs_A101/sss_fif/cbs_A101_mmr1-vl.stc')
