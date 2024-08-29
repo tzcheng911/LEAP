@@ -33,6 +33,8 @@ group_mmr2 = []
 group_dev1 = []
 group_dev2 = []
 group_std = []
+group_std1 = []
+group_std2 = []
 group_ba = []
 group_mba = []
 group_pa = []
@@ -75,6 +77,8 @@ for s in subj:
     # dev = mne.read_evokeds(root_path + s +'/eeg/' + s + '_' + run + '_evoked_dev_reverse_mmr.fif',allow_maxshield = True)[0]
     # mmr1 = dev.data - std1.data
     # mmr2 = dev.data - std2.data
+    group_std1.append(std1.data)
+    group_std2.append(std2.data)
     
     ## cABR
     # dev1=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f80450_evoked_dev1_ffr_all.fif')[0]
@@ -87,11 +91,15 @@ for s in subj:
 # group_dev1= np.asarray(group_dev1)
 # group_dev2= np.asarray(group_dev2)
 # group_std= np.asarray(group_std)
+group_std1= np.asarray(group_std1)
+group_std2= np.asarray(group_std2)
 # group_mmr1=np.asarray(group_mmr1)
 # group_mmr2=np.asarray(group_mmr2)
 # np.save(root_path + 'cbsA_meeg_analysis/group_dev1_sensor.npy',group_dev1)
 # np.save(root_path + 'cbsA_meeg_analysis/group_dev2_sensor.npy',group_dev2)
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_sensor.npy',group_std)
+np.save(root_path + 'cbsA_meeg_analysis/group_std1_reverse_sensor.npy',group_std1)
+np.save(root_path + 'cbsA_meeg_analysis/group_std2_reverse_sensor.npy',group_std2)
 # np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_sensor.npy',group_mmr1)
 # np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_sensor.npy',group_mmr2)
 # group_ba=np.asarray(group_ba)
