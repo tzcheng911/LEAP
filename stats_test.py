@@ -16,7 +16,7 @@ import mne
 import scipy.stats as stats
 from scipy import stats,signal
 from mne import spatial_src_adjacency
-from mne.stats import spatio_temporal_cluster_1samp_test
+from mne.stats import spatio_temporal_cluster_1samp_test, summarize_clusters_stc
 import sklearn 
 import matplotlib.pyplot as plt 
 from scipy.io import wavfile
@@ -163,7 +163,7 @@ X = mmr1-mmr2
 Xt = np.transpose(X,[0,2,1])
 
 print('Computing adjecency')
-adjacency = spatial_src_adjacency(src)
+adjacency = mne.spatial_src_adjacency(src)
 
 #    Now let's actually do the clustering. This can take a long time...
 #    Here we set the threshold quite high to reduce computation.
@@ -176,7 +176,7 @@ df = 18 - 1  # degrees of freedom for the test
 t_threshold = stats.distributions.t.ppf(1 - p_threshold / 2, df=df)
 
 T_obs, clusters, cluster_p_values, H0 = clu = spatio_temporal_cluster_1samp_test(
-    X,
+    Xt,
     adjacency=adjacency,
     n_jobs=None,
     threshold=t_threshold,
