@@ -57,7 +57,7 @@ fmin = 0.5
 fmax = 5
 MEG_fs = 1000
 n_lines = 10
-n_freq = [6,7] # 1.1 Hz [12, 13] # 1.6 Hz [33] 3.33 Hz 
+n_freq = [33] # [6,7] 1.1 Hz, [12, 13] 1.6 Hz, [33] 3.33 Hz 
 
 ## Frequency spectrum of the audio 
 psds, freqs = mne.time_frequency.psd_array_welch(
@@ -115,17 +115,20 @@ con = spectral_connectivity_epochs( # Compute frequency- and time-frequency-doma
     n_jobs=1,
 )
 
+## Extract the data
+test = con[2].get_data(output="dense")[:, :, n_freq].mean(2)
+
 con_res = dict()
 for method, c in zip(con_methods, con):
-    con_res[method] = c.get_data(output="dense")[:, :, n_freq] # get the n freq
+    con_res[method] = c.get_data(output="dense")[:, :, n_freq].mean(2) # get the n freq
     
 ## visualization
-# label_names = label_names[nROI]
+label_names = label_names[nROI]
 labels = mne.read_labels_from_annot("sample", parc="aparc", subjects_dir=subjects_dir)
 label_colors = [label.color for label in labels]
 
 node_order = list()
-node_order.extend(label_names[::-1])  # reverse the order
+node_order.extend(label_names)  # reverse the order
 node_angles = circular_layout(
     label_names, node_order, start_pos=90, group_boundaries=[0, len(label_names) / 2]
 )
