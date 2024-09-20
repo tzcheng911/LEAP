@@ -37,7 +37,7 @@ for nlabel in np.arange(0,len(labels),1):
     label_v_ind.append(idx)
 
 #%% Key in the vertex number from the stc.plot to see which ROI it's in, and check whether this location is relevant 
-nv = 28899
+nv = 20284
 v_ind = np.where(src[0]['vertno'] == nv)
 for nlabel in np.arange(0,len(labels),1):
     if v_ind in label_v_ind[nlabel][0]:
