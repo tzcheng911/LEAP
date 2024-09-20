@@ -136,6 +136,8 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_133': ['MEG0312', 'MEG1712'],
     'sld_135': ['MEG0312', 'MEG1712'],
     'sld_136': ['MEG0312', 'MEG1712'],
+    'sld_138': ['MEG0312', 'MEG1712'],
+    'sld_139': ['MEG0312', 'MEG1712'],
     }
     
     t2_prebad = {
@@ -156,6 +158,7 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_122': ['MEG0312', 'MEG1712'],
     'sld_121': ['MEG0312', 'MEG1712'],
     'sld_123': ['MEG0312', 'MEG1712'],
+    'sld_124': ['MEG0312', 'MEG1712'],
     }
     
     t3_prebad = {
