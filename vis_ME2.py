@@ -96,14 +96,14 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
 
 br_mne = np.load(root_path + 'br_group_01_stc_mne.npy')
-br_lcmv = np.load(root_path + 'br_group_01_stc_lcmv.npy')
+# br_lcmv = np.load(root_path + 'br_group_01_stc_lcmv.npy')
 
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
 times = stc1.times
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
 stc1.data = br_mne.mean(axis=0)
-stc1.data = br_lcmv.mean(axis=0)
+# stc1.data = br_lcmv.mean(axis=0)
 stc1.plot(src = src,clim=dict(kind="value",lims=[5,5.5,8]))
 
 #%%####################################### visualize audio in frequency
