@@ -140,6 +140,7 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_139': ['MEG0312', 'MEG1712'],
     'sld_140': ['MEG0312', 'MEG1712'],
     'sld_142': ['MEG0312', 'MEG1712'],
+    'sld_143': ['MEG0312', 'MEG1712'],
     }
     
     t2_prebad = {
@@ -340,12 +341,12 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld_105'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = ['sld_142']
+subjects = ['sld_143']
 
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    # do_otp(s,time)
+    do_otp(s,time)
     do_sss(s,st_correlation,int_order,time)
     for run in runs:
         if time == 0:
