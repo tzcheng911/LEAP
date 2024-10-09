@@ -55,7 +55,7 @@ def plot_err(group_data,color,t):
     
 #%%####################################### Load the files
 age = 'br' # '7mo' or '7mo_0_15' or '7mo_15_32' or '11mo' or 'br' for adults
-run = '_02' # '_01','_02','_03','_04' silence, random, duple, triple
+run = '_03' # '_01','_02','_03','_04' silence, random, duple, triple
 
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
