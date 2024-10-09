@@ -21,6 +21,7 @@ Notes:
 8. sld_125 t1 only get through 175 trials: cut out the last trial raw_file = raw.copy().crop(tmin=None, tmax=836.6) (manually create the event file)
 9. sld_113 t2 only get through 146 trials: manually fix the last trial (13 sounds recorded add 13: [3, 5, 7, 9, 11] to alt_set_length) before the stop
 The correspondance between event tage and sound are
+10. sld_143_t1 only get through 170 trials: cut out the last trial raw_file = raw.copy().crop(tmin=None, tmax=900.5) (manually create the event file)
 
                         TTl                  event code
 standard                448                  1 and 2 (alt)
@@ -269,7 +270,7 @@ os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
-time = '_t3' # '_t1' first time (6 mo) or '_t2' second time (12 mo) or '_t3' third time coming back, or 0 for cbs
+time = '_t1' # '_t1' first time (6 mo) or '_t2' second time (12 mo) or '_t3' third time coming back, or 0 for cbs
 direction = "ba_to_pa"
 
 # https://uwnetid-my.sharepoint.com/:x:/r/personal/babyleap_uw_edu/_layouts/15/Doc.aspx?sourcedoc=%7B4CDEB132-CCF5-4641-AFEF-43E17E28C126%7D&file=SLD%20Tracking%20&%20Runsheets.xlsx=&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0&action=default&mobileredirect=true
@@ -282,8 +283,8 @@ for file in os.listdir():
         subj.append(file)
 
 ## do individual by individual(s), check the time t1, t2 or t3 too
-subj = ['sld_123']
-conditions = ['1']
+subj = ['sld_143']
+conditions = ['6']
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]
@@ -295,6 +296,7 @@ for n,s in enumerate(subj):
     # raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/' + s + '/raw_fif/' + s + run +'_raw.fif',allow_maxshield=True,preload=True)
     raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s + time + run +'_raw.fif',allow_maxshield=True,preload=True)
     # raw_file = raw_file.copy().crop(tmax=836.6) # for sld_125 t1 
+    raw_file = raw_file.copy().crop(tmax=900.5) # for sld_143 t1 
     find_events(raw_file, s,run,time)
     events=process_events(s,run,time)
     check=check_events(events,condition)
