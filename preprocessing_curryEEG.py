@@ -107,7 +107,7 @@ raw_avg_ref.filter(l_freq=1,h_freq=50,method='iir',iir_params=dict(order=4,ftype
 # epoch = mne.Epochs(raw_avg_ref,events, event_id=1,tmin=-0.1,tmax=0.3,baseline=(-0.05,0), proj='delayed',reject=dict(eeg=100e-6))
 # evoked = epoch.average()
 # evoked.plot_topomap(proj='interactive')
-epoch = mne.Epochs(raw_avg_ref,events, event_id=7,tmin=-0.1,tmax=2,baseline=(-0.1,0), proj=True,reject=dict(eeg=35-6)) # reject=dict(eeg=100e-6)
+epoch = mne.Epochs(raw_avg_ref,events, event_id=7,tmin=-0.1,tmax=1.5,baseline=(-0.1,0), proj=True,reject=dict(eeg=35-6)) # reject=dict(eeg=100e-6)
 evoked = epoch.average()
 
 #%% check the stim2 and stimtracker timing
@@ -117,7 +117,7 @@ evoked = epoch.average()
 # plt.hist(all_diff, bins =5)
 
 #%% Visualization
-times = np.arange(-0.1, 0.5, 0.05)
+times = np.arange(-0.1, 1.5, 0.05)
 evoked.plot(ylim = dict(eeg=[-2, 2]))
 evoked.plot_topomap(times,vlim=(-1,1),show_names=False)
 plt.figure()
