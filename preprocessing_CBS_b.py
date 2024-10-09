@@ -177,6 +177,7 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_116': ['MEG0312', 'MEG1712'],
     'sld_119': ['MEG0312', 'MEG1712'],
     'sld_121': ['MEG0312', 'MEG1712'],
+    'sld_123': ['MEG0312', 'MEG1712'],
     }
     if time == '_t1':
         params.mf_prebad = t1_prebad
