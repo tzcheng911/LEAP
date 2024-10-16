@@ -18,10 +18,10 @@ Notes:
 5. sld_105 t2 has 2 recordings
 6. sld_107 t3 cut the last one sound (manually create the event file)
 7. sld_124 t1 cut the last few sounds (manually create the event file)
-8. sld_125 t1 only get through 175 trials: cut out the last trial raw_file = raw.copy().crop(tmin=None, tmax=836.6) (manually create the event file)
+8. sld_125 t1 only get through 175 trials: cut out the last trial raw_file = raw.copy().crop(tmax=836.6) (manually create the event file)
 9. sld_113 t2 only get through 146 trials: manually fix the last trial (13 sounds recorded add 13: [3, 5, 7, 9, 11] to alt_set_length) before the stop
 The correspondance between event tage and sound are
-10. sld_143_t1 only get through 170 trials: cut out the last trial raw_file = raw.copy().crop(tmin=None, tmax=900.5) (manually create the event file)
+10. sld_143_t1 only get through 170 trials: cut out the last trial raw_file = raw.copy().crop(tmax=900.5) (manually create the event file)
 
                         TTl                  event code
 standard                448                  1 and 2 (alt)
