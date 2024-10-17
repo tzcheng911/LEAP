@@ -19,7 +19,7 @@ from mne.datasets import somato
 from mne.time_frequency import tfr_morlet, tfr_multitaper, tfr_stockwell, AverageTFRArray
 from scipy.io import wavfile
 from scipy import stats,signal
-from mne_connectivity import spectral_connectivity_epochs
+from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time
 from mne_connectivity.viz import plot_connectivity_circle
 from mne.viz import circular_layout
 
@@ -183,10 +183,12 @@ source_tfr = mne.time_frequency.tfr_array_morlet(MEG_v,MEG_fs,freqs=np.arange(1,
 #%%####################################### Connectivity analysis
 # How are ROI connected, which direction?
 con_methods = ["pli", "plv", "coh"]
+
+# across subjects
 con = spectral_connectivity_epochs( # Compute frequency- and time-frequency-domain connectivity measures
     MEG_roi[:,nROI,:],
     method=con_methods,
-    mode="multitaper",
+    mode="multitaper", # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
     sfreq=MEG_fs,
     fmin=fmin,
     fmax=fmax,
@@ -195,7 +197,20 @@ con = spectral_connectivity_epochs( # Compute frequency- and time-frequency-doma
     n_jobs=1,
 )
 
-## Extract the data
+# across time for each subject (this one makes more sense)
+con = spectral_connectivity_time(  # Compute frequency- and time-frequency-domain connectivity measures
+    MEG_roi[:, nROI, :],
+    method=con_methods,
+    # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
+    mode="multitaper",
+    sfreq=MEG_fs,
+    fmin=fmin,
+    fmax=fmax,
+    freqs = np.arange(1,30,1),
+    faverage=False,
+    n_jobs=1,
+)
+# Extract the data
 test = con[2].get_data(output="dense")[:, :, n_freq].mean(2)
 
 con_res = dict()
