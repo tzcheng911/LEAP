@@ -149,6 +149,8 @@ NA_idx_sort = np.where(np.isin(np.array(ind),np.array(NA_idx)))
 
 
 EEG_env_conn_contrast = np.zeros((ntr,nch,27))
+EEG_env_conn_target = np.zeros((ntr,nch,27))
+EEG_env_conn_bg = np.zeros((ntr,nch,27))
 con_methods = ["pli", "plv", "coh"]
 for ntrial in np.arange(0,ntr,1): 
     print('Calculating Conn for trial ' + str(ntrial))
@@ -174,14 +176,18 @@ for ntrial in np.arange(0,ntr,1):
         con_res[method] = c.get_data(output="dense")
     temp_conn = np.squeeze(con_res["plv"][:,-2:,:-2,:]) # [tg/bg,channel,freq]
     temp_conn_contrast = temp_conn[0,:,:]-temp_conn[1,:,:] # positive: target > bg, negative: bg > target
+    EEG_env_conn_target[ntrial,:,:] = np.squeeze(temp_conn[0,:,:])
+    EEG_env_conn_bg[ntrial,:,:] = np.squeeze(temp_conn[1,:,:])
     EEG_env_conn_contrast[ntrial,:,:] = temp_conn_contrast
-
+np.save(root_path + 'EEG_env_conn_target-bg.npy',EEG_env_conn_contrast)
+np.save(root_path + 'EEG_env_conn_target.npy',EEG_env_conn_target)
+np.save(root_path + 'EEG_env_conn_target-bg.npy',EEG_env_conn_bg)
 # get the ch index
 ch_names = epochs.info['ch_names']
 
 #%%######################################## Visualization
 fig, ax = plt.subplots()
-conn_contrast = np.squeeze(EEG_env_conn_contrast[[BA_idx_sort],:,:].mean(0)) # BA_idx_sort, TA_idx_sort, NA_idx_sort
+conn_contrast = np.squeeze(EEG_env_conn_contrast[BA_idx_sort,:,:].mean(1)) # BA_idx_sort, TA_idx_sort, NA_idx_sort
 im, cbar = heatmap(conn_contrast, ch_names, con[0].freqs, ax=ax,
                    cmap="jet_r", cbarlabel="EEG env Conn",aspect = 'auto',
-                   vmin=-0.5,vmax=0.5)
+                   vmin=-0.1,vmax=0.1)
