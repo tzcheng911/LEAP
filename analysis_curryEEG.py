@@ -88,6 +88,7 @@ data = epochs.get_data()
 csvFile = pandas.read_csv(root_path + 'stimuli_all/Wav_Files_by_Block_zc.csv')
 ntime = np.shape(data)[-1]
 ntr = np.shape(data)[0]
+nch = np.shape(data)[1]
 
 #%% Extract the envelope (only need to be done once)
 env_matrix = np.zeros((ntr,2,ntime))
@@ -132,44 +133,55 @@ np.save(root_path + 'stimuli_all/env_matrix.npy', np.array(env_matrix))
 
 #%%######################################## Calculate cortical tracking
 ## load the env matrix and the eeg 
-cond = [2, 6, 7, 5, 8, 1, 4, 3] # sort this matrix by the presentation order for each subject to match the eeg
-root_path = '/media/tzcheng/storage/RASP/'
-
+block = [2, 6, 7, 5, 8, 1, 4, 3] # sort this matrix by the presentation order for each subject to match the eeg
 env_matrix = np.load(root_path + 'stimuli_all/env_matrix.npy')
 ind = []
-for ncond in cond:
-    tmp = csvFile.index[csvFile['Block Number']== (ncond)].tolist()
+for nblock in block:
+    tmp = csvFile.index[csvFile['Block Number']== (nblock)].tolist()
     ind.extend(tmp)
-env_matrix_sort = env_matrix[ind,:,:]
+env_matrix_sort = env_matrix[ind,:,:] # sort the env with the presenting order
+BA_idx = csvFile.index[csvFile['Condition'] == 'BA'].tolist()
+TA_idx = csvFile.index[csvFile['Condition'] == 'TA'].tolist()
+NA_idx = csvFile.index[csvFile['Condition'] == 'CT'].tolist()
+BA_idx_sort = np.where(np.isin(np.array(ind),np.array(BA_idx)))
+TA_idx_sort = np.where(np.isin(np.array(ind),np.array(TA_idx)))
+NA_idx_sort = np.where(np.isin(np.array(ind),np.array(NA_idx)))
 
+
+EEG_env_conn_contrast = np.zeros((ntr,nch,27))
 con_methods = ["pli", "plv", "coh"]
+for ntrial in np.arange(0,ntr,1): 
+    print('Calculating Conn for trial ' + str(ntrial))
+    data_env = np.concatenate((data[ntrial,:,:],env_matrix_sort[ntrial,:,:]),axis=0)
+    
+    # over time
+    con = spectral_connectivity_time(  # Compute frequency- and time-frequency-domain connectivity measures
+        np.tile(data_env,(1,1,1)), # need to be 3D
+        method=con_methods,
+        # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
+        mode="multitaper",
+        n_cycles = 3,
+        sfreq=1000,
+        fmin=1,
+        fmax=30,
+        freqs = np.arange(3,30,1),
+        faverage=False,
+        n_jobs=1,
+    )
 
-# over time
-con = spectral_connectivity_time(  # Compute frequency- and time-frequency-domain connectivity measures
-    np.tile(data_env,(1,1,1)), # need to be 3D
-    method=con_methods,
-    # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
-    mode="multitaper",
-    n_cycles = 3,
-    sfreq=1000,
-    fmin=1,
-    fmax=30,
-    freqs = np.arange(3,30,1),
-    faverage=False,
-    n_jobs=1,
-)
-
-con_res = dict()
-for method, c in zip(con_methods, con):
-    con_res[method] = c.get_data(output="dense")
-EEG_env_conn = np.squeeze(con_res["plv"][:,-2:,:-2,:]) # [tg/bg,channel,freq]
+    con_res = dict()
+    for method, c in zip(con_methods, con):
+        con_res[method] = c.get_data(output="dense")
+    temp_conn = np.squeeze(con_res["plv"][:,-2:,:-2,:]) # [tg/bg,channel,freq]
+    temp_conn_contrast = temp_conn[0,:,:]-temp_conn[1,:,:] # positive: target > bg, negative: bg > target
+    EEG_env_conn_contrast[ntrial,:,:] = temp_conn_contrast
 
 # get the ch index
 ch_names = epochs.info['ch_names']
 
 #%%######################################## Visualization
-EEG_env_conn_contrast = EEG_env_conn[0,:,:]-EEG_env_conn[1,:,:] # positive: target > bg, negative: bg > target
 fig, ax = plt.subplots()
-im, cbar = heatmap(EEG_env_conn_contrast, ch_names, con[0].freqs, ax=ax,
+conn_contrast = np.squeeze(EEG_env_conn_contrast[[BA_idx_sort],:,:].mean(0)) # BA_idx_sort, TA_idx_sort, NA_idx_sort
+im, cbar = heatmap(conn_contrast, ch_names, con[0].freqs, ax=ax,
                    cmap="jet_r", cbarlabel="EEG env Conn",aspect = 'auto',
                    vmin=-0.5,vmax=0.5)
