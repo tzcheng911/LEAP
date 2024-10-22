@@ -213,6 +213,35 @@ stc1.data = ttcorr
 stc1_crop = stc1.copy().crop(tmin= -0.05, tmax=0.45)
 stc1_crop.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 
+## Correlation analysis Figure 4b
+mean_MEG_mmr = MEG_mmr.mean(axis=1)
+r_all_t = []
+for t in np.arange(0,len(times),1):
+    r,p = pearsonr(mean_MEG_mmr[:,t],EEG_mmr[:,t])
+    r_all_t.append(r)
+
+# [avg MEG] Plot the sample-by-sample Pearson correlation for each time point
+fig, ax = plt.subplots(1)
+ax.plot(times, r_all_t)
+ax.axhline(0, color="k", linestyle="--")
+ax.axvline(0, color="k")
+plt.title('MMR Correlation')
+plt.legend(['MEG'])
+plt.xlabel('Time (s)')
+plt.ylabel('Pearson r')
+plt.xlim([-0.05,0.45])
+plt.ylim([-1,1])
+plt.plot(times, np.percentile(ttcorr_perm,97.5, axis= 0))
+plt.plot(times, np.percentile(ttcorr_perm,2.5, axis= 0))
+
+# [avg MEG] Plot the scatterplot at certain time points
+nt = 1215 # or 900
+plt.figure()
+plt.scatter(mean_MEG_mmr[:,nt],EEG_mmr[:,nt])  # look up the corresponding sample points from times
+plt.xlabel('MEG')
+plt.ylabel('EEG')
+plt.title('t = 0.163 s')
+
 #%%######################################## Done within each subject: correlate time series in a window between EEG & MEG
 ## pearson correlation (corr) between EEG and MEG
 stc_v = MEG_mmr2_v[:,:,ts:te].mean(axis=1)
