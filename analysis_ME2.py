@@ -51,10 +51,10 @@ def plot_err(group_data,color,t):
     #t=np.linspace(-100,600,3501)
     plt.plot(t,group_avg,color=color)
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
-    
+
 #%%####################################### Load the files
-age = 'br' # '7mo' (or '7mo_0_15' or '7mo_15_32' for MEG_v), '11mo', 'br' for adults
-run = '_03' # '_01','_02','_03','_04' silence, random, duple, triple
+age = '7mo' # '7mo' (or '7mo_0_15' or '7mo_15_32' for MEG_v), '11mo', 'br' for adults
+run = '_04' # '_01','_02','_03','_04' silence, random, duple, triple
 
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
@@ -101,7 +101,7 @@ plt.plot(freqs,psds)
 ## option 1
 evokeds = mne.read_evokeds(root_path + '7mo/me2_205_7m/sss_fif/me2_205_7m_01_otp_raw_sss_proj_fil50_evoked.fif')[0]
 evokeds.data = MEG_sensor.mean(0)
-evo_spectrum = evokeds.compute_psd('welch', fmin = fmin, fmax=40)
+evo_spectrum = evokeds.compute_psd('welch', fmin = fmin, fmax=5)
 psds, freqs = evo_spectrum.get_data(return_freqs=True)
 evo_spectrum.plot()
 evo_spectrum.plot_topomap(ch_type = "grad")
@@ -116,7 +116,7 @@ fmin=fmin,
 fmax=fmax,)
 
 plt.figure()
-plot_err(psds[:,nROI,:],'k',freqs)
+plot_err(psds.mean(0),'k',freqs)
 plt.title(label_names[nROI])
 
 ## ROI
@@ -155,27 +155,23 @@ stc1.plot(src = src,clim=dict(kind="value",lims=[1,3,5]))
 ## sensor
 evokeds = mne.read_evokeds(root_path + '7mo/me2_205_7m/sss_fif/me2_205_7m_01_otp_raw_sss_proj_fil50_evoked.fif')[0]
 evokeds.data = MEG_sensor.mean(0)
-evo_tfr = evokeds.compute_tfr('morlet', n_cycles=3,freqs=np.arange(fmin, 40, 2))from mne.decoding import (
-    SlidingEstimator,
-    GeneralizingEstimator,
-    Scaler,
-    cross_val_multiscore,
-    LinearModel,
-    get_coef,
-    Vectorizer,
-    CSP,
-)
+evo_tfr = evokeds.compute_tfr('morlet', n_cycles=3,freqs=np.arange(fmin, 40, 2))
 evo_tfr.plot_topo(baseline=(-0.5, 0), mode="logratio", title="Average power")
 evo_tfr.plot(picks=[82], baseline=(-0.5, 0), mode="logratio", title=evo_tfr.ch_names[82])
 tfr, freqs = evo_tfr.get_data(return_freqs=True)
 
 ## ROI
 epochs = mne.read_epochs(root_path + '7mo/me2_205_7m/sss_fif/me2_205_7m_01_otp_raw_sss_proj_fil50_epoch.fif')
-source_tfr = mne.time_frequency.tfr_array_morlet(MEG_roi,MEG_fs,freqs=np.arange(1, 40, 2),n_cycles=3,output='power')
+source_tfr = mne.time_frequency.tfr_array_morlet(MEG_roi,MEG_fs,freqs=np.arange(0.5, 5, 0.5),n_cycles=3,output='power')
 
-plt.figure()
-plt.imshow(source_tfr.mean(0)[nROI[0],:,:],interpolation='bilinear',
-               origin='lower')
+# shitty imshow
+fig, ax = plt.subplots(1,1)
+im = plt.imshow(source_tfr.mean(0)[nROI[1],:,:],aspect = 'auto', origin='lower', cmap='jet')
+ax.set_xticks(np.linspace(0,len(epochs.times),10))
+ax.set_xticklabels(np.linspace(min(epochs.times),max(epochs.times),10,dtype = int), rotation=30)
+ax.set_yticks(np.linspace(0,len(np.arange(0.5, 5, 0.5)),10))
+ax.set_yticklabels(np.linspace(min(np.arange(0.5, 5, 0.5)),max(np.arange(0.5, 5, 0.5)),10), rotation=30)
+plt.title(label_names[nROI[1]])
 
 ## wholebrain: too big to run
 source_tfr = mne.time_frequency.tfr_array_morlet(MEG_v,MEG_fs,freqs=np.arange(1, 40, 2),n_cycles=3,output='power')
