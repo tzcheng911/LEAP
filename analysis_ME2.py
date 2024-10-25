@@ -242,7 +242,8 @@ root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 nROI = [72,108,66,102,59,95,7,8,9,16,26,27,28,31] # Auditory (STG 72,108), Motor (precentral 66 102 and paracentral 59, 95), 
-# Basal ganglia group (7,8,9,16,26,27,28,31) (left and then right), Parietal ()
+# Basal ganglia group (7,8,9,16,26,27,28,31) (left and then right), Parietal (), Frontal (IFG:  'ctx-rh-parsopercularis', 'ctx-rh-parsorbitalis',
+# 'ctx-rh-parstriangularis)
 nV = 10020 # need to manually look up from the whole-brain plot
 
 input_data = 'wholebrain'
