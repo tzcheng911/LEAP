@@ -53,7 +53,7 @@ def plot_err(group_data,color,t):
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
 
 #%%####################################### Load the files
-age = '7mo' # '7mo' (or '7mo_0_15' or '7mo_15_32' for MEG_v), '11mo', 'br' for adults
+age = '7mo_15_32' # '7mo' (or '7mo_0_15' or '7mo_15_32' for MEG_v), '11mo', 'br' for adults
 run = '_04' # '_01','_02','_03','_04' silence, random, duple, triple
 
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -65,8 +65,8 @@ nROI = [72,108,66,102,59,95,7,8,9,16,26,27,28,31] # Auditory (STG 72,108), Motor
 nV = 10020 # need to manually look up from the whole-brain plot
 
 fs, audio = wavfile.read(root_path + 'Stimuli/Random.wav') # Random, Duple300, Triple300
-MEG_sensor = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_sensor.npy') # 01,02,03,04
-MEG_v = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_mne.npy') # 01,02,03,04
+# MEG_sensor = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_sensor.npy') # 01,02,03,04
+MEG_v = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_mne.npy') # 01,02,03,04    
 MEG_roi = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_mne_roi.npy') # 01,02,03,04
 
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
@@ -284,6 +284,14 @@ for n in np.arange(0,np.shape(X)[1],1):
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
 np.save(root_path + 'me2_meg_analysis/decoding/'+ age + '_decoding_accuracy_' + input_data +'.npy',all_score)
+
+## visualize the wholebrain decoding
+acc = np.load(root_path + 'decoding/br_decoding_accuracy_wholebrain.npy')
+fake_data = np.zeros[len(acc),2]
+fake_data[:,0] = acc
+fake_data[:,1] = acc
+stc1.data = fake_data
+stc1.plot(src=src)
 
 #%%##### Downsample
 # Time-frequency analysis, decoding analysis are too computational heavy to run on wholebrain data 
