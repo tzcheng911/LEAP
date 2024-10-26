@@ -53,7 +53,7 @@ def plot_err(group_data,color,t):
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
 
 #%%####################################### Load the files
-age = '7mo_15_32' # '7mo' (or '7mo_0_15' or '7mo_15_32' for MEG_v), '11mo', 'br' for adults
+age = 'br' # '7mo' (or '7mo_0_15' or '7mo_15_32' for MEG_v), '11mo', 'br' for adults
 run = '_04' # '_01','_02','_03','_04' silence, random, duple, triple
 
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -66,10 +66,12 @@ nV = 10020 # need to manually look up from the whole-brain plot
 
 fs, audio = wavfile.read(root_path + 'Stimuli/Random.wav') # Random, Duple300, Triple300
 # MEG_sensor = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_sensor.npy') # 01,02,03,04
-MEG_v = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_mne.npy') # 01,02,03,04    
+MEG_v = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_rs_mne.npy') # 01,02,03,04    
 MEG_roi = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_mne_roi.npy') # 01,02,03,04
 
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+
 times = stc1.times
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
