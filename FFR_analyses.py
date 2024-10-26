@@ -354,7 +354,6 @@ for s in subj:
     # evoked_dev1.plot()
     # evoked_dev2.plot()
     
-    
 #%%####################################### Trial-by-trial EEG decoding for each individual
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage2/CBS/'
