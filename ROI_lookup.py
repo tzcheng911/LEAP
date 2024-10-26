@@ -38,7 +38,9 @@ for nlabel in np.arange(0,len(labels),1):
 np.save('ROI_lookup.npy',np.array(label_v_ind, dtype=object),allow_pickle=True)
 #%% Key in the vertex number from the stc.plot to see which ROI it's in, and check whether this location is relevant 
 label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
-nv = 13843
+
+#%%
+nv = 31668
 v_ind = np.where(src[0]['vertno'] == nv)
 for nlabel in np.arange(0,len(labels),1):
     if v_ind in label_v_ind[nlabel][0]:
