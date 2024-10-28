@@ -11,6 +11,7 @@ Created on Wed Aug 14 16:53:55 2024
 #%%####################################### Import library  
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import random
 import os 
 
@@ -238,7 +239,7 @@ plot_connectivity_circle(
 fig.tight_layout()
 
 #%%####################################### Decoding analysis
-age = '11mo' # '7mo' or '7mo_0_15' or '7mo_15_32' or '11mo' or 'br' for adults
+age = '7mo' # '7mo' or '7mo_0_15' or '7mo_15_32' or '11mo' or 'br' for adults
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
@@ -257,8 +258,8 @@ elif input_data == 'ROI':
     duple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_03_stc_mne_roi.npy',allow_pickle=True)
     triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_04_stc_mne_roi.npy',allow_pickle=True)
 elif input_data == 'wholebrain':
-    duple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_03_stc_mne.npy',allow_pickle=True)
-    triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_04_stc_mne.npy',allow_pickle=True)
+    duple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_03_stc_rs_mne.npy',allow_pickle=True) # rs: resample data (fs = 250)
+    triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_04_stc_rs_mne.npy',allow_pickle=True)
 else:
     print("Need to decide whether to use ROI or whole brain as feature.")
    
@@ -285,18 +286,15 @@ for n in np.arange(0,np.shape(X)[1],1):
         score = np.mean(scores, axis=0)
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
-np.save(root_path + 'me2_meg_analysis/decoding/'+ age + '_decoding_accuracy_' + input_data +'.npy',all_score)
+np.save(root_path + 'me2_meg_analysis/decoding/'+ age + '_decoding_accuracy_' + input_data +'_rs.npy',all_score)
 
 ## visualize the wholebrain decoding
 acc = np.load(root_path + 'decoding/br_decoding_accuracy_wholebrain.npy')
-fake_data = np.zeros[len(acc),2]
+fake_data = np.zeros([len(acc),2])
 fake_data[:,0] = acc
 fake_data[:,1] = acc
 stc1.data = fake_data
 stc1.plot(src=src)
 
-#%%##### Downsample
-# Time-frequency analysis, decoding analysis are too computational heavy to run on wholebrain data 
-fs_new = 1000
-num = int((len(audio)*fs_new)/fs)        
-audio = signal.resample(audio, num, t=None, axis=0, window=None)
+#%%##### Correlation analysis between neural responses and CDI
+CDI = pd.read_excel('/media/tzcheng/storage/ME2_MEG/ME2_WG & WS Report_2023_09_07.xlsx')
