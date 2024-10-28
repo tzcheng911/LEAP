@@ -35,7 +35,7 @@ for file in os.listdir():
         subjects.append(file)
 
 for run in runs:
-    print('Performing ' + run[-1] + ' run')
+    print('Performing run ' + run[-1])
     #%% output the sensor time series in npy files
     # group = []
     
