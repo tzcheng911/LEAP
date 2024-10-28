@@ -18,12 +18,12 @@ tmax = 9.0
 fmin = 0.5
 fmax = 5
 
-age = '7mo/' # '7mo/', '11mo/' or '' for adults br
+age = '7mo' # '7mo', '11mo' or '' for adults br
 runs = ['_01','_02','_03','_04']
 resample_or_not = True
 rfs = 250
-# root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/' # /media/tzcheng/storage/BabyRhythm/ for adults
-root_path='/media/tzcheng/storage/BabyRhythm/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/' # /media/tzcheng/storage/BabyRhythm/ for adults
+# root_path='/media/tzcheng/storage/BabyRhythm/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 os.chdir(root_path + age)
@@ -31,7 +31,7 @@ os.chdir(root_path + age)
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('br_'): 
+    if file.startswith('me2_'): 
         subjects.append(file)
 
 for run in runs:
