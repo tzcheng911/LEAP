@@ -61,8 +61,11 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-nROI = [72,108,66,102,59,95,7,8,9,16,26,27,28,31] # Auditory (STG 72,108), Motor (precentral 66 102 and paracentral 59, 95), 
-# Basal ganglia group (7,8,9,16,26,27,28,31) (left and then right)
+nROI = [72,108,66,102,59,95,7,8,9,16,26,27,28,31] 
+# Auditory (STG 72,108), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
+# Basal ganglia group (7,8,9,16,26,27,28,31): putamen is most relevant 8 27
+# Frontal IFG (60,61,62,96,97,98)
+# Parietal: inferior parietal (50 86), posterior parietal (??)
 nV = 10020 # need to manually look up from the whole-brain plot
 
 fs, audio = wavfile.read(root_path + 'Stimuli/Random.wav') # Random, Duple300, Triple300
@@ -239,7 +242,7 @@ plot_connectivity_circle(
 fig.tight_layout()
 
 #%%####################################### Decoding analysis
-age = '7mo' # '7mo' or '7mo_0_15' or '7mo_15_32' or '11mo' or 'br' for adults
+age = '11mo' # '7mo' or '7mo_0_15' or '7mo_15_32' or '11mo' or 'br' for adults
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
@@ -271,7 +274,7 @@ all_score = []
 ## Two way classification using ovr
 X = np.concatenate((duple,triple),axis=0)
 y = np.concatenate((np.repeat(0,len(duple)),np.repeat(1,len(triple))))
-
+del duple, triple
 rand_ind = np.arange(0,len(X))
 random.Random(15).shuffle(rand_ind)
 X = X[rand_ind,:,:]
@@ -297,4 +300,4 @@ stc1.data = fake_data
 stc1.plot(src=src)
 
 #%%##### Correlation analysis between neural responses and CDI
-CDI = pd.read_excel('/media/tzcheng/storage/ME2_MEG/ME2_WG & WS Report_2023_09_07.xlsx')
+CDI_WS = pd.read_excel(root_path + 'me2_meg_analysis/ME2_WG & WS Report_2023_09_07.xlsx',sheet_name=2)
