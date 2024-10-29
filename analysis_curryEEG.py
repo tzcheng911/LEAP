@@ -83,7 +83,7 @@ def heatmap(data, row_labels, col_labels, ax=None,
     return im, cbar
 #%%######################################## load EEG data and the wav file 
 root_path = '/media/tzcheng/storage/RASP/'
-epochs = mne.read_epochs(root_path + 'RASP_pilot6.fif')
+epochs = mne.read_epochs(root_path + 'Data/RASP_pilot6.fif')
 data = epochs.get_data()
 csvFile = pandas.read_csv(root_path + 'stimuli_all/Wav_Files_by_Block_zc.csv')
 ntime = np.shape(data)[-1]
@@ -129,7 +129,7 @@ for ntrial in np.arange(0,ntr,1):
     bg_env_lp_rs_crop = bg_env_lp_rs[:ntime]
     env_matrix[ntrial,0,:] = target_env_lp_rs_crop
     env_matrix[ntrial,1,:] = bg_env_lp_rs_crop
-np.save(root_path + 'stimuli_all/env_matrix.npy', np.array(env_matrix))
+# np.save(root_path + 'stimuli_all/env_matrix.npy', np.array(env_matrix))
 
 #%%######################################## Calculate cortical tracking
 ## load the env matrix and the eeg 
