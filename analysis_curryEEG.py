@@ -118,8 +118,9 @@ for ntrial in np.arange(0,ntr,1):
     target_env_lp =1* signal.filtfilt(b, a, target_env)
     bg_env_lp =1* signal.filtfilt(b, a, bg_env)
     plt.figure()
-    plt.plot(target_audio)
-    plt.plot(target_env_lp)
+    plt.plot(np.linspace(0,len(target_audio)/fs, len(target_audio)),target_audio)
+    plt.plot(np.linspace(0,len(target_env_lp)/fs, len(target_env_lp)),target_env_lp)
+    plt.legend(['Raw waveform','Envelope'])
     
     ## Downsample
     num_audio = int((len(target_env_lp)*fs_new)/fs)
