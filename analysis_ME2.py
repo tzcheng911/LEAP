@@ -20,6 +20,7 @@ from mne.datasets import somato
 from mne.time_frequency import tfr_morlet, tfr_multitaper, tfr_stockwell, AverageTFRArray
 from scipy.io import wavfile
 from scipy import stats,signal
+from scipy.stats import pearsonr
 from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time
 from mne_connectivity.viz import plot_connectivity_circle
 from mne.viz import circular_layout
@@ -55,13 +56,13 @@ def plot_err(group_data,color,t):
 
 #%%####################################### Load the files
 age = 'br' # '7mo' (or '7mo_0_15' or '7mo_15_32' for MEG_v), '11mo', 'br' for adults
-run = '_04' # '_01','_02','_03','_04' silence, random, duple, triple
+run = '_03' # '_01','_02','_03','_04' silence, random, duple, triple
 
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-nROI = [72,108,66,102,59,95,7,8,9,16,26,27,28,31] 
+nROI = [72,108,66,102,64,100,59,95,7,8,9,16,26,27,28,31,60,61,62,96,97,98,50,86] 
 # Auditory (STG 72,108), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
 # Basal ganglia group (7,8,9,16,26,27,28,31): putamen is most relevant 8 27
 # Frontal IFG (60,61,62,96,97,98)
@@ -69,15 +70,13 @@ nROI = [72,108,66,102,59,95,7,8,9,16,26,27,28,31]
 nV = 10020 # need to manually look up from the whole-brain plot
 
 fs, audio = wavfile.read(root_path + 'Stimuli/Random.wav') # Random, Duple300, Triple300
-# MEG_sensor = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_sensor.npy') # 01,02,03,04
-MEG_v = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_mne.npy') # 01,02,03,04    
+MEG_sensor = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_sensor.npy') # 01,02,03,04
+MEG_v = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_rs_mne.npy') # 01,02,03,04    
 MEG_roi = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_mne_roi.npy') # 01,02,03,04
 
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
-
 times = stc1.times
-src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
 # stc1.data = MEG_v.mean(axis=0)
 # stc1.plot(src = src,clim=dict(kind="value",lims=[5,5.5,8]))
@@ -86,9 +85,14 @@ src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.f
 # Are there peak amplitude in the beat and meter rates? which ROI, which source?
 fmin = 0.5
 fmax = 5
-MEG_fs = 1000
+
+n_times = np.shape(MEG_v)[-1]
 n_lines = 10
 n_freq = [33] # [6,7] 1.1 Hz, [12, 13] 1.6 Hz, [33] 3.33 Hz 
+if n_times == 12001:
+    MEG_fs = 1000
+elif n_times == 3000:
+    MEG_fs = 250
 
 #%% Frequency spectrum of the audio 
 psds, freqs = mne.time_frequency.psd_array_welch(
@@ -213,11 +217,9 @@ con = spectral_connectivity_time(  # Compute frequency- and time-frequency-domai
     n_jobs=1,
 )
 # Extract the data
-test = con[2].get_data(output="dense")[:, :, n_freq].mean(2)
-
 con_res = dict()
 for method, c in zip(con_methods, con):
-    con_res[method] = c.get_data(output="dense")[:, :, n_freq].mean(2) # get the n freq
+    con_res[method] = c.get_data(output="dense").mean(axis = -1) # get the n freq
     
 ## visualization
 label_names = label_names[nROI]
@@ -232,7 +234,7 @@ node_angles = circular_layout(
 
 fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
 plot_connectivity_circle(
-    con_res["coh"],
+    con_res["coh"].mean(axis=0),
     label_names,
     n_lines=n_lines, # plot the top n lines
     node_angles=node_angles,
@@ -292,7 +294,7 @@ for n in np.arange(0,np.shape(X)[1],1):
 np.save(root_path + 'me2_meg_analysis/decoding/'+ age + '_decoding_accuracy_' + input_data +'_rs.npy',all_score)
 
 ## visualize the wholebrain decoding
-acc = np.load(root_path + 'decoding/br_decoding_accuracy_wholebrain.npy')
+acc = np.load(root_path + 'me2_meg_analysis/decoding/br_decoding_accuracy_wholebrain_rs.npy')
 fake_data = np.zeros([len(acc),2])
 fake_data[:,0] = acc
 fake_data[:,1] = acc
@@ -300,4 +302,8 @@ stc1.data = fake_data
 stc1.plot(src=src)
 
 #%%##### Correlation analysis between neural responses and CDI
+## Extract variables
+
+## Check the subjects who have CDI 
 CDI_WS = pd.read_excel(root_path + 'me2_meg_analysis/ME2_WG & WS Report_2023_09_07.xlsx',sheet_name=2)
+corr_p = pearsonr(MEG, CDI_WS)
