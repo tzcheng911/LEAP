@@ -22,7 +22,8 @@ Notes:
 9. sld_113 t2 only get through 146 trials: manually fix the last trial (13 sounds recorded add 13: [3, 5, 7, 9, 11] to alt_set_length) before the stop
 The correspondance between event tage and sound are
 10. sld_143_t1 only get through 170 trials: cut out the last trial raw_file = raw.copy().crop(tmax=900.5) (manually create the event file)
-
+11. sld_130_t2
+12. sld_146_t1
                         TTl                  event code
 standard                448                  1 and 2 (alt)
 dev1                    484                  3 and 5 (alt)
@@ -283,8 +284,8 @@ for file in os.listdir():
         subj.append(file)
 
 ## do individual by individual(s), check the time t1, t2 or t3 too
-subj = ['sld_128']
-conditions = ['1']
+subj = ['sld_130']
+conditions = ['5']
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]
@@ -295,8 +296,10 @@ for n,s in enumerate(subj):
 
     # raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/' + s + '/raw_fif/' + s + run +'_raw.fif',allow_maxshield=True,preload=True)
     raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s + time + run +'_raw.fif',allow_maxshield=True,preload=True)
-    # raw_file = raw_file.copy().crop(tmax=836.6) # for sld_125 t1 
-    raw_file = raw_file.copy().crop(tmax=900.5) # for sld_143 t1 
+    raw_file.copy().pick(picks="stim").plot()
+    # raw_file = raw_file.copy().crop(tmax=836.6) # for sld_125_t1 
+    # raw_file = raw_file.copy().crop(tmax=900.5) # for sld_143_t1 
+    # raw_file = raw_file.copy().crop(tmax=899) # for sld_130_t2 
     find_events(raw_file, s,run,time)
     events=process_events(s,run,time)
     check=check_events(events,condition)
