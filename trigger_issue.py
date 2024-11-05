@@ -19,7 +19,7 @@ s = 'sld_112'
 soa = np.load('/media/tzcheng/storage2/SLD/MEG/soas2_cbsb_200.npy',allow_pickle=True)
 seq = np.load('/media/tzcheng/storage2/SLD/MEG/seq2_200.npy')
 raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s +'_t1_01_raw.fif',allow_maxshield=True,preload=True)
-raw_file.copy().pick(picks="stim").plot(start=3, duration=6)
+raw_file.copy().pick(picks="stim").plot()
 
 min_soa = 0.15
 srate = raw_file.info['sfreq']
