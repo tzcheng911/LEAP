@@ -32,7 +32,6 @@ from numpy.linalg import norm
 from scipy.stats import pearsonr
 import scipy as sp
 import os
-import seaborn as sns
 import pandas as pd
 import scipy.stats as stats
 from scipy.io import wavfile
@@ -766,3 +765,41 @@ for s in range(len(EEG_pa_FFR)):
     rms_signal_s.append(np.sqrt(np.mean(EEG[s,ind_signal]**2)))
 SNR = np.array(rms_signal_s)/np.array(rms_noise_s)
 print('SNR: ' + str(np.array(SNR).mean()) + '(' + str(np.array(SNR).std()/np.sqrt(len(EEG_pa_FFR))) +')')
+
+#%%####################################### save the mat files of MEG sensor data for dss
+root_path='/media/tzcheng/storage2/CBS/'
+os.chdir(root_path)
+n_trials = 200
+all_score_lr = []
+all_score_svm = []
+subj = [] # A104 got some technical issue
+for file in os.listdir():
+    if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
+        subj.append(file)
+for s in subj:
+    file_in = root_path + '/' + s + '/sss_fif/' + s 
+    # file_in = root_path + '/' + s + '/eeg/' + s # load eeg files
+
+    ##%% extract the FFR time series
+    epochs = mne.read_epochs(file_in +'_01_otp_raw_sss_proj_f_ffr_e_' + str(n_trials) + '.fif')
+    rand_ind = random.sample(range(min(len(epochs['Standardp'].events),len(epochs['Standardn'].events))),n_trials//2) 
+    std_e = mne.concatenate_epochs([epochs['Standardp'][rand_ind],epochs['Standardn'][rand_ind]])
+    std_e = mne.epochs.combine_event_ids(std_e, ['Standardp', 'Standardn'], {'Standard': 8})
+    rand_ind = random.sample(range(min(len(epochs['Deviant1p'].events),len(epochs['Deviant1n'].events))),n_trials//2) 
+    dev1_e = mne.concatenate_epochs([epochs['Deviant1p'][rand_ind],epochs['Deviant1n'][rand_ind]])
+    dev1_e = mne.epochs.combine_event_ids(dev1_e, ['Deviant1p', 'Deviant1n'], {'Deviant1': 9})
+    rand_ind = random.sample(range(min(len(epochs['Deviant2p'].events),len(epochs['Deviant2n'].events))),n_trials//2) 
+    dev2_e = mne.concatenate_epochs([epochs['Deviant2p'][rand_ind],epochs['Deviant2n'][rand_ind]])
+    dev2_e = mne.epochs.combine_event_ids(dev2_e, ['Deviant2p', 'Deviant2n'], {'Deviant2': 10})
+    
+    
+    epochs = mne.concatenate_epochs([std_e,dev1_e,dev2_e])
+    
+    
+    X = np.squeeze(epochs.get_data())  
+    y = epochs.events[:, 2]  # target: standard, deviant1 and 2
+    
+    mdic = {"condition":y,"data":X}
+    fname = root_path + 'mat/MEG/' + s +'_MEG_epoch'
+    savemat(fname + '.mat', mdic)
+    del mdic, epochs
