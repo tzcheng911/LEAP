@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import random
 import os 
+import time
 
 import mne
 from mne.datasets import somato
@@ -55,8 +56,8 @@ def plot_err(group_data,color,t):
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
 
 #%%####################################### Load the files
-age = 'br' # '7mo' (or '7mo_0_15' or '7mo_15_32' for MEG_v), '11mo', 'br' for adults
-run = '_03' # '_01','_02','_03','_04' silence, random, duple, triple
+age = '7mo' # '7mo' (or '7mo_0_15' or '7mo_15_32' for MEG_v), '11mo', 'br' for adults
+run = '_02' # '_01','_02','_03','_04' silence, random, duple, triple
 
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
@@ -71,7 +72,7 @@ nV = 10020 # need to manually look up from the whole-brain plot
 
 fs, audio = wavfile.read(root_path + 'Stimuli/Random.wav') # Random, Duple300, Triple300
 MEG_sensor = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_sensor.npy') # 01,02,03,04
-MEG_v = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_rs_mne.npy') # 01,02,03,04    
+# MEG_v = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_rs_mne.npy') # 01,02,03,04    
 MEG_roi = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_mne_roi.npy') # 01,02,03,04
 
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
@@ -85,12 +86,11 @@ times = stc1.times
 # Are there peak amplitude in the beat and meter rates? which ROI, which source?
 fmin = 0.5
 fmax = 5
-
-n_times = np.shape(MEG_v)[-1]
 n_lines = 10
 n_freq = [33] # [6,7] 1.1 Hz, [12, 13] 1.6 Hz, [33] 3.33 Hz 
+n_times = np.shape(MEG_v)[-1]
 if n_times == 12001:
-    MEG_fs = 1000
+    MEG_fs = 1000 ## need a better way to write this, can mess up with the code later
 elif n_times == 3000:
     MEG_fs = 250
 
@@ -187,8 +187,9 @@ plt.title(label_names[nROI[1]])
 source_tfr = mne.time_frequency.tfr_array_morlet(MEG_v,MEG_fs,freqs=np.arange(1, 40, 2),n_cycles=3,output='power')
 
 #%%####################################### Connectivity analysis
+tic = time.time()
 # How are ROI connected, which direction?
-con_methods = ["pli", "plv", "coh"]
+con_methods = ["pli", "dpli", "plv", "coh"]
 
 # across subjects
 con = spectral_connectivity_epochs( # Compute frequency- and time-frequency-domain connectivity measures
@@ -204,42 +205,46 @@ con = spectral_connectivity_epochs( # Compute frequency- and time-frequency-doma
 )
 
 # across time for each subject (this one makes more sense)
-con = spectral_connectivity_time(  # Compute frequency- and time-frequency-domain connectivity measures
-    MEG_roi[:, nROI, :],
-    method=con_methods,
-    # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
-    mode="multitaper",
-    sfreq=MEG_fs,
-    fmin=fmin,
-    fmax=fmax,
-    freqs = np.arange(1,30,1),
-    faverage=False,
-    n_jobs=1,
-)
+# con = spectral_connectivity_time(  # Compute frequency- and time-frequency-domain connectivity measures
+#     MEG_roi[:,nROI,:],
+#     method=con_methods,
+#     # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
+#     mode="multitaper",
+#     sfreq=MEG_fs,
+#     fmin=fmin,
+#     fmax=fmax,
+#     freqs = np.arange(1,30,1),
+#     faverage=False,
+#     n_jobs=1,
+# )
+toc = time.time()
+print('It takes ' + str((toc - tic)/60) + 'min to run wholebrain connectivity')
+
+
 # Extract the data
 con_res = dict()
 for method, c in zip(con_methods, con):
     con_res[method] = c.get_data(output="dense").mean(axis = -1) # get the n freq
     
 ## visualization
-label_names = label_names[nROI]
+ROI_names = label_names[nROI]
 labels = mne.read_labels_from_annot("sample", parc="aparc", subjects_dir=subjects_dir)
 label_colors = [label.color for label in labels]
 
 node_order = list()
-node_order.extend(label_names)  # reverse the order
+node_order.extend(ROI_names)  # reverse the order
 node_angles = circular_layout(
-    label_names, node_order, start_pos=90, group_boundaries=[0, len(label_names) / 2]
-)
+    ROI_names, node_order, start_pos=90, group_boundaries=[0, len(ROI_names) / 2])
 
+#%%
 fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
 plot_connectivity_circle(
-    con_res["coh"].mean(axis=0),
-    label_names,
+    con_res["coh"],
+    ROI_names,
     n_lines=n_lines, # plot the top n lines
     node_angles=node_angles,
     node_colors=label_colors,
-    title="All-to-All Connectivity Br random",
+    title="All-to-All Connectivity random coh",
     ax=ax)
 fig.tight_layout()
 
