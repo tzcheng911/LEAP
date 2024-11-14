@@ -10,7 +10,7 @@ Didn't save the product from ecg, eog project and filtering to save some space
 Could be used to run SLD too (change the root path, subject name, add the pre_bads)
 1. cbs_b118 emptyroom is sampled at 1000 Hz instead of 5000 Hz -> need to use the baseline for the empty room or the file from the day before or after
 2. cbs_b116 has fewer data points
-3. sld_146_t1 does not have EOG, just did ECG, comment out line 228, 229, 232, 234
+3. sld_146_t1 does not have EOG, just did ECG, comment out line 228, 229, 232, 234 that calculated EOG
 @author: tzcheng
 """
 
@@ -170,6 +170,7 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_127': ['MEG0312', 'MEG1712'],
     'sld_128': ['MEG0312', 'MEG1712', 'MEG2533'],
     'sld_130': ['MEG1712', 'MEG1033', 'MEG1532', 'MEG1533', 'MEG1712', 'MEG2533'],
+    'sld_131': ['MEG0312', 'MEG1712'],
     }
     
     t3_prebad = {
