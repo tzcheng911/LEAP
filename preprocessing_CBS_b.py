@@ -10,6 +10,7 @@ Didn't save the product from ecg, eog project and filtering to save some space
 Could be used to run SLD too (change the root path, subject name, add the pre_bads)
 1. cbs_b118 emptyroom is sampled at 1000 Hz instead of 5000 Hz -> need to use the baseline for the empty room or the file from the day before or after
 2. cbs_b116 has fewer data points
+3. sld_146_t1 does not have EOG, just did ECG, comment out line 228, 229, 232, 234
 @author: tzcheng
 """
 
@@ -346,13 +347,13 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld_105'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = ['sld_145','sld_146']
+subjects = ['sld_146']
 
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    do_otp(s,time)
-    do_sss(s,st_correlation,int_order,time)
+    # do_otp(s,time)
+    # do_sss(s,st_correlation,int_order,time)
     for run in runs:
         if time == 0:
             time = ""
