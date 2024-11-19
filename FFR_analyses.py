@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from scipy import stats,signal
-from scipy.io import savemat
+from scipy.io import savemat, loadmat
 from numpy import dot
 from numpy.linalg import norm
 from scipy.stats import pearsonr
@@ -792,9 +792,7 @@ for s in subj:
     dev2_e = mne.concatenate_epochs([epochs['Deviant2p'][rand_ind],epochs['Deviant2n'][rand_ind]])
     dev2_e = mne.epochs.combine_event_ids(dev2_e, ['Deviant2p', 'Deviant2n'], {'Deviant2': 10})
     
-    
     epochs = mne.concatenate_epochs([std_e,dev1_e,dev2_e])
-    
     
     X = np.squeeze(epochs.get_data())  
     y = epochs.events[:, 2]  # target: standard, deviant1 and 2
@@ -803,3 +801,33 @@ for s in subj:
     fname = root_path + 'mat/MEG/' + s +'_MEG_epoch'
     savemat(fname + '.mat', mdic)
     del mdic, epochs
+
+#%%####################################### analyze dss files
+root_path='/media/tzcheng/storage2/CBS/'
+os.chdir(root_path)
+n_trials = 200
+nch = 75
+
+epochs = mne.read_epochs(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_cABR_e.fif')
+evoked1 = mne.read_evokeds(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+evoked2 = mne.read_evokeds(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+
+subj = [] # A104 got some technical issue
+for file in os.listdir():
+    if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
+        subj.append(file)
+for s in subj:
+    meg = loadmat(root_path + 'mat/MEG/' + s +'_MEG_epoch.mat')
+    meg = meg['data']
+    dss_clean_meg = loadmat(root_path + 'mat/MEG/clean_' + s +'_MEG_epoch.mat')
+    dss_clean_meg = dss_clean_meg['megclean2']
+    
+    fig, ax = plt.subplots(1,1)
+    im = plt.imshow(meg[:200,:,:].mean(axis=1),aspect = 'auto', origin='lower', cmap='jet')
+    plt.colorbar()
+    im.set_clim(-2e-13,2e-13)
+    
+    fig, ax = plt.subplots(1,1)
+    im = plt.imshow(dss_clean_meg[:,:,:].mean(axis=1),aspect = 'auto', origin='lower', cmap='jet')
+    plt.colorbar()
+    im.set_clim(-2e-20,2e-20)
