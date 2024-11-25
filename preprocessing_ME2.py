@@ -21,14 +21,10 @@ import numpy as np
 import os
 
 def do_otp(subject):
-    root_path='/media/tzcheng/storage/ME2_MEG/'+ subject +'/raw_fif/'
-    root_path = '/media/tzcheng/storage/BabyRhythm/' + subject +'/raw_fif/'
-
-    os.chdir(root_path)
     #find all the raw files
     runs=['01','02','03','04','erm']
     for run in runs:
-        file_in=root_path+subject+'_'+run+'_raw.fif'
+        file_in=root_path+'/'+subject+'/raw_fif/'+subject+'_'+run+'_raw.fif'
         file_out=root_path+subject+'_'+run+'_otp_raw.fif'
         raw=mne.io.Raw(file_in,allow_maxshield=True)
         picks=mne.pick_types(raw.info,meg=True,eeg=False,eog=False, ecg=False,exclude='bads')
@@ -37,7 +33,7 @@ def do_otp(subject):
 
 def do_sss(subject,st_correlation,int_order):
     root_path='/media/tzcheng/storage/ME2_MEG/'
-    root_path = '/media/tzcheng/storage/BabyRhythm/'
+    # root_path = '/media/tzcheng/storage/BabyRhythm/'
     os.chdir(root_path)
     params = mnefun.Params(n_jobs=6, n_jobs_mkl=1, proj_sfreq=200, n_jobs_fir='cuda',
                        n_jobs_resample='cuda', filter_length='auto')
@@ -120,7 +116,7 @@ def do_sss(subject,st_correlation,int_order):
     # 'me2_209_7m': ['MEG1433'],
     # 'me2_211_7m': ['MEG1433'],
     # 'me2_212_7m': ['MEG1433'],
-    # 'me2_213_7m': ['MEG1433','MEG1743', 'MEG1842'],
+    # 'me2_213_7m': ['Mimport mneEG1433','MEG1743', 'MEG1842'],
     # 'me2_215_7m': ['MEG1433','MEG1743', 'MEG1842'],
     # 'me2_216_7m': ['MEG1433','MEG1743', 'MEG1872'], # 'MEG1872' in mf_prebad['me2_216_7m'] is not a valid channel name -> change to 1842
     # 'me2_216_7m': ['MEG1433','MEG1743', 'MEG1842'], 
@@ -144,7 +140,7 @@ def do_sss(subject,st_correlation,int_order):
     # 'me2_218_11m': ['MEG1433','MEG1811'],
     # 'me2_220_11m': ['MEG1433','MEG1811'],
     # 'me2_221_11m': ['MEG1433','MEG1811'],
-    # 'me2_301_11m': ['MEG1842'],
+    # 'me2_301_11m': ['Mimport mneEG1842'],
     # 'me2_302_11m': ['MEG1842'],
     # 'me2_303_11m': ['MEG1842'],
     # 'me2_304_11m': ['MEG1842'],
@@ -190,6 +186,7 @@ def do_sss(subject,st_correlation,int_order):
         print_status=False,
     )
 
+#%%
 def do_projection(subject, run):
     ###### cleaning with ecg and eog projection
     root_path = os.getcwd()
@@ -252,8 +249,9 @@ def do_epoch(data, subject, run, events):
     reject=dict(grad=4000e-13,mag=4e-12)
     picks = mne.pick_types(data.info,meg=True,eeg=False) 
     epochs_cortical = mne.Epochs(data, events, event_id,tmin =-1, tmax=11,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
+    epochs_cortical.plot_drop_log()
     evoked=epochs_cortical['Trial_Onset'].average()
-    
+
     epochs_cortical.save(file_out + '_epoch.fif',overwrite=True)
     evoked.save(file_out + '_evoked.fif',overwrite=True)
     
@@ -265,7 +263,7 @@ root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/'
 os.chdir(root_path)
 
 #%%## parameters 
-runs = ['_01','_02','_03','_04'] # ['_01','_02'] for the adults and ['_01'] for the infants
+runs = ['_01','_02','_03','_04'] 
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
@@ -284,6 +282,9 @@ for file in os.listdir():
 #     no_prebadstxt.append(s)
 
 # subjects = ['me2_108_7m', 'me2_202_7m', 'me2_208_7m', 'me2_316_11m'] # problemetic subjects
+# subjects = ['me2_108_11m', 'me2_122_11m'] # the two 11 mo from the 100 that I can use
+# subjects = ['me2_103_11m', 'me2_306_11m', 'me2_316_11m', 'me2_322_11m'] # the incomplete but qualified 11 mo
+
 #%%###### do the jobs
 for s in subjects:
     print(s)
@@ -298,10 +299,27 @@ for s in subjects:
             raw_erm = raw_erm.copy().resample(sfreq=1000)
         print ('Doing filtering...')
         raw_filt = do_filtering(s, raw,lp,run)
-        raw_erm_filt = do_filtering(s, raw_erm,lp,run)
-        print ('calculate cov...')
-        do_cov(s,raw_erm_filt,run)
-        print ('Doing epoch...')
-        events = do_evtag(raw_filt,s,run)
-        evoked, epochs_cortical = do_epoch(raw_filt, s, run, events)
-        
+        # raw_erm_filt = do_filtering(s, raw_erm,lp,run)
+        # print ('calculate cov...')
+        # do_cov(s,raw_erm_filt,run)
+        # print ('Doing epoch...')
+        # events = do_evtag(raw_filt,s,run)
+        # evoked, epochs_cortical = do_epoch(raw_filt, s, run, events)
+        # raw_filt.plot()
+
+#%%###### do manual sensor rejection
+# s = subjects[8]
+# run = runs[2]
+
+# print ('Doing manual sensor rejection...')
+# file_in=root_path + '/' + s + '/sss_fif/' + s + run + '_otp_raw_sss_proj'
+# raw_file = mne.io.read_raw_fif(file_in + '.fif',allow_maxshield=True,preload=True)
+# filt_file = mne.io.read_raw_fif(file_in + '_fil50.fif',allow_maxshield=True,preload=True)
+# events = mne.find_events(raw_file,stim_channel='STI001') 
+# event_id = {'Trial_Onset':5}
+# reject=dict(grad=4000e-13,mag=4e-12)
+# picks = mne.pick_types(filt_file.info,meg=True,eeg=False) 
+# epochs_cortical = mne.Epochs(filt_file, events, event_id,tmin =-1, tmax=11,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
+# epochs_cortical.plot_drop_log()
+# filt_file.plot()
+# filt_file.drop_channels(ch_names)
