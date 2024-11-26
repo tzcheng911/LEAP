@@ -16,7 +16,7 @@ Need manually fix:
 import mne
 import mnefun
 import matplotlib
-from mne.preprocessing import maxwell_filter
+from mne.preprocessing import maxwell_filter,ICA, corrmap, create_ecg_epochs, create_eog_epochs
 import numpy as np
 import os
 
@@ -213,14 +213,33 @@ def do_projection(subject, run):
 
     return raw, raw_erm
 
+def do_ica(subject, run):
+    ###### cleaning with ecg and eog projection
+    root_path = os.getcwd()
+    file_in=root_path + '/' +subject + '/sss_fif/' + subject + run + '_otp_raw_sss'
+    file_out=file_in + '_ica'
+    raw = mne.io.read_raw_fif(file_in + '.fif',allow_maxshield=True,preload=True)
+    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + '_erm_otp_raw_sss'
+    fname_erm_out = root_path + '/' + subject + '/sss_fif/' + subject +run + '_erm_raw_sss_proj'
+    raw_erm = mne.io.read_raw_fif(fname_erm + '.fif',allow_maxshield=True,preload=True)
+    
+    ica = ICA(n_components=15, max_iter="auto", random_state=97)
+    ica.fit(raw)
+    ica.exclude = []
+    ecg_indices, ecg_scores = ica.find_bads_ecg(raw) # find which ICs match the ECG pattern
+    ica.exclude = ecg_indices    
+    ica.apply(raw)
+    raw.save(file_out + '.fif',overwrite = True)
+    raw_erm.save(fname_erm_out + '.fif',overwrite = True)
+
+    return raw, raw_erm
 
 def do_filtering(subject, data, lp, run):
     ###### filtering
     root_path = os.getcwd()
-    file_in=root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj'
+    file_in=root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_ica'
     file_out=file_in + '_fil50'
     data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
-    data.save(file_out + '.fif',overwrite = True)
     return data
 
 def do_cov(subject,data,run):
@@ -242,14 +261,14 @@ def do_evtag(raw_file,subj,run):
 
 def do_epoch(data, subject, run, events):
     root_path = os.getcwd()
-    file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj_fil50'
+    file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_ica_fil50'
 
     ###### Read the event files to do epoch    
     event_id = {'Trial_Onset':5}
     reject=dict(grad=4000e-13,mag=4e-12)
     picks = mne.pick_types(data.info,meg=True,eeg=False) 
-    epochs_cortical = mne.Epochs(data, events, event_id,tmin =-1, tmax=11,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
-    epochs_cortical.plot_drop_log()
+    epochs_cortical = mne.Epochs(data, events, event_id,tmin =-0.5, tmax=10.5,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
+    # epochs_cortical.plot_drop_log()
     evoked=epochs_cortical['Trial_Onset'].average()
 
     epochs_cortical.save(file_out + '_epoch.fif',overwrite=True)
@@ -291,24 +310,26 @@ for s in subjects:
     # do_otp(s)
     # do_sss(s,st_correlation,int_order)
     for run in runs:
-        print ('Doing ECG projection...')
-        [raw,raw_erm] = do_projection(s,run)
-        if s == 'me2_104_7m':
-            print ('Doing resampling...')
-            raw = raw.copy().resample(sfreq=1000)
-            raw_erm = raw_erm.copy().resample(sfreq=1000)
+        # print ('Doing ECG projection...')
+        # [raw,raw_erm] = do_projection(s,run)
+        # if s == 'me2_104_7m':
+        #     print ('Doing resampling...')
+        #     raw = raw.copy().resample(sfreq=1000)
+        #     raw_erm = raw_erm.copy().resample(sfreq=1000)
+        print ('Doing ECG ICA...')
+        [raw,raw_erm] = do_ica(s,run)
         print ('Doing filtering...')
         raw_filt = do_filtering(s, raw,lp,run)
-        # raw_erm_filt = do_filtering(s, raw_erm,lp,run)
+        raw_erm_filt = do_filtering(s, raw_erm,lp,run)
         # print ('calculate cov...')
         # do_cov(s,raw_erm_filt,run)
-        # print ('Doing epoch...')
-        # events = do_evtag(raw_filt,s,run)
-        # evoked, epochs_cortical = do_epoch(raw_filt, s, run, events)
+        print ('Doing epoch...')
+        events = do_evtag(raw_filt,s,run)
+        evoked, epochs_cortical = do_epoch(raw_filt, s, run, events)
         # raw_filt.plot()
 
 #%%###### do manual sensor rejection
-# s = subjects[8]
+# s = subjects[9]
 # run = runs[2]
 
 # print ('Doing manual sensor rejection...')
@@ -319,7 +340,7 @@ for s in subjects:
 # event_id = {'Trial_Onset':5}
 # reject=dict(grad=4000e-13,mag=4e-12)
 # picks = mne.pick_types(filt_file.info,meg=True,eeg=False) 
-# epochs_cortical = mne.Epochs(filt_file, events, event_id,tmin =-1, tmax=11,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
+# epochs_cortical = mne.Epochs(filt_file, events, event_id,tmin =-0.5, tmax=10.5,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
 # epochs_cortical.plot_drop_log()
 # filt_file.plot()
 # filt_file.drop_channels(ch_names)
