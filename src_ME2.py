@@ -101,9 +101,9 @@ morph = True
 runs = ['_01','_02','_03','_04']
 subj = [] 
 for file in os.listdir():
-    if file.startswith('me2_'):
+    if file.startswith('me2_324'):
         subj.append(file)
-
+subj = ['me2_108_11m','me2_122_11m']
 for s in tqdm(subj):
     do_foward(s)
     for run in runs:
