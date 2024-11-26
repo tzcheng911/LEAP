@@ -71,19 +71,19 @@ for run in runs:
         group_stc_lcmv.append(stc_lcmv.data)
         group_stc_mne.append(stc_mne.data)
             
-        # label_names = mne.get_volume_labels_from_aseg(fname_aseg)
-        # stc_lcmv_roi = mne.extract_label_time_course(stc_lcmv,fname_aseg,src,mode='mean',allow_empty=True)
-        # stc_mne_roi = mne.extract_label_time_course(stc_mne,fname_aseg,src,mode='mean',allow_empty=True)
-        # group_stc_lcmv_roi.append(stc_lcmv_roi)
-        # group_stc_mne_roi.append(stc_mne_roi)
+        label_names = mne.get_volume_labels_from_aseg(fname_aseg)
+        stc_lcmv_roi = mne.extract_label_time_course(stc_lcmv,fname_aseg,src,mode='mean',allow_empty=True)
+        stc_mne_roi = mne.extract_label_time_course(stc_mne,fname_aseg,src,mode='mean',allow_empty=True)
+        group_stc_lcmv_roi.append(stc_lcmv_roi)
+        group_stc_mne_roi.append(stc_mne_roi)
         
     group_stc_lcmv = np.asarray(group_stc_lcmv)
     group_stc_mne = np.asarray(group_stc_mne)
-    # group_stc_lcmv_roi = np.asarray(group_stc_lcmv_roi)
-    # group_stc_mne_roi = np.asarray(group_stc_mne_roi)
+    group_stc_lcmv_roi = np.asarray(group_stc_lcmv_roi)
+    group_stc_mne_roi = np.asarray(group_stc_mne_roi)
             
     np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/' + age +'_group' + run + '_stc_rs_lcmv.npy',group_stc_lcmv)
     np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/' + age +'_group' + run + '_stc_rs_mne.npy',group_stc_mne)
-    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_15_32_group' + run + '_stc_lcmv_roi.npy',group_stc_lcmv_roi)
-    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_15_32_group' + run + '_stc_mne_roi.npy',group_stc_mne_roi)
+    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_15_32_group' + run + '_stc_lcmv_roi.npy',group_stc_lcmv_roi)
+    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_15_32_group' + run + '_stc_mne_roi.npy',group_stc_mne_roi)
 
