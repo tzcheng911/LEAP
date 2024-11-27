@@ -173,6 +173,7 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_130': ['MEG1712', 'MEG1033', 'MEG1532', 'MEG1533', 'MEG1712', 'MEG2533'],
     'sld_131': ['MEG0312', 'MEG1712'],
     'sld_132': ['MEG0312', 'MEG1712','MEG2533'],
+    'sld_133': ['MEG0312', 'MEG1712','MEG2533'],
     }
     
     t3_prebad = {
@@ -188,7 +189,8 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_119': ['MEG0312', 'MEG1712'],
     'sld_121': ['MEG0312', 'MEG1712'],
     'sld_123': ['MEG0312', 'MEG1712'],
-    'sld_124': ['MEG0312', 'MEG1712']
+    'sld_124': ['MEG0312', 'MEG1712'],
+    'sld_126': ['MEG0312', 'MEG1712']
     }
     if time == '_t1':
         params.mf_prebad = t1_prebad
@@ -340,7 +342,7 @@ os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = '_t3' # first time (6 mo) '_t1' or second time (12 mo) '_t2' or third time (14mo) '_t3' coming back, or 0 for cbs
+time = '_t2' # first time (6 mo) '_t1' or second time (12 mo) '_t2' or third time (14mo) '_t3' coming back, or 0 for cbs
 direction = "ba_to_pa"
 do_cabr = False # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
@@ -351,7 +353,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld_105'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = ['sld_124']
+subjects = ['sld_133']
 
 #%%###### do the jobs
 for s in subjects:
