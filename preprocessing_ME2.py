@@ -22,7 +22,7 @@ import os
 
 def do_otp(subject):
     #find all the raw files
-    runs=['01','02','03','04','erm']
+    runs=['04','erm']
     for run in runs:
         file_in=root_path+'/'+subject+'/raw_fif/'+subject+'_'+run+'_raw.fif'
         file_out=root_path+subject+'_'+run+'_otp_raw.fif'
@@ -32,19 +32,12 @@ def do_otp(subject):
         raw_otp.save(file_out,overwrite=True)
 
 def do_sss(subject,st_correlation,int_order):
-    root_path='/media/tzcheng/storage/ME2_MEG/'
-    # root_path = '/media/tzcheng/storage/BabyRhythm/'
-    os.chdir(root_path)
     params = mnefun.Params(n_jobs=6, n_jobs_mkl=1, proj_sfreq=200, n_jobs_fir='cuda',
                        n_jobs_resample='cuda', filter_length='auto')
 
     params.subjects = [subject]
-
-    # params.work_dir = '/media/tzcheng/storage/CBS/'
-    params.work_dir = '/media/tzcheng/storage/ME2_MEG/'
-    params.work_dir = '/media/tzcheng/storage/BabyRhythm/'
-
-    params.run_names = ['%s_01_otp','%s_02_otp','%s_03_otp','%s_04_otp']
+    params.work_dir = root_path
+    params.run_names = ['%s_04_otp']
     params.runs_empty = ['%s_erm_otp']
     params.subject_indices = [0] #to run individual participants
     #params.subject_indices = np.arange(0,len(params.subjects)) #to run all subjects
@@ -161,7 +154,7 @@ def do_sss(subject,st_correlation,int_order):
     # 'me2_320_11m': ['MEG1433','MEG1743'],
     # 'me2_321_11m': ['MEG1433','MEG1743','MEG1842'],
     # 'me2_322_11m': ['MEG1433','MEG1743','MEG1842'],
-    # 'me2_323_11m': ['MEG1433','MEG1743','MEG1842'],
+    # 'me2_323_11m': ['MEG1433','MEG1'_01','_03',743','MEG1842'],
     # 'me2_324_11m': ['MEG1433','MEG1743','MEG1842'],
     # 'me2_325_11m': ['MEG1433','MEG1743','MEG1842'],
     # 'me2_326_11m': ['MEG1433','MEG1743','MEG1842'],
@@ -278,11 +271,11 @@ def do_epoch(data, subject, run, events):
 
 ########################################
 # root_path='/media/tzcheng/storage/BabyRhythm/'
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/incomplete/'
 os.chdir(root_path)
 
 #%%## parameters 
-runs = ['_01','_02','_03','_04'] 
+runs = ['_04'] 
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
@@ -303,30 +296,31 @@ for file in os.listdir():
 # subjects = ['me2_108_7m', 'me2_202_7m', 'me2_208_7m', 'me2_316_11m'] # problemetic subjects
 # subjects = ['me2_108_11m', 'me2_122_11m'] # the two 11 mo from the 100 that I can use
 # subjects = ['me2_103_11m', 'me2_306_11m', 'me2_316_11m', 'me2_322_11m'] # the incomplete but qualified 11 mo
+subjects = ['me2_316_11m']
 
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    # do_otp(s)
+    do_otp(s)
     # do_sss(s,st_correlation,int_order)
-    for run in runs:
-        # print ('Doing ECG projection...')
-        # [raw,raw_erm] = do_projection(s,run)
-        # if s == 'me2_104_7m':
-        #     print ('Doing resampling...')
-        #     raw = raw.copy().resample(sfreq=1000)
-        #     raw_erm = raw_erm.copy().resample(sfreq=1000)
-        print ('Doing ECG ICA...')
-        [raw,raw_erm] = do_ica(s,run)
-        print ('Doing filtering...')
-        raw_filt = do_filtering(s, raw,lp,run)
-        raw_erm_filt = do_filtering(s, raw_erm,lp,run)
-        # print ('calculate cov...')
-        # do_cov(s,raw_erm_filt,run)
-        print ('Doing epoch...')
-        events = do_evtag(raw_filt,s,run)
-        evoked, epochs_cortical = do_epoch(raw_filt, s, run, events)
-        # raw_filt.plot()
+    # for run in runs:
+    #     print ('Doing ECG projection...')
+    #     [raw,raw_erm] = do_projection(s,run)
+    #     if s == 'me2_104_7m':
+    #         print ('Doing resampling...')
+    #         raw = raw.copy().resample(sfreq=1000)
+    #         raw_erm = raw_erm.copy().resample(sfreq=1000)
+    #     # print ('Doing ECG ICA...')
+    #     # [raw,raw_erm] = do_ica(s,run)
+    #     print ('Doing filtering...')
+    #     raw_filt = do_filtering(s, raw,lp,run)
+    #     raw_erm_filt = do_filtering(s, raw_erm,lp,run)
+    #     print ('calculate cov...')
+    #     do_cov(s,raw_erm_filt,run)
+    #     print ('Doing epoch...')
+    #     events = do_evtag(raw_filt,s,run)
+    #     evoked, epochs_cortical = do_epoch(raw_filt, s, run, events)
+    #     # raw_filt.plot()
 
 #%%###### do manual sensor rejection
 # s = subjects[9]
