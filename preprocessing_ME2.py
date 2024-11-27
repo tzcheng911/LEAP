@@ -37,7 +37,7 @@ def do_sss(subject,st_correlation,int_order):
 
     params.subjects = [subject]
     params.work_dir = root_path
-    params.run_names = ['%s_04_otp']
+    params.run_names = ['%s_01_otp','%s_02_otp','%s_03_otp']
     params.runs_empty = ['%s_erm_otp']
     params.subject_indices = [0] #to run individual participants
     #params.subject_indices = np.arange(0,len(params.subjects)) #to run all subjects
@@ -275,7 +275,7 @@ root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/incomplete/'
 os.chdir(root_path)
 
 #%%## parameters 
-runs = ['_04'] 
+runs = ['_01','_02','_03'] 
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
 int_order = 6 # 8 for adults and 6 for infants
 lp = 50 
@@ -296,31 +296,31 @@ for file in os.listdir():
 # subjects = ['me2_108_7m', 'me2_202_7m', 'me2_208_7m', 'me2_316_11m'] # problemetic subjects
 # subjects = ['me2_108_11m', 'me2_122_11m'] # the two 11 mo from the 100 that I can use
 # subjects = ['me2_103_11m', 'me2_306_11m', 'me2_316_11m', 'me2_322_11m'] # the incomplete but qualified 11 mo
-subjects = ['me2_316_11m']
+subjects = ['me2_322_11m']
 
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    do_otp(s)
-    # do_sss(s,st_correlation,int_order)
-    # for run in runs:
-    #     print ('Doing ECG projection...')
-    #     [raw,raw_erm] = do_projection(s,run)
-    #     if s == 'me2_104_7m':
-    #         print ('Doing resampling...')
-    #         raw = raw.copy().resample(sfreq=1000)
-    #         raw_erm = raw_erm.copy().resample(sfreq=1000)
-    #     # print ('Doing ECG ICA...')
-    #     # [raw,raw_erm] = do_ica(s,run)
-    #     print ('Doing filtering...')
-    #     raw_filt = do_filtering(s, raw,lp,run)
-    #     raw_erm_filt = do_filtering(s, raw_erm,lp,run)
-    #     print ('calculate cov...')
-    #     do_cov(s,raw_erm_filt,run)
-    #     print ('Doing epoch...')
-    #     events = do_evtag(raw_filt,s,run)
-    #     evoked, epochs_cortical = do_epoch(raw_filt, s, run, events)
-    #     # raw_filt.plot()
+    # do_otp(s)
+    do_sss(s,st_correlation,int_order)
+    for run in runs:
+        print ('Doing ECG projection...')
+        [raw,raw_erm] = do_projection(s,run)
+        if s == 'me2_104_7m':
+            print ('Doing resampling...')
+            raw = raw.copy().resample(sfreq=1000)
+            raw_erm = raw_erm.copy().resample(sfreq=1000)
+        # print ('Doing ECG ICA...')
+        # [raw,raw_erm] = do_ica(s,run)
+        print ('Doing filtering...')
+        raw_filt = do_filtering(s, raw,lp,run)
+        raw_erm_filt = do_filtering(s, raw_erm,lp,run)
+        print ('calculate cov...')
+        do_cov(s,raw_erm_filt,run)
+        print ('Doing epoch...')
+        events = do_evtag(raw_filt,s,run)
+        evoked, epochs_cortical = do_epoch(raw_filt, s, run, events)
+        # raw_filt.plot()
 
 #%%###### do manual sensor rejection
 # s = subjects[9]
