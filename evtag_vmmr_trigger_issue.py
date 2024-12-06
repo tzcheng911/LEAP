@@ -7,7 +7,7 @@ import matplotlib
 from scipy.stats import norm
 
 ###### Load data
-subj = 'vMMR_202'
+subj = 'vmmr_118'
 
 root_path='/media/tzcheng/storage/vmmr/'
 os.chdir(root_path)
@@ -27,7 +27,11 @@ condition = {"vMMR_901":'A',
              "vMMR_109":'A',
              "vMMR_201":'A',
              "vMMR_112":'D',
-             "vMMR_202":'B'}
+             "vMMR_202":'B',
+             "vMMR_204":'D',
+             "vmmr_208":'D',
+             "vMMR_209":'A',
+             "vmmr_118":'B'}
 sequence = {"vMMR_901":['1','1','1','1'],
              "vMMR_902":['1','1','1','1'],
              "vMMR_102":['7','2','8','9'],
@@ -37,7 +41,11 @@ sequence = {"vMMR_901":['1','1','1','1'],
              "vMMR_109":['3','7','6','4'],
              "vMMR_201":['6','5','7','9'],
              "vMMR_112":['3','7','1','8'],
-             "vMMR_202":['4','6','2','8']}
+             "vMMR_202":['4','6','2','8'],
+             "vMMR_204":['4','8','5','1'],
+             "vmmr_208":['9','4','8','6'],
+             "vMMR_209":['9','5','2','1'],
+             "vmmr_118":['1','4','9','2']}
 
 cond = condition[subj]
 seq = sequence[subj]
@@ -112,7 +120,7 @@ for nrun in np.arange(0,4,1):
     SEQ = SEQ.astype('int64')
     # compare = events_stim[:,2] - SEQ
     print('Matching ones (out of 1800):' + str(np.sum(events_stim[:,2] == SEQ)))
-    print('subject:' + subj + ' run' + str(nrun+1))
+    print('subject:' + subj + ' run' + condition_all[cond][nrun])
 
     ###### Write event file
     path = "/events"
