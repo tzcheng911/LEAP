@@ -11,10 +11,10 @@ import numpy as np
 import os
 
 #%%########################################
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # project dir
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/' # project dir
+
 # root_path = '/media/tzcheng/storage/BabyRhythm/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
-
 os.chdir(root_path)
 
 ## parameters 
@@ -31,8 +31,13 @@ evoked_nave = np.zeros([len(subj),len(runs)])
 for ns,s in enumerate(subj):
     for nrun,run in enumerate(runs): 
         print('Extracting ' + s + run + ' data')
-        file_in = root_path + s + '/sss_fif/' + s +'_' + run 
-        
-        ## conventional MMR
-        evoked = mne.read_evokeds(file_in+'_otp_raw_sss_ica_fil50_evoked.fif')[0] # evoked conditions
-        evoked_nave[ns,nrun] = evoked.nave
+        file_in = root_path + s + '/sss_fif/' + s +'_' + run +'_otp_raw_sss_proj_fil50_evoked.fif'
+        if os.path.exists(file_in):
+            evoked = mne.read_evokeds(file_in)[0] # evoked conditions
+            evoked_nave[ns,nrun] = evoked.nave
+        else:
+            evoked_nave[ns,nrun] = 0
+
+print('mean trial# for the four conditions: ' + str(evoked_nave.mean(0)))
+print('std trial# for the four conditions: ' + str(evoked_nave.std(0)))
+
