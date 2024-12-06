@@ -103,7 +103,8 @@ subj = []
 for file in os.listdir():
     if file.startswith('me2_324'):
         subj.append(file)
-subj = ['me2_108_11m','me2_122_11m']
+subjects = ['br_04', 'br_13', 'br_17']
+
 for s in tqdm(subj):
     do_foward(s)
     for run in runs:
