@@ -181,7 +181,6 @@ def do_sss(subject,st_correlation,int_order):
         print_status=False,
     )
 
-#%%
 def do_projection(subject, run):
     ###### cleaning with ecg and eog projection
     root_path = os.getcwd()
@@ -273,7 +272,7 @@ def do_epoch(data, subject, run, events):
 
 ########################################
 # root_path='/media/tzcheng/storage/BabyRhythm/'
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
 os.chdir(root_path)
 
 #%%## parameters 
@@ -300,20 +299,19 @@ for file in os.listdir():
 # subjects = ['me2_103_11m', 'me2_306_11m', 'me2_316_11m', 'me2_322_11m'] # the incomplete but qualified 11 mo
 
 #%%###### do the jobs
-subjects = subjects[4:]
 for s in subjects:
     print(s)
     # do_otp(s)
     # do_sss(s,st_correlation,int_order)
     for run in runs:
-        # print ('Doing ECG projection...')
-        # [raw,raw_erm] = do_projection(s,run)
-        # if s == 'me2_104_7m':
-        #     print ('Doing resampling...')
-        #     raw = raw.copy().resample(sfreq=1000)
-        #     raw_erm = raw_erm.copy().resample(sfreq=1000)
-        print ('Doing ICA...')
-        [raw,raw_erm] = do_ica(s,run)
+        print ('Doing ECG projection...')
+        [raw,raw_erm] = do_projection(s,run)
+        if s == 'me2_104_7m':
+            print ('Doing resampling...')
+            raw = raw.copy().resample(sfreq=1000)
+            raw_erm = raw_erm.copy().resample(sfreq=1000)
+        # print ('Doing ICA...')
+        # [raw,raw_erm] = do_ica(s,run)
         print ('Doing filtering...')
         raw_filt = do_filtering(s, raw,lp,run)
         raw_erm_filt = do_filtering(s, raw_erm,lp,run)
@@ -322,21 +320,20 @@ for s in subjects:
         print ('Doing epoch...')
         events = do_evtag(raw_filt,s,run)
         evoked, epochs_cortical = do_epoch(raw_filt, s, run, events)
-        raw_filt.plot()
 
 #%%###### do manual sensor rejection
-# s = subjects[9]
-# run = runs[2]
+s = subjects[9]
+run = runs[2]
 
-# print ('Doing manual sensor rejection...')
-# file_in=root_path + '/' + s + '/sss_fif/' + s + run + '_otp_raw_sss_proj'
-# raw_file = mne.io.read_raw_fif(file_in + '.fif',allow_maxshield=True,preload=True)
-# filt_file = mne.io.read_raw_fif(file_in + '_fil50.fif',allow_maxshield=True,preload=True)
-# events = mne.find_events(raw_file,stim_channel='STI001') 
-# event_id = {'Trial_Onset':5}
-# reject=dict(grad=4000e-13,mag=4e-12)
-# picks = mne.pick_types(filt_file.info,meg=True,eeg=False) 
-# epochs_cortical = mne.Epochs(filt_file, events, event_id,tmin =-0.5, tmax=10.5,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
-# epochs_cortical.plot_drop_log()
-# filt_file.plot()
-# filt_file.drop_channels(ch_names)
+print ('Doing manual sensor rejection...')
+file_in=root_path + '/' + s + '/sss_fif/' + s + run + '_otp_raw_sss_proj'
+raw_file = mne.io.read_raw_fif(file_in + '.fif',allow_maxshield=True,preload=True)
+filt_file = mne.io.read_raw_fif(file_in + '_fil50.fif',allow_maxshield=True,preload=True)
+events = mne.find_events(raw_file,stim_channel='STI001') 
+event_id = {'Trial_Onset':5}
+reject=dict(grad=4000e-13,mag=4e-12)
+picks = mne.pick_types(filt_file.info,meg=True,eeg=False) 
+epochs_cortical = mne.Epochs(filt_file, events, event_id,tmin =-0.5, tmax=10.5,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
+epochs_cortical.plot_drop_log()
+filt_file.plot()
+filt_file.drop_channels(ch_names)
