@@ -9,6 +9,7 @@ Need manually fix:
 1. 108_7m, 202_7m, 208_7m, 316_11m only have run 1,2,4
 2. me2_104_7m does not have STI001, need to use STI101 to get event timing; sampled at 2000 Hz instead of 1000 Hz -> resample
 3. me2_320_11m and me2_324_11m have very small epoch files → dropped all the bad epochs 
+4. me2_101_7m doesn't have ECG063, has ECG064
 @author: tzcheng
 """
 
@@ -190,10 +191,14 @@ def do_projection(subject, run):
     fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + '_erm_otp_raw_sss'
     fname_erm_out = root_path + '/' + subject + '/sss_fif/' + subject +run + '_erm_raw_sss_proj'
     raw_erm = mne.io.read_raw_fif(fname_erm + '.fif',allow_maxshield=True,preload=True)
-        
+    
+    if subject == 'me2_101_7m':
+        ECG_ch = 'ECG064'
+    else: 
+        ECG_ch = 'ECG063'
     # me2_101_7m used ECG064, the rest used ECG063
-    ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='ECG063', n_grad=1, n_mag=1, reject=None)
-    ecg_epochs = mne.preprocessing.create_ecg_epochs(raw,ch_name='ECG063').average() # don't really need to assign the ch_name
+    ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name=ECG_ch, n_grad=1, n_mag=1, reject=None)
+    # ecg_epochs = mne.preprocessing.create_ecg_epochs(raw,ch_name=ECG_ch).average() # don't really need to assign the ch_name
     # eog_projs, eog_events = mne.preprocessing.compute_proj_eog(raw, ch_name=['EOG002'], n_grad=1, n_mag=1, reject=None) ## adult ['EOG002','EOG003'], infant ['EOG002']
     # eog_epochs = mne.preprocessing.create_eog_epochs(raw,ch_name=['EOG002']).average() ## adult ['EOG002','EOG003'], infant ['EOG002']
 
@@ -259,15 +264,17 @@ def do_epoch(data, subject, run, events):
 
     ###### Read the event files to do epoch    
     event_id = {'Trial_Onset':5}
-    reject=dict(grad=4000e-13,mag=4e-12)
+    # reject=dict(grad=4000e-13,mag=4e-12) # Christina's MMR criteria
+    reject=dict(grad=4000e-13,mag=8e-12) # Zoe's ME2 criteria
     picks = mne.pick_types(data.info,meg=True,eeg=False) 
     epochs_cortical = mne.Epochs(data, events, event_id,tmin =-0.5, tmax=10.5,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
     # epochs_cortical.plot_drop_log()
     evoked=epochs_cortical['Trial_Onset'].average()
 
-    epochs_cortical.save(file_out + '_epoch.fif',overwrite=True)
-    evoked.save(file_out + '_evoked.fif',overwrite=True)
-    
+    # epochs_cortical.save(file_out + '_epoch.fif',overwrite=True)
+    # evoked.save(file_out + '_evoked.fif',overwrite=True)
+    epochs_cortical.save(file_out + '_mag8pT_epoch.fif',overwrite=True)
+    evoked.save(file_out + '_mag8pT_evoked.fif',overwrite=True)    
     return evoked,epochs_cortical
 
 ########################################
@@ -305,7 +312,14 @@ for s in subjects:
     # do_sss(s,st_correlation,int_order)
     for run in runs:
         print ('Doing ECG projection...')
-        [raw,raw_erm] = do_projection(s,run)
+        # [raw,raw_erm] = do_projection(s, run)
+        filename = root_path + s + '/sss_fif/' + s + run + '_otp_raw_sss_proj.fif'
+        if os.path.exists(filename):
+            print ('ECG/EOG projection exists, loading...')
+            raw = mne.io.read_raw_fif(filename, allow_maxshield=True,preload=True)
+            raw_erm = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + run + '_erm_raw_sss_proj.fif', allow_maxshield=True,preload=True)
+        else:
+            print ('something is wrong')
         if s == 'me2_104_7m':
             print ('Doing resampling...')
             raw = raw.copy().resample(sfreq=1000)
@@ -315,25 +329,24 @@ for s in subjects:
         print ('Doing filtering...')
         raw_filt = do_filtering(s, raw,lp,run)
         raw_erm_filt = do_filtering(s, raw_erm,lp,run)
-        print ('calculate cov...')
-        do_cov(s,raw_erm_filt,run)
+        # print ('calculate cov...')
+        # do_cov(s,raw_erm_filt,run)
         print ('Doing epoch...')
         events = do_evtag(raw_filt,s,run)
         evoked, epochs_cortical = do_epoch(raw_filt, s, run, events)
 
 #%%###### do manual sensor rejection
-s = subjects[9]
-run = runs[2]
+# s = 'me2_305_11m'
+# run = runs[1]
 
-print ('Doing manual sensor rejection...')
-file_in=root_path + '/' + s + '/sss_fif/' + s + run + '_otp_raw_sss_proj'
-raw_file = mne.io.read_raw_fif(file_in + '.fif',allow_maxshield=True,preload=True)
-filt_file = mne.io.read_raw_fif(file_in + '_fil50.fif',allow_maxshield=True,preload=True)
-events = mne.find_events(raw_file,stim_channel='STI001') 
-event_id = {'Trial_Onset':5}
-reject=dict(grad=4000e-13,mag=4e-12)
-picks = mne.pick_types(filt_file.info,meg=True,eeg=False) 
-epochs_cortical = mne.Epochs(filt_file, events, event_id,tmin =-0.5, tmax=10.5,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
-epochs_cortical.plot_drop_log()
-filt_file.plot()
-filt_file.drop_channels(ch_names)
+# print ('Doing manual sensor rejection...')
+# file_in=root_path + '/' + s + '/sss_fif/' + s + run + '_otp_raw_sss_proj'
+# raw_file = mne.io.read_raw_fif(file_in + '.fif',allow_maxshield=True,preload=True)
+# raw_file.filter(l_freq=0,h_freq=50,method='iir',iir_params=dict(order=4,ftype='butter'))
+# events = mne.find_events(raw_file,stim_channel='STI001') 
+# event_id = {'Trial_Onset':5}
+# reject=dict(grad=4000e-13,mag=6e-12)
+# picks = mne.pick_types(raw_file.info,meg=True,eeg=False) 
+# epochs_cortical = mne.Epochs(raw_file, events, event_id,tmin =-0.5, tmax=10.5,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
+# epochs_cortical.plot_drop_log()
+# raw_file.plot()
