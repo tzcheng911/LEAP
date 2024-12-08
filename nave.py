@@ -11,9 +11,8 @@ import numpy as np
 import os
 
 #%%########################################
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/' # project dir
-
-# root_path = '/media/tzcheng/storage/BabyRhythm/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # project dir
+root_path = '/media/tzcheng/storage/BabyRhythm/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
@@ -21,7 +20,7 @@ os.chdir(root_path)
 subj = [] # A104 got some technical issue
 
 for file in os.listdir():
-    if file.startswith('me2_'): #  subject name
+    if file.startswith('br_'): #  subject name
         subj.append(file)
 runs = ['01','02','03','04']
 
