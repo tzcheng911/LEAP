@@ -265,7 +265,7 @@ def do_epoch(data, subject, run, events):
     ###### Read the event files to do epoch    
     event_id = {'Trial_Onset':5}
     # reject=dict(grad=4000e-13,mag=4e-12) # Christina's MMR criteria
-    reject=dict(grad=4000e-13,mag=8e-12) # Zoe's ME2 criteria
+    reject=dict(grad=4000e-13,mag=6e-12) # Zoe's ME2 criteria
     picks = mne.pick_types(data.info,meg=True,eeg=False) 
     epochs_cortical = mne.Epochs(data, events, event_id,tmin =-0.5, tmax=10.5,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
     # epochs_cortical.plot_drop_log()
@@ -273,13 +273,13 @@ def do_epoch(data, subject, run, events):
 
     # epochs_cortical.save(file_out + '_epoch.fif',overwrite=True)
     # evoked.save(file_out + '_evoked.fif',overwrite=True)
-    epochs_cortical.save(file_out + '_mag8pT_epoch.fif',overwrite=True)
-    evoked.save(file_out + '_mag8pT_evoked.fif',overwrite=True)    
+    epochs_cortical.save(file_out + '_mag6pT_epoch.fif',overwrite=True)
+    evoked.save(file_out + '_mag6pT_evoked.fif',overwrite=True)    
     return evoked,epochs_cortical
 
 ########################################
-# root_path='/media/tzcheng/storage/BabyRhythm/'
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
+root_path='/media/tzcheng/storage/BabyRhythm/'
+# root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
 os.chdir(root_path)
 
 #%%## parameters 
@@ -290,7 +290,7 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('me2_'): 
+    if file.startswith('br_'): 
         subjects.append(file)
 
 ## check if there is prebad txt with the raw data: 49 subjects don't have it
