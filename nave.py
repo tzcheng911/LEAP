@@ -11,7 +11,7 @@ import numpy as np
 import os
 
 #%%########################################
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # project dir
+# root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # project dir
 root_path = '/media/tzcheng/storage/BabyRhythm/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
@@ -30,7 +30,7 @@ evoked_nave = np.zeros([len(subj),len(runs)])
 for ns,s in enumerate(subj):
     for nrun,run in enumerate(runs): 
         print('Extracting ' + s + run + ' data')
-        file_in = root_path + s + '/sss_fif/' + s +'_' + run +'_otp_raw_sss_proj_fil50_evoked.fif'
+        file_in = root_path + s + '/sss_fif/' + s +'_' + run +'_otp_raw_sss_proj_fil50_mag6pT_evoked.fif'
         if os.path.exists(file_in):
             evoked = mne.read_evokeds(file_in)[0] # evoked conditions
             evoked_nave[ns,nrun] = evoked.nave
