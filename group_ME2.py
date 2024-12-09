@@ -18,34 +18,34 @@ tmax = 9.0
 fmin = 0.5
 fmax = 5
 
-age = '7mo' # '7mo', '11mo' or '' for adults br
+age = '11mo/' # '7mo/', '11mo/' or '' for adults br
 runs = ['_01','_02','_03','_04']
 resample_or_not = True
 rfs = 250
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/' # /media/tzcheng/storage/BabyRhythm/ for adults
 # root_path='/media/tzcheng/storage/BabyRhythm/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
-
 os.chdir(root_path + age)
-
 subjects = []
 
 for file in os.listdir():
     if file.startswith('me2_'): 
+    # if file.startswith('br_'): 
         subjects.append(file)
 
 for run in runs:
     print('Performing run ' + run[-1])
-    #%% output the sensor time series in npy files
-    # group = []
+    # output the sensor time series in npy files
+    group = []
     
-    # for s in subjects:
-    #     print('Extracting ' + s + ' data')
-    #     file_in = root_path + age + s + '/sss_fif/' + s + run
-    #     evoked = mne.read_evokeds(file_in + '_otp_raw_sss_proj_fil50_evoked.fif')[0]
-    #     group.append(evoked.data)
-    # group=np.asarray(group)
-    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_group' + run + '_sensor.npy',group)
+    for s in subjects:
+        print('Extracting ' + s + ' data')
+        file_in = root_path + age + s + '/sss_fif/' + s + run
+        evoked = mne.read_evokeds(file_in + '_otp_raw_sss_proj_fil50_mag6pT_evoked.fif')[0]
+        group.append(evoked.data)
+    group=np.asarray(group)
+    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/11mo_group' + run + '_mag6pT_sensor.npy',group)
+    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/br_group' + run + '_mag6pT_sensor.npy',group)
     
     #%% output the source time series in npy files
     group_stc_lcmv = []
