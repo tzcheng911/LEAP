@@ -92,8 +92,8 @@ def do_inverse(s,morph,run):
 # subjects_dir = '/media/tzcheng/storage2/subjects'
 # mne.gui.coregistration(subject='fsaverage', subjects_dir=subjects_dir)
 
-# root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
-root_path = '/media/tzcheng/storage/BabyRhythm/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
+# root_path = '/media/tzcheng/storage/BabyRhythm/'
 os.chdir(root_path)
 
 morph = True
@@ -101,12 +101,12 @@ morph = True
 runs = ['_01','_02','_03','_04']
 subj = [] 
 for file in os.listdir():
-    # if file.startswith('me2_'):
-    if file.startswith('br_'):
+    if file.startswith('me2_'):
+    # if file.startswith('br_'):
         subj.append(file)
 
-for s in tqdm(subj):
-    do_foward(s)
-    for run in runs:
-        print(s)
-        do_inverse(s,morph,run)
+# for s in tqdm(subj):
+#     do_foward(s)
+#     for run in runs:
+#         print(s)
+#         do_inverse(s,morph,run)
