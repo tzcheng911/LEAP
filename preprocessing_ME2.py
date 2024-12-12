@@ -352,26 +352,28 @@ for s in subjects:
 # raw_file.plot()
 
 #%%###### save random duple and random triple
-root_path = os.getcwd()
+# root_path='/media/tzcheng/storage/BabyRhythm/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
+os.chdir(root_path)
 event_id = {'Trial_Onset':5}
 reject=dict(grad=4000e-13,mag=6e-12) # Zoe's ME2 criteria
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('br_'): 
+    if file.startswith('me2_'): 
         subjects.append(file)
         
 for s in subjects:
     print ('Doing random epoch for subject ' + s)
     file_in = root_path + '/' + s + '/sss_fif/' + s + '_02_otp_raw_sss_proj_fil50_mag6pT_epoch.fif'
     file_out = root_path + '/' + s + '/sss_fif/' + s + '_02_otp_raw_sss_proj_fil50'
-    data = mne.read_epochs(file_in)
-    picks = mne.pick_types(data.info,meg=True,eeg=False)
+    data = mne.read_epochs(file_in,verbose='ERROR')
     
     ## get the dropped epoch idx if there is any
     if any(data.drop_log):
-        print(s + "drop " + str(len(np.where(list(map(bool, data.drop_log))))) + " epoch")
         drop_idx = np.where(list(map(bool, data.drop_log)))
+        len_drop_idx = len(np.where(list(map(bool, data.drop_log)))[0])
+        print(s + " drop " + str(len_drop_idx) + " epoch")
         ## get the index of epoch to include for random duple (any in the first 15 epochs) and random triple (any in the second 15 epochs)
         list1 =  list(range(0,30))
         list2 = drop_idx[0].tolist()
@@ -384,5 +386,5 @@ for s in subjects:
         idx_random_triple = list(range(15,30)) # second half is triple matched
     evoked_random_duple = data['Trial_Onset'][idx_random_duple].average()
     evoked_random_triple = data['Trial_Onset'][idx_random_triple].average()
-    evoked_random_duple.save(file_out + '_mag6pT_evoked_randduple.fif',overwrite=True)    
-    evoked_random_triple.save(file_out + '_mag6pT_evoked_randtriple.fif',overwrite=True)    
+    evoked_random_duple.save(file_out + '_mag6pT_evoked_randduple.fif',overwrite=True,verbose='ERROR')    
+    evoked_random_triple.save(file_out + '_mag6pT_evoked_randtriple.fif',overwrite=True,verbose='ERROR')    
