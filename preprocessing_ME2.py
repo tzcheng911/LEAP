@@ -350,3 +350,39 @@ for s in subjects:
 # epochs_cortical = mne.Epochs(raw_file, events, event_id,tmin =-0.5, tmax=10.5,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
 # epochs_cortical.plot_drop_log()
 # raw_file.plot()
+
+#%%###### save random duple and random triple
+root_path = os.getcwd()
+event_id = {'Trial_Onset':5}
+reject=dict(grad=4000e-13,mag=6e-12) # Zoe's ME2 criteria
+subjects = []
+
+for file in os.listdir():
+    if file.startswith('br_'): 
+        subjects.append(file)
+        
+for s in subjects:
+    print ('Doing random epoch for subject ' + s)
+    file_in = root_path + '/' + s + '/sss_fif/' + s + '_02_otp_raw_sss_proj_fil50_mag6pT_epoch.fif'
+    file_out = root_path + '/' + s + '/sss_fif/' + s + '_02_otp_raw_sss_proj_fil50'
+    data = mne.read_epochs(file_in)
+    picks = mne.pick_types(data.info,meg=True,eeg=False)
+    
+    ## get the dropped epoch idx if there is any
+    if any(data.drop_log):
+        print(s + "drop " + str(len(np.where(list(map(bool, data.drop_log))))) + " epoch")
+        drop_idx = np.where(list(map(bool, data.drop_log)))
+        ## get the index of epoch to include for random duple (any in the first 15 epochs) and random triple (any in the second 15 epochs)
+        list1 =  list(range(0,30))
+        list2 = drop_idx[0].tolist()
+        list3 = list(set(list1)-set(list2))
+        idx_random_duple = np.where(np.asarray(list3)<=14)[0].tolist()
+        idx_random_triple = np.where(np.asarray(list3)>=15)[0].tolist()
+    else: 
+        print("No epoch is dropped.")
+        idx_random_duple = list(range(0,15)) # first half is duple matched
+        idx_random_triple = list(range(15,30)) # second half is triple matched
+    evoked_random_duple = data['Trial_Onset'][idx_random_duple].average()
+    evoked_random_triple = data['Trial_Onset'][idx_random_triple].average()
+    evoked_random_duple.save(file_out + '_mag6pT_evoked_randduple.fif',overwrite=True)    
+    evoked_random_triple.save(file_out + '_mag6pT_evoked_randtriple.fif',overwrite=True)    
