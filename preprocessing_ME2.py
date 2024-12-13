@@ -351,9 +351,9 @@ for s in subjects:
 # epochs_cortical.plot_drop_log()
 # raw_file.plot()
 
-#%%###### save random duple and random triple
+#%%###### save random duple and random triple: evoked
 # root_path='/media/tzcheng/storage/BabyRhythm/'
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/'
 os.chdir(root_path)
 event_id = {'Trial_Onset':5}
 reject=dict(grad=4000e-13,mag=6e-12) # Zoe's ME2 criteria
@@ -388,3 +388,4 @@ for s in subjects:
     evoked_random_triple = data['Trial_Onset'][idx_random_triple].average()
     evoked_random_duple.save(file_out + '_mag6pT_evoked_randduple.fif',overwrite=True,verbose='ERROR')    
     evoked_random_triple.save(file_out + '_mag6pT_evoked_randtriple.fif',overwrite=True,verbose='ERROR')    
+    
