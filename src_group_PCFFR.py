@@ -166,7 +166,7 @@ for ns,s in enumerate(subjects):
     print(s)
     for nspeech, speech in enumerate(cond):
         file_in = root_path + s + '/sss_fif/' + s
-        evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f80450_evoked_' + speech + '_ffr_' + str(n_trial) +'.fif')[0]
+        evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f80450_evoked_' + speech + '_' + str(n_trial) +'.fif')[0]
         data = evokeds.get_data()
         pca_data,ind_components,explained_variance_ratio,data_topPC = select_PC(data,sfreq,fmin,fmax,lb,hb,n_top)
         evokeds.data = data_topPC
