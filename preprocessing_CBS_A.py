@@ -266,7 +266,8 @@ def do_epoch_mmr_eeg(data, subject, run, direction):
         evoked_dev1.save(file_out + '_evoked_dev1_ba_mmr.fif',overwrite=True)
         evoked_dev2.save(file_out + '_evoked_dev2_ba_mmr.fif',overwrite=True)
 
-def do_epoch_cabr(data, subject, run, n_trials ,hp,lp):  
+def do_epoch_cabr(data, subject, run, n_trials ,hp,lp): 
+    random.seed(15)
     ###### Read the event files (generated from evtag.py) 
     root_path = os.getcwd()
     cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_cabr-eve.fif')
