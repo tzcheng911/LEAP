@@ -196,7 +196,7 @@ root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
-n_top = 'dss' # could number of IC: 3 or 10, or dss: dss_f80450, dss
+n_top = 'replicate_f' # could number of IC: 3 or 10, or dss: dss_f80450, dss
 n_trial = '200' # 'ntrial_200/' or 'ntrial_all/' or ''
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
 times = stc1.times
@@ -769,7 +769,7 @@ print('SNR: ' + str(np.array(SNR).mean()) + '(' + str(np.array(SNR).std()/np.sqr
 #%%####################################### save the mat files of MEG sensor data for dss
 root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
-n_trials = 200
+n_trials = 'all'
 all_score_lr = []
 all_score_svm = []
 subj = [] # A104 got some technical issue
@@ -779,27 +779,28 @@ for file in os.listdir():
 for s in subj:
     file_in = root_path + '/' + s + '/sss_fif/' + s 
     # file_in = root_path + '/' + s + '/eeg/' + s # load eeg files
-
-    ##%% extract the FFR time series
     epochs = mne.read_epochs(file_in +'_01_otp_raw_sss_proj_f80450_ffr_e_' + str(n_trials) + '.fif') 
-    # 01_otp_raw_sss_proj_f80450_ffr_e: filter between 80-450; 01_otp_raw_sss_proj_f_ffr_e: filter between 80-2000 
-    rand_ind = random.sample(range(min(len(epochs['Standardp'].events),len(epochs['Standardn'].events))),n_trials//2) 
-    std_e = mne.concatenate_epochs([epochs['Standardp'][rand_ind],epochs['Standardn'][rand_ind]])
-    std_e = mne.epochs.combine_event_ids(std_e, ['Standardp', 'Standardn'], {'Standard': 8})
-    rand_ind = random.sample(range(min(len(epochs['Deviant1p'].events),len(epochs['Deviant1n'].events))),n_trials//2) 
-    dev1_e = mne.concatenate_epochs([epochs['Deviant1p'][rand_ind],epochs['Deviant1n'][rand_ind]])
-    dev1_e = mne.epochs.combine_event_ids(dev1_e, ['Deviant1p', 'Deviant1n'], {'Deviant1': 9})
-    rand_ind = random.sample(range(min(len(epochs['Deviant2p'].events),len(epochs['Deviant2n'].events))),n_trials//2) 
-    dev2_e = mne.concatenate_epochs([epochs['Deviant2p'][rand_ind],epochs['Deviant2n'][rand_ind]])
-    dev2_e = mne.epochs.combine_event_ids(dev2_e, ['Deviant2p', 'Deviant2n'], {'Deviant2': 10})
-    
-    epochs = mne.concatenate_epochs([std_e,dev1_e,dev2_e])
+    if n_trials == 'all':
+        epochs = epochs
+    elif n_trials == 200:
+        ##%% extract the FFR time series
+        # 01_otp_raw_sss_proj_f80450_ffr_e: filter between 80-450; 01_otp_raw_sss_proj_f_ffr_e: filter between 80-2000 
+        rand_ind = random.sample(range(min(len(epochs['Standardp'].events),len(epochs['Standardn'].events))),n_trials//2) 
+        std_e = mne.concatenate_epochs([epochs['Standardp'][rand_ind],epochs['Standardn'][rand_ind]])
+        std_e = mne.epochs.combine_event_ids(std_e, ['Standardp', 'Standardn'], {'Standard': 8})
+        rand_ind = random.sample(range(min(len(epochs['Deviant1p'].events),len(epochs['Deviant1n'].events))),n_trials//2) 
+        dev1_e = mne.concatenate_epochs([epochs['Deviant1p'][rand_ind],epochs['Deviant1n'][rand_ind]])
+        dev1_e = mne.epochs.combine_event_ids(dev1_e, ['Deviant1p', 'Deviant1n'], {'Deviant1': 9})
+        rand_ind = random.sample(range(min(len(epochs['Deviant2p'].events),len(epochs['Deviant2n'].events))),n_trials//2) 
+        dev2_e = mne.concatenate_epochs([epochs['Deviant2p'][rand_ind],epochs['Deviant2n'][rand_ind]])
+        dev2_e = mne.epochs.combine_event_ids(dev2_e, ['Deviant2p', 'Deviant2n'], {'Deviant2': 10})
+        epochs = mne.concatenate_epochs([std_e,dev1_e,dev2_e])
     
     X = np.squeeze(epochs.get_data())  
     y = epochs.events[:, 2]  # target: standard, deviant1 and 2
     
     mdic = {"condition":y,"data":X}
-    fname = root_path + 'mat/MEG_f80450/dss_input/' + s +'_MEG_epoch_f80450'
+    fname = root_path + 'mat/MEG_f80450/ntrial_all/dss_input/' + s +'_MEG_epoch_f80450'
     savemat(fname + '.mat', mdic)
     del mdic, epochs
 
