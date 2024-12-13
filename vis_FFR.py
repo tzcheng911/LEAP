@@ -37,33 +37,42 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-did_pca = '_pcffr' # without or with pca "_pcffr"
-filename_ffr_ba = 'group_ba' + did_pca
-filename_ffr_mba = 'group_mba' + did_pca
-filename_ffr_pa = 'group_pa' + did_pca
+did_pca = '_dss_f80450' # without or with pca "_pcffr" or "_dss_f80450"
+ntrial = '_200'  # "_all", "_200"
+filename_ffr_ba = 'group_ba' + did_pca + ntrial
+filename_ffr_mba = 'group_mba' + did_pca + ntrial
+filename_ffr_pa = 'group_pa' + did_pca + ntrial
 
-baby_or_adult = 'cbsb_meg_analysis' # baby or adult
+baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
 input_data = 'wholebrain' # ROI or wholebrain or sensor or pcffr
 
 if input_data == 'sensor':
-    ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + filename_ffr_ba + '_sensor.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_mba + '_sensor.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_pa + '_sensor.npy',allow_pickle=True)
+    ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/ntrial' + ntrial + '/' + filename_ffr_ba + '_sensor.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/ntrial' + ntrial + '/' + filename_ffr_mba + '_sensor.npy',allow_pickle=True)
+    ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/ntrial' + ntrial + '/' + filename_ffr_pa + '_sensor.npy',allow_pickle=True)
     FFR_accuracy = np.load(root_path + baby_or_adult + '/decoding/FFR_decoding_accuracy_sensor.npy')
     PCFFR_accuracy = np.load(root_path + baby_or_adult + '/decoding/PCFFR_decoding_accuracy_sensor.npy')
 elif input_data == 'ROI':
-    ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_ba + '_morph_roi.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_mba + '_morph_roi.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_pa + '_morph_roi.npy',allow_pickle=True)
+    ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/ntrial' + ntrial + '/' + filename_ffr_ba + '_morph_roi.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/ntrial' + ntrial + '/' + filename_ffr_mba + '_morph_roi.npy',allow_pickle=True)
+    ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/ntrial' + ntrial + '/' + filename_ffr_pa + '_morph_roi.npy',allow_pickle=True)
     FFR_accuracy = np.load(root_path + baby_or_adult + '/decoding/FFR_decoding_accuracy_roi.npy')
     PCFFR_accuracy = np.load(root_path + baby_or_adult + '/decoding/PCFFR_decoding_accuracy_roi.npy')
 elif input_data == 'wholebrain':
-    ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_ba + '_morph.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_mba + '_morph.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/' + filename_ffr_pa + '_morph.npy',allow_pickle=True)
+    ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/ntrial' + ntrial + '/' + filename_ffr_ba + '_morph.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/ntrial' + ntrial + '/' + filename_ffr_mba + '_morph.npy',allow_pickle=True)
+    ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/ntrial' + ntrial + '/' + filename_ffr_pa + '_morph.npy',allow_pickle=True)
     FFR_accuracy = np.load(root_path + baby_or_adult + '/decoding/FFR_decoding_accuracy_v.npy')
-    PCFFR_accuracy = np.load(root_path + baby_or_adult + '/decoding/PCFFR_decoding_accuracy_v.npy')
-    
+    PCFFR_accuracy = np.load(root_path + baby_or_adult + '/decoding/replicate_f80450_ntrial_200_decoding_accuracy_wholebrain_r15.npy')
+
+#%%####################################### source localization result
+stc1.data = ffr_ba.mean(0)
+stc1.plot(src, subject='fsaverage', subjects_dir=subjects_dir)
+stc1.data = ffr_mba.mean(0)
+stc1.plot(src, subject='fsaverage', subjects_dir=subjects_dir)
+stc1.data = ffr_pa.mean(0)
+stc1.plot(src, subject='fsaverage', subjects_dir=subjects_dir)
+
 #%%####################################### decoding spatial result
 all_score = PCFFR_accuracy
 acc_ind = np.where(np.array(all_score) > 0.5)
