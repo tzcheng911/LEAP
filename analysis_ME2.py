@@ -5,7 +5,8 @@ Created on Wed Aug 14 16:53:55 2024
 1. Frequency Analysis
 2. Time-Frequency Analysis
 3. Connectivity Analysis
-4. ML decoding Analysis (using whole time series to distinguish duple vs. triple)
+4. ML decoding Analysis (using the first 30 beats to distinguish duple vs. triple)
+5. Correlation
 @author: tzcheng
 """
 #%%####################################### Import library  
@@ -25,6 +26,8 @@ from scipy.stats import pearsonr
 from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time
 from mne_connectivity.viz import plot_connectivity_circle
 from mne.viz import circular_layout
+from mne import spatial_src_adjacency
+from mne.stats import spatio_temporal_cluster_1samp_test, summarize_clusters_stc
 
 from sklearn.decomposition import PCA, FastICA
 from sklearn.pipeline import make_pipeline
@@ -56,8 +59,8 @@ def plot_err(group_data,color,t):
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
 
 #%%####################################### Load the files
-age = '11mo' # '7mo' (or '7mo_0_15' or '7mo_15_32' for MEG_v), '11mo', 'br' for adults
-run = '_02' # '_01','_02','_03','_04' silence, random, duple, triple
+age = 'br' # '7mo' (or '7mo_0_15' or '7mo_15_32' for MEG_v), '11mo', 'br' for adults
+run = '_03' # '_01','_02','_03','_04' silence, random, duple, triple
 
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
@@ -70,10 +73,10 @@ nROI = [72,108,66,102,64,100,59,95,7,8,9,16,26,27,28,31,60,61,62,96,97,98,50,86]
 # Parietal: inferior parietal (50 86), posterior parietal (??)
 nV = 10020 # need to manually look up from the whole-brain plot
 
-fs, audio = wavfile.read(root_path + 'Stimuli/Random.wav') # Random, Duple300, Triple300
+fs, audio = wavfile.read(root_path + 'Stimuli/Duple300.wav') # Random, Duple300, Triple300
 MEG_sensor = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_mag6pT_sensor.npy') # 01,02,03,04
-# MEG_v = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_rs_mne.npy') # 01,02,03,04    
-MEG_roi = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_mne_roi.npy') # 01,02,03,04
+MEG_v = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_rs_mne_mag6pT_morph.npy') # 01,02,03,04    
+MEG_roi = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_rs_mne_mag6pT_roi.npy') # 01,02,03,04
 
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
@@ -85,13 +88,13 @@ times = stc1.times
 #%%####################################### Frequency analysis
 # Are there peak amplitude in the beat and meter rates? which ROI, which source?
 fmin = 0.5
-fmax = 5
+fmax = 40
 n_lines = 10
 n_freq = [33] # [6,7] 1.1 Hz, [12, 13] 1.6 Hz, [33] 3.33 Hz 
 n_times = np.shape(MEG_v)[-1]
-if n_times == 12001:
+if n_times == 11001:
     MEG_fs = 1000 ## need a better way to write this, can mess up with the code later
-elif n_times == 3000:
+elif n_times == 2750:
     MEG_fs = 250
 
 #%% Frequency spectrum of the audio 
@@ -158,6 +161,7 @@ plot_err(psds[:,nV,:],'k',freqs)
 stc1.data = psds.mean(axis=0)
 stc1.tmin = freqs[0] # hack into the time with freqs
 stc1.tstep = np.diff(freqs)[0] # hack into the time with freqs
+stc1.plot(src = src)
 stc1.plot(src = src,clim=dict(kind="value",lims=[1,3,5]))
 
 #%%####################################### Time-Frequency analysis
@@ -165,14 +169,14 @@ stc1.plot(src = src,clim=dict(kind="value",lims=[1,3,5]))
 ## sensor
 evokeds = mne.read_evokeds(root_path + '7mo/me2_205_7m/sss_fif/me2_205_7m_01_otp_raw_sss_proj_fil50_evoked.fif')[0]
 evokeds.data = MEG_sensor.mean(0)
-evo_tfr = evokeds.compute_tfr('morlet', n_cycles=3,freqs=np.arange(fmin, 40, 2))
+evo_tfr = evokeds.compute_tfr('morlet', n_cycles=3,freqs=np.arange(fmin, fmax, 1))
 evo_tfr.plot_topo(baseline=(-0.5, 0), mode="logratio", title="Average power")
 evo_tfr.plot(picks=[82], baseline=(-0.5, 0), mode="logratio", title=evo_tfr.ch_names[82])
 tfr, freqs = evo_tfr.get_data(return_freqs=True)
 
 ## ROI
 epochs = mne.read_epochs(root_path + '7mo/me2_205_7m/sss_fif/me2_205_7m_01_otp_raw_sss_proj_fil50_epoch.fif')
-source_tfr = mne.time_frequency.tfr_array_morlet(MEG_roi,MEG_fs,freqs=np.arange(0.5, 5, 0.5),n_cycles=3,output='power')
+source_tfr = mne.time_frequency.tfr_array_morlet(MEG_roi,MEG_fs,np.arange(fmin, fmax, 1),n_cycles=3,output='power')
 
 # shitty imshow
 fig, ax = plt.subplots(1,1)
