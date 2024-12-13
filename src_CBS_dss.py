@@ -104,17 +104,17 @@ def group_stc(subj,baby_or_adult,n_top, n_trial, n_filter):
     np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_' + str(n_top) + '_' + n_filter + '_' + str(n_trial) + '_morph_roi.npy',group_dev1_roi)
     np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_' + str(n_top) + '_' + n_filter + '_' + str(n_trial) + '_morph_roi.npy',group_dev2_roi)
 
-#%%#######################################' + str(n_top) + '
+#%%#######################################
 root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
 ## Parameters
 
-n_top = 'dss' # 3, 10 or 'dss'
+n_top = 'replicate' # 3, 10 or 'dss'
 n_trial = '200'
 runs = ['_01','_02']
 cond = ['substd','dev1','dev2']
 sounds = ['ba','mba','pa']
-n_filter = 'f80450' # 'f': 80-2000 Hz; 'f80450': 80-450 Hz
+n_filter = 'f' # 'f': 80-2000 Hz; 'f80450': 80-450 Hz
 baby_or_adult = 'cbsA_meeg_analysis' # baby (cbsb_meg_analysis) or adult (cbsA_meeg_analysis)
 
 run = runs[0]
@@ -126,21 +126,21 @@ for file in os.listdir():
     if file.startswith('cbs_A'):
         subjects.append(file)
 
-group_sensor = np.empty([len(subjects),3,306,1101])
+# group_sensor = np.empty([len(subjects),3,306,1101])
 
 for ns,s in enumerate(subjects):
     print(s)
     for nspeech, speech in enumerate(cond):
         file_in = root_path + s + '/sss_fif/' + s
-        # evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_' + n_filter + '_evoked_' + speech + '_ffr_' + str(n_trial) +'.fif')[0]
-        dss_clean_meg = loadmat(root_path + 'mat/MEG_' + n_filter + '/dss_output/' + sounds[nspeech] + '/clean_' + sounds[nspeech] + '_' + s + '_MEG_epoch_f80450.mat') # need to change the path for different conditions
-        dss_clean_meg = dss_clean_meg['megclean2']
+        evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_' + n_filter + '_evoked_' + speech + '_ffr_' + str(n_trial) +'.fif')[0]
+        # dss_clean_meg = loadmat(root_path + 'mat/MEG_' + n_filter + '/dss_output/' + sounds[nspeech] + '/clean_' + sounds[nspeech] + '_' + s + '_MEG_epoch_f80450.mat') # need to change the path for different conditions
+        # dss_clean_meg = dss_clean_meg['megclean2']
         # evokeds.data = dss_clean_meg.mean(0) # average across all trials
-        # do_inverse_FFR(s,evokeds,run,speech,morph,n_top,n_trial,n_filter)
-        group_sensor[ns,nspeech,:,:] = dss_clean_meg.mean(0)
+        do_inverse_FFR(s,evokeds,run,speech,morph,n_top,n_trial,n_filter)
+#         group_sensor[ns,nspeech,:,:] = dss_clean_meg.mean(0)
 
-np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_' + str(n_top) + '_f80450_' + str(n_trial) + '_sensor.npy',group_sensor[:,0,:,:])
-np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_' + str(n_top) + '_f80450_' + str(n_trial) +'_sensor.npy',group_sensor[:,1,:,:])
-np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_' + str(n_top) + '_f80450_' + str(n_trial) +'_sensor.npy',group_sensor[:,2,:,:])
+# np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_' + str(n_top) + '_f80450_' + str(n_trial) + '_sensor.npy',group_sensor[:,0,:,:])
+# np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_' + str(n_top) + '_f80450_' + str(n_trial) +'_sensor.npy',group_sensor[:,1,:,:])
+# np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_' + str(n_top) + '_f80450_' + str(n_trial) +'_sensor.npy',group_sensor[:,2,:,:])
 
 group_stc(subjects,baby_or_adult,n_top,n_trial,n_filter)
