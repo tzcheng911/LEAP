@@ -283,8 +283,8 @@ for file in os.listdir():
         subj.append(file)
 
 ## do individual by individual(s), check the time t1, t2 or t3 too
-subj = ['sld_147']
-conditions = ['2']
+subj = ['sld_150']
+conditions = ['6']
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]
@@ -299,6 +299,7 @@ for n,s in enumerate(subj):
     # raw_file = raw_file.copy().crop(tmax=836.6) # for sld_125_t1 
     # raw_file = raw_file.copy().crop(tmax=900.5) # for sld_143_t1
     # raw_file = raw_file.copy().crop(tmax=455) # for sld_145_t1
+    # raw_file = raw_file.copy().crop(tmax=786) # for sld_129_t3
     find_events(raw_file, s,run,time)
     events=process_events(s,run,time)
     check=check_events(events,condition)
