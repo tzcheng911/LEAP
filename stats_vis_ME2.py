@@ -20,6 +20,11 @@ import scipy.stats as stats
 from scipy import stats,signal
 from mne import spatial_src_adjacency
 from mne.stats import spatio_temporal_cluster_1samp_test, summarize_clusters_stc
+from mne.time_frequency import tfr_morlet, tfr_multitaper, tfr_stockwell, AverageTFRArray
+from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time
+from mne_connectivity.viz import plot_connectivity_circle
+from mne.viz import circular_layout
+
 import sklearn 
 import matplotlib.pyplot as plt 
 from scipy.io import wavfile
@@ -34,6 +39,9 @@ def plot_err(group_stc,color,t):
     
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
+stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+times = stc1.times
 
 fmin = 0.5
 fmax = 5
@@ -67,6 +75,8 @@ plt.plot(freqs,psds)
 plt.title('Triple rhythm')
 
 #%%####################################### Load the sensor files
+## SSEP
+
 age = 'br' # '7mo', '11mo', 'br' for adults
 MEG_fs = 1000
 pool_fbin = 5
@@ -77,6 +87,7 @@ MEG_random_triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_02_m
 MEG_duple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_03_mag6pT_sensor.npy') # 01,02,03,04
 MEG_triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_04_mag6pT_sensor.npy') # 01,02,03,04
 
+########################################## SSEP
 psds_random, freqs = mne.time_frequency.psd_array_welch(
 MEG_random_duple,MEG_fs, # could replace with label time series
 n_fft=np.shape(MEG_random_duple)[2],
@@ -190,10 +201,14 @@ for i in np.arange(0,len(good_cluster_inds),1):
     print(freqs[clusters[good_cluster_inds[i]]])
 
 #%%####################################### Load the source ROI files
+## SSEP
+## ERSP
+## decoding
+## Conn
+
 age = 'br' # '7mo', '11mo', 'br' for adults
 MEG_fs = 250
 
-## ROI
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 nROI = [72,108,66,102,64,100,59,95,7,8,9,16,26,27,28,31,60,61,62,96,97,98,50,86] 
@@ -207,6 +222,7 @@ MEG_random_triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_02_s
 MEG_duple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_03_stc_rs_mne_mag6pT_roi.npy') # 01,02,03,04
 MEG_triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_04_stc_rs_mne_mag6pT_roi.npy') # 01,02,03,04
 
+########################################## SSEP
 psds_random, freqs = mne.time_frequency.psd_array_welch(
 MEG_random,MEG_fs, # could replace with label time series
 n_fft=np.shape(MEG_random)[2],
@@ -270,6 +286,7 @@ for n in nROI:
         print("The " + str(i+1) + "st significant cluster")
         print(clusters[good_cluster_inds[i]])
         print(freqs[clusters[good_cluster_inds[i]]])
+
     
 #%%######################################### paramatric ttest test on meter vs. random ***
 FOI = [6,7, 12,13, 30,31] # beat rate, meter rate, mu, beta
@@ -296,7 +313,7 @@ t,p = stats.ttest_1samp(X[:,:,[30,31]].mean(axis=2),0) # duple vs. random in bea
 idx = np.where(p < 0.05)
 print(label_names[idx])
 
-########################################## select the ROI to do non-paramatric permutation test ***
+########################################## non-paramatric permutation test ***
 X = psds_duple-psds_random
 for n in nROI:
     print("cluster " + label_names[n])
@@ -320,8 +337,116 @@ for n in nROI:
         print("The " + str(i+1) + "st significant cluster")
         print(clusters[good_cluster_inds[i]])
         print(freqs[clusters[good_cluster_inds[i]]])
-        
+
+########################################## ERSP
+vmin, vmax = -3.0,3.0
+freqs=np.arange(5, 35, 1)
+
+epochs = mne.read_epochs(root_path + '7mo/me2_205_7m/sss_fif/me2_205_7m_01_otp_raw_sss_proj_fil50_epoch.fif')
+epochs.resample(MEG_fs)
+epochs.drop_channels(epochs.info["ch_names"][0:192]) # hack into the epochs
+power_random = mne.time_frequency.tfr_array_morlet(MEG_random,MEG_fs,freqs=freqs,n_cycles=15,output='power')
+power_duple = mne.time_frequency.tfr_array_morlet(MEG_duple,MEG_fs,freqs=freqs,n_cycles=15,output='power')
+power_triple = mne.time_frequency.tfr_array_morlet(MEG_triple,MEG_fs,freqs=freqs,n_cycles=15,output='power')
+tfr_random = AverageTFRArray(
+    info=epochs.info, data=power_random.mean(axis=0), times=epochs.times, freqs=freqs, nave=np.shape(power_random)[0])
+tfr_duple = AverageTFRArray(
+    info=epochs.info, data=power_duple.mean(axis=0), times=epochs.times, freqs=freqs, nave=np.shape(power_duple)[0])
+tfr_triple = AverageTFRArray(
+    info=epochs.info, data=power_triple.mean(axis=0), times=epochs.times, freqs=freqs, nave=np.shape(power_triple)[0])
+
+X = power_duple - power_random
+tfr_duple_random = AverageTFRArray(
+    info=epochs.info, data=X.mean(axis=0), times=epochs.times, freqs=freqs, nave=np.shape(power_triple)[0])
+
+for n in nROI: 
+    # tfr_random.plot(
+    #     baseline=(-0.5, 0),
+    #     picks=[n],
+    #     mode="percent",
+    #     vlim = (vmin, vmax),
+    #     title="Random TFR of ROI " + label_names[n])
+    # tfr_duple.plot(
+    #     baseline=(-0.5, 0),
+    #     picks=[n],
+    #     mode="percent",
+    #     vlim = (vmin, vmax),
+    #     title="Duple TFR of ROI " + label_names[n])
+    # tfr_duple_random.plot(
+    #     baseline=(-0.5, 0),
+    #     picks=[n],
+    #     mode="percent",
+    #     vlim = (-100, 100),
+    #     title="Duple - Random TFR of ROI " + label_names[n])
+########################################## a-priori paramatric window ttest alpha (8-12 Hz), beta (15-30 Hz)
+    t,p = stats.ttest_1samp(X[:,n,3:7,:].mean(axis=1).mean(axis=1),0) # alpha 8-12 Hz
+    if p < 0.05: 
+        print("Alpha band p-value of ROI " + label_names[n] + ": " + str(p))
+    t,p = stats.ttest_1samp(X[:,n,15:30,:].mean(axis=1).mean(axis=1),0) # beta 15-30 Hz
+    if p < 0.05: 
+        print("Beta band p-value of ROI " + label_names[n] + ": " + str(p))
+
+########################################## non-paramatric permutation test
+    print('Clustering.')
+    p_threshold = 0.001
+    df = np.shape(MEG_duple)[0] - 1  # degrees of freedom for the test
+    t_threshold = stats.distributions.t.ppf(1 - p_threshold / 2, df=df)
+    
+########################################## non-paramatric permutation test ***
+    X = np.transpose(X,(0,3,2,1)) # subj, time, space
+    T_obs, clusters, cluster_p_values, H0 = clu = mne.stats.spatio_temporal_cluster_1samp_test(
+        X,
+        seed=0,
+        n_jobs=None,
+        threshold=t_threshold,
+        buffer_size=None,
+        verbose=True,)
+
+########################################## Connectivity
+con_methods = ["pli", "dpli", "plv", "coh"]
+con = spectral_connectivity_epochs( # Compute frequency- and time-frequency-domain connectivity measures
+    MEG_duple[:,nROI,:],
+    method=con_methods,
+    mode="multitaper", # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
+    sfreq=MEG_fs,
+    fmin=fmin,
+    fmax=fmax,
+    faverage=False,
+    mt_adaptive=True,
+    n_jobs=1,
+)
+# Extract the data
+con_res = dict()
+for method, c in zip(con_methods, con):
+    con_res[method] = c.get_data(output="dense").mean(axis = -1) # get the n freq
+    
+## visualization
+ROI_names = label_names[nROI]
+labels = mne.read_labels_from_annot("sample", parc="aparc", subjects_dir=subjects_dir)
+label_colors = [label.color for label in labels]
+
+node_order = list()
+node_order.extend(ROI_names)  # reverse the order
+node_angles = circular_layout(
+    ROI_names, node_order, start_pos=90, group_boundaries=[0, len(ROI_names) / 2])
+
+fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
+plot_connectivity_circle(
+    con_res["dpli"],
+    ROI_names,
+    n_lines=10, # plot the top n lines
+    node_angles=node_angles,
+    node_colors=label_colors,
+    title="All-to-All Connectivity Triple PLV",
+    ax=ax)
+fig.tight_layout()
+
 #%%####################################### Load the source wholebrain files
+## SSEP
+## ERSP
+## decoding
+## Conn
+
 age = 'br' # '7mo', '11mo', 'br' for adults
 MEG_fs = 250
 
@@ -371,21 +496,43 @@ n_per_seg=None,
 fmin=fmin,
 fmax=fmax,)
 
-stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
-src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
-times = stc1.times
-
-#%%######################################### paramatric ttest test on meter vs. random ***
+#%%######################################### paramatric ttest test on meter vs. random 
 FOI = [6,7, 12,13, 30,31] # beat rate, meter rate, mu, beta
 print("Computing adjacency.")
 adjacency = mne.spatial_src_adjacency(src)
 p_threshold = 0.001
-df = 18 - 1  # degrees of freedom for the test
+df = np.shape(MEG_duple)[0] - 1  # degrees of freedom for the test
 t_threshold = stats.distributions.t.ppf(1 - p_threshold / 2, df=df)
 
 print('Clustering.')
 ########################################## non-paramatric permutation test ***
-X = psds_duple-psds_random_duple
+fsave_vertices = [s["vertno"] for s in src]
+X = psds_duple-psds_random
+X = np.transpose(X,(0,2,1)) # subj, time, space
+
+T_obs, clusters, cluster_p_values, H0 = clu = mne.stats.spatio_temporal_cluster_1samp_test(
+    X,
+    seed=0,
+    adjacency=adjacency,
+    n_jobs=None,
+    threshold=t_threshold,
+    buffer_size=None,
+    verbose=True,
+)
+
+good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
+good_clusters = [clusters[idx] for idx in good_cluster_inds]
+
+stc_all_cluster_vis = summarize_clusters_stc(
+    clu, p_thresh = p_threshold, tstep = np.diff(freqs)[0], tmin = freqs[0], vertices=fsave_vertices, subject="fsaverage"
+)
+stc_all_cluster_vis = stc_all_cluster_vis.plot(src=src) ## what is this actually plotting
+
+stc1.tmin = freqs[0] # hack into the time with freqs
+stc1.tstep = np.diff(freqs)[0] # hack into the time with freqs
+stc1.plot(src = src)
+
+X = psds_triple-psds_random
 X = np.transpose(X,(0,2,1)) # subj, time, space
 
 T_obs, clusters, cluster_p_values, H0 = clu = mne.stats.spatio_temporal_cluster_1samp_test(
@@ -402,22 +549,3 @@ good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
 good_clusters = [clusters[idx] for idx in good_cluster_inds]
 
 
-
-
-
-
-
-for i in np.arange(0,len(good_cluster_inds),1):
-    print("The " + str(i+1) + "st significant cluster")
-    print(clusters[good_cluster_inds[i]])
-    print(freqs[clusters[good_cluster_inds[i]]])
-
-X = psds_triple-psds_random_triple
-X = np.transpose(X,(0,2,1)) # subj, time, space
-
-T_obs, clusters, cluster_p_values, H0 = mne.stats.spatio_temporal_cluster_1samp_test(X, seed = 0)
-good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
-for i in np.arange(0,len(good_cluster_inds),1):
-    print("The " + str(i+1) + "st significant cluster")
-    print(clusters[good_cluster_inds[i]])
-    print(freqs[clusters[good_cluster_inds[i]]])
