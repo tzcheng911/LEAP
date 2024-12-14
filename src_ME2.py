@@ -44,6 +44,8 @@ def do_inverse(s,morph,run):
     evoked_random_duple = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_mag6pT_evoked_randduple.fif')[0]
     evoked_random_triple = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_mag6pT_evoked_randtriple.fif')[0]
     
+    evoked_random_duple = evoked_random_duple.resample(sfreq = 250)
+    evoked_random_triple = evoked_random_triple.resample(sfreq = 250)
     ## can experiment on pick_ori
 #     filters = make_lcmv(
 #     evoked.info,
@@ -81,9 +83,9 @@ def do_inverse(s,morph,run):
         # stc_mne_fsaverage = morph.apply(stc_mne)
         # stc_mne_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT', overwrite=True)
         stc_mne_random_duple_fsaverage = morph.apply(stc_mne_random_duple)
-        stc_mne_random_duple_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT_randduple', overwrite=True)
+        stc_mne_random_duple_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT_randduple_rs', overwrite=True)
         stc_mne_random_triple_fsaverage = morph.apply(stc_mne_random_triple)
-        stc_mne_random_triple_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT_randtriple', overwrite=True)
+        stc_mne_random_triple_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT_randtriple_rs', overwrite=True)
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
         # stc_lcmv.save(file_in + '_stc_lcmv', overwrite=True)
