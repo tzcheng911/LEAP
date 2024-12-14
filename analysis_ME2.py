@@ -60,7 +60,7 @@ def plot_err(group_data,color,t):
 
 #%%####################################### Load the files
 age = 'br' # '7mo' (or '7mo_0_15' or '7mo_15_32' for MEG_v), '11mo', 'br' for adults
-run = '_03' # '_01','_02','_03','_04' silence, random, duple, triple
+run = '_04' # '_01','_02','_03','_04' silence, random, duple, triple
 
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
@@ -75,7 +75,7 @@ nV = 10020 # need to manually look up from the whole-brain plot
 
 fs, audio = wavfile.read(root_path + 'Stimuli/Duple300.wav') # Random, Duple300, Triple300
 MEG_sensor = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_mag6pT_sensor.npy') # 01,02,03,04
-MEG_v = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_rs_mne_mag6pT_morph.npy') # 01,02,03,04    
+# MEG_v = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_rs_mne_mag6pT_morph.npy') # 01,02,03,04    
 MEG_roi = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_rs_mne_mag6pT_roi.npy') # 01,02,03,04
 
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
@@ -164,6 +164,21 @@ stc1.tstep = np.diff(freqs)[0] # hack into the time with freqs
 stc1.plot(src = src)
 stc1.plot(src = src,clim=dict(kind="value",lims=[1,3,5]))
 
+## Normalize spectrum
+pool_fbin = 5
+n0 = np.shape(psds)[0]
+n1 = np.shape(psds)[1]
+n2 = np.shape(psds)[2]
+
+psds_norm = np.zeros((15,306,n2-2*(pool_fbin-1)))
+for nsub in list(range(0,n0)):
+    for nchannel in list(range(0,n1)):
+        for n in list(range(pool_fbin,n2-pool_fbin)):
+            psds_norm[nsub,nchannel,n-5] = psds_norm[nsub,nchannel,n]-np.mean(psds_norm[nsub,nchannel,[n-pool_fbin,n-pool_fbin+1,n+pool_fbin-1,n+pool_fbin]])                                                  
+plt.figure()
+plot_err(psds_norm.mean(axis=1),'k',freqs[pool_fbin-1:n2-pool_fbin+1])
+plt.title('Random duple')
+
 #%%####################################### Time-Frequency analysis
 # Are there stronger amplitude in the beat and meter rates? which ROI?
 ## sensor
@@ -175,8 +190,20 @@ evo_tfr.plot(picks=[82], baseline=(-0.5, 0), mode="logratio", title=evo_tfr.ch_n
 tfr, freqs = evo_tfr.get_data(return_freqs=True)
 
 ## ROI
+vmin, vmax = -3.0, 3.0 
 epochs = mne.read_epochs(root_path + '7mo/me2_205_7m/sss_fif/me2_205_7m_01_otp_raw_sss_proj_fil50_epoch.fif')
-source_tfr = mne.time_frequency.tfr_array_morlet(MEG_roi,MEG_fs,np.arange(fmin, fmax, 1),n_cycles=3,output='power')
+epochs.resample(250)
+epochs.drop_channels(epochs.info["ch_names"][0:192]) # hack into the epochs
+power = mne.time_frequency.tfr_array_morlet(MEG_roi,MEG_fs,freqs=np.arange(8, fmax, 1),n_cycles=15,output='power')
+tfr = AverageTFRArray(
+    info=epochs.info, data=power.mean(axis=0), times=epochs.times, freqs=np.arange(8, fmax, 1), nave=np.shape(power)[0])
+tfr.plot(
+    baseline=(-0.5, -0.1),
+    picks=[72],
+    mode="percent",
+    vlim = (vmin, vmax),
+    title="TFR of ROI " + label_names[72],
+)
 
 # shitty imshow
 fig, ax = plt.subplots(1,1)
@@ -243,7 +270,7 @@ node_angles = circular_layout(
 #%%
 fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
 plot_connectivity_circle(
-    con_res["plv"],
+    con_res["dpli"],
     ROI_names,
     n_lines=n_lines, # plot the top n lines
     node_angles=node_angles,
