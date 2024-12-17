@@ -24,7 +24,7 @@ import mne
 from mne import spatial_src_adjacency
 from mne.stats import spatio_temporal_cluster_1samp_test, summarize_clusters_stc
 from mne.time_frequency import tfr_morlet, tfr_multitaper, tfr_stockwell, AverageTFRArray
-from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time
+from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time,read_connectivity
 from mne_connectivity.viz import plot_connectivity_circle
 from mne.viz import circular_layout
 from mne.decoding import (
@@ -559,24 +559,55 @@ for n in np.arange(0,np.shape(X)[1],1):
     print('95%: ' + str(np.percentile(scores_perm_array,95)))
 
 #%%######################################### Connectivity
-fmin = 0.5
+fmin = 5
 fmax = 35
-con_methods = ["pli", "dpli", "plv", "coh"]
-con = spectral_connectivity_epochs( # Compute frequency- and time-frequency-domain connectivity measures
-    MEG_duple[:,nROI,:],
+freqs = np.linspace(fmin,fmax,380)
+Freq_Bands = {"theta": [4.0, 8.0], "alpha": [8.0, 12.0], "beta": [12.0, 30.0]}
+
+## gc
+con_methods = ["gc"]
+con = spectral_connectivity_time( # Compute frequency- and time-frequency-domain connectivity measures
+    MEG_duple,
+    indices = (np.array([[2, 3], [2, 3], [7, 26], [8,27], [0, 1], [71, 107],[2, 3],[2, 3]]),  # seeds
+           np.array([[0, 1], [71, 107],[2, 3],[2, 3],[2, 3], [2, 3], [7, 26], [8,27]])),  # targets
+    # testing motor -> auditory, motor -> parietal, caudate -> motor, putamen -> motor
+    # and the other way aorund 
+    freqs = freqs,
     method=con_methods,
     mode="multitaper", # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
     sfreq=MEG_fs,
     fmin=fmin,
     fmax=fmax,
     faverage=False,
-    mt_adaptive=True,
     n_jobs=1,
 )
+con.save('GC_ASAP')
+
+con_res = con.get_data()
+plot_err(con_res[:,0,:],'k',freqs)
+plot_err(con_res[:,1,:],'r',freqs)
+
+## non-directional connectivity
+con_methods = ["plv","coh","pli"]
+con = spectral_connectivity_time( # Compute frequency- and time-frequency-domain connectivity measures
+    MEG_random[:,nROI,:],
+    freqs=freqs,
+    method=con_methods,
+    mode="multitaper", # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
+    sfreq=MEG_fs,
+    fmin=fmin,
+    fmax=fmax,
+    faverage=False,
+    n_jobs=1,
+)
+con[0].save('br_rand_conn_plv')
+con[1].save('br_rand_conn_coho')
+con[2].save('br_rand_conn_pli')
+
 # Extract the data
 con_res = dict()
 for method, c in zip(con_methods, con):
-    con_res[method] = c.get_data(output="dense").mean(axis = -1) # get the n freq
+    con_res[method] = c.get_data(output="dense") # get the n freq
     
 ## visualization
 ROI_names = label_names[nROI]
@@ -590,22 +621,49 @@ node_angles = circular_layout(
 
 fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
 plot_connectivity_circle(
-    con_res["dpli"],
+    con_res["plv"].mean(axis=0)[:,:,127:325].mean(axis=2), # change to the freqs of interest
     ROI_names,
-    n_lines=10, # plot the top n lines
+    n_lines=20, # plot the top n lines
     node_angles=node_angles,
     node_colors=label_colors,
-    title="All-to-All Connectivity Triple PLV",
+    title="All-to-All Connectivity Duple PLV Beta band",
     ax=ax)
 fig.tight_layout()
 
-temp_conn = np.squeeze(con_res["plv"][:,-2:,:-2,:]) 
+temp_conn_duple = np.squeeze(con_res["plv"][:,:,:,127:325].mean(axis=3)) 
+conn_duple = temp_conn_duple[:,1,0]
+temp_conn_triple = np.squeeze(con_res["plv"][:,:,:,127:325].mean(axis=3)) 
+conn_triple = temp_conn_triple[:,1,0]
+temp_conn_random = np.squeeze(con_res["plv"][:,:,:,127:325].mean(axis=3)) 
+conn_random = temp_conn_random[:,1,0]
+
+    temp_conn = np.squeeze(con_res["plv"][:,-2:,:-2,:]) # [tg/bg,channel,freq]
+
+test = np.where(p<0.05)
 
 fig, ax = plt.subplots()
 conn_contrast = np.squeeze(temp_conn[:,:,:10].mean(1)) 
 im, cbar = heatmap(conn_contrast, label_names, con[0].freqs[:10], ax=ax,
                    cmap="jet_r", cbarlabel="EEG env Conn",aspect = 'auto',
                    vmin=-0.1,vmax=0.1)
+
+########################################## paramatric ttest test on duple vs. random
+X = psds_random_duple.mean(axis=1)-psds_random_triple.mean(axis=1)
+t,p = stats.ttest_1samp(X[:,[6,7]].mean(axis=1),0) # duple vs. random in beat 3.3 Hz, meter 1.67 Hz
+print(p)
+t,p = stats.ttest_1samp(X[:,[12,13]].mean(axis=1),0) # duple vs. random in beat 3.3 Hz, meter 1.67 Hz
+print(p)
+t,p = stats.ttest_1samp(X[:,[30,31]].mean(axis=1),0) # duple vs. random in beat 3.3 Hz, meter 1.67 Hz
+print(p)
+
+########################################## non-paramatric permutation test on random_duple vs. random_triple
+T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(X, seed = 0)
+good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
+for i in np.arange(0,len(good_cluster_inds),1):
+    print("The " + str(i+1) + "st significant cluster")
+    print(clusters[good_cluster_inds[i]])
+    print(freqs[clusters[good_cluster_inds[i]]])
+
 
 #%%####################################### Load the source wholebrain files
 ## SSEP
