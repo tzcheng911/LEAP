@@ -581,7 +581,7 @@ con = spectral_connectivity_time( # Compute frequency- and time-frequency-domain
     faverage=False,
     n_jobs=1,
 )
-con.save('GC_ASAP')
+con.save('br_duple_GC_ASAP')
 
 con_res = con.get_data()
 plot_err(con_res[:,0,:],'k',freqs)
@@ -637,7 +637,7 @@ conn_triple = temp_conn_triple[:,1,0]
 temp_conn_random = np.squeeze(con_res["plv"][:,:,:,127:325].mean(axis=3)) 
 conn_random = temp_conn_random[:,1,0]
 
-    temp_conn = np.squeeze(con_res["plv"][:,-2:,:-2,:]) # [tg/bg,channel,freq]
+temp_conn = np.squeeze(con_res["plv"][:,-2:,:-2,:]) # [tg/bg,channel,freq]
 
 test = np.where(p<0.05)
 
