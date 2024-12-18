@@ -1,43 +1,31 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Aug 14 16:53:55 2024 
-1. Frequency Analysis
-2. Time-Frequency Analysis
-3. Connectivity Analysis
-4. ML decoding Analysis (using the first 30 beats to distinguish duple vs. triple)
-5. Correlation
+Created on Tue Dec 17 14:14:44 2024
+
+Streamline processing the following tasks and save the output data. Only include the formal analyses 
+that will be included in the paper main results. 
+Input: .npy files in the data folder
+Output: .npy or mne formats in the SSEP, ERSP, decoding, connectivity folders
+
 @author: tzcheng
 """
-#%%####################################### Import library  
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import random
-import os 
-import time
 
-import mne
-from mne.datasets import somato
-from mne.time_frequency import tfr_morlet, tfr_multitaper, tfr_stockwell, AverageTFRArray
-from scipy.io import wavfile
+#%%####################################### Import library  
+import numpy as np
+import time
+import random
+import copy
+import scipy.stats as stats
 from scipy import stats,signal
-from scipy.stats import pearsonr
-from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time
-from mne_connectivity.viz import plot_connectivity_circle
-from mne.viz import circular_layout
+from scipy.io import wavfile
+import mne
 from mne import spatial_src_adjacency
 from mne.stats import spatio_temporal_cluster_1samp_test, summarize_clusters_stc
-
-from sklearn.decomposition import PCA, FastICA
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.model_selection import StratifiedKFold, LeaveOneOut
-from sklearn.feature_selection import SelectKBest, f_classif
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.svm import SVC
-
+from mne.time_frequency import tfr_morlet, tfr_multitaper, tfr_stockwell, AverageTFRArray
+from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time,read_connectivity
+from mne_connectivity.viz import plot_connectivity_circle
+from mne.viz import circular_layout
 from mne.decoding import (
     SlidingEstimator,
     GeneralizingEstimator,
@@ -48,298 +36,157 @@ from mne.decoding import (
     Vectorizer,
     CSP,
 )
+import sklearn 
+from sklearn.decomposition import PCA, FastICA
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.model_selection import StratifiedKFold, LeaveOneOut
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.svm import SVC
+import matplotlib.pyplot as plt 
 
-def plot_err(group_data,color,t):
-    group_avg=np.mean(group_data,axis=0)
-    err=np.std(group_data,axis=0)/np.sqrt(group_data.shape[0])
-    up=group_avg+err
-    lw=group_avg-err
-    #t=np.linspace(-100,600,3501)
-    plt.plot(t,group_avg,color=color)
-    plt.fill_between(t,up,lw,color=color,alpha=0.5)
-
-#%%####################################### Load the files
-age = 'br' # '7mo' (or '7mo_0_15' or '7mo_15_32' for MEG_v), '11mo', 'br' for adults
-run = '_04' # '_01','_02','_03','_04' silence, random, duple, triple
-
+#%%####################################### Set path
+root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
-fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-nROI = [72,108,66,102,64,100,59,95,7,8,9,16,26,27,28,31,60,61,62,96,97,98,50,86] 
-# Auditory (STG 72,108), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
-# Basal ganglia group (7,8,9,16,26,27,28,31): putamen is most relevant 8 27
-# Frontal IFG (60,61,62,96,97,98)
-# Parietal: inferior parietal (50 86), posterior parietal (??)
-nV = 10020 # need to manually look up from the whole-brain plot
 
-fs, audio = wavfile.read(root_path + 'Stimuli/Duple300.wav') # Random, Duple300, Triple300
-MEG_sensor = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_mag6pT_sensor.npy') # 01,02,03,04
-# MEG_v = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_rs_mne_mag6pT_morph.npy') # 01,02,03,04    
-MEG_roi = np.load(root_path + 'me2_meg_analysis/' + age + '_group' + run + '_stc_rs_mne_mag6pT_roi.npy') # 01,02,03,04
-
-stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
-src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
-times = stc1.times
-
-# stc1.data = MEG_v.mean(axis=0)
-# stc1.plot(src = src,clim=dict(kind="value",lims=[5,5.5,8]))
-
-#%%####################################### Frequency analysis
-# Are there peak amplitude in the beat and meter rates? which ROI, which source?
-fmin = 0.5
-fmax = 40
-n_lines = 10
-n_freq = [33] # [6,7] 1.1 Hz, [12, 13] 1.6 Hz, [33] 3.33 Hz 
-n_times = np.shape(MEG_v)[-1]
-if n_times == 11001:
-    MEG_fs = 1000 ## need a better way to write this, can mess up with the code later
-elif n_times == 2750:
-    MEG_fs = 250
-
-#%% Frequency spectrum of the audio 
-psds, freqs = mne.time_frequency.psd_array_welch(
-audio,fs, 
-n_fft=len(audio),
-n_overlap=0,
-n_per_seg=None,
-fmin=fmin,
-fmax=fmax,)
-
-plt.figure()
-plt.plot(freqs,psds)
-
-#%% Frequency spectrum of the MEG
-## sensor
-## option 1
-evokeds = mne.read_evokeds(root_path + '7mo/me2_205_7m/sss_fif/me2_205_7m_01_otp_raw_sss_proj_fil50_evoked.fif')[0]
-evokeds.data = MEG_sensor.mean(0)
-evo_spectrum = evokeds.compute_psd('welch', fmin = fmin, fmax=5)
-psds, freqs = evo_spectrum.get_data(return_freqs=True)
-evo_spectrum.plot()
-evo_spectrum.plot_topomap(ch_type = "grad")
-
-## option 2
-psds, freqs = mne.time_frequency.psd_array_welch(
-MEG_sensor,MEG_fs, # could replace with label time series
-n_fft=np.shape(MEG_sensor)[2],
-n_overlap=0,
-n_per_seg=None,
-fmin=fmin,
-fmax=fmax,)
-
-plt.figure()
-plot_err(psds.mean(0),'k',freqs)
-plt.title(label_names[nROI])
-
-## ROI
-psds, freqs = mne.time_frequency.psd_array_welch(
-MEG_roi,MEG_fs, # could replace with label time series
-n_fft=np.shape(MEG_roi)[2],
-n_overlap=0,
-n_per_seg=None,
-fmin=fmin,
-fmax=fmax,)
-
-plt.figure()
-plot_err(psds[:,nROI,:],'k',freqs)
-plt.title(label_names[nROI])
-
-## wholebrain
-psds, freqs = mne.time_frequency.psd_array_welch(
-MEG_v,MEG_fs, # take about 2 mins
-n_fft=np.shape(MEG_v)[2],
-n_overlap=0,
-n_per_seg=None,
-fmin=fmin,
-fmax=fmax,)
-
-plt.figure()
-plot_err(psds[:,nV,:],'k',freqs)
-
-## Whole-brain frequency spectrum
-stc1.data = psds.mean(axis=0)
-stc1.tmin = freqs[0] # hack into the time with freqs
-stc1.tstep = np.diff(freqs)[0] # hack into the time with freqs
-stc1.plot(src = src)
-stc1.plot(src = src,clim=dict(kind="value",lims=[1,3,5]))
-
-## Normalize spectrum
-pool_fbin = 5
-n0 = np.shape(psds)[0]
-n1 = np.shape(psds)[1]
-n2 = np.shape(psds)[2]
-
-psds_norm = np.zeros((15,306,n2-2*(pool_fbin-1)))
-for nsub in list(range(0,n0)):
-    for nchannel in list(range(0,n1)):
-        for n in list(range(pool_fbin,n2-pool_fbin)):
-            psds_norm[nsub,nchannel,n-5] = psds_norm[nsub,nchannel,n]-np.mean(psds_norm[nsub,nchannel,[n-pool_fbin,n-pool_fbin+1,n+pool_fbin-1,n+pool_fbin]])                                                  
-plt.figure()
-plot_err(psds_norm.mean(axis=1),'k',freqs[pool_fbin-1:n2-pool_fbin+1])
-plt.title('Random duple')
-
-#%%####################################### Time-Frequency analysis
-# Are there stronger amplitude in the beat and meter rates? which ROI?
-## sensor
-evokeds = mne.read_evokeds(root_path + '7mo/me2_205_7m/sss_fif/me2_205_7m_01_otp_raw_sss_proj_fil50_evoked.fif')[0]
-evokeds.data = MEG_sensor.mean(0)
-evo_tfr = evokeds.compute_tfr('morlet', n_cycles=3,freqs=np.arange(fmin, fmax, 1))
-evo_tfr.plot_topo(baseline=(-0.5, 0), mode="logratio", title="Average power")
-evo_tfr.plot(picks=[82], baseline=(-0.5, 0), mode="logratio", title=evo_tfr.ch_names[82])
-tfr, freqs = evo_tfr.get_data(return_freqs=True)
-
-## ROI
-vmin, vmax = -3.0, 3.0 
-epochs = mne.read_epochs(root_path + '7mo/me2_205_7m/sss_fif/me2_205_7m_01_otp_raw_sss_proj_fil50_epoch.fif')
-epochs.resample(250)
-epochs.drop_channels(epochs.info["ch_names"][0:192]) # hack into the epochs
-power = mne.time_frequency.tfr_array_morlet(MEG_roi,MEG_fs,freqs=np.arange(8, fmax, 1),n_cycles=15,output='power')
-tfr = AverageTFRArray(
-    info=epochs.info, data=power.mean(axis=0), times=epochs.times, freqs=np.arange(8, fmax, 1), nave=np.shape(power)[0])
-tfr.plot(
-    baseline=(-0.5, -0.1),
-    picks=[72],
-    mode="percent",
-    vlim = (vmin, vmax),
-    title="TFR of ROI " + label_names[72],
-)
-
-# shitty imshow
-fig, ax = plt.subplots(1,1)
-im = plt.imshow(source_tfr.mean(0)[nROI[1],:,:],aspect = 'auto', origin='lower', cmap='jet')
-ax.set_xticks(np.linspace(0,len(epochs.times),10))
-ax.set_xticklabels(np.linspace(min(epochs.times),max(epochs.times),10,dtype = int), rotation=30)
-ax.set_yticks(np.linspace(0,len(np.arange(0.5, 5, 0.5)),10))
-ax.set_yticklabels(np.linspace(min(np.arange(0.5, 5, 0.5)),max(np.arange(0.5, 5, 0.5)),10), rotation=30)
-plt.title(label_names[nROI[1]])
-
-## wholebrain: too big to run
-source_tfr = mne.time_frequency.tfr_array_morlet(MEG_v,MEG_fs,freqs=np.arange(1, 40, 2),n_cycles=3,output='power')
-
-#%%####################################### Connectivity analysis
-tic = time.time()
-# How are ROI connected, which direction?
-con_methods = ["pli", "dpli", "plv", "coh"]
-
-# across subjects
-con = spectral_connectivity_epochs( # Compute frequency- and time-frequency-domain connectivity measures
-    MEG_roi[:,nROI,:],
-    method=con_methods,
-    mode="multitaper", # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
-    sfreq=MEG_fs,
+#%%####################################### Define functions
+def do_SSEP(data, f_name, fmin, fmax, MEG_fs):  
+    psds, freqs = mne.time_frequency.psd_array_welch(
+    data,MEG_fs, # could replace with label time series
+    n_fft=np.shape(data)[2],
+    n_overlap=0,
+    n_per_seg=None,
     fmin=fmin,
-    fmax=fmax,
-    faverage=False,
-    mt_adaptive=True,
-    n_jobs=1,
-)
+    fmax=fmax,)
+    np.savez(root_path + 'SSEP/' + f_name + '_psds.npz', psds,freqs)
+    return psds
 
-# across time for each subject (this one makes more sense)
-# con = spectral_connectivity_time(  # Compute frequency- and time-frequency-domain connectivity measures
-#     MEG_roi[:,nROI,:],
-#     method=con_methods,
-#     # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
-#     mode="multitaper",
-#     sfreq=MEG_fs,
-#     fmin=fmin,
-#     fmax=fmax,
-#     freqs = np.arange(1,30,1),
-#     faverage=False,
-#     n_jobs=1,
-# )
-toc = time.time()
-print('It takes ' + str((toc - tic)/60) + 'min to run wholebrain connectivity')
-
-
-# Extract the data
-con_res = dict()
-for method, c in zip(con_methods, con):
-    con_res[method] = c.get_data(output="dense").mean(axis = -1) # get the n freq
+def do_ERSP(data, f_name, fmin, fmax, f_step, MEG_fs,n_cycles,baseline,output):  
+    ## check the tfr_array_morlet function for options
+    times = np.linspace(-0.5,10.5,np.shape(data)[-1]) # might need to change if redo epoching
+    freqs = np.linspace(fmin,fmax,f_step)
+    tfr = mne.time_frequency.tfr_array_morlet(data,MEG_fs,freqs=freqs,n_cycles=n_cycles,output=output)
+    if baseline == 'ratio':
+        tfr /= np.mean(tfr,axis=-1, keepdims=True)
+    elif baseline == 'percent':
+        tfr /= np.mean(tfr,axis=-1, keepdims=True)
+        tfr -= 1 
+    np.savez(root_path + 'ERSP/' + f_name + '_bc_' + baseline + '_' + output + '.npz', tfr,times,freqs)
+    return tfr,times,freqs
     
-## visualization
-ROI_names = label_names[nROI]
-labels = mne.read_labels_from_annot("sample", parc="aparc", subjects_dir=subjects_dir)
-label_colors = [label.color for label in labels]
+def do_connectivity(data, f_name, fmin, fmax, f_step, MEG_fs, directional):  
+    freqs = np.linspace(fmin,fmax,f_step)
+    if directional:
+        con_methods = ["gc"]
+        con = spectral_connectivity_time(
+            data,
+            indices = (np.array([[2, 3], [2, 3], [7, 26], [8,27], [0, 1], [71, 107],[2, 3],[2, 3]]),  # seeds
+            np.array([[0, 1], [71, 107],[2, 3],[2, 3],[2, 3], [2, 3], [7, 26], [8,27]])),  # targets
+            freqs = freqs,
+            method=con_methods,
+            mode="multitaper", # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
+            sfreq=MEG_fs,
+            fmin=fmin,
+            fmax=fmax,
+            faverage=False,
+            n_jobs=1,)
+        con.save(root_path + 'connectivity/' + f_name + 'GC')
+    else:
+        con_methods = ["plv","coh","pli"]
+        con = spectral_connectivity_time( # Compute frequency- and time-frequency-domain connectivity measures
+        data,
+        freqs=freqs,
+        method=con_methods,
+        mode="multitaper", # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
+        sfreq=MEG_fs,
+        fmin=fmin,
+        fmax=fmax,
+        faverage=False,
+        n_jobs=1,)
+        con[0].save(root_path + 'connectivity/' + f_name + '_conn_plv')
+        con[1].save(root_path + 'connectivity/' + f_name + '_conn_coh')
+        con[2].save(root_path + 'connectivity/' + f_name + '_conn_pli')
+    return con
 
-node_order = list()
-node_order.extend(ROI_names)  # reverse the order
-node_angles = circular_layout(
-    ROI_names, node_order, start_pos=90, group_boundaries=[0, len(ROI_names) / 2])
-
-#%%
-fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
-plot_connectivity_circle(
-    con_res["dpli"],
-    ROI_names,
-    n_lines=n_lines, # plot the top n lines
-    node_angles=node_angles,
-    node_colors=label_colors,
-    title="All-to-All Connectivity Triple PLV",
-    ax=ax)
-fig.tight_layout()
-
-#%%####################################### Decoding analysis
-age = '11mo' # '7mo' or '7mo_0_15' or '7mo_15_32' or '11mo' or 'br' for adults
-subjects_dir = '/media/tzcheng/storage2/subjects/'
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
-fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-nROI = [72,108,66,102,59,95,7,8,9,16,26,27,28,31] # Auditory (STG 72,108), Motor (precentral 66 102 and paracentral 59, 95), 
-# Basal ganglia group (7,8,9,16,26,27,28,31) (left and then right), Parietal (), Frontal (IFG:  'ctx-rh-parsopercularis', 'ctx-rh-parsorbitalis',
-# 'ctx-rh-parstriangularis)
-nV = 10020 # need to manually look up from the whole-brain plot
-
-input_data = 'wholebrain'
-
-if input_data == 'sensor':
-    duple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_03_sensor.npy',allow_pickle=True)
-    triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_04_sensor.npy',allow_pickle=True)
-elif input_data == 'ROI':
-    duple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_03_stc_mne_roi.npy',allow_pickle=True)
-    triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_04_stc_mne_roi.npy',allow_pickle=True)
-elif input_data == 'wholebrain':
-    duple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_03_stc_rs_mne.npy',allow_pickle=True) # rs: resample data (fs = 250)
-    triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_04_stc_rs_mne.npy',allow_pickle=True)
-else:
-    print("Need to decide whether to use ROI or whole brain as feature.")
-   
-stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_lcmv_morph-vl.stc')
-times = stc1.times
-src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
-
-all_score = []
-## Two way classification using ovr
-X = np.concatenate((duple,triple),axis=0)
-y = np.concatenate((np.repeat(0,len(duple)),np.repeat(1,len(triple))))
-del duple, triple
-rand_ind = np.arange(0,len(X))
-random.Random(15).shuffle(rand_ind)
-X = X[rand_ind,:,:]
-y = y[rand_ind]
-
-clf = make_pipeline(
-    StandardScaler(),  # z-score normalization
-    LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
-)    
-for n in np.arange(0,np.shape(X)[1],1):
-        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5) # takes about 10 mins to run
+def do_decoding(age, data_type, ts, te, model, seed, nperm,criteria):  
+    all_score = []
+    MEG_duple = np.load(root_path + 'data/' + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + '.npy')
+    MEG_triple = np.load(root_path + 'data/' + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + '.npy')
+    ## Two way classification using ovr
+    X = np.concatenate((MEG_duple,MEG_triple),axis=0)
+    y = np.concatenate((np.repeat(0,len(MEG_duple)),np.repeat(1,len(MEG_triple))))
+    
+    rand_ind = np.arange(0,len(X))
+    random.Random(seed).shuffle(rand_ind)
+    X = X[rand_ind,:,ts:te]
+    y = y[rand_ind]
+    
+    if model == 'SVM':
+        clf = make_pipeline(
+            StandardScaler(),  # z-score normalization
+            SVC(kernel='rbf',gamma='auto',C=0.1))
+    elif model =='LogReg'      :  
+        clf = make_pipeline(
+            StandardScaler(),  # z-score normalization
+            LogisticRegression(solver="liblinear"))
+        
+    for n in np.arange(0,np.shape(X)[1],1):
+        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=np.shape(MEG_triple)[0],verbose = 'ERROR') # takes about 10 mins to run
         score = np.mean(scores, axis=0)
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
-np.save(root_path + 'me2_meg_analysis/decoding/'+ age + '_decoding_accuracy_' + input_data +'_rs.npy',all_score)
+    
+    ## Run permutation on the hot spots
+    n_perm=nperm
+    tmp_perm=[]
+    scores_perm=[]
+    ind = np.where(all_score > np.percentile(all_score,q = criteria))
+    X = np.concatenate((MEG_duple,MEG_triple),axis=0)
+    y = np.concatenate((np.repeat(0,len(MEG_duple)),np.repeat(1,len(MEG_triple))))
+    print("Found " + str(len(ind)) + " promising hot spot(s)")
+    for n_ind in ind[0]:         
+        print("Index " + str(n_ind))
+        select_X = X[:,n_ind,:] 
+        for i in range(n_perm):
+            print("Iteration " + str(i))    
+            yp = copy.deepcopy(y)
+            random.shuffle(yp)
+            scores = cross_val_multiscore(clf, select_X, yp, cv=np.shape(MEG_triple)[0], verbose = 'ERROR') # X can be MMR or cABR
+            tmp_perm.append(np.mean(scores,axis=0))
+        scores_perm.append(tmp_perm)
+        scores_perm_array=np.asarray(scores_perm)
+    np.savez(root_path + 'decoding/' + age + '_decoding_acc_perm' + str(nperm) + data_type , all_score, scores_perm_array,ind)
+    return all_score, scores_perm_array, ind
 
-## visualize the wholebrain decoding
-acc = np.load(root_path + 'me2_meg_analysis/decoding/br_decoding_accuracy_wholebrain_rs.npy')
-fake_data = np.zeros([len(acc),2])
-fake_data[:,0] = acc
-fake_data[:,1] = acc
-stc1.data = fake_data
-stc1.plot(src=src)
+#%%####################################### Do the jobs
+#%% Parameters
+age = ['7mo','11mo','br'] 
+run = ['_02','_03','_04'] # random, duple, triple
+which_data_type = ['_sensor','_roi','_morph'] ## currently not able to run ERSP and conn on the wholebrain data
+data_type = which_data_type[1]
+redo_ROI = True ## only apply when data_type = '_roi'
+MEG_fs = 250
+f_step = 200
 
-#%%##### Correlation analysis between neural responses and CDI
-## Extract variables
-
-## Check the subjects who have CDI 
-CDI_WS = pd.read_excel(root_path + 'me2_meg_analysis/ME2_WG & WS Report_2023_09_07.xlsx',sheet_name=2)
-corr_p = pearsonr(MEG, CDI_WS)
+for n_age in age:
+    for n_run in run:
+        #%% Load the files
+        f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + data_type 
+        if redo_ROI: ## pool ROIs to be 6 ROIs: motor, BG, Sensory, auditory, posterior parietal, IFG
+            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + data_type 
+            MEG0 = np.load(root_path + 'data/' + f_name + '.npy')   
+            f_name = f_name +'_redo'
+            new_ROI = {"Auditory": [72,108], "Motor": [66,102], "Sensory": [64,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98],  "Posterior": [50,86,71,107]}
+            MEG = np.zeros((np.shape(MEG0)[0],6,np.shape(MEG0)[2]))
+            for index, ROI in enumerate(new_ROI):
+                MEG[:,index,:] = MEG0[:,new_ROI[ROI],:].mean(axis=1)
+        else:
+            MEG = np.load(root_path + 'data/' + f_name + '.npy') 
+            
+        psds = do_SSEP(MEG, f_name, fmin=0.5, fmax=5, MEG_fs=MEG_fs)
+        tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=f_step, MEG_fs=MEG_fs,n_cycles=5,baseline='percent',output='power')
+        con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=f_step, MEG_fs=MEG_fs, directional=False)
+        del MEG
+    all_score, scores_perm_array, ind = do_decoding(n_age, data_type, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
