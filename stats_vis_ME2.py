@@ -2,13 +2,11 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Dec 12 09:54:23 2024
-Visualize the figures in the paper 
-Figure 1: acoustic spectrum, sensor level spectrum for the four conditions ()
-Figure 2
-Figure 3
-Figure 4
-Figure 5
-Figure 6
+
+Run statistical analysis on the output from analysis_ME2.py 
+Visualize the output from analysis_ME2.py 
+
+Input: .npy files in the "analyzed data" i.e. SSEP, ERSP, decoding, connectivity folders
  
 @author: tzcheng
 """
@@ -56,65 +54,6 @@ def plot_err(group_stc,color,t):
     lw=group_avg-err
     plt.plot(t,group_avg,color=color)
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
-
-def heatmap(data, row_labels, col_labels, ax=None,
-            cbar_kw=None, cbarlabel="", **kwargs):
-    """
-    Create a heatmap from a numpy array and two lists of labels.
-
-    Parameters
-    ----------
-    data
-        A 2D numpy array of shape (M, N).
-    row_labels
-        A list or array of length M with the labels for the rows.
-    col_labels
-        A list or array of length N with the labels for the columns.
-    ax
-        A `matplotlib.axes.Axes` instance to which the heatmap is plotted.  If
-        not provided, use current Axes or create a new one.  Optional.
-    cbar_kw
-        A dictionary with arguments to `matplotlib.Figure.colorbar`.  Optional.
-    cbarlabel
-        The label for the colorbar.  Optional.
-    **kwargs
-        All other arguments are forwarded to `imshow`.
-    """
-
-    if ax is None:
-        ax = plt.gca()
-
-    if cbar_kw is None:
-        cbar_kw = {}
-
-    # Plot the heatmap
-    im = ax.imshow(data, **kwargs)
-
-    # Create colorbar
-    cbar = ax.figure.colorbar(im, ax=ax, **cbar_kw)
-    cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom")
-
-    # Show all ticks and label them with the respective list entries.
-    ax.set_xticks(np.arange(data.shape[1]), labels=col_labels)
-    ax.set_yticks(np.arange(data.shape[0]), labels=row_labels)
-
-    # Let the horizontal axes labeling appear on top.
-    ax.tick_params(top=True, bottom=False,
-                   labeltop=True, labelbottom=False)
-
-    # Rotate the tick labels and set their alignment.
-    plt.setp(ax.get_xticklabels(), rotation=-30, ha="right",
-             rotation_mode="anchor")
-
-    # Turn spines off and create white grid.
-    ax.spines[:].set_visible(False)
-
-    ax.set_xticks(np.arange(data.shape[1]+1)-.5, minor=True)
-    ax.set_yticks(np.arange(data.shape[0]+1)-.5, minor=True)
-    ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
-    ax.tick_params(which="minor", bottom=False, left=False)
-
-    return im, cbar
 
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -168,7 +107,7 @@ age = 'br' # '7mo', '11mo', 'br' for adults
 MEG_fs = 1000
 pool_fbin = 5
 
-MEG_random = np.load(root_path + 'me2_meg_analysis/' + age + '_group_02_mag6pT_sensor.npy') # 01,02,03,04
+MEG_random = np.load(root_path + 'me2_meg_analysis/data/' + age + '_group_02_mag6pT_sensor.npy') # 01,02,03,04
 MEG_random_duple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_02_mag6pT_randduple_sensor.npy') # 01,02,03,04
 MEG_random_triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_02_mag6pT_randtriple_sensor.npy') # 01,02,03,04
 MEG_duple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_03_mag6pT_sensor.npy') # 01,02,03,04
@@ -176,8 +115,8 @@ MEG_triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_04_mag6pT_s
 
 ########################################## SSEP
 psds_random, freqs = mne.time_frequency.psd_array_welch(
-MEG_random_duple,MEG_fs, # could replace with label time series
-n_fft=np.shape(MEG_random_duple)[2],
+MEG_random,MEG_fs, # could replace with label time series
+n_fft=np.shape(MEG_random)[2],
 n_overlap=0,
 n_per_seg=None,
 fmin=fmin,
@@ -292,8 +231,7 @@ for i in np.arange(0,len(good_cluster_inds),1):
 ## ERSP
 ## decoding
 ## Conn
-
-age = 'br' # '7mo', '11mo', 'br' for adults
+age = '7mo' # '7mo', '11mo', 'br' for adults
 MEG_fs = 250
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
@@ -303,11 +241,23 @@ nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107]
 # Basal ganglia group (7,8,9,16,26,27,28,31): out of all include caudate (7 26) and putamen (8 27) only based on Cannon & Patel 2020 TICS, putamen is most relevant 
 # Frontal IFG (60,61,62,96,97,98)
 # Posterior Parietal: inferior parietal (50 86),  superior parietal (71 107)
-MEG_random = np.load(root_path + 'me2_meg_analysis/' + age + '_group_02_stc_rs_mne_mag6pT_roi.npy') # 01,02,03,04
-MEG_random_duple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_02_stc_rs_mne_mag6pT_randduple_roi.npy') # 01,02,03,04
-MEG_random_triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_02_stc_rs_mne_mag6pT_randtriple_roi.npy') # 01,02,03,04
-MEG_duple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_03_stc_rs_mne_mag6pT_roi.npy') # 01,02,03,04
-MEG_triple = np.load(root_path + 'me2_meg_analysis/' + age + '_group_04_stc_rs_mne_mag6pT_roi.npy') # 01,02,03,04
+MEG_random = np.load(root_path + 'me2_meg_analysis/data/' + age + '_group_02_stc_rs_mne_mag6pT_roi.npy') # 01,02,03,04
+MEG_random_duple = np.load(root_path + 'me2_meg_analysis/data/' + age + '_group_02_stc_rs_mne_mag6pT_randduple_roi.npy') # 01,02,03,04
+MEG_random_triple = np.load(root_path + 'me2_meg_analysis/data/' + age + '_group_02_stc_rs_mne_mag6pT_randtriple_roi.npy') # 01,02,03,04
+MEG_duple = np.load(root_path + 'me2_meg_analysis/data/' + age + '_group_03_stc_rs_mne_mag6pT_roi.npy') # 01,02,03,04
+MEG_triple = np.load(root_path + 'me2_meg_analysis/data/' + age + '_group_04_stc_rs_mne_mag6pT_roi.npy') # 01,02,03,04
+
+## pool ROIs to be 6 ROIs: motor, BG, Sensory, auditory, posterior parietal, IFG
+new_ROI = {"Auditory": [72,108], "Motor": [66,102], "Sensory": [64,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98],  "Posterior": [50,86,71,107]}
+
+MEG_random = np.zeros((np.shape(MEG_random0)[0],6,np.shape(MEG_random)[2]))
+MEG_duple = np.zeros((np.shape(MEG_random0)[0],6,np.shape(MEG_random)[2]))
+MEG_triple = np.zeros((np.shape(MEG_random0)[0],6,np.shape(MEG_random)[2]))
+
+for index, ROI in enumerate(new_ROI):
+    MEG_random[:,index,:] = MEG_random0[:,new_ROI[ROI],:].mean(axis=1)
+    MEG_duple[:,index,:] = MEG_duple0[:,new_ROI[ROI],:].mean(axis=1)
+    MEG_triple[:,index,:] = MEG_triple0[:,new_ROI[ROI],:].mean(axis=1)
 
 #%%######################################### SSEP
 psds_random, freqs = mne.time_frequency.psd_array_welch(
@@ -421,7 +371,7 @@ epochs = mne.read_epochs(root_path + '7mo/me2_205_7m/sss_fif/me2_205_7m_01_otp_r
 epochs.resample(MEG_fs)
 times = epochs.times
 epochs.drop_channels(epochs.info["ch_names"][0:192]) # hack into the epochs
-power_random = mne.time_frequency.tfr_array_morlet(MEG_random,MEG_fs,freqs=freqs,n_cycles=15,output='power')
+power_random = mne.time_frequency.tfr_array_morlet(MEG_random0,MEG_fs,freqs=freqs,n_cycles=15,output='power')
 power_duple = mne.time_frequency.tfr_array_morlet(MEG_duple,MEG_fs,freqs=freqs,n_cycles=15,output='power')
 power_triple = mne.time_frequency.tfr_array_morlet(MEG_triple,MEG_fs,freqs=freqs,n_cycles=15,output='power')
 
@@ -432,7 +382,7 @@ tfr_duple = AverageTFRArray(
 tfr_triple = AverageTFRArray(
     info=epochs.info, data=power_triple.mean(axis=0), times=epochs.times, freqs=freqs, nave=np.shape(power_triple)[0])
 
-tfr_random.apply_baseline(mode='logratio', baseline=(0,None))
+tfr_random.apply_baseline(mode='percent', baseline=(0,None))
 tfr_duple.apply_baseline(mode='logratio', baseline=(0,None))
 tfr_triple.apply_baseline(mode='logratio', baseline=(0,None))
 
@@ -560,37 +510,18 @@ for n in np.arange(0,np.shape(X)[1],1):
 
 #%%######################################### Connectivity
 fmin = 5
-fmax = 35
+fmax = 30
 freqs = np.linspace(fmin,fmax,380)
-Freq_Bands = {"theta": [4.0, 8.0], "alpha": [8.0, 12.0], "beta": [12.0, 30.0]}
+Freq_Bands = {"theta": [4.0, 8.0], "alpha": [8.0, 12.0], "beta": [15.0, 30.0]}
+# alpha 38:88
+# beta 126:316
 
-## gc
-con_methods = ["gc"]
-con = spectral_connectivity_time( # Compute frequency- and time-frequency-domain connectivity measures
-    MEG_duple,
-    indices = (np.array([[2, 3], [2, 3], [7, 26], [8,27], [0, 1], [71, 107],[2, 3],[2, 3]]),  # seeds
-           np.array([[0, 1], [71, 107],[2, 3],[2, 3],[2, 3], [2, 3], [7, 26], [8,27]])),  # targets
-    # testing motor -> auditory, motor -> parietal, caudate -> motor, putamen -> motor
-    # and the other way aorund 
-    freqs = freqs,
-    method=con_methods,
-    mode="multitaper", # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
-    sfreq=MEG_fs,
-    fmin=fmin,
-    fmax=fmax,
-    faverage=False,
-    n_jobs=1,
-)
-con.save('br_duple_GC_ASAP')
-
-con_res = con.get_data()
-plot_err(con_res[:,0,:],'k',freqs)
-plot_err(con_res[:,1,:],'r',freqs)
+connectivity_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/connectivity/'
 
 ## non-directional connectivity
 con_methods = ["plv","coh","pli"]
 con = spectral_connectivity_time( # Compute frequency- and time-frequency-domain connectivity measures
-    MEG_random[:,nROI,:],
+    MEG_triple[:,nROI,:],
     freqs=freqs,
     method=con_methods,
     mode="multitaper", # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
@@ -600,9 +531,41 @@ con = spectral_connectivity_time( # Compute frequency- and time-frequency-domain
     faverage=False,
     n_jobs=1,
 )
-con[0].save('br_rand_conn_plv')
-con[1].save('br_rand_conn_coho')
-con[2].save('br_rand_conn_pli')
+con[0].save('7mo_triple_conn_plv')
+con[1].save('7mo_triple_conn_coho')
+con[2].save('7mo_triple_conn_pli')
+
+# easier to just save and load them 
+random = read_connectivity(connectivity_path + 'br_rand_conn_plv').get_data(output="dense")
+duple = read_connectivity(connectivity_path + 'br_duple_conn_plv').get_data(output="dense")
+triple = read_connectivity(connectivity_path + 'br_triple_conn_plv').get_data(output="dense")
+
+X = duple-random
+## each condition
+fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
+plot_connectivity_circle(
+    X.mean(axis=0)[:,:,38:88].mean(axis=2), # change to the freqs of interest
+    ROI_names,
+    n_lines=10, # plot the top n lines
+    node_angles=node_angles,
+    node_colors=label_colors,
+    title="All-to-All Connectivity Triple PLV Beta band",
+    ax=ax)
+fig.tight_layout()
+
+X = triple-random
+## each condition
+fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
+plot_connectivity_circle(
+    X.mean(axis=0)[:,:,38:88].mean(axis=2), # change to the freqs of interest
+    ROI_names,
+    n_lines=10, # plot the top n lines
+    node_angles=node_angles,
+    node_colors=label_colors,
+    title="All-to-All Connectivity Triple PLV Beta band",
+    ax=ax)
+fig.tight_layout()
+
 
 # Extract the data
 con_res = dict()
@@ -619,51 +582,124 @@ node_order.extend(ROI_names)  # reverse the order
 node_angles = circular_layout(
     ROI_names, node_order, start_pos=90, group_boundaries=[0, len(ROI_names) / 2])
 
+## each condition
 fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
 plot_connectivity_circle(
-    con_res["plv"].mean(axis=0)[:,:,127:325].mean(axis=2), # change to the freqs of interest
+    triple.mean(axis=0)[:,:,38:88].mean(axis=2), # change to the freqs of interest
+    ROI_names,
+    n_lines=10, # plot the top n lines
+    node_angles=node_angles,
+    node_colors=label_colors,
+    title="All-to-All Connectivity Triple PLV Beta band",
+    ax=ax)
+fig.tight_layout()
+
+## contrast 
+fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
+plot_connectivity_circle(
+    1-p[:,:,200:300].mean(axis=2), # change to the freqs of interest
     ROI_names,
     n_lines=20, # plot the top n lines
     node_angles=node_angles,
     node_colors=label_colors,
-    title="All-to-All Connectivity Duple PLV Beta band",
+    vmin=0.95,
+    title="All-to-All Connectivity Triple PLV Beta band",
     ax=ax)
 fig.tight_layout()
 
-temp_conn_duple = np.squeeze(con_res["plv"][:,:,:,127:325].mean(axis=3)) 
-conn_duple = temp_conn_duple[:,1,0]
-temp_conn_triple = np.squeeze(con_res["plv"][:,:,:,127:325].mean(axis=3)) 
-conn_triple = temp_conn_triple[:,1,0]
-temp_conn_random = np.squeeze(con_res["plv"][:,:,:,127:325].mean(axis=3)) 
-conn_random = temp_conn_random[:,1,0]
+duple1 = duple.mean(axis=0)[3,:3,:]
+duple2 = duple.mean(axis=0)[4:,3,:]
+duple_cat = np.concatenate((duple1, duple2), axis=0)
 
-temp_conn = np.squeeze(con_res["plv"][:,-2:,:-2,:]) # [tg/bg,channel,freq]
+fig = plt.figure()
+im = plt.imshow(duple_cat,aspect='auto', extent=[5,35,21,0])
+fig.colorbar(im,label ='connectivity')
 
-test = np.where(p<0.05)
+#%%######################################### paramatric ttest test: do an exploration first to see what ROIs are correlated
+X = duple - random # (3,1) (5,3) (4,2) (9,1) (9,2) (16,2)
+t,p = stats.ttest_1samp(X,0) 
+sig_ind = np.where(p < 0.05)
 
-fig, ax = plt.subplots()
-conn_contrast = np.squeeze(temp_conn[:,:,:10].mean(1)) 
-im, cbar = heatmap(conn_contrast, label_names, con[0].freqs[:10], ax=ax,
-                   cmap="jet_r", cbarlabel="EEG env Conn",aspect = 'auto',
-                   vmin=-0.1,vmax=0.1)
+ROI1 = 3
+ROI2 = 1
+plt.figure()
+plt.plot(freqs,p[ROI1,ROI2,:])
+plt.xlim([fmin,fmax])
+plt.title(label_names[nROI[ROI1]] + '/' + label_names[nROI[ROI2]])
+plt.hlines(0.05,xmin=fmin,xmax=fmax,color='r',linestyles='dashed',linewidth=2)
 
-########################################## paramatric ttest test on duple vs. random
-X = psds_random_duple.mean(axis=1)-psds_random_triple.mean(axis=1)
-t,p = stats.ttest_1samp(X[:,[6,7]].mean(axis=1),0) # duple vs. random in beat 3.3 Hz, meter 1.67 Hz
-print(p)
-t,p = stats.ttest_1samp(X[:,[12,13]].mean(axis=1),0) # duple vs. random in beat 3.3 Hz, meter 1.67 Hz
-print(p)
-t,p = stats.ttest_1samp(X[:,[30,31]].mean(axis=1),0) # duple vs. random in beat 3.3 Hz, meter 1.67 Hz
-print(p)
+X = triple - random
+t,p = stats.ttest_1samp(X,0) 
+sig_ind = np.where(p < 0.05)
 
-########################################## non-paramatric permutation test on random_duple vs. random_triple
-T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(X, seed = 0)
+plt.figure()
+plt.plot(freqs,p[ROI1,ROI2,:])
+plt.xlim([fmin,fmax])
+plt.title(label_names[nROI[ROI1]] + '/' + label_names[nROI[ROI2]])
+plt.hlines(0.05,xmin=fmin,xmax=fmax,color='r',linestyles='dashed',linewidth=2)
+
+#%%######################################### non-paramatric permutation test: very few significance
+X = duple - random
+ROI1 = 3
+ROI2 = 1
+
+T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(X[:,ROI1,ROI2,:], seed = 0)
 good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
-for i in np.arange(0,len(good_cluster_inds),1):
-    print("The " + str(i+1) + "st significant cluster")
-    print(clusters[good_cluster_inds[i]])
-    print(freqs[clusters[good_cluster_inds[i]]])
+if good_cluster_inds.size > 0:
+    print("Find " + str(len(good_cluster_inds)) + " sig clusters")
+    for i in np.arange(0,len(good_cluster_inds),1):
+        print(label_names[nROI[ROI1]] + '/' + label_names[nROI[ROI2]])
+        print("The " + str(i+1) + "st significant cluster")
+        print(clusters[good_cluster_inds[i]])
+        print(freqs[clusters[good_cluster_inds[i]]])
 
+## Non-directional connectivity gc
+con_methods = ["gc"]
+con = spectral_connectivity_time( # Compute frequency- and time-frequency-domain connectivity measures
+    MEG_duple,
+    indices = (np.array([[2, 3], [2, 3], [7, 26], [8,27], [0, 1], [71, 107],[2, 3],[2, 3]]),  # seeds
+            np.array([[0, 1], [71, 107],[2, 3],[2, 3],[2, 3], [2, 3], [7, 26], [8,27]])),  # targets
+    # testing motor -> auditory, motor -> parietal, caudate -> motor, putamen -> motor
+    # and the other way aorund 
+    freqs = freqs,
+    method=con_methods,
+    mode="multitaper", # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
+    sfreq=MEG_fs,
+    fmin=fmin,
+    fmax=fmax,
+    faverage=False,
+    n_jobs=1,
+)
+con.save('br_duple_GC_ASAP')
+con_res = con.get_data()
+
+plt.figure()
+plot_err(con_res[:,0,:],'r',freqs)
+plot_err(con_res[:,4,:],'b',freqs)
+plt.legend(['Motor to Auditory','','Auditory to Motor',''])
+plt.xlim([5,35])
+plt.title('GC')
+
+plt.figure()
+plot_err(con_res[:,1,:],'r',freqs)
+plot_err(con_res[:,5,:],'b',freqs)
+plt.legend(['Motor to Parietal','','Parietal to Motor',''])
+plt.xlim([5,35])
+plt.title('GC')
+
+plt.figure()
+plot_err(con_res[:,2,:],'r',freqs)
+plot_err(con_res[:,6,:],'b',freqs)
+plt.legend(['Caudate to Motor','','Motor to Caudate',''])
+plt.xlim([5,35])
+plt.title('GC')
+
+plt.figure()
+plot_err(con_res[:,3,:],'r',freqs)
+plot_err(con_res[:,7,:],'b',freqs)
+plt.legend(['Putamen to Motor','','Motor to Putamen',''])
+plt.xlim([5,35])
+plt.title('GC')
 
 #%%####################################### Load the source wholebrain files
 ## SSEP
