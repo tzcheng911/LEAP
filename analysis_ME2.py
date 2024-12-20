@@ -8,6 +8,8 @@ that will be included in the paper main results.
 Input: .npy files in the data folder
 Output: .npy or mne formats in the SSEP, ERSP, decoding, connectivity folders
 
+currently not able to run ERSP and conn on the wholebrain data, but could do SSEP and ecoding on the wholebrain data
+ 
 @author: tzcheng
 """
 
@@ -60,20 +62,20 @@ def do_SSEP(data, f_name, fmin, fmax, MEG_fs):
     n_per_seg=None,
     fmin=fmin,
     fmax=fmax,)
-    np.savez(root_path + 'SSEP/' + f_name + '_psds.npz', psds,freqs)
+    np.savez(root_path + 'SSEP/' + f_name + '_psds.npz', psds=psds,freqs=freqs)
     return psds
 
 def do_ERSP(data, f_name, fmin, fmax, f_step, MEG_fs,n_cycles,baseline,output):  
     ## check the tfr_array_morlet function for options
     times = np.linspace(-0.5,10.5,np.shape(data)[-1]) # might need to change if redo epoching
-    freqs = np.linspace(fmin,fmax,f_step)
+    freqs = np.arange(fmin,fmax,f_step)
     tfr = mne.time_frequency.tfr_array_morlet(data,MEG_fs,freqs=freqs,n_cycles=n_cycles,output=output)
     if baseline == 'ratio':
         tfr /= np.mean(tfr,axis=-1, keepdims=True)
     elif baseline == 'percent':
         tfr /= np.mean(tfr,axis=-1, keepdims=True)
         tfr -= 1 
-    np.savez(root_path + 'ERSP/' + f_name + '_bc_' + baseline + '_' + output + '.npz', tfr,times,freqs)
+    np.savez(root_path + 'ERSP/' + f_name + '_bc_' + baseline + '_' + output + '.npz', tfr=tfr,times=times,freqs=freqs)
     return tfr,times,freqs
     
 def do_connectivity(data, f_name, fmin, fmax, f_step, MEG_fs, directional):  
@@ -157,36 +159,41 @@ def do_decoding(age, data_type, ts, te, model, seed, nperm,criteria):
             tmp_perm.append(np.mean(scores,axis=0))
         scores_perm.append(tmp_perm)
         scores_perm_array=np.asarray(scores_perm)
-    np.savez(root_path + 'decoding/' + age + '_decoding_acc_perm' + str(nperm) + data_type , all_score, scores_perm_array,ind)
+    np.savez(root_path + 'decoding/' + age + '_decoding_acc_perm' + str(nperm) + data_type , all_score=all_score, scores_perm_array=scores_perm_array,ind=ind)
     return all_score, scores_perm_array, ind
 
 #%%####################################### Do the jobs
 #%% Parameters
-age = ['7mo','11mo','br'] 
-run = ['_02','_03','_04'] # random, duple, triple
+age = ['7mo','11mo','br']  # 
+run = ['_02','_03','_04'] # random, duple, triple # 
 which_data_type = ['_sensor','_roi','_morph'] ## currently not able to run ERSP and conn on the wholebrain data
 data_type = which_data_type[1]
 redo_ROI = True ## only apply when data_type = '_roi'
 MEG_fs = 250
-f_step = 200
 
 for n_age in age:
+    all_score, scores_perm_array, ind = do_decoding(n_age, data_type, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
     for n_run in run:
         #%% Load the files
-        f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + data_type 
+        if data_type == '_sensor':
+            f_name = n_age + '_group' + n_run + '_rs_mag6pT' + data_type 
+        else:
+            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + data_type 
         if redo_ROI: ## pool ROIs to be 6 ROIs: motor, BG, Sensory, auditory, posterior parietal, IFG
             f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + data_type 
             MEG0 = np.load(root_path + 'data/' + f_name + '.npy')   
             f_name = f_name +'_redo'
-            new_ROI = {"Auditory": [72,108], "Motor": [66,102], "Sensory": [64,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98],  "Posterior": [50,86,71,107]}
-            MEG = np.zeros((np.shape(MEG0)[0],6,np.shape(MEG0)[2]))
+            new_ROI = {"AuditoryL": [72,76],"AuditoryR": [108,112], "MotorL": [66],"MotorR": [102], "SensoryL": [59,64],"SensoryR": [95,100], "BGL": [7,8],"BGR": [26,27], "IFGL": [60,61,62], "IFGR": [96,97,98]}
+            # Auditory (STG 72,108, HG 76, 112), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
+            # Basal ganglia group (7,8,9,16,26,27,28,31): out of all include caudate (7 26) and putamen (8 27) only based on Cannon & Patel 2020 TICS, putamen is most relevant 
+            # Frontal IFG (60,61,62,96,97,98)
+            MEG = np.zeros((np.shape(MEG0)[0],len(new_ROI),np.shape(MEG0)[2]))
             for index, ROI in enumerate(new_ROI):
                 MEG[:,index,:] = MEG0[:,new_ROI[ROI],:].mean(axis=1)
         else:
             MEG = np.load(root_path + 'data/' + f_name + '.npy') 
             
         psds = do_SSEP(MEG, f_name, fmin=0.5, fmax=5, MEG_fs=MEG_fs)
-        tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=f_step, MEG_fs=MEG_fs,n_cycles=5,baseline='percent',output='power')
-        con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=f_step, MEG_fs=MEG_fs, directional=False)
+        tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
+        con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
         del MEG
-    all_score, scores_perm_array, ind = do_decoding(n_age, data_type, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
