@@ -21,7 +21,7 @@ src = mne.read_source_spaces(subjects_dir + subject + '/bem/fsaverage-vol-5-src.
 
 ## Get the atlas labels 
 fname_aseg = subjects_dir + subject + '/mri/aparc+aseg.mgz'
-labels = mne.get_volume_labels_from_aseg(fname_aseg)
+label_names = mne.get_volume_labels_from_aseg(fname_aseg)
 
 #%% create a dummy eye matrix to feed in as stc.data
 dummy = np.eye(stc1.shape[0])
@@ -31,8 +31,8 @@ label_tc_dummy = mne.extract_label_time_course(stc_dummy,(fname_aseg,["ctx-rh-su
 idx = np.where(label_tc_dummy[0]>0)
 
 label_v_ind = []
-for nlabel in np.arange(0,len(labels),1):
-    label_tc_dummy = mne.extract_label_time_course(stc_dummy,(fname_aseg,labels[nlabel]),src)
+for nlabel in np.arange(0,len(label_names),1):
+    label_tc_dummy = mne.extract_label_time_course(stc_dummy,(fname_aseg,label_names[nlabel]),src)
     idx = np.where(label_tc_dummy[0]>0)
     label_v_ind.append(idx)
 np.save('ROI_lookup.npy',np.array(label_v_ind, dtype=object),allow_pickle=True)
@@ -40,8 +40,8 @@ np.save('ROI_lookup.npy',np.array(label_v_ind, dtype=object),allow_pickle=True)
 label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
 
 #%%
-nv = 27906
+nv = 26425
 v_ind = np.where(src[0]['vertno'] == nv)
-for nlabel in np.arange(0,len(labels),1):
+for nlabel in np.arange(0,len(label_names),1):
     if v_ind in label_v_ind[nlabel][0]:
-        print("nv: " + str(nv), "idx: " + str(nlabel), "label: " + labels[nlabel])
+        print("nv: " + str(nv), "idx: " + str(nlabel), "label: " + label_names[nlabel])
