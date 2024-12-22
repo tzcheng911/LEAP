@@ -76,23 +76,27 @@ def plot_ERSP():
 def plot_conn():
 def plot_decoding():
 
-def stats_SSEP(psds1,psds2,freqs,nonparametric):
+def stats_ERSP(power1,power2,times,freqs,nonparametric):
+    X = power1-power2
     if nonparametric: 
-        
-    else:   
-        X = psds1-psds2
-        t,p = stats.ttest_1samp(X[:,[6,7]].mean(axis=1),0) # duple vs. random in beat 3.3 Hz, meter 1.67 Hz
-        print(freqs[6,7])
-        print(t)
-        print(p)
-        t,p = stats.ttest_1samp(X[:,[12,13]].mean(axis=1),0) # duple vs. random in beat 3.3 Hz, meter 1.67 Hz
-        print(freqs[12,13])
-        print(t)
-        print(p)
-        t,p = stats.ttest_1samp(X[:,[30,31]].mean(axis=1),0) # duple vs. random in beat 3.3 Hz, meter 1.67 Hz
-        print(freqs[30,31])
-        print(t)
-        print(p)
+        sig_ROI = []
+        T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(X[:,n,:,:], seed = 0)
+        good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
+        print("Find " + str(len(good_cluster_inds)) + " significant cluster")
+        for i in np.arange(0,len(good_cluster_inds),1):
+            print("The " + str(i+1) + "st significant cluster")
+            print("sig freqs: " + str(freqs[clusters[good_cluster_inds[i]][0]])) # frequency window of significance
+            print("sig times: " + str(times[clusters[good_cluster_inds[i]][1]])) # time window of significance
+                
+        if len(good_cluster_inds)>0:
+            sig_ROI.append(n)
+    else:
+        t,p = stats.ttest_1samp(X,0) # alpha 8-12 Hz
+        print('Testing freqs: ' + str(freqs[[30,31]]))
+        print('t statistics: ' + str(t))
+        print('p-value: ' + str(p))
+    return sig_ROI
+ 
         
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
@@ -146,11 +150,56 @@ else:
     print("Only ran SSEP analysis on the sensor level")
 
 #%%####################################### Analysis on the source level: ROI 
-if analysis_type == 'psds':
-    plot_SSEP(psds_random,freqs,mean=True)
-    stats_SSEP()
-elif analysis_type == 'trf':
-elif analysis_type == 'trf':
+for n_age in age:
+    print("Doing age " + n_age)
+    if n_folder == 'connectivity/':
+        random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+        duple = read_connectivity(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+        triple = read_connectivity(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+        freqs = random.freqs
+        random_conn = random.get_data(output='dense')
+        duple_conn = duple.get_data(output='dense')
+        triple_conn = triple.get_data(output='dense')
+ 
+        # print("-------------------Doing duple-------------------")
+        # stats_CONN(duple_conn,random_conn,freqs,nonparametric=True)
+        # print("-------------------Doing triple-------------------")
+        # stats_CONN(triple_conn,random_conn,freqs,nonparametric=True)
+    else:
+        for n in nROI: 
+            print("---------------------------------------------------Doing ROI: " + label_names[n])
+            if n_folder == 'SSEP/':
+                random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
+                duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
+                triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
+                random = random0[random0.files[0]]
+                duple = duple0[duple0.files[0]]
+                triple = triple0[triple0.files[0]]
+                freqs = random0[random0.files[1]]          
+              
+                print("-------------------Doing duple-------------------")
+                stats_SSEP(duple,random,freqs,nonparametric=False)
+                print("-------------------Doing triple-------------------")
+                stats_SSEP(triple,random,freqs,nonparametric=False)
+            elif n_folder == 'ERSP/':
+                random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
+                duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
+                triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
+                random = random0[random0.files[0]]
+                duple = duple0[duple0.files[0]]
+                triple = triple0[triple0.files[0]]
+                times = random0[random0.files[1]]
+                freqs = random0[random0.files[2]]
+             
+                print("-------------------Doing duple-------------------")
+                stats_ERSP(duple,random,times,freqs,nonparametric=True)
+                print("-------------------Doing triple-------------------")
+                stats_ERSP(triple,random,times,freqs,nonparametric=True)
+            elif n_folder == 'decoding/':
+                decoding = np.load(root_path + n_folder + n_age + '_' + n_analysis + '_morph.npz') 
+                all_score = decoding['all_score']
+                scores_perm_array = decoding['scores_perm_array']
+                ind = decoding['ind']
     
 #%%####################################### Analysis on the source level: wholebrain 
 
