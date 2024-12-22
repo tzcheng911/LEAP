@@ -4,7 +4,6 @@
 Created on Thu Dec 12 09:54:23 2024
 
 Run statistical analysis on the output from analysis_ME2.py 
-Visualize the output from analysis_ME2.py 
 Input: .npy files in the "analyzed data" i.e. SSEP, ERSP, decoding, connectivity folders
  
 @author: tzcheng
