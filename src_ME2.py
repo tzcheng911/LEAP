@@ -18,8 +18,8 @@ from mne.beamformer import apply_lcmv, make_lcmv
 from tqdm import tqdm
 
 def do_foward(s):
-    # root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/'
-    root_path = '/media/tzcheng/storage/BabyRhythm/'
+    root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
+    # root_path = '/media/tzcheng/storage/BabyRhythm/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
     file_in = root_path + s + '/sss_fif/' 
     raw_file = mne.io.read_raw_fif(file_in  + s + '_01_otp_raw_sss.fif')
@@ -31,13 +31,13 @@ def do_foward(s):
 
     return fwd, src
 
-def do_inverse(s,morph,run,rfs):
-    # root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/'
-    root_path = '/media/tzcheng/storage/BabyRhythm/'
+def do_inverse(s,morph,run,rfs,lambda2):
+    root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
+    # root_path = '/media/tzcheng/storage/BabyRhythm/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
-    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_epoch.fif').resample(sfreq = rfs)
+    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mag6pT_epoch.fif').resample(sfreq = 100)
     noise_cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50-cov.fif')
     data_cov = mne.compute_covariance(epoch, tmin=0, tmax=None)
     evoked = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_mag6pT_evoked.fif')[0].resample(sfreq = rfs)
@@ -63,6 +63,7 @@ def do_inverse(s,morph,run,rfs):
    
     inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, noise_cov,loose=1,depth=0.8)
     stc_mne = mne.minimum_norm.apply_inverse((evoked), inverse_operator, pick_ori = None)
+    stc_mne_epoch = mne.minimum_norm.apply_inverse_epochs(epoch, inverse_operator, lambda2, pick_ori = None)
     # stc_mne_random_duple = mne.minimum_norm.apply_inverse((evoked_random_duple), inverse_operator, pick_ori = None)
     # stc_mne_random_triple = mne.minimum_norm.apply_inverse((evoked_random_triple), inverse_operator, pick_ori = None)
 
@@ -82,6 +83,14 @@ def do_inverse(s,morph,run,rfs):
         # stc_lcmv_fsaverage.save(file_in + run + '_stc_lcmv_morph_mag6pT', overwrite=True)
         stc_mne_fsaverage = morph.apply(stc_mne)
         stc_mne_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT', overwrite=True)
+        
+        stc_mne_epoch_fsaverage = np.zeros((len(stc_mne_epoch),14629,np.shape(stc_mne_epoch[0])[1]))
+        for ntrial in range(0,len(stc_mne_epoch)):
+            stc_mne_fsaverage_tmp = morph.apply(stc_mne_epoch[ntrial])
+            stc_mne_epoch_fsaverage[ntrial,:,:] = stc_mne_fsaverage_tmp.data
+            del stc_mne_fsaverage_tmp
+        np.save(file_in + run + '_stc_mne_epoch_rs100_mag6pT.npy',stc_mne_epoch_fsaverage)
+        
         # stc_mne_random_duple_fsaverage = morph.apply(stc_mne_random_duple)
         # stc_mne_random_duple_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT_randduple_rs', overwrite=True)
         # stc_mne_random_triple_fsaverage = morph.apply(stc_mne_random_triple)
@@ -96,22 +105,23 @@ def do_inverse(s,morph,run,rfs):
 # subjects_dir = '/media/tzcheng/storage2/subjects'
 # mne.gui.coregistration(subject='fsaverage', subjects_dir=subjects_dir)
 
-# root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
-root_path = '/media/tzcheng/storage/BabyRhythm/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
+# root_path = '/media/tzcheng/storage/BabyRhythm/'
 os.chdir(root_path)
 rfs=250
+lambda2 = 0.1111111111111111
 
 morph = True
 
-runs = ['_02']
+runs = ['_03','_04']
 subj = [] 
 for file in os.listdir():
-    if file.startswith('br_'):
-    # if file.startswith('me2_'):
+    # if file.startswith('br_'):
+    if file.startswith('me2_'):
         subj.append(file)
 
 for s in tqdm(subj):
     # do_foward(s)
     for run in runs:
         print(s)
-        do_inverse(s,morph,run,rfs)
+        do_inverse(s,morph,run,rfs,lambda2)
