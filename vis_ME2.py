@@ -24,6 +24,15 @@ from mne.viz import circular_layout
 import matplotlib.pyplot as plt 
 
 #%%####################################### Define functions
+def ff(input_arr,target): # find the idx of the closest freqeuncy in freqs
+    delta = 1000000000
+    idx = -1
+    for i, val in enumerate(input_arr):
+        if abs(input_arr[i]-target) < delta:
+            idx = i
+            delta = abs(input_arr[i]-target)
+    return idx
+
 def plot_err(group_stc,color,t):
     group_avg=np.mean(group_stc,axis=0)
     err=np.std(group_stc,axis=0)/np.sqrt(group_stc.shape[0])
@@ -53,49 +62,26 @@ def plot_SSEP(psds,freqs,title):
     plt.xlim([freqs[0],freqs[-1]])
     plt.title(title)
 
-def plot_ERSP(power,vmin, vmax, times,freqs,title):
-    plt.figure()
-    im = plt.imshow(power.mean(0),cmap = 'jet', aspect='auto', vmin = vmin, vmax=vmax,
-    origin = 'lower',extent = [times[0],times[-1],freqs[0],freqs[-1]])
-    plt.colorbar()
-    plt.title('ERSP of ROI ' + title)
-    plt.xlabel('Times (s)')
-    plt.ylabel('Frequency (Hz)')
-    plt.vlines(np.arange(0,10.5,1/3.3333),ymin=freqs[0],ymax=freqs[-1],color='grey',linewidth=0.5,linestyle='dashed')
-    plt.savefig(root_path + 'figures/' + 'ERSP of ROI ' + title +'.pdf')
-    
-    # plt.figure() 
-    # plot_err(power.mean(axis = 1),'k',times)
-    # plt.title('Broadband power ' + str(round(freqs[0])) + ' to ' + str(round(freqs[-1])) + ' Hz')
-    # plt.vlines(np.arange(0,10.5,1/3.3333),ymin=vmin,ymax=vmax,color='r',linewidth=0.5,linestyle='dashed')
-    # plt.xlim([times[0],times[-1]])
-    # plt.close()
-    # plt.savefig(root_path + 'figures/' + 'Broadband power of ROI ' + title +'.pdf')
-
-    plt.figure() 
-    plot_err(power[:,3:8,:].mean(axis = 1),'k',times) # alpha (8-12 Hz)
-    plt.title('Alpha power ' + str(round(freqs[3])) + ' to ' + str(round(freqs[7])) + ' Hz')
-    plt.vlines(np.arange(0,10.5,1/3.3333),ymin=vmin,ymax=vmax,color='r',linewidth=0.5,linestyle='dashed')
-    plt.xlim([times[0],times[-1]])
-    plt.savefig(root_path + 'figures/' + 'Alpha power of ROI ' + title +'.pdf')
-
-    plt.figure() 
-    plot_err(power[:,10:26,:].mean(axis = 1),'k',times) # beta (15-30 Hz) 
-    plt.title(title +' Beta power ' + str(round(freqs[10])) + ' to ' + str(round(freqs[25])) + ' Hz')
-    plt.vlines(np.arange(0,10.5,1/3.3333),ymin=vmin,ymax=vmax,color='r',linewidth=0.5,linestyle='dashed')
-    plt.xlim([times[0],times[-1]])
-    plt.savefig(root_path + 'figures/' + 'Beta power of ROI ' + title +'.pdf')
-
-def plot_CONN(conn,freqs,nlines, FOI,label_names,nROI,title):
+def plot_CONN(conn,freqs,nlines,vmin,vmax,FOI,label_names,title):
     if FOI == "Theta": # 4-8 Hz
-        X = conn[:,:,:,18:42].mean(axis=3)
+        X = conn[:,:,:,ff(freqs,4):ff(freqs,8)].mean(axis=3)
     elif FOI == "Alpha": # 8-12 Hz
-        X = conn[:,:,:,42:65].mean(axis=3)
+        X = conn[:,:,:,ff(freqs,8):ff(freqs,12)].mean(axis=3)
     elif FOI == "Beta":  # 15-30 Hz
-        X = conn[:,:,:,82:171].mean(axis=3)
-    
+        X = conn[:,:,:,ff(freqs,15):ff(freqs,30)].mean(axis=3)
+    else:  # broadband
+        X = conn.mean(axis=3)
+        
+    # if FOI == "Theta": # 4-8 Hz
+    #     X = conn[:,:,:,18:42].mean(axis=3)
+    # elif FOI == "Alpha": # 8-12 Hz
+    #     X = conn[:,:,:,42:65].mean(axis=3)
+    # elif FOI == "Beta":  # 15-30 Hz
+    #     X = conn[:,:,:,82:171].mean(axis=3)
+    # else:  # broadband
+    #     X = conn.mean(axis=3)
     # circular plot
-    ROI_names = label_names[nROI]
+    ROI_names = label_names
     labels = mne.read_labels_from_annot("sample", parc="aparc", subjects_dir=subjects_dir)
     label_colors = [label.color for label in labels]
     
@@ -108,13 +94,12 @@ def plot_CONN(conn,freqs,nlines, FOI,label_names,nROI,title):
     plot_connectivity_circle(
     X.mean(axis=0), # change to the freqs of interest
     ROI_names,
-    n_lines=5, # plot the top n lines
-    vmin=0.75, 
-    vmax=1,
+    n_lines=nlines, # plot the top n lines
+    vmin=vmin, 
+    vmax=vmax,
     node_angles=node_angles,
     node_colors=label_colors,
-    # title= title + " Connectivity " + FOI,
-    title= 'br PLV beta',
+    title= title + " connectivity " + FOI,
     ax=ax)
     fig.tight_layout()
         
@@ -159,15 +144,15 @@ for n_age in age:
     else:
         print("Only ran SSEP analysis on the sensor level")
 
-#%%####################################### Analysis on the source level: ROI 
-n_folder = folders[0]
-n_analysis = analysis[0]
+#%%####################################### Visualize on the source level: ROI 
+n_folder = folders[3]
+n_analysis = analysis[5]
 data_type = which_data_type[2]
 
-vmin = -1
+vmin = 0
 vmax = 1
 nlines = 10
-FOI = 'beta'
+FOI = 'Theta'
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
@@ -193,9 +178,9 @@ for n_age in age:
         random_conn = random.get_data(output='dense')
         duple_conn = duple.get_data(output='dense')
         triple_conn = triple.get_data(output='dense')
-        plot_CONN(random_conn,freqs,nlines, FOI)
-        plot_CONN(duple_conn,freqs,nlines, FOI)
-        plot_CONN(triple_conn,freqs,nlines, FOI)
+        plot_CONN(random_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_random_' + n_analysis)
+        plot_CONN(duple_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_duple_' + n_analysis)
+        plot_CONN(triple_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_triple_' + n_analysis)
     else:
         for n in nROI: 
             print("---------------------------------------------------Doing ROI: " + label_names[n])
@@ -210,18 +195,6 @@ for n_age in age:
                 plot_SSEP(random[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_random')
                 plot_SSEP(duple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_duple')
                 plot_SSEP(triple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_triple')
-            elif n_folder == 'ERSP/':
-                random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
-                duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
-                triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
-                random = random0[random0.files[0]]
-                duple = duple0[duple0.files[0]]
-                triple = triple0[triple0.files[0]]
-                times = random0[random0.files[1]]
-                freqs = random0[random0.files[2]]
-                # plot_ERSP(random[:,n,:],vmin, vmax, times,freqs, label_names[n] + n_age + ' random')
-                # plot_ERSP(duple[:,n,:],vmin, vmax, times,freqs, label_names[n] + n_age + ' duple')
-                # plot_ERSP(triple[:,n,:],vmin, vmax, times,freqs, label_names[n] + n_age + ' triple')
             elif n_folder == 'decoding/':
                 decoding = np.load(root_path + n_folder + n_age + '_' + n_analysis + '_morph.npz') 
                 all_score = decoding['all_score']
@@ -229,7 +202,7 @@ for n_age in age:
                 ind = decoding['ind']
 
 #%%####################################### Visualize the source level: wholebrain 
-n_age = age[2]
+n_age = age[0]
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
@@ -238,6 +211,5 @@ decoding = np.load(root_path + n_folder + n_age + '_wholebrain_decodingACC.npy')
 # scores_perm_array = decoding['scores_perm_array']
 # ind = decoding['ind']
 all_score = decoding
-
 stc1.data=np.array([all_score,all_score]).transpose()
 stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
