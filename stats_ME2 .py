@@ -134,8 +134,8 @@ which_data_type = ['_sensor_','_roi_','_roi_redo_','_morph_'] ## currently not a
 data_type = which_data_type[0]
 n_analysis = analysis[0]
 n_folder = folders[0]
-lm_np_duple = []
-lm_np_triple = []
+lm_np = []
+df = pd.DataFrame(columns=['age','condition', '1.11Hz', '1.67Hz','3.3Hz'])
 
 for n_age in age:
     print("Doing age " + n_age)
@@ -155,21 +155,49 @@ for n_age in age:
     stats_SSEP(psds_duple,psds_random,freqs,nonparametric=False)
     print("-------------------Doing triple-------------------")
     stats_SSEP(psds_triple,psds_random,freqs,nonparametric=False)
-    X_duple = psds_duple-psds_random
-    X_triple = psds_triple-psds_random
-    SSEP_duple = np.vstack((X_duple[:,[6,7]].mean(axis=1),X_duple[:,[12,13]].mean(axis=1),X_duple[:,[30,31]].mean(axis=1))).transpose()
-    SSEP_triple = np.vstack((X_triple[:,[6,7]].mean(axis=1),X_triple[:,[12,13]].mean(axis=1),X_triple[:,[30,31]].mean(axis=1))).transpose()
-    lm_np_duple.append(SSEP_duple)
-    lm_np_triple.append(SSEP_triple)
+    
+    SSEP_random = np.vstack((psds_random[:,[6,7]].mean(axis=1),psds_random[:,[12,13]].mean(axis=1),psds_random[:,[30,31]].mean(axis=1))).transpose()
+    SSEP_duple = np.vstack((psds_duple[:,[6,7]].mean(axis=1),psds_duple[:,[12,13]].mean(axis=1),psds_duple[:,[30,31]].mean(axis=1))).transpose()
+    SSEP_triple = np.vstack((psds_triple[:,[6,7]].mean(axis=1),psds_triple[:,[12,13]].mean(axis=1),psds_triple[:,[30,31]].mean(axis=1))).transpose()
+    SSEP_all = np.vstack((SSEP_random,SSEP_duple,SSEP_triple))
+    
+    lm_np.append(SSEP_all)
 
-age_group = np.concatenate((np.repeat('7mo',len(lm_np_duple[0])),np.repeat('11mo',len(lm_np_duple[1])),np.repeat('adult',len(lm_np_duple[2]))))
-lm_df = pd.DataFrame({'age':age_group,'duple_1.67Hz':np.concatenate(lm_np_duple)[:,1],
-              'duple_3.3Hz':np.concatenate(lm_np_duple)[:,2],'triple_1.1Hz':np.concatenate(lm_np_duple)[:,0],
-              'triple_3.3Hz':np.concatenate(lm_np_duple)[:,2]})
-age_dummies = pd.get_dummies(lm_df['age'], prefix='age', drop_first=True)
+#%% Create df, csv for lm analysis
+import os
+subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
+           '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/',
+           '/media/tzcheng/storage/BabyRhythm/']
+subj = [] 
+for n,n_age in enumerate(age):
+    if n_age == 'br':
+        for file in os.listdir(subj_path[n]):
+            if file.startswith('br_'):
+                subj.append(file)
+    else:
+        for file in os.listdir(subj_path[n]):
+            if file.startswith('me2_'):
+                subj.append(file)
+
+nsub0 = len(lm_np[0])
+nsub1 = len(lm_np[1])
+nsub2 = len(lm_np[2])
+
+conditions0 =  np.concatenate((np.repeat('random',nsub0//3),np.repeat('duple',nsub0//3),np.repeat('triple',nsub0//3)))
+conditions1 =  np.concatenate((np.repeat('random',nsub1//3),np.repeat('duple',nsub1//3),np.repeat('triple',nsub1//3)))
+conditions2 =  np.concatenate((np.repeat('random',nsub2//3),np.repeat('duple',nsub2//3),np.repeat('triple',nsub2//3)))
+
+subjects = np.concatenate((subj,subj,subj))
+conditions = np.concatenate((conditions0,conditions1,conditions2))
+ages = np.concatenate((np.repeat('7mo',nsub0),np.repeat('11mo',nsub1),np.repeat('adult',nsub2)))
+lm_np = np.concatenate(lm_np)
+lm_df = pd.DataFrame({'sub_id': subjects,'age':ages,'condition':conditions, '1.11Hz': lm_np[:,0], '1.67Hz': lm_np[:,1],'3.3Hz': lm_np[:,2]})
+lm_df.to_csv(root_path + n_folder + 'SSEP_sensor.csv')
+
+# age_dummies = pd.get_dummies(lm_df['age'], prefix='age', drop_first=True)
 # lm_df = pd.concat([lm_df,age_dummies],axis=1)
-X = sm.add_constant(age_dummies)
-model = sm.OLS(lm_df['duple_1.67Hz'].astype(float),X.astype(float)).fit()
+# X = sm.add_constant(age_dummies)
+# model = sm.OLS(lm_df['duple_1.67Hz'].astype(float),X.astype(float)).fit()
 
 #%%####################################### Analysis on the source level: ROI 
 data_type = which_data_type[2]
