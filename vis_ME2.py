@@ -213,3 +213,8 @@ decoding = np.load(root_path + n_folder + n_age + '_wholebrain_decodingACC.npy')
 all_score = decoding
 stc1.data=np.array([all_score,all_score]).transpose()
 stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
+
+all_score_all = np.zeros((len(subj),14629))
+for ns,s in enumerate(subj):
+    all_score_all[ns,:] = np.load(root_path + 'decoding/by_subjects/' + s + '_wholebrain_decodingACC_DT.npy')
+    
