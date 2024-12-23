@@ -32,8 +32,8 @@ def do_foward(s):
     return fwd, src
 
 def do_inverse(s,morph,run,rfs,lambda2):
-    root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
-    # root_path = '/media/tzcheng/storage/BabyRhythm/'
+    # root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/'
+    root_path = '/media/tzcheng/storage/BabyRhythm/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
@@ -105,19 +105,19 @@ def do_inverse(s,morph,run,rfs,lambda2):
 # subjects_dir = '/media/tzcheng/storage2/subjects'
 # mne.gui.coregistration(subject='fsaverage', subjects_dir=subjects_dir)
 
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
-# root_path = '/media/tzcheng/storage/BabyRhythm/'
+# root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
+root_path = '/media/tzcheng/storage/BabyRhythm/'
 os.chdir(root_path)
 rfs=250
 lambda2 = 0.1111111111111111
 
 morph = True
 
-runs = ['_03','_04']
+runs = ['_02']
 subj = [] 
 for file in os.listdir():
-    # if file.startswith('br_'):
-    if file.startswith('me2_'):
+    if file.startswith('br_'):
+    # if file.startswith('me2_'):
         subj.append(file)
 
 for s in tqdm(subj):
