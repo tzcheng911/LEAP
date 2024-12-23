@@ -38,6 +38,7 @@ from mne.decoding import (
     Vectorizer,
     CSP,
 )
+import os
 import sklearn 
 from sklearn.decomposition import PCA, FastICA
 from sklearn.pipeline import make_pipeline
@@ -112,35 +113,13 @@ def do_connectivity(data, f_name, fmin, fmax, f_step, MEG_fs, directional):
         con[2].save(root_path + 'connectivity/' + f_name + '_conn_pli')
     return con
 
-def do_decoding(age, data_type, redo_ROI, ts, te, model, seed, nperm,criteria):  
+def do_decoding(X1, X2, ts, te, model, seed, nperm,criteria):  
     all_score = []
-   
-    if redo_ROI: ## pool ROIs to be 6 ROIs: motor, BG, Sensory, auditory, posterior parietal, IFG
-        f_name_duple = n_age + '_group_03_stc_rs_mne_mag6pT' + data_type 
-        f_name_triple = n_age + '_group_04_stc_rs_mne_mag6pTs' + data_type 
-        MEG_duple0 = np.load(root_path + 'data/' + f_name_duple + '.npy')   
-        MEG_triple0 =  np.load(root_path + 'data/' + f_name_triple + '.npy')   
-        f_name_duple = f_name_duple +'_redo'
-        f_name_triple = f_name_triple+'_redo'
-        # new_ROI = {"Auditory": [72,76, 108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
-        new_ROI = {"AuditoryL": [72,76],"AuditoryR": [108,112], "MotorL": [66],"MotorR": [102], "SensoryL": [59,64],"SensoryR": [95,100], "BGL": [7,8],"BGR": [26,27], "IFGL": [60,61,62], "IFGR": [96,97,98]}
-        # Auditory (STG 72,108, HG 76, 112), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
-        # Basal ganglia group (7,8,9,16,26,27,28,31): out of all include caudate (7 26) and putamen (8 27) only based on Cannon & Patel 2020 TICS, putamen is most relevant 
-        # Frontal IFG (60,61,62,96,97,98)
-        MEG_duple = np.zeros((np.shape(MEG_duple0)[0],len(new_ROI),np.shape(MEG_duple0)[2]))
-        MEG_triple = np.zeros((np.shape(MEG_triple0)[0],len(new_ROI),np.shape(MEG_triple0)[2]))
-        for index, ROI in enumerate(new_ROI):
-            MEG_duple[:,index,:] = MEG_duple0[:,new_ROI[ROI],:].mean(axis=1)
-            MEG_triple[:,index,:] = MEG_triple0[:,new_ROI[ROI],:].mean(axis=1)
-    else:
-        MEG_duple = np.load(root_path + 'data/' + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + '.npy')
-        MEG_triple = np.load(root_path + 'data/' + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + '.npy')
-        
     ## Two way classification using ovr
-    X = np.concatenate((MEG_duple,MEG_triple),axis=0)
-    y = np.concatenate((np.repeat(0,len(MEG_duple)),np.repeat(1,len(MEG_triple))))
-    ncv = np.shape(MEG_duple)[0]
-    del MEG_duple, MEG_triple
+    X = np.concatenate((X1,X2),axis=0)
+    y = np.concatenate((np.repeat(0,len(X1)),np.repeat(1,len(X2))))
+    ncv = np.shape(X1)[0]
+    del X1, X2
     rand_ind = np.arange(0,len(X))
     random.Random(seed).shuffle(rand_ind)
     X = X[rand_ind,:,ts:te]
@@ -160,68 +139,84 @@ def do_decoding(age, data_type, redo_ROI, ts, te, model, seed, nperm,criteria):
         score = np.mean(scores, axis=0)
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
-    
-    np.save(root_path + 'decoding/' + n_age + '_wholebrain_decodingACC.npy',all_score)
     return all_score
-    ## Run permutation on the hot spots
-    # n_perm=nperm
-    # tmp_perm=[]
-    # scores_perm=[]
-    # ind = np.where(all_score > np.percentile(all_score,q = criteria))
-    # X = np.concatenate((MEG_duple,MEG_triple),axis=0)
-    # y = np.concatenate((np.repeat(0,len(MEG_duple)),np.repeat(1,len(MEG_triple))))
-    # print("Found " + str(len(ind)) + " promising hot spot(s)")
-    # for n_ind in ind[0]:         
-    #     print("Index " + str(n_ind))
-    #     select_X = X[:,n_ind,:] 
-    #     for i in range(n_perm):
-    #         print("Iteration " + str(i))    
-    #         yp = copy.deepcopy(y)
-    #         random.shuffle(yp)
-    #         scores = cross_val_multiscore(clf, select_X, yp, cv=np.shape(MEG_triple)[0], verbose = 'ERROR') # X can be MMR or cABR
-    #         tmp_perm.append(np.mean(scores,axis=0))
-    #     scores_perm.append(tmp_perm)
-    #     scores_perm_array=np.asarray(scores_perm)
-    # np.savez(root_path + 'decoding/' + age + '_decoding_acc_perm' + str(nperm) + data_type , all_score=all_score, scores_perm_array=scores_perm_array,ind=ind)
-    # return all_score, scores_perm_array, ind
 
-#%%####################################### Do the jobs
+def redo_ROI(age,run,new_ROI):
+    ## age = ['7mo','11mo','br']  
+    ## run = ['_02','_03','_04'] # random, duple, triple
+    ## new_ROI = {"Auditory": [72,76, 108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
+    
+    # Auditory (STG 72,108, HG 76, 112), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
+    # Basal ganglia group (7,8,9,16,26,27,28,31): out of all include caudate (7 26) and putamen (8 27) only based on Cannon & Patel 2020 TICS, putamen is most relevant 
+    # Frontal IFG (60,61,62,96,97,98)
+    for n_age in age:
+        for n_run in run:
+            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT_roi' 
+            MEG0 = np.load(root_path + 'data/' + f_name + '.npy')   
+            f_name = f_name +'_redo'
+            new_ROI = {"AuditoryL": [72,76],"AuditoryR": [108,112], "MotorL": [66],"MotorR": [102], "SensoryL": [59,64],"SensoryR": [95,100], "BGL": [7,8],"BGR": [26,27], "IFGL": [60,61,62], "IFGR": [96,97,98]}
+            MEG = np.zeros((np.shape(MEG0)[0],len(new_ROI),np.shape(MEG0)[2]))
+            for index, ROI in enumerate(new_ROI):
+                MEG[:,index,:] = MEG0[:,new_ROI[ROI],:].mean(axis=1)
+                np.save(root_path + 'data/' + f_name + '.npy', MEG)
+                
+#%%####################################### Run the psds, tfr, con
 #%% Parameters
-age = ['7mo','11mo','br']  # 
-run = ['_02','_03','_04'] # random, duple, triple # 
-which_data_type = ['_sensor','_roi','_morph'] ## currently not able to run ERSP and conn on the wholebrain data
-data_type = which_data_type[2]
-redo_ROI = False ## only apply when data_type = '_roi'
-MEG_fs = 250
-decoding_acc = []
+# age = ['7mo','11mo','br']  # 
+# run = ['_02','_03','_04'] # random, duple, triple # 
+# which_data_type = ['_sensor','_roi','_roi_redo','_morph'] ## currently not able to run ERSP and conn on the wholebrain data
+# data_type = which_data_type[3]
+# MEG_fs = 250
+# decoding_acc = []
 
 # for n_age in age:
-    # for n_run in run:
-    #     #%% Load the files
-    #     if data_type == '_sensor':
-    #         f_name = n_age + '_group' + n_run + '_rs_mag6pT' + data_type 
-    #     else:
-    #         f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + data_type 
-    #     if redo_ROI: ## pool ROIs to be 6 ROIs: motor, BG, Sensory, auditory, posterior parietal, IFG
-    #         f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + data_type 
-    #         MEG0 = np.load(root_path + 'data/' + f_name + '.npy')   
-    #         f_name = f_name +'_redo'
-    #         # new_ROI = {"Auditory": [72,76, 108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
-    #         new_ROI = {"AuditoryL": [72,76],"AuditoryR": [108,112], "MotorL": [66],"MotorR": [102], "SensoryL": [59,64],"SensoryR": [95,100], "BGL": [7,8],"BGR": [26,27], "IFGL": [60,61,62], "IFGR": [96,97,98]}
-    #         # Auditory (STG 72,108, HG 76, 112), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
-    #         # Basal ganglia group (7,8,9,16,26,27,28,31): out of all include caudate (7 26) and putamen (8 27) only based on Cannon & Patel 2020 TICS, putamen is most relevant 
-    #         # Frontal IFG (60,61,62,96,97,98)
-    #         MEG = np.zeros((np.shape(MEG0)[0],len(new_ROI),np.shape(MEG0)[2]))
-    #         for index, ROI in enumerate(new_ROI):
-    #             MEG[:,index,:] = MEG0[:,new_ROI[ROI],:].mean(axis=1)
-    #     else:
-    #         MEG = np.load(root_path + 'data/' + f_name + '.npy') 
-            
-    #     # psds = do_SSEP(MEG, f_name, fmin=0.5, fmax=5, MEG_fs=MEG_fs)
-    #     # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
-    #     # con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
-    #     del MEG
+#     for n_run in run:
+#         #%% Load the files
+#         if data_type == '_sensor':
+#             f_name = n_age + '_group' + n_run + '_rs_mag6pT' + data_type 
+#         else:
+#             f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + data_type 
+#         MEG = np.load(root_path + 'data/' + f_name + '.npy') 
+#         psds = do_SSEP(MEG, f_name, fmin=0.5, fmax=5, MEG_fs=MEG_fs)
+#         tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
+#         con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
+#         del MEG
+
+#%%####################################### Run the decoding
+#%% Parameters
+# age = ['7mo','11mo','br']  
+# which_data_type = ['_roi','_roi_redo','_morph'] ## currently not able to run ERSP and conn on the wholebrain data
+# data_type = which_data_type[0]
+
+# ## decode across subjects
+# for n_age in age:
+#     MEG_random = np.load(root_path + 'data/' + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + '.npy')
+#     MEG_duple = np.load(root_path + 'data/' + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + '.npy')
+#     MEG_triple = np.load(root_path + 'data/' + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + '.npy')
+#     acc_duple = do_decoding(MEG_duple, MEG_random, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
+#     acc_triple = do_decoding(MEG_triple, MEG_random, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
+#     np.save(root_path + 'decoding/' + n_age + '_wholebrain_decodingACC_duple.npy',acc_duple)
+#     np.save(root_path + 'decoding/' + n_age + '_wholebrain_decodingACC_triple.npy',acc_triple)
+
+## decode across trials for each subject 
+# subj_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # change to 11mo 
+subj_path = '/media/tzcheng/storage/BabyRhythm/'
+os.chdir(subj_path)
+
+subj = [] 
+for file in os.listdir():
+    if file.startswith('br_'):
+    # if file.startswith('me2_'):
+        subj.append(file)
         
-for n_age in age:
-    acc = do_decoding(n_age, data_type, redo_ROI, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
-    decoding_acc.append(acc)
+for s in subj:
+    file_in = subj_path + s + '/sss_fif/' + s
+    # MEG_random = np.load(file_in + '_02_stc_mne_epoch_rs100_mag6pT.npy')
+    MEG_duple = np.load(file_in + '_03_stc_mne_epoch_rs100_mag6pT.npy')
+    MEG_triple = np.load(file_in + '_04_stc_mne_epoch_rs100_mag6pT.npy')
+    acc_duple_triple = do_decoding(MEG_duple, MEG_triple, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
+    # acc_duple = do_decoding(MEG_duple, MEG_random, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
+    # acc_triple = do_decoding(MEG_triple, MEG_random, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
+    np.save(root_path + 'decoding/by_subjects/' + s + '_wholebrain_decodingACC_DT.npy',acc_duple_triple)
+    # np.save(root_path + 'decoding/by_subjects/' + s + '_wholebrain_decodingACC_duple.npy',acc_duple)
+    # np.save(root_path + 'decoding/by_subjects/' + s + '_wholebrain_decodingACC_triple.npy',acc_triple)
