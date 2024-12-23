@@ -18,8 +18,6 @@ from mne.beamformer import apply_lcmv, make_lcmv
 from tqdm import tqdm
 
 def do_foward(s):
-    root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
-    # root_path = '/media/tzcheng/storage/BabyRhythm/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
     file_in = root_path + s + '/sss_fif/' 
     raw_file = mne.io.read_raw_fif(file_in  + s + '_01_otp_raw_sss.fif')
@@ -32,9 +30,6 @@ def do_foward(s):
     return fwd, src
 
 def do_inverse(s,morph,run,rfs,lambda2):
-    # root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/'
-    root_path = '/media/tzcheng/storage/BabyRhythm/'
-    subjects_dir = '/media/tzcheng/storage2/subjects/'
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
     epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mag6pT_epoch.fif').resample(sfreq = 100)
@@ -66,58 +61,71 @@ def do_inverse(s,morph,run,rfs,lambda2):
     stc_mne_epoch = mne.minimum_norm.apply_inverse_epochs(epoch, inverse_operator, lambda2, pick_ori = None)
     # stc_mne_random_duple = mne.minimum_norm.apply_inverse((evoked_random_duple), inverse_operator, pick_ori = None)
     # stc_mne_random_triple = mne.minimum_norm.apply_inverse((evoked_random_triple), inverse_operator, pick_ori = None)
-
-    if morph == True:
-        print('Morph ' + s +  ' src space to common cortical space.')
-        fname_src_fsaverage = subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif'
-        src_fs = mne.read_source_spaces(fname_src_fsaverage)
-        morph = mne.compute_source_morph(
-            fwd["src"],
-            subject_from=s,
-            subjects_dir=subjects_dir,
-            niter_affine=[10, 10, 5],
-            niter_sdr=[10, 10, 5],  # just for speed
-            src_to=src_fs,
-            verbose=True)
-        # stc_lcmv_fsaverage = morph.apply(stc_lcmv)
-        # stc_lcmv_fsaverage.save(file_in + run + '_stc_lcmv_morph_mag6pT', overwrite=True)
-        stc_mne_fsaverage = morph.apply(stc_mne)
-        stc_mne_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT', overwrite=True)
+    
+    src=mne.read_source_spaces(subjects_dir + s + '/bem/' + s + '-vol-5-src.fif')
+    fname_aseg = subjects_dir + s + '/mri/aparc+aseg.mgz'
+    stc_mne_epoch_roi = mne.extract_label_time_course(stc_mne_epoch,fname_aseg,src,mode='mean',allow_empty=True)
+    stc_mne_epoch_roi = np.asarray(stc_mne_epoch_roi)
+    new_ROI = {"AuditoryL": [72,76],"AuditoryR": [108,112], "MotorL": [66],"MotorR": [102], "SensoryL": [59,64],"SensoryR": [95,100], "BGL": [7,8],"BGR": [26,27], "IFGL": [60,61,62], "IFGR": [96,97,98]}
+    MEG = np.zeros((np.shape(stc_mne_epoch_roi)[0],len(new_ROI),np.shape(stc_mne_epoch_roi)[2]))
+    for index, ROI in enumerate(new_ROI):
+        MEG[:,index,:] = stc_mne_epoch_roi[:,new_ROI[ROI],:].mean(axis=1)
+    np.save(file_in + run + '_stc_mne_epoch_rs100_mag6pT_roi_redo.npy',MEG)
+    np.save(file_in + run + '_stc_mne_epoch_rs100_mag6pT_roi.npy',stc_mne_epoch_roi)
+    
+    # if morph == True:
+    #     print('Morph ' + s +  ' src space to common cortical space.')
+    #     fname_src_fsaverage = subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif'
+    #     src_fs = mne.read_source_spaces(fname_src_fsaverage)
+    #     morph = mne.compute_source_morph(
+    #         fwd["src"],
+    #         subject_from=s,
+    #         subjects_dir=subjects_dir,
+    #         niter_affine=[10, 10, 5],
+    #         niter_sdr=[10, 10, 5],  # just for speed
+    #         src_to=src_fs,
+    #         verbose=True)
+    #     # stc_lcmv_fsaverage = morph.apply(stc_lcmv)
+    #     # stc_lcmv_fsaverage.save(file_in + run + '_stc_lcmv_morph_mag6pT', overwrite=True)
+    #     stc_mne_fsaverage = morph.apply(stc_mne)
+    #     stc_mne_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT', overwrite=True)
         
-        stc_mne_epoch_fsaverage = np.zeros((len(stc_mne_epoch),14629,np.shape(stc_mne_epoch[0])[1]))
-        for ntrial in range(0,len(stc_mne_epoch)):
-            stc_mne_fsaverage_tmp = morph.apply(stc_mne_epoch[ntrial])
-            stc_mne_epoch_fsaverage[ntrial,:,:] = stc_mne_fsaverage_tmp.data
-            del stc_mne_fsaverage_tmp
-        np.save(file_in + run + '_stc_mne_epoch_rs100_mag6pT.npy',stc_mne_epoch_fsaverage)
+    #     stc_mne_epoch_fsaverage = np.zeros((len(stc_mne_epoch),14629,np.shape(stc_mne_epoch[0])[1]))
+    #     for ntrial in range(0,len(stc_mne_epoch)):
+    #         stc_mne_fsaverage_tmp = morph.apply(stc_mne_epoch[ntrial])
+    #         stc_mne_epoch_fsaverage[ntrial,:,:] = stc_mne_fsaverage_tmp.data
+    #         del stc_mne_fsaverage_tmp
+    #     np.save(file_in + run + '_stc_mne_epoch_rs100_mag6pT.npy',stc_mne_epoch_fsaverage)
         
-        # stc_mne_random_duple_fsaverage = morph.apply(stc_mne_random_duple)
-        # stc_mne_random_duple_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT_randduple_rs', overwrite=True)
-        # stc_mne_random_triple_fsaverage = morph.apply(stc_mne_random_triple)
-        # stc_mne_random_triple_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT_randtriple_rs', overwrite=True)
-    else: 
-        print('No morphing has been performed. The individual results may not be good to average.')
-        # stc_lcmv.save(file_in + '_stc_lcmv', overwrite=True)
-        # stc_mne.save(file_in + '_stc_mne', overwrite=True)
+    #     # stc_mne_random_duple_fsaverage = morph.apply(stc_mne_random_duple)
+    #     # stc_mne_random_duple_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT_randduple_rs', overwrite=True)
+    #     # stc_mne_random_triple_fsaverage = morph.apply(stc_mne_random_triple)
+    #     # stc_mne_random_triple_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT_randtriple_rs', overwrite=True)
+    # else: 
+    #     print('No morphing has been performed. The individual results may not be good to average.')
+    #     # stc_lcmv.save(file_in + '_stc_lcmv', overwrite=True)
+    #     # stc_mne.save(file_in + '_stc_mne', overwrite=True)
 
 #%%#######################################   
 ## manually coregister to get the trans, bem and src.
 # subjects_dir = '/media/tzcheng/storage2/subjects'
 # mne.gui.coregistration(subject='fsaverage', subjects_dir=subjects_dir)
+subjects_dir = '/media/tzcheng/storage2/subjects/'
 
-# root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
-root_path = '/media/tzcheng/storage/BabyRhythm/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
+# root_path = '/media/tzcheng/storage/BabyRhythm/'
 os.chdir(root_path)
 rfs=250
 lambda2 = 0.1111111111111111
 
-morph = True
+morph = False
+epoch_ROI = True
 
-runs = ['_02']
+runs = ['_02','_03','_04']
 subj = [] 
 for file in os.listdir():
-    if file.startswith('br_'):
-    # if file.startswith('me2_'):
+    # if file.startswith('br_'):
+    if file.startswith('me2_'):
         subj.append(file)
 
 for s in tqdm(subj):
@@ -125,3 +133,4 @@ for s in tqdm(subj):
     for run in runs:
         print(s)
         do_inverse(s,morph,run,rfs,lambda2)
+        
