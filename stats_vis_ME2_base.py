@@ -72,10 +72,6 @@ def plot_SSEP(psds,freqs):
     plt.figure()
     plot_err(psds,'k',freqs)
 
-def plot_ERSP():
-def plot_conn():
-def plot_decoding():
-
 def stats_ERSP(power1,power2,times,freqs,nonparametric):
     X = power1-power2
     if nonparametric: 
@@ -96,7 +92,89 @@ def stats_ERSP(power1,power2,times,freqs,nonparametric):
         print('t statistics: ' + str(t))
         print('p-value: ' + str(p))
     return sig_ROI
- 
+
+def plot_ERSP(power,vmin, vmax, times,freqs,title):
+    plt.figure()
+    im = plt.imshow(power.mean(0),cmap = 'jet', aspect='auto', vmin = vmin, vmax=vmax,
+    origin = 'lower',extent = [times[0],times[-1],freqs[0],freqs[-1]])
+    plt.colorbar()
+    plt.title('ERSP of ROI ' + title)
+    plt.xlabel('Times (s)')
+    plt.ylabel('Frequency (Hz)')
+    plt.vlines(np.arange(0,10.5,1/3.3333),ymin=freqs[0],ymax=freqs[-1],color='grey',linewidth=0.5,linestyle='dashed')
+    plt.savefig(root_path + 'figures/' + 'ERSP of ROI ' + title +'.pdf')
+    
+    # plt.figure() 
+    # plot_err(power.mean(axis = 1),'k',times)
+    # plt.title('Broadband power ' + str(round(freqs[0])) + ' to ' + str(round(freqs[-1])) + ' Hz')
+    # plt.vlines(np.arange(0,10.5,1/3.3333),ymin=vmin,ymax=vmax,color='r',linewidth=0.5,linestyle='dashed')
+    # plt.xlim([times[0],times[-1]])
+    # plt.close()
+    # plt.savefig(root_path + 'figures/' + 'Broadband power of ROI ' + title +'.pdf')
+
+    plt.figure() 
+    plot_err(power[:,3:8,:].mean(axis = 1),'k',times) # alpha (8-12 Hz)
+    plt.title('Alpha power ' + str(round(freqs[3])) + ' to ' + str(round(freqs[7])) + ' Hz')
+    plt.vlines(np.arange(0,10.5,1/3.3333),ymin=vmin,ymax=vmax,color='r',linewidth=0.5,linestyle='dashed')
+    plt.xlim([times[0],times[-1]])
+    plt.savefig(root_path + 'figures/' + 'Alpha power of ROI ' + title +'.pdf')
+
+    plt.figure() 
+    plot_err(power[:,10:26,:].mean(axis = 1),'k',times) # beta (15-30 Hz) 
+    plt.title(title +' Beta power ' + str(round(freqs[10])) + ' to ' + str(round(freqs[25])) + ' Hz')
+    plt.vlines(np.arange(0,10.5,1/3.3333),ymin=vmin,ymax=vmax,color='r',linewidth=0.5,linestyle='dashed')
+    plt.xlim([times[0],times[-1]])
+    plt.savefig(root_path + 'figures/' + 'Beta power of ROI ' + title +'.pdf')
+    
+def do_decoding(X1, X2, ts, te, model, seed, nperm,criteria):  
+    all_score = []
+
+    ## Two way classification using ovr
+    X = np.concatenate((X1,X2),axis=0)
+    y = np.concatenate((np.repeat(0,len(X1)),np.repeat(1,len(X2))))
+    ncv = np.shape(X1)[0]
+    del X1, X2
+    rand_ind = np.arange(0,len(X))
+    random.Random(seed).shuffle(rand_ind)
+    X = X[rand_ind,:,ts:te]
+    y = y[rand_ind]
+    
+    if model == 'SVM':
+        clf = make_pipeline(
+            StandardScaler(),  # z-score normalization
+            SVC(kernel='rbf',gamma='auto',C=0.1))
+    elif model =='LogReg'      :  
+        clf = make_pipeline(
+            StandardScaler(),  # z-score normalizations
+            LogisticRegression(solver="liblinear"))
+        
+    for n in np.arange(0,np.shape(X)[1],1):
+        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=ncv,verbose = 'ERROR') # takes about 10 mins to run
+        score = np.mean(scores, axis=0)
+        print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
+        all_score.append(score)
+    return all_score
+    ## Run permutation on the hot spots
+    # n_perm=nperm
+    # tmp_perm=[]
+    # scores_perm=[]
+    # ind = np.where(all_score > np.percentile(all_score,q = criteria))
+    # X = np.concatenate((MEG_duple,MEG_triple),axis=0)
+    # y = np.concatenate((np.repeat(0,len(MEG_duple)),np.repeat(1,len(MEG_triple))))
+    # print("Found " + str(len(ind)) + " promising hot spot(s)")
+    # for n_ind in ind[0]:         
+    #     print("Index " + str(n_ind))
+    #     select_X = X[:,n_ind,:] 
+    #     for i in range(n_perm):
+    #         print("Iteration " + str(i))    
+    #         yp = copy.deepcopy(y)
+    #         random.shuffle(yp)
+    #         scores = cross_val_multiscore(clf, select_X, yp, cv=np.shape(MEG_triple)[0], verbose = 'ERROR') # X can be MMR or cABR
+    #         tmp_perm.append(np.mean(scores,axis=0))
+    #     scores_perm.append(tmp_perm)
+    #     scores_perm_array=np.asarray(scores_perm)
+    # np.savez(root_path + 'decoding/' + age + '_decoding_acc_perm' + str(nperm) + data_type , all_score=all_score, scores_perm_array=scores_perm_array,ind=ind)
+    # return all_score, scores_perm_array, ind
         
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
