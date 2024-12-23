@@ -47,6 +47,15 @@ from sklearn.svm import SVC
 import matplotlib.pyplot as plt 
 
 #%%####################################### Define functions
+def ff(input_arr,target): # find the idx of the closest freqeuncy in freqs
+    delta = 1000000000
+    idx = -1
+    for i, val in enumerate(input_arr):
+        if abs(input_arr[i]-target) < delta:
+            idx = i
+            delta = abs(input_arr[i]-target)
+    return idx
+
 def stats_SSEP(psds1,psds2,freqs,nonparametric):
     X = psds1-psds2
     if nonparametric: 
@@ -69,13 +78,43 @@ def stats_SSEP(psds1,psds2,freqs,nonparametric):
         # print('Testing freqs: ' + str(freqs[[30,31]]))
         # print('t statistics: ' + str(t))
         print('p-value: ' + str(p))
-# def stats_Conn(power1,power2,times,freqs,nonparametric):
 
-# def stats_age_effect():
+def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
+    XX = conn1-conn2
     
-   
-     
-
+    if FOI == "Theta": # 4-8 Hz
+        X = XX[:,:,:,ff(freqs,4):ff(freqs,8)].mean(axis=3)
+    elif FOI == "Alpha": # 8-12 Hz
+        X = XX[:,:,:,ff(freqs,8):ff(freqs,12)].mean(axis=3)
+    elif FOI == "Beta":  # 15-30 Hz
+        X = XX[:,:,:,ff(freqs,15):ff(freqs,30)].mean(axis=3)
+    else:  # broadband
+        X = XX.mean(axis=3)
+    
+    t,p = stats.ttest_1samp(X,0)
+    
+    ROI_names = label_names
+    labels = mne.read_labels_from_annot("sample", parc="aparc", subjects_dir=subjects_dir)
+    label_colors = [label.color for label in labels]
+      
+    node_order = list()
+    node_order.extend(ROI_names)  # reverse the order
+    node_angles = circular_layout(
+         ROI_names, node_order, start_pos=90, group_boundaries=[0, len(ROI_names) / 2])
+      
+    fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
+    plot_connectivity_circle(
+    p,
+    ROI_names,
+    n_lines=nlines, # plot the top n lines
+    vmin=0.95, # correspond to p = 0.05
+    vmax=1, # correspond to p = 0
+    node_angles=node_angles,
+    node_colors=label_colors,
+    title= title + " 1-p-value " + FOI,
+    ax=ax)
+    fig.tight_layout() 
+# def stats_age_effect():
         
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
@@ -134,21 +173,18 @@ model = sm.OLS(lm_df['duple_1.67Hz'].astype(float),X.astype(float)).fit()
 
 #%%####################################### Analysis on the source level: ROI 
 data_type = which_data_type[2]
-n_analysis = analysis[2]
-n_folder = folders[2]
-vmin = -1
-vmax = 1
+n_analysis = analysis[5]
+n_folder = folders[3]
 nlines = 10
-FOI = 'beta'
-
+FOI = 'Beta'
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
     label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
     nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
 elif data_type == '_roi_redo_':
-    # label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
-    label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
+    label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
+    # label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
     nROI = np.arange(0,len(label_names),1)
 
 # Auditory (STG 72,108, HG 76,112), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
@@ -167,11 +203,10 @@ for n_age in age:
         random_conn = random.get_data(output='dense')
         duple_conn = duple.get_data(output='dense')
         triple_conn = triple.get_data(output='dense')
- 
-        # print("-------------------Doing duple-------------------")
-        # stats_CONN(duple_conn,random_conn,freqs,nonparametric=True)
-        # print("-------------------Doing triple-------------------")
-        # stats_CONN(triple_conn,random_conn,freqs,nonparametric=True)
+        print("-------------------Doing duple-------------------")
+        stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis)
+        print("-------------------Doing triple-------------------")
+        stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
     else:
         for n in nROI: 
             print("---------------------------------------------------Doing ROI: " + label_names[n])
