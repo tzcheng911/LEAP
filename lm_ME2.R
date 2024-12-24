@@ -12,7 +12,7 @@ library(rstatix)
 library(car)
 
 ## Load the data
-alldata = read.csv("SSEP_sensor.csv")
+alldata = read.csv("SSEP_roi_redo.csv")
 
 ## Mutate new factors and re-level
 alldata = alldata %>%
