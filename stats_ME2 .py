@@ -9,6 +9,7 @@ Input: .npy files in the "analyzed data" i.e. SSEP, ERSP, decoding, connectivity
 @author: tzcheng
 """
 #%%####################################### Import library  
+import os
 import statsmodels.api as sm
 import pandas as pd
 import numpy as np
@@ -79,6 +80,81 @@ def stats_SSEP(psds1,psds2,freqs,nonparametric):
         # print('t statistics: ' + str(t))
         print('p-value: ' + str(p))
 
+def convert_to_csv(data_type):
+    lm_np = []
+    sub_col = [] 
+    age_col = []
+    cond_col = []
+    n_analysis = analysis[0]
+    n_folder = folders[0]
+    ages = ['7mo','11mo','br'] 
+    conditions = ['_02','_03','_04']
+    subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
+               '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/',
+               '/media/tzcheng/storage/BabyRhythm/']
+    if data_type == which_data_type[1] or which_data_type[2]:
+        print('-----------------Extracting ROI data-----------------')
+
+        ROIs = ["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"]
+        ROI_col = []
+    
+        for n_age,age in enumerate(ages):
+            print(age)
+            for n_cond,cond in enumerate(conditions):
+                print(cond)
+                for nROI, ROI in enumerate(ROIs):
+                    print(ROI)
+                    data0 = np.load(root_path + n_folder + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
+                    data1 = data0[data0.files[0]]
+                    data2 = np.vstack((data1[:,nROI,[6,7]].mean(axis=1),data1[:,nROI,[12,13]].mean(axis=1),data1[:,nROI,[30,31]].mean(axis=1))).transpose()
+                    lm_np.append(data2)
+                    if age == 'br':
+                        for file in os.listdir(subj_path[n_age]):
+                            if file.startswith('br_'):
+                                sub_col.append(file)
+                                ROI_col.append(ROI)
+                                cond_col.append(cond)
+                                age_col.append(age)
+                    else:
+                        for file in os.listdir(subj_path[n_age]):
+                            if file.startswith('me2_'):
+                                sub_col.append(file)
+                                ROI_col.append(ROI)
+                                cond_col.append(cond)
+                                age_col.append(age)
+        lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col, 'ROI':ROI_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'3.3Hz': np.concatenate(lm_np)[:,2]})
+    elif data_type == which_data_type[0]:
+        lm_np = []
+        sub_col = [] 
+        age_col = []
+        cond_col = []
+        del lm_df
+        print('-----------------Extracting sensor data-----------------')
+        for n_age,age in enumerate(ages):
+            print(age)
+            for n_cond,cond in enumerate(conditions):
+                print(cond)
+                data0 = np.load(root_path + n_folder + age + '_group' + cond + '_rs_mag6pT' + data_type + n_analysis +'.npz') 
+                data1 = data0[data0.files[0]].mean(axis=1)
+                data2 = np.vstack((data1[:,[6,7]].mean(axis=1),data1[:,[12,13]].mean(axis=1),data1[:,[30,31]].mean(axis=1))).transpose()
+                lm_np.append(data2)
+                if age == 'br':
+                    for file in os.listdir(subj_path[n_age]):
+                        if file.startswith('br_'):
+                            sub_col.append(file)
+                            ROI_col.append(ROI)
+                            cond_col.append(cond)
+                            age_col.append(age)
+                else:
+                    for file in os.listdir(subj_path[n_age]):
+                        if file.startswith('me2_'):
+                            sub_col.append(file)
+                            ROI_col.append(ROI)
+                            cond_col.append(cond)
+                            age_col.append(age)
+        lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'3.3Hz': np.concatenate(lm_np)[:,2]})
+    lm_df.to_csv(root_path + n_folder + 'SSEP_sensor.csv')
+    
 def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
     XX = conn1-conn2
     
@@ -134,8 +210,6 @@ which_data_type = ['_sensor_','_roi_','_roi_redo_','_morph_'] ## currently not a
 data_type = which_data_type[0]
 n_analysis = analysis[0]
 n_folder = folders[0]
-lm_np = []
-df = pd.DataFrame(columns=['age','condition', '1.11Hz', '1.67Hz','3.3Hz'])
 
 for n_age in age:
     print("Doing age " + n_age)
@@ -155,57 +229,14 @@ for n_age in age:
     stats_SSEP(psds_duple,psds_random,freqs,nonparametric=False)
     print("-------------------Doing triple-------------------")
     stats_SSEP(psds_triple,psds_random,freqs,nonparametric=False)
-    
-    SSEP_random = np.vstack((psds_random[:,[6,7]].mean(axis=1),psds_random[:,[12,13]].mean(axis=1),psds_random[:,[30,31]].mean(axis=1))).transpose()
-    SSEP_duple = np.vstack((psds_duple[:,[6,7]].mean(axis=1),psds_duple[:,[12,13]].mean(axis=1),psds_duple[:,[30,31]].mean(axis=1))).transpose()
-    SSEP_triple = np.vstack((psds_triple[:,[6,7]].mean(axis=1),psds_triple[:,[12,13]].mean(axis=1),psds_triple[:,[30,31]].mean(axis=1))).transpose()
-    SSEP_all = np.vstack((SSEP_random,SSEP_duple,SSEP_triple))
-    
-    lm_np.append(SSEP_all)
-
-#%% Create df, csv for lm analysis
-import os
-subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
-           '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/',
-           '/media/tzcheng/storage/BabyRhythm/']
-subj = [] 
-for n,n_age in enumerate(age):
-    if n_age == 'br':
-        for file in os.listdir(subj_path[n]):
-            if file.startswith('br_'):
-                subj.append(file)
-    else:
-        for file in os.listdir(subj_path[n]):
-            if file.startswith('me2_'):
-                subj.append(file)
-
-nsub0 = len(lm_np[0])
-nsub1 = len(lm_np[1])
-nsub2 = len(lm_np[2])
-
-conditions0 =  np.concatenate((np.repeat('random',nsub0//3),np.repeat('duple',nsub0//3),np.repeat('triple',nsub0//3)))
-conditions1 =  np.concatenate((np.repeat('random',nsub1//3),np.repeat('duple',nsub1//3),np.repeat('triple',nsub1//3)))
-conditions2 =  np.concatenate((np.repeat('random',nsub2//3),np.repeat('duple',nsub2//3),np.repeat('triple',nsub2//3)))
-
-subjects = np.concatenate((subj,subj,subj))
-conditions = np.concatenate((conditions0,conditions1,conditions2))
-ages = np.concatenate((np.repeat('7mo',nsub0),np.repeat('11mo',nsub1),np.repeat('adult',nsub2)))
-lm_np = np.concatenate(lm_np)
-lm_df = pd.DataFrame({'sub_id': subjects,'age':ages,'condition':conditions, '1.11Hz': lm_np[:,0], '1.67Hz': lm_np[:,1],'3.3Hz': lm_np[:,2]})
-lm_df.to_csv(root_path + n_folder + 'SSEP_sensor.csv')
-
-# age_dummies = pd.get_dummies(lm_df['age'], prefix='age', drop_first=True)
-# lm_df = pd.concat([lm_df,age_dummies],axis=1)
-# X = sm.add_constant(age_dummies)
-# model = sm.OLS(lm_df['duple_1.67Hz'].astype(float),X.astype(float)).fit()
+    convert_to_csv(data_type)
 
 #%%####################################### Analysis on the source level: ROI 
 data_type = which_data_type[2]
-n_analysis = analysis[5]
-n_folder = folders[3]
+n_analysis = analysis[0]
+n_folder = folders[0]
 nlines = 10
 FOI = 'Beta'
-
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
     label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
@@ -222,45 +253,50 @@ elif data_type == '_roi_redo_':
 # roi_redo pools ROIs to be 6 new_ROIs = {"Auditory": [72,108], "Motor": [66,102], "Sensory": [64,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98],  "Posterior": [50,86,71,107]}
 
 for n_age in age:
-    print("Doing age " + n_age)
-    if n_folder == 'connectivity/':
-        random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
-        duple = read_connectivity(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis) 
-        triple = read_connectivity(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis) 
-        freqs = random.freqs
-        random_conn = random.get_data(output='dense')
-        duple_conn = duple.get_data(output='dense')
-        triple_conn = triple.get_data(output='dense')
-        print("-------------------Doing duple-------------------")
-        stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis)
-        print("-------------------Doing triple-------------------")
-        stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
-    else:
-        for n in nROI: 
-            print("---------------------------------------------------Doing ROI: " + label_names[n])
-            if n_folder == 'SSEP/':
-                random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
-                duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
-                triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
-                random = random0[random0.files[0]]
-                duple = duple0[duple0.files[0]]
-                triple = triple0[triple0.files[0]]
-                freqs = random0[random0.files[1]]          
-                print("-------------------Doing duple-------------------")
-                stats_SSEP(duple[:,n,:],random[:,n,:],freqs,nonparametric=True)
-                print("-------------------Doing triple-------------------")
-                stats_SSEP(triple[:,n,:],random[:,n,:],freqs,nonparametric=True)
+    print("Doing age connectivity " + n_age)
+    random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+    duple = read_connectivity(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+    triple = read_connectivity(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+    freqs = random.freqs
+    random_conn = random.get_data(output='dense')
+    duple_conn = duple.get_data(output='dense')
+    triple_conn = triple.get_data(output='dense')
+    print("-------------------Doing duple-------------------")
+    stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis)
+    print("-------------------Doing triple-------------------")
+    stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
+
+for n_age in age:
+    for n in nROI: 
+        print("Doing ROI SSEP: " + label_names[n])
+        if n_folder == 'SSEP/':
+            random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
+            duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
+            triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
+            random = random0[random0.files[0]]
+            duple = duple0[duple0.files[0]]
+            triple = triple0[triple0.files[0]]
+            freqs = random0[random0.files[1]]          
+            # print("-------------------Doing duple-------------------")
+            # stats_SSEP(duple[:,n,:],random[:,n,:],freqs,nonparametric=True)
+            # print("-------------------Doing triple-------------------")
+            # stats_SSEP(triple[:,n,:],random[:,n,:],freqs,nonparametric=True)
+            SSEP_random = np.vstack((random[:,n,[6,7]].mean(axis=1),random[:,n,[12,13]].mean(axis=1),random[:,n,[30,31]].mean(axis=1))).transpose()
+            SSEP_duple = np.vstack((duple[:,n,[6,7]].mean(axis=1),duple[:,n,[12,13]].mean(axis=1),duple[:,n,[30,31]].mean(axis=1))).transpose()
+            SSEP_triple = np.vstack((triple[:,n,[6,7]].mean(axis=1),triple[:,n,[12,13]].mean(axis=1),triple[:,n,[30,31]].mean(axis=1))).transpose()
+            SSEP_all = np.vstack((SSEP_random,SSEP_duple,SSEP_triple))
+            convert_to_csv(data_type)
           
-            elif n_folder == 'decoding/':
-                decoding = np.load(root_path + n_folder + n_age + '_' + n_analysis + '_roi_redo.npz') 
-                all_score = decoding['all_score']
-                scores_perm_array = decoding['scores_perm_array']
-                ind = decoding['ind']
+        elif n_folder == 'decoding/':
+            decoding = np.load(root_path + n_folder + n_age + '_' + n_analysis + '_roi_redo.npz') 
+            all_score = decoding['all_score']
+            scores_perm_array = decoding['scores_perm_array']
+            ind = decoding['ind']
 
                 
 # np.save(root_path + 'figures/ERSP_sig_ROI_duple.npy',np.asarray(ERSP_sig_ROI_duple))
 # np.save(root_path + 'figures/ERSP_sig_ROI_triple.npy',np.asarray(ERSP_sig_ROI_triple))
-        
+
 #%%####################################### Analysis on the source level: wholebrain 
 n_age = age[2]
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')

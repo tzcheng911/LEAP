@@ -120,7 +120,10 @@ which_data_type = ['_sensor_','_roi_','_roi_redo_','_morph_'] ## currently not a
 #%%####################################### Visualize the sensor level 
 n_folder = folders[0]
 n_analysis = analysis[0]
-data_type = which_data_type[2]
+data_type = which_data_type[0]
+psds_random_all = []
+psds_duple_all = []
+psds_triple_all = []
 
 for n_age in age:
     print("Doing age " + n_age)
@@ -134,19 +137,19 @@ for n_age in age:
     duple = duple[duple.files[0]]
     triple = triple[triple.files[0]]
     
-    if analysis_type == 'psds':
-        psds_random = random.mean(axis = 1)
-        psds_duple = duple.mean(axis = 1)
-        psds_triple = triple.mean(axis = 1)
-        plot_SSEP(psds_random,freqs)
-        plot_SSEP(psds_duple,freqs)
-        plot_SSEP(psds_triple,freqs)
-    else:
-        print("Only ran SSEP analysis on the sensor level")
+    psds_random = random.mean(axis = 1)
+    psds_duple = duple.mean(axis = 1)
+    psds_triple = triple.mean(axis = 1)
+    # plot_SSEP(psds_random,freqs)
+    # plot_SSEP(psds_duple,freqs)
+    # plot_SSEP(psds_triple,freqs)
+    psds_random_all.append(psds_random)
+    psds_duple_all.append(psds_duple)
+    psds_triple_all.append(psds_triple)
 
 #%%####################################### Visualize on the source level: ROI 
-n_folder = folders[3]
-n_analysis = analysis[5]
+n_folder = folders[2]
+n_analysis = analysis[2]
 data_type = which_data_type[2]
 
 vmin = 0
@@ -196,25 +199,26 @@ for n_age in age:
                 plot_SSEP(duple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_duple')
                 plot_SSEP(triple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_triple')
             elif n_folder == 'decoding/':
-                decoding = np.load(root_path + n_folder + n_age + '_' + n_analysis + '_morph.npz') 
-                all_score = decoding['all_score']
-                scores_perm_array = decoding['scores_perm_array']
-                ind = decoding['ind']
+                decoding_duple = np.load(root_path + n_folder + n_age + data_type +'decodingACC_duple.npy') 
+                print(decoding_duple[n])
+                decoding_triple = np.load(root_path + n_folder + n_age + data_type +'decodingACC_triple.npy') 
+                print(decoding_triple[n])
 
 #%%####################################### Visualize the source level: wholebrain 
-n_age = age[0]
+n_age = age [0]
+n_folder = folders[2]
+data_type = which_data_type[2]
+
+decoding_duple = np.load(root_path + n_folder + n_age + data_type +'decodingACC_duple.npy') 
+decoding_triple = np.load(root_path + n_folder + n_age + data_type +'decodingACC_triple.npy') 
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 
-decoding = np.load(root_path + n_folder + n_age + '_wholebrain_decodingACC.npy') 
 # all_score = decoding['all_score']
 # scores_perm_array = decoding['scores_perm_array']
 # ind = decoding['ind']
-all_score = decoding
-stc1.data=np.array([all_score,all_score]).transpose()
+stc1.data=np.array([decoding_duple,decoding_duple]).transpose()
 stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
 
-all_score_all = np.zeros((len(subj),14629))
-for ns,s in enumerate(subj):
-    all_score_all[ns,:] = np.load(root_path + 'decoding/by_subjects/' + s + '_wholebrain_decodingACC_DT.npy')
-    
+stc1.data=np.array([decoding_triple,decoding_triple]).transpose()
+stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
