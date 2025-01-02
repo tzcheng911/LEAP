@@ -203,7 +203,7 @@ if __name__ == '__main__':
 
     #%% decode across trials for each subject 
     which_data_type = ['_roi','_roi_redo','_morph'] ## currently not able to run ERSP and conn on the wholebrain data
-    data_type = which_data_type[1]
+    data_type = which_data_type[2]
     # subj_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # change to 11mo 
     subj_path = '/media/tzcheng/storage/BabyRhythm/'
     all_score_duple = []
@@ -217,14 +217,14 @@ if __name__ == '__main__':
             
     for s in subj:
         file_in = subj_path + s + '/sss_fif/' + s
-        MEG_random = np.load(file_in + '_02_stc_mne_epoch_rs100_mag6pT' + data_type + '.npy')
-        MEG_duple = np.load(file_in + '_03_stc_mne_epoch_rs100_mag6pT' + data_type + '.npy')
-        MEG_triple = np.load(file_in + '_04_stc_mne_epoch_rs100_mag6pT' + data_type + '.npy')
+        MEG_random = np.load(file_in + '_02_stc_mne_epoch_rs100_mag6pT'  + '.npy')
+        MEG_duple = np.load(file_in + '_03_stc_mne_epoch_rs100_mag6pT'  + '.npy')
+        MEG_triple = np.load(file_in + '_04_stc_mne_epoch_rs100_mag6pT'  + '.npy')
         # acc_duple_triple = do_decoding(MEG_duple, MEG_triple, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
         acc_duple = do_decoding(MEG_duple, MEG_random, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
         acc_triple = do_decoding(MEG_triple, MEG_random, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
         # np.save(root_path + 'decoding/by_subjects/' + s + '_wholebrain_decodingACC_DT.npy',acc_duple_triple)
-        np.save(root_path + 'decoding/by_subjects/' + s + '_roi_redo_decodingACC_duple.npy',acc_duple)
-        np.save(root_path + 'decoding/by_subjects/' + s + '_roi_redo_decodingACC_triple.npy',acc_triple)
+        np.save(root_path + 'decoding/by_subjects/' + s + '_wholebrain_decodingACC_duple.npy',acc_duple)
+        np.save(root_path + 'decoding/by_subjects/' + s + '_wholebrain_decodingACC_triple.npy',acc_triple)
         all_score_duple.append(acc_duple)
         all_score_triple.append(acc_triple)
