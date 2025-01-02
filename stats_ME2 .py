@@ -92,7 +92,7 @@ def convert_to_csv(data_type):
     subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
                '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/',
                '/media/tzcheng/storage/BabyRhythm/']
-    if data_type == which_data_type[1] or which_data_type[2]:
+    if data_type == which_data_type[1] or data_type == which_data_type[2]:
         print('-----------------Extracting ROI data-----------------')
 
         ROIs = ["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"]
@@ -123,12 +123,12 @@ def convert_to_csv(data_type):
                                 cond_col.append(cond)
                                 age_col.append(age)
         lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col, 'ROI':ROI_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'3.3Hz': np.concatenate(lm_np)[:,2]})
+        lm_df.to_csv(root_path + n_folder + 'SSEP_roi.csv')
     elif data_type == which_data_type[0]:
         lm_np = []
         sub_col = [] 
         age_col = []
         cond_col = []
-        del lm_df
         print('-----------------Extracting sensor data-----------------')
         for n_age,age in enumerate(ages):
             print(age)
@@ -142,18 +142,16 @@ def convert_to_csv(data_type):
                     for file in os.listdir(subj_path[n_age]):
                         if file.startswith('br_'):
                             sub_col.append(file)
-                            ROI_col.append(ROI)
                             cond_col.append(cond)
                             age_col.append(age)
                 else:
                     for file in os.listdir(subj_path[n_age]):
                         if file.startswith('me2_'):
                             sub_col.append(file)
-                            ROI_col.append(ROI)
                             cond_col.append(cond)
                             age_col.append(age)
         lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'3.3Hz': np.concatenate(lm_np)[:,2]})
-    lm_df.to_csv(root_path + n_folder + 'SSEP_sensor.csv')
+        lm_df.to_csv(root_path + n_folder + 'SSEP_sensor.csv')
     
 def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
     XX = conn1-conn2
@@ -195,10 +193,6 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
-
-#%%####################################### Load the audio files
-fs, audio = wavfile.read(root_path + 'Stimuli/Duple300.wav') # Random, Duple300, Triple300
-# plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 
 #%% Parameters
 age = ['7mo','11mo','br'] 
