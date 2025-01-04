@@ -198,7 +198,7 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 age = ['7mo','11mo','br'] 
 folders = ['SSEP/','ERSP/','decoding/','connectivity/'] # random, duple, triple
 analysis = ['psds','bc_percent_power','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
-which_data_type = ['_sensor_','_roi_','_roi_redo_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
+which_data_type = ['_sensor_','_roi_','_roi_redo5_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
 
 #%%####################################### Analysis on the sensor level 
 data_type = which_data_type[0]
@@ -230,14 +230,14 @@ data_type = which_data_type[2]
 n_analysis = analysis[0]
 n_folder = folders[0]
 nlines = 10
-FOI = 'Beta'
+FOI = 'Theta'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
     label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
     nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
-elif data_type == '_roi_redo_':
-    label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
-    # label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
+elif data_type == '_roi_redo5_':
+    # label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
+    label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
     nROI = np.arange(0,len(label_names),1)
 
 # Auditory (STG 72,108, HG 76,112), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
@@ -246,19 +246,20 @@ elif data_type == '_roi_redo_':
 # Posterior Parietal: inferior parietal (50 86),  superior parietal (71 107)
 # roi_redo pools ROIs to be 6 new_ROIs = {"Auditory": [72,108], "Motor": [66,102], "Sensory": [64,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98],  "Posterior": [50,86,71,107]}
 
-for n_age in age:
-    print("Doing age connectivity " + n_age)
-    random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
-    duple = read_connectivity(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis) 
-    triple = read_connectivity(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis) 
-    freqs = random.freqs
-    random_conn = random.get_data(output='dense')
-    duple_conn = duple.get_data(output='dense')
-    triple_conn = triple.get_data(output='dense')
-    print("-------------------Doing duple-------------------")
-    stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis)
-    print("-------------------Doing triple-------------------")
-    stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
+if n_folder == 'connectivity/':
+    for n_age in age:
+        print("Doing connectivity " + n_age)
+        random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+        duple = read_connectivity(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+        triple = read_connectivity(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+        freqs = random.freqs
+        random_conn = random.get_data(output='dense')
+        duple_conn = duple.get_data(output='dense')
+        triple_conn = triple.get_data(output='dense')
+        print("-------------------Doing duple-------------------")
+        stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis)
+        print("-------------------Doing triple-------------------")
+        stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
 
 for n_age in age:
     for n in nROI: 
@@ -271,10 +272,10 @@ for n_age in age:
             duple = duple0[duple0.files[0]]
             triple = triple0[triple0.files[0]]
             freqs = random0[random0.files[1]]          
-            # print("-------------------Doing duple-------------------")
-            # stats_SSEP(duple[:,n,:],random[:,n,:],freqs,nonparametric=True)
-            # print("-------------------Doing triple-------------------")
-            # stats_SSEP(triple[:,n,:],random[:,n,:],freqs,nonparametric=True)
+            print("-------------------Doing duple-------------------")
+            stats_SSEP(duple[:,n,:],random[:,n,:],freqs,nonparametric=True)
+            print("-------------------Doing triple-------------------")
+            stats_SSEP(triple[:,n,:],random[:,n,:],freqs,nonparametric=True)
             SSEP_random = np.vstack((random[:,n,[6,7]].mean(axis=1),random[:,n,[12,13]].mean(axis=1),random[:,n,[30,31]].mean(axis=1))).transpose()
             SSEP_duple = np.vstack((duple[:,n,[6,7]].mean(axis=1),duple[:,n,[12,13]].mean(axis=1),duple[:,n,[30,31]].mean(axis=1))).transpose()
             SSEP_triple = np.vstack((triple[:,n,[6,7]].mean(axis=1),triple[:,n,[12,13]].mean(axis=1),triple[:,n,[30,31]].mean(axis=1))).transpose()
