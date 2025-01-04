@@ -51,8 +51,8 @@ def select_PC(data,sfreq,fmin,fmax,lb,hb,n_top):
     ind_components = np.argsort(psds[:,fl:fh].mean(axis=1))[::-1][:n_top] # do top three PCs for now
     explained_variance_ratio = pca.explained_variance_ratio_[ind_components]
     
-    # plt.figure()
-    # plt.plot(freqs,psds.transpose())
+    plt.figure()
+    plt.plot(freqs,psds.transpose())
     # plt.plot(freqs,psds[ind_components,:].transpose(),color='red',linestyle='dashed')
     
     Xhat = np.dot(pca.transform(X)[:,ind_components], pca.components_[ind_components,:])
@@ -121,7 +121,6 @@ def group_stc(subj,baby_or_adult,n_top, n_trial):
         group_dev1_roi.append(dev1_roi)
         group_dev2_roi.append(dev2_roi)
   
-    n_trial = 'all'        
     group_std = np.asarray(group_std)
     group_dev1 = np.asarray(group_dev1)
     group_dev2 = np.asarray(group_dev2)
@@ -144,8 +143,8 @@ fmax = 150
 sfreq = 5000
 lb = 90
 hb = 100
-n_top = 10 # change to 10
-n_trial = 'all'
+n_top = 3 # change to 10
+n_trial = 200
 runs = ['_01','_02']
 cond = ['substd','dev1','dev2']
 baby_or_adult = 'cbsb_meg_analysis' # baby or adult
@@ -166,7 +165,7 @@ for ns,s in enumerate(subjects):
     print(s)
     for nspeech, speech in enumerate(cond):
         file_in = root_path + s + '/sss_fif/' + s
-        evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f80450_evoked_' + speech + '_' + str(n_trial) +'.fif')[0]
+        evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f80450_evoked_' + speech + '_ffr_' + str(n_trial) +'.fif')[0]
         data = evokeds.get_data()
         pca_data,ind_components,explained_variance_ratio,data_topPC = select_PC(data,sfreq,fmin,fmax,lb,hb,n_top)
         evokeds.data = data_topPC
