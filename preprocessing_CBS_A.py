@@ -367,11 +367,11 @@ st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
 lp = 450 
 hp = 80
-do_cabr = False # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
+do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
+    if file.startswith('cbs_b118'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 # subj = ['cbs_zoe']
 
@@ -399,8 +399,8 @@ for s in subj:
         print ('Doing filtering...')
         raw_filt = do_filtering(raw,lp,hp,do_cabr)
         raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
-        print ('calculate cov...')
-        do_cov(s,raw_erm_filt, do_cabr,hp,lp)
+        # print ('calculate cov...')
+        # do_cov(s,raw_erm_filt, do_cabr,hp,lp)
         print ('Doing epoch...')
         if do_cabr == True:
             do_epoch_cabr(raw_filt, s, run, n_trials,hp,lp)
@@ -408,51 +408,51 @@ for s in subj:
             do_epoch_mmr(raw_filt, s, run, direction)
 
 #%%##### do the jobs for EEG MMR
-for s in subj:
-    print(s)
-    for run in runs:
-        raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
-        # raw_file = mne.io.Raw('/media/tzcheng/storage2/CBS/cbs_zoe/raw_fif/cbs_zoe' + run + '_raw.fif',allow_maxshield=True,preload=True) # for stimuli leakage test
-        raw_file.filter(l_freq=0,h_freq=50,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
-        raw_file.pick_channels(['BIO004'])
-        do_epoch_mmr_eeg(raw_file, s, run, direction)
+# for s in subj:
+#     print(s)
+#     for run in runs:
+#         raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
+#         # raw_file = mne.io.Raw('/media/tzcheng/storage2/CBS/cbs_zoe/raw_fif/cbs_zoe' + run + '_raw.fif',allow_maxshield=True,preload=True) # for stimuli leakage test
+#         raw_file.filter(l_freq=0,h_freq=50,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
+#         raw_file.pick_channels(['BIO004'])
+#         do_epoch_mmr_eeg(raw_file, s, run, direction)
 
 #%%##### do the jobs for EEG FFR
-for s in subj:
-    print(s)
-    for run in runs:
-        raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
-        # raw_file = mne.io.Raw('/media/tzcheng/storage2/CBS/cbs_zoe/raw_fif/cbs_zoe' + run + '_raw.fif',allow_maxshield=True,preload=True) # for stimuli leakage test
-        raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('bio'))
-        raw_file.filter(l_freq=80,h_freq=2000,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
-        raw_file.pick_channels(['BIO004'])
-        do_epoch_cabr_eeg(raw_file, s, run, n_trials)
+# for s in subj:
+#     print(s)
+#     for run in runs:
+#         raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
+#         # raw_file = mne.io.Raw('/media/tzcheng/storage2/CBS/cbs_zoe/raw_fif/cbs_zoe' + run + '_raw.fif',allow_maxshield=True,preload=True) # for stimuli leakage test
+#         raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('bio'))
+#         raw_file.filter(l_freq=80,h_freq=2000,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
+#         raw_file.pick_channels(['BIO004'])
+#         do_epoch_cabr_eeg(raw_file, s, run, n_trials)
 
 #%%##### check the number of avg in evoked files
-nave_mmr_std = []
-nave_mmr_dev1 = []
-nave_mmr_dev2 = []
-nave_ffr_std = []
-nave_ffr_dev1 = []
-nave_ffr_dev2 = []
+# nave_mmr_std = []
+# nave_mmr_dev1 = []
+# nave_mmr_dev2 = []
+# nave_ffr_std = []
+# nave_ffr_dev1 = []
+# nave_ffr_dev2 = []
 
-for s in subj:
-    print(s)
-    for run in runs:
-        std_mmr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_substd_mmr.fif',allow_maxshield=True)
-        dev1_mmr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev1_mmr.fif',allow_maxshield=True)
-        dev2_mmr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev2_mmr.fif',allow_maxshield=True)
-        std_ffr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_substd_cabr_all.fif',allow_maxshield=True)
-        dev1_ffr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev1_cabr_all.fif',allow_maxshield=True)
-        dev2_ffr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev2_cabr_all.fif',allow_maxshield=True)
+# for s in subj:
+#     print(s)
+#     for run in runs:
+#         std_mmr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_substd_mmr.fif',allow_maxshield=True)
+#         dev1_mmr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev1_mmr.fif',allow_maxshield=True)
+#         dev2_mmr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev2_mmr.fif',allow_maxshield=True)
+#         std_ffr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_substd_cabr_all.fif',allow_maxshield=True)
+#         dev1_ffr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev1_cabr_all.fif',allow_maxshield=True)
+#         dev2_ffr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev2_cabr_all.fif',allow_maxshield=True)
 
-        nave_mmr_std.append(std_mmr[0].nave)
-        nave_mmr_dev1.append(dev1_mmr[0].nave)
-        nave_mmr_dev2.append(dev2_mmr[0].nave)
-        nave_ffr_std.append(std_ffr[0].nave)
-        nave_ffr_dev1.append(dev1_ffr[0].nave)
-        nave_ffr_dev2.append(dev2_ffr[0].nave)
+#         nave_mmr_std.append(std_mmr[0].nave)
+#         nave_mmr_dev1.append(dev1_mmr[0].nave)
+#         nave_mmr_dev2.append(dev2_mmr[0].nave)
+#         nave_ffr_std.append(std_ffr[0].nave)
+#         nave_ffr_dev1.append(dev1_ffr[0].nave)
+#         nave_ffr_dev2.append(dev2_ffr[0].nave)
 
-print(np.mean(nave_mmr_std))
-print(np.mean(nave_mmr_dev1))
-print(np.mean(nave_mmr_dev2))
+# print(np.mean(nave_mmr_std))
+# print(np.mean(nave_mmr_dev1))
+# print(np.mean(nave_mmr_dev2))
