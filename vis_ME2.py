@@ -148,11 +148,11 @@ for n_age in age:
     psds_triple_all.append(psds_triple)
 
 #%%####################################### Visualize on the source level: ROI 
-n_folder = folders[2]
-n_analysis = analysis[2]
+n_folder = folders[3]
+n_analysis = analysis[3]
 data_type = which_data_type[2]
 
-vmin = 0
+vmin = 0.75
 vmax = 1
 nlines = 10
 FOI = 'Theta'
