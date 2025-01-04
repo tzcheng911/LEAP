@@ -228,3 +228,5 @@ if __name__ == '__main__':
         np.save(root_path + 'decoding/by_subjects/' + s + '_wholebrain_decodingACC_triple.npy',acc_triple)
         all_score_duple.append(acc_duple)
         all_score_triple.append(acc_triple)
+    np.save(root_path + 'decoding/by_subjects/' + 'br_wholebrain_decodingACC_trial_duple.npy', np.asarray(all_score_duple))
+    np.save(root_path + 'decoding/by_subjects/' + 'br_wholebrain_decodingACC_trial_triple.npy', np.asarray(all_score_triple))
