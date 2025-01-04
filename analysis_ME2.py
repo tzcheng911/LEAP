@@ -141,7 +141,7 @@ def do_decoding(X1, X2, ts, te, model, seed, nperm,criteria):
         all_score.append(score)
     return all_score
 
-def redo_ROI(age,run,new_ROI):
+def redo_ROI(age,run,new_ROI): ## still working on this function
     ## age = ['7mo','11mo','br']  
     ## run = ['_02','_03','_04'] # random, duple, triple
     ## new_ROI = {"Auditory": [72,76, 108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
@@ -153,8 +153,9 @@ def redo_ROI(age,run,new_ROI):
         for n_run in run:
             f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT_roi' 
             MEG0 = np.load(root_path + 'data/' + f_name + '.npy')   
-            f_name = f_name +'_redo'
-            new_ROI = {"AuditoryL": [72,76],"AuditoryR": [108,112], "MotorL": [66],"MotorR": [102], "SensoryL": [59,64],"SensoryR": [95,100], "BGL": [7,8],"BGR": [26,27], "IFGL": [60,61,62], "IFGR": [96,97,98]}
+            f_name = f_name +'_redo5'
+            # new_ROI = {"AuditoryL": [72,76],"AuditoryR": [108,112], "MotorL": [66],"MotorR": [102], "SensoryL": [59,64],"SensoryR": [95,100], "BGL": [7,8],"BGR": [26,27], "IFGL": [60,61,62], "IFGR": [96,97,98]}
+            new_ROI = {"Auditory": [72,76,108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
             MEG = np.zeros((np.shape(MEG0)[0],len(new_ROI),np.shape(MEG0)[2]))
             for index, ROI in enumerate(new_ROI):
                 MEG[:,index,:] = MEG0[:,new_ROI[ROI],:].mean(axis=1)
@@ -165,8 +166,8 @@ if __name__ == '__main__':
 #%% Parameters
     age = ['7mo','11mo','br']  # 
     run = ['_02','_03','_04'] # random, duple, triple # 
-    which_data_type = ['_sensor','_roi','_roi_redo','_morph'] ## currently not able to run ERSP and conn on the wholebrain data
-    data_type = which_data_type[3]
+    which_data_type = ['_sensor','_roi','_roi_redo5','_morph'] ## currently not able to run ERSP and conn on the wholebrain data
+    data_type = which_data_type[2]
     MEG_fs = 250
     decoding_acc = []
 
