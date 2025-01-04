@@ -391,10 +391,14 @@ for s in subjects:
         del raw,raw_erm,raw_filt,raw_erm_filt
 
 #%%###### get the cbsb_118 cov from the baseline
-# epochs = mne.read_epochs(root_path + s + '/sss_fif/' + s + time + run + '_otp_raw_sss_proj_f_cABR_e.fif')
-# noise_cov = mne.compute_covariance(epochs, tmin = None, tmax=0.0)
-# fname_erm_out = root_path + '/' + s + '/sss_fif/' + s + time +run + '_erm_otp_raw_sss_proj_f_ffr-cov'
-# mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
+epochs = mne.read_epochs(root_path + s + '/sss_fif/' + s + time + run + '_otp_raw_sss_proj_f_cABR_e.fif')
+epochs = mne.read_epochs(root_path + s + '/sss_fif/' + s + time + run + '_otp_raw_sss_proj_f80450_ffr_e_200.fif')
+
+noise_cov = mne.compute_covariance(epochs, tmin = None, tmax=0.0)
+fname_erm_out = root_path + '/' + s + '/sss_fif/' + s + time +run + '_erm_otp_raw_sss_proj_f_ffr-cov'
+fname_erm_out = root_path + '/' + s + '/sss_fif/' + s + time +run + '_erm_otp_raw_sss_proj_f80450_ffr-cov'
+mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
+
 
 #%%###### delete the cbs_118 from the group file
 # files = []
