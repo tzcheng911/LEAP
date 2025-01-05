@@ -80,13 +80,52 @@ def stats_SSEP(psds1,psds2,freqs,nonparametric):
         # print('t statistics: ' + str(t))
         print('p-value: ' + str(p))
 
-def convert_to_csv(data_type):
+def convert_Conn_to_csv(data_type,ROIs,n_analysis,n_folder,ROI1,ROI2):
     lm_np = []
     sub_col = [] 
     age_col = []
     cond_col = []
-    n_analysis = analysis[0]
-    n_folder = folders[0]
+    ROI_col = []
+    ages = ['7mo','11mo','br'] 
+    conditions = ['_02','_03','_04']
+    FOI = ['Delta', 'Theta', 'Alpha', 'Beta']
+
+    subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
+               '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/',
+               '/media/tzcheng/storage/BabyRhythm/']
+         
+    for n_age,age in enumerate(ages):
+        print(age)
+        for n_cond,cond in enumerate(conditions):
+            print(cond)
+            data0 = read_connectivity(root_path + n_folder + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+            freqs = data0.freqs
+            data0_conn = data0.get_data(output='dense')
+            data = np.vstack((data0_conn[:,ROI1,ROI2,ff(freqs,1):ff(freqs,4)].mean(axis=-1),
+                              data0_conn[:,ROI1,ROI2,ff(freqs,4):ff(freqs,8)].mean(axis=-1),
+                              data0_conn[:,ROI1,ROI2,ff(freqs,8):ff(freqs,12)].mean(axis=-1),
+                              data0_conn[:,ROI1,ROI2,ff(freqs,15):ff(freqs,30)].mean(axis=-1))).transpose() # delta, theta, alpha, beta total 4 cols
+            lm_np.append(data)
+            if age == 'br':
+                for file in os.listdir(subj_path[n_age]):
+                    if file.startswith('br_'):
+                        sub_col.append(file)
+                        cond_col.append(cond)
+                        age_col.append(age)
+            else:
+                for file in os.listdir(subj_path[n_age]):
+                    if file.startswith('me2_'):
+                        sub_col.append(file)
+                        cond_col.append(cond)
+                        age_col.append(age)
+    lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col,'Delta conn': np.concatenate(lm_np)[:,0], 'Theta conn': np.concatenate(lm_np)[:,1],'Alpha conn': np.concatenate(lm_np)[:,2],'Beta conn': np.concatenate(lm_np)[:,3]})
+    lm_df.to_csv(root_path + n_folder + 'connectivity_roi.csv')
+    
+def convert_to_csv(data_type,ROIs,n_analysis,n_folder):
+    lm_np = []
+    sub_col = [] 
+    age_col = []
+    cond_col = []
     ages = ['7mo','11mo','br'] 
     conditions = ['_02','_03','_04']
     subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
@@ -94,8 +133,6 @@ def convert_to_csv(data_type):
                '/media/tzcheng/storage/BabyRhythm/']
     if data_type == which_data_type[1] or data_type == which_data_type[2]:
         print('-----------------Extracting ROI data-----------------')
-
-        ROIs = ["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"]
         ROI_col = []
     
         for n_age,age in enumerate(ages):
@@ -156,7 +193,9 @@ def convert_to_csv(data_type):
 def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
     XX = conn1-conn2
     
-    if FOI == "Theta": # 4-8 Hz
+    if FOI == "Delta": # 1-4 Hz
+        X = XX[:,:,:,ff(freqs,1):ff(freqs,4)].mean(axis=3)
+    elif FOI == "Theta": # 4-8 Hz
         X = XX[:,:,:,ff(freqs,4):ff(freqs,8)].mean(axis=3)
     elif FOI == "Alpha": # 8-12 Hz
         X = XX[:,:,:,ff(freqs,8):ff(freqs,12)].mean(axis=3)
@@ -178,7 +217,7 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
       
     fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
     plot_connectivity_circle(
-    p,
+    1-p,
     ROI_names,
     n_lines=nlines, # plot the top n lines
     vmin=0.95, # correspond to p = 0.05
@@ -227,10 +266,10 @@ for n_age in age:
 
 #%%####################################### Analysis on the source level: ROI 
 data_type = which_data_type[2]
-n_analysis = analysis[0]
-n_folder = folders[0]
+n_analysis = analysis[5]
+n_folder = folders[3]
 nlines = 10
-FOI = 'Theta'
+FOI = 'Beta' # Delta, Theta, Alpha, Beta 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
     label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
@@ -260,6 +299,7 @@ if n_folder == 'connectivity/':
         stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis)
         print("-------------------Doing triple-------------------")
         stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
+        convert_Conn_to_csv(data_type,label_names,n_analysis,n_folder,1,0) # Connectivity between Auditory & Motor 
 
 for n_age in age:
     for n in nROI: 
@@ -280,15 +320,12 @@ for n_age in age:
             SSEP_duple = np.vstack((duple[:,n,[6,7]].mean(axis=1),duple[:,n,[12,13]].mean(axis=1),duple[:,n,[30,31]].mean(axis=1))).transpose()
             SSEP_triple = np.vstack((triple[:,n,[6,7]].mean(axis=1),triple[:,n,[12,13]].mean(axis=1),triple[:,n,[30,31]].mean(axis=1))).transpose()
             SSEP_all = np.vstack((SSEP_random,SSEP_duple,SSEP_triple))
-            convert_to_csv(data_type)
-          
         elif n_folder == 'decoding/':
             decoding = np.load(root_path + n_folder + n_age + '_' + n_analysis + '_roi_redo.npz') 
             all_score = decoding['all_score']
             scores_perm_array = decoding['scores_perm_array']
             ind = decoding['ind']
-
-                
+convert_to_csv(data_type,label_names,n_analysis,n_folder)
 # np.save(root_path + 'figures/ERSP_sig_ROI_duple.npy',np.asarray(ERSP_sig_ROI_duple))
 # np.save(root_path + 'figures/ERSP_sig_ROI_triple.npy',np.asarray(ERSP_sig_ROI_triple))
 
