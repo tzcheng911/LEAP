@@ -12,7 +12,7 @@ library(rstatix)
 library(car)
 
 ################################################################# Load the ROI data
-alldata = read.csv("SSEP_roi_redo.csv")
+alldata = read.csv("SSEP_roi5.csv")
 
 # recode to collapse left and right ROIs if needed ******be careful to overwrite******
 alldata = alldata %>%
