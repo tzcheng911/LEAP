@@ -42,6 +42,7 @@ outliers = alldata %>%
   group_by(condition,age) %>%
   identify_outliers(log_Alpha.conn) # change to Delta.conn, X1.67Hz and Alpha.conn
 alldata = filter(alldata, !(sub_id %in% unique(outliers$sub_id)))
+alldata = filter(alldata, !(sub_id %in% 'br_13')) # exclude br_13
 
 # check assumptions - Normality (p > 0.05) log_X3.3Hz failed
 alldata %>%
