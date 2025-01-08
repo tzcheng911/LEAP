@@ -12,7 +12,7 @@ library(rstatix)
 library(car)
 
 ################################################################# Load the ROI data
-alldata = read.csv("connectivity_roi.csv")
+alldata = read.csv("SSEP_roi5.csv")
 
 # recode to collapse left and right ROIs if needed ******be careful to overwrite******
 alldata = alldata %>%
@@ -45,12 +45,6 @@ summary_alldata = alldata %>%
   group_by(age,condition,ROI) %>%
   summarize(mMeterD = mean(X1.67Hz), mMeterT = mean(X1.11Hz), mBeat = mean(X3.3Hz),Nsubs=n_distinct(sub_id), 
             seMeterD = sd(X1.67Hz)/sqrt(Nsubs),seMeterT = sd(X1.11Hz)/sqrt(Nsubs),seBeat = sd(X3.3Hz)/sqrt(Nsubs))
-
-# Connectivity
-summary_alldata = alldata %>%
-  group_by(age,condition) %>%
-  summarize(mDeltaConn = mean(Delta.conn), mThetaConn = mean(Theta.conn), mAlphaConn = mean(Alpha.conn), mBetaConn = mean(Beta.conn),Nsubs=n_distinct(sub_id), 
-            seDeltaConn = sd(Delta.conn)/sqrt(Nsubs),seThetaConn = sd(Theta.conn)/sqrt(Nsubs),seAlphaConn = sd(Alpha.conn)/sqrt(Nsubs),seBetaConn = sd(Beta.conn)/sqrt(Nsubs))
 
 ## 2-way Mixed effect ANOVA 
 # check assumptions - outliers
