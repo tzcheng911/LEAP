@@ -121,9 +121,51 @@ one.way <- duple_random %>%
   adjust_pvalue(method = "bonferroni")
 one.way
 
+one.way <- duple_random %>%
+  group_by(condition) %>%
+  anova_test(dv = log_Theta.conn, wid = sub_id, between = age) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way
+
+one.way <- duple_random %>%
+  group_by(condition) %>%
+  anova_test(dv = log_Alpha.conn, wid = sub_id, between = age) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way
+
+one.way <- duple_random %>%
+  group_by(condition) %>%
+  anova_test(dv = log_Beta.conn, wid = sub_id, between = age) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way
+
 one.way <- triple_random %>%
   group_by(condition) %>%
   anova_test(dv = log_Delta.conn, wid = sub_id, between = age) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way
+
+one.way <- triple_random %>%
+  group_by(condition) %>%
+  anova_test(dv = log_Theta.conn, wid = sub_id, between = age) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way
+
+one.way <- triple_random %>%
+  group_by(condition) %>%
+  anova_test(dv = log_Alpha.conn, wid = sub_id, between = age) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way
+
+one.way <- triple_random %>%
+  group_by(condition) %>%
+  anova_test(dv = log_Beta.conn, wid = sub_id, between = age) %>%
   get_anova_table() %>%
   adjust_pvalue(method = "bonferroni")
 one.way
@@ -176,9 +218,39 @@ pwc <- duple_random %>%
   pairwise_t_test(log_Delta.conn ~ age, p.adjust.method = "bonferroni")
 pwc
 
+pwc <- duple_random %>%
+  group_by(condition) %>%
+  pairwise_t_test(log_Theta.conn ~ age, p.adjust.method = "bonferroni")
+pwc
+
+pwc <- duple_random %>%
+  group_by(condition) %>%
+  pairwise_t_test(log_Alpha.conn ~ age, p.adjust.method = "bonferroni")
+pwc
+
+pwc <- duple_random %>%
+  group_by(condition) %>%
+  pairwise_t_test(log_Beta.conn ~ age, p.adjust.method = "bonferroni")
+pwc
+
 pwc <- triple_random %>%
   group_by(condition) %>%
   pairwise_t_test(log_Delta.conn ~ age, p.adjust.method = "bonferroni")
+pwc
+
+pwc <- triple_random %>%
+  group_by(condition) %>%
+  pairwise_t_test(log_Theta.conn ~ age, p.adjust.method = "bonferroni")
+pwc
+
+pwc <- triple_random %>%
+  group_by(condition) %>%
+  pairwise_t_test(log_Alpha.conn ~ age, p.adjust.method = "bonferroni")
+pwc
+
+pwc <- triple_random %>%
+  group_by(condition) %>%
+  pairwise_t_test(log_Beta.conn ~ age, p.adjust.method = "bonferroni")
 pwc
 
 ## Visualization
@@ -201,6 +273,30 @@ ggplot(duple_random, aes(x = age, y = Alpha.conn, fill = condition)) +
   theme_bw()
 
 ggplot(duple_random, aes(x = age, y = Beta.conn, fill = condition)) +
+  geom_bar(stat="summary", position='dodge') +
+  stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
+  geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
+  theme_bw()
+
+ggplot(triple_random, aes(x = age, y = Delta.conn, fill = condition)) +
+  geom_bar(stat="summary", position='dodge') +
+  stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
+  geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
+  theme_bw()
+
+ggplot(triple_random, aes(x = age, y = Theta.conn, fill = condition)) +
+  geom_bar(stat="summary", position='dodge') +
+  stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
+  geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
+  theme_bw()
+
+ggplot(triple_random, aes(x = age, y = Alpha.conn, fill = condition)) +
+  geom_bar(stat="summary", position='dodge') +
+  stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
+  geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
+  theme_bw()
+
+ggplot(triple_random, aes(x = age, y = Beta.conn, fill = condition)) +
   geom_bar(stat="summary", position='dodge') +
   stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
   geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
