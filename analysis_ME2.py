@@ -180,7 +180,7 @@ if __name__ == '__main__':
             MEG = np.load(root_path + 'data/' + f_name + '.npy') 
             
             psds = do_SSEP(MEG, f_name, fmin=0.5, fmax=5, MEG_fs=MEG_fs)
-            tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
+            # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
             con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
             
             del MEG
