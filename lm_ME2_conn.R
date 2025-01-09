@@ -12,7 +12,7 @@ library(rstatix)
 library(car)
 
 ################################################################# Load the ROI data
-alldata = read.csv("connectivity_roi.csv")
+alldata = read.csv("AM_roi_redo5_conn_plv.csv")
 
 # log transform to achieve normality
 alldata = alldata %>% 
@@ -47,7 +47,7 @@ alldata = filter(alldata, !(sub_id %in% 'br_13')) # exclude br_13
 # check assumptions - Normality (p > 0.05) log_X3.3Hz failed
 alldata %>%
   group_by(condition,age) %>%
-  shapiro_test(log_Alpha.conn) # change to Delta.conn, X1.67Hz and X3.3Hz
+  shapiro_test(log_Beta.conn) # change to Delta.conn, X1.67Hz and X3.3Hz
 
 # check assumptions - Homogneity of variance (p > 0.05) log_X1.67Hz failed
 alldata %>%
@@ -121,6 +121,13 @@ one.way <- duple_random %>%
   adjust_pvalue(method = "bonferroni")
 one.way
 
+one.way <- triple_random %>%
+  group_by(condition) %>%
+  anova_test(dv = log_Delta.conn, wid = sub_id, between = age) %>%
+  get_anova_table() %>%
+  adjust_pvalue(method = "bonferroni")
+one.way
+
 ## pairwise comparison of age and condition
 # condition effect of each of the three ages
 pwc <- duple_random %>%
@@ -143,8 +150,33 @@ pwc <- duple_random %>%
   pairwise_t_test(log_Beta.conn ~ condition, p.adjust.method = "bonferroni")
 pwc
 
+pwc <- triple_random %>%
+  group_by(age) %>%
+  pairwise_t_test(log_Delta.conn ~ condition, p.adjust.method = "bonferroni")
+pwc
+
+pwc <- triple_random %>%
+  group_by(age) %>%
+  pairwise_t_test(log_Theta.conn ~ condition, p.adjust.method = "bonferroni")
+pwc
+
+pwc <- triple_random %>%
+  group_by(age) %>%
+  pairwise_t_test(log_Alpha.conn ~ condition, p.adjust.method = "bonferroni")
+pwc
+
+pwc <- triple_random %>%
+  group_by(age) %>%
+  pairwise_t_test(log_Beta.conn ~ condition, p.adjust.method = "bonferroni")
+pwc
+
 # age effect of each of the two conditions
 pwc <- duple_random %>%
+  group_by(condition) %>%
+  pairwise_t_test(log_Delta.conn ~ age, p.adjust.method = "bonferroni")
+pwc
+
+pwc <- triple_random %>%
   group_by(condition) %>%
   pairwise_t_test(log_Delta.conn ~ age, p.adjust.method = "bonferroni")
 pwc
@@ -156,19 +188,19 @@ ggplot(duple_random, aes(x = age, y = Delta.conn, fill = condition)) +
   geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
   theme_bw()
 
-ggplot(triple_random, aes(x = age, y = Theta.conn, fill = condition)) +
+ggplot(duple_random, aes(x = age, y = Theta.conn, fill = condition)) +
   geom_bar(stat="summary", position='dodge') +
   stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
   geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
   theme_bw()
 
-ggplot(alldata, aes(x = age, y = Alpha.conn, fill = condition)) +
+ggplot(duple_random, aes(x = age, y = Alpha.conn, fill = condition)) +
   geom_bar(stat="summary", position='dodge') +
   stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
   geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
   theme_bw()
 
-ggplot(alldata, aes(x = age, y = Beta.conn, fill = condition)) +
+ggplot(duple_random, aes(x = age, y = Beta.conn, fill = condition)) +
   geom_bar(stat="summary", position='dodge') +
   stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
   geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
