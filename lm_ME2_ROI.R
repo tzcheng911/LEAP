@@ -67,10 +67,11 @@ alldata %>%
 box_m(alldata[,"log_X3.3Hz",drop=FALSE],alldata$age)
 
 ################################################################# run ANOVA
-which_ROI = "Motor" # AuditoryL,AuditoryR,MotorL,MotorR,SensoryL,SensoryR,BGL,BGR,IFGL,IFGR, or the recode ROI without L/R
+which_ROI = "BG" # AuditoryL,AuditoryR,MotorL,MotorR,SensoryL,SensoryR,BGL,BGR,IFGL,IFGR, or the recode ROI without L/R
 
 duple_random = filter(alldata,condition != "_04", ROI == which_ROI)
 # summary(aov(log_X1.67Hz ~ age*condition+Error(sub_id/condition),data=duple_random)) # account for subj and condition effect
+triple_random = filter(alldata,condition != "_03", ROI == which_ROI)
 
 res.aov <- anova_test(
   data = duple_random, dv = log_X1.67Hz, wid = sub_id,
@@ -85,7 +86,6 @@ res.aov <- anova_test(
 )
 get_anova_table(res.aov)
 
-triple_random = filter(alldata,condition != "_03", ROI == which_ROI)
 res.aov <- anova_test(
   data = triple_random, dv = log_X1.11Hz, wid = sub_id,
   between = age, within = condition
@@ -174,18 +174,28 @@ ggplot(duple_random, aes(x = age, y = X1.67Hz, fill = condition)) +
   geom_bar(stat="summary", position='dodge') +
   stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
   geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
+#  ylim(0,2.5)+
   theme_bw()
 
 ggplot(triple_random, aes(x = age, y = X1.11Hz, fill = condition)) +
   geom_bar(stat="summary", position='dodge') +
   stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
   geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
+#  ylim(0,2.5)+
   theme_bw()
 
-ggplot(alldata, aes(x = age, y = X3.3Hz, fill = condition)) +
+ggplot(duple_random, aes(x = age, y = X3.3Hz, fill = condition)) +
   geom_bar(stat="summary", position='dodge') +
   stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
   geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
+#  ylim(0,5)+
+  theme_bw()
+
+ggplot(triple_random, aes(x = age, y = X3.3Hz, fill = condition)) +
+  geom_bar(stat="summary", position='dodge') +
+  stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
+  geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
+#  ylim(0,5)+
   theme_bw()
 
 ## 2-way Mixed effect lmer
