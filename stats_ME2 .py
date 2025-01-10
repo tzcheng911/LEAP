@@ -101,11 +101,12 @@ def convert_Conn_to_csv(data_type,ROIs,n_analysis,n_folder,ROI1,ROI2):
             data0 = read_connectivity(root_path + n_folder + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type + n_analysis) 
             freqs = data0.freqs
             data0_conn = data0.get_data(output='dense')
-            print(np.shape(data0))
+            print(np.shape(data0_conn))
             data = np.vstack((data0_conn[:,ROI1,ROI2,ff(freqs,1):ff(freqs,4)].mean(axis=-1),
                               data0_conn[:,ROI1,ROI2,ff(freqs,4):ff(freqs,8)].mean(axis=-1),
                               data0_conn[:,ROI1,ROI2,ff(freqs,8):ff(freqs,12)].mean(axis=-1),
-                              data0_conn[:,ROI1,ROI2,ff(freqs,15):ff(freqs,30)].mean(axis=-1))).transpose() # delta, theta, alpha, beta total 4 cols
+                              data0_conn[:,ROI1,ROI2,ff(freqs,15):ff(freqs,30)].mean(axis=-1),
+                              data0_conn[:,ROI1,ROI2,:].mean(axis=-1))).transpose() # delta, theta, alpha, beta total 4 cols
             lm_np.append(data)
             if age == 'br':
                 for file in os.listdir(subj_path[n_age]):
@@ -119,7 +120,12 @@ def convert_Conn_to_csv(data_type,ROIs,n_analysis,n_folder,ROI1,ROI2):
                         sub_col.append(file)
                         cond_col.append(cond)
                         age_col.append(age)
-    lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col,'Delta conn': np.concatenate(lm_np)[:,0], 'Theta conn': np.concatenate(lm_np)[:,1],'Alpha conn': np.concatenate(lm_np)[:,2],'Beta conn': np.concatenate(lm_np)[:,3]})
+    lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col,
+                          'Delta conn': np.concatenate(lm_np)[:,0], 
+                          'Theta conn': np.concatenate(lm_np)[:,1],
+                          'Alpha conn': np.concatenate(lm_np)[:,2],
+                          'Beta conn': np.concatenate(lm_np)[:,3],
+                          'Broadband conn': np.concatenate(lm_np)[:,4]})
     lm_df.to_csv(root_path + n_folder + 'AM' + data_type + n_analysis + '.csv')
     
 def convert_to_csv(data_type,ROIs,n_analysis,n_folder):
@@ -268,9 +274,10 @@ for n_age in age:
     convert_to_csv(data_type)
 
 #%%####################################### Analysis on the source level: ROI 
-data_type = which_data_type[2]
-n_analysis = analysis[0]
-n_folder = folders[0]
+n_folder = folders[3]
+n_analysis = analysis[3]
+data_type = which_data_type[1]
+
 nlines = 10
 FOI = 'Beta' # Delta, Theta, Alpha, Beta 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
@@ -289,7 +296,7 @@ elif data_type == '_roi_redo_':
 # roi_redo pools ROIs to be 6 new_ROIs = {"Auditory": [72,108], "Motor": [66,102], "Sensory": [64,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98],  "Posterior": [50,86,71,107]}
 
 if n_folder == 'connectivity/':
-    convert_Conn_to_csv(data_type,label_names,n_analysis,n_folder,2,0) # Connectivity between Auditory & Motor 
+    convert_Conn_to_csv(data_type,label_names,n_analysis,n_folder,3,1) # Connectivity between Auditory & Motor 
     for n_age in age:
         print("Doing connectivity " + n_age)
         random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
