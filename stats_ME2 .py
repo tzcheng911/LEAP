@@ -10,6 +10,7 @@ Input: .npy files in the "analyzed data" i.e. SSEP, ERSP, decoding, connectivity
 """
 #%%####################################### Import library  
 import os
+import pickle
 import statsmodels.api as sm
 import pandas as pd
 import numpy as np
@@ -80,6 +81,27 @@ def stats_SSEP(psds1,psds2,freqs,nonparametric):
         # print('t statistics: ' + str(t))
         print('p-value: ' + str(p))
 
+def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold,src,freqs):
+    print("Computing adjacency.")
+    adjacency = mne.spatial_src_adjacency(src)
+    
+    ## set the cluster settings 
+    df = np.shape(X)[0] - 1  # degrees of freedom for the test
+    t_threshold = stats.distributions.t.ppf(1 - p_threshold / 2, df=df)
+    X = np.transpose(X,(0,2,1)) # subj, time, space            
+    T_obs, clusters, cluster_p_values, H0 = clu = mne.stats.spatio_temporal_cluster_1samp_test(
+        X,
+        seed=0,
+        adjacency=adjacency,
+        n_jobs=None,
+        threshold=t_threshold,
+        buffer_size=None,
+        verbose=True,
+    )
+    filename = root_path + n_folder + n_age + '_SSEP_wholebrain_cluster_test_' + n_meter +'.pkl'
+    with open(filename, 'wb') as f:
+        pickle.dump(clu, f) # clu: clustering results of T_obs, clusters, cluster_p_values, H0
+        
 def convert_Conn_to_csv(data_type,ROIs,n_analysis,n_folder,ROI1,ROI2):
     lm_np = []
     sub_col = [] 
@@ -236,7 +258,6 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
     title= title + " 1-p-value " + FOI,
     ax=ax)
     fig.tight_layout() 
-# def stats_age_effect():
         
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
@@ -245,8 +266,8 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 #%% Parameters
 age = ['7mo','11mo','br'] 
 folders = ['SSEP/','ERSP/','decoding/','connectivity/'] # random, duple, triple
-analysis = ['psds','bc_percent_power','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
-which_data_type = ['_sensor_','_roi_','_roi_redo_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
+analysis = ['psds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
+which_data_type = ['_sensor_','_roi_','_roi_redo5_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
 
 #%%####################################### Analysis on the sensor level 
 data_type = which_data_type[0]
@@ -276,7 +297,7 @@ for n_age in age:
 #%%####################################### Analysis on the source level: ROI 
 n_folder = folders[3]
 n_analysis = analysis[3]
-data_type = which_data_type[1]
+data_type = which_data_type[2]
 
 nlines = 10
 FOI = 'Beta' # Delta, Theta, Alpha, Beta 
@@ -285,8 +306,8 @@ if data_type == '_roi_':
     label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
     nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
 elif data_type == '_roi_redo_':
-    label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
-    # label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
+    # label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
+    label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
     nROI = np.arange(0,len(label_names),1)
 
 # Auditory (STG 72,108, HG 76,112), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
@@ -296,7 +317,7 @@ elif data_type == '_roi_redo_':
 # roi_redo pools ROIs to be 6 new_ROIs = {"Auditory": [72,108], "Motor": [66,102], "Sensory": [64,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98],  "Posterior": [50,86,71,107]}
 
 if n_folder == 'connectivity/':
-    convert_Conn_to_csv(data_type,label_names,n_analysis,n_folder,3,1) # Connectivity between Auditory & Motor 
+    convert_Conn_to_csv(data_type,label_names,n_analysis,n_folder,1,0) # Connectivity between Auditory & Motor 
     for n_age in age:
         print("Doing connectivity " + n_age)
         random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
@@ -339,14 +360,30 @@ convert_to_csv(data_type,label_names,n_analysis,n_folder)
 # np.save(root_path + 'figures/ERSP_sig_ROI_duple.npy',np.asarray(ERSP_sig_ROI_duple))
 # np.save(root_path + 'figures/ERSP_sig_ROI_triple.npy',np.asarray(ERSP_sig_ROI_triple))
 
-#%%####################################### Analysis on the source level: wholebrain 
-n_age = age[2]
+#%%####################################### Analysis on the source level: wholebrain SSEP and decoding
+data_type = which_data_type[-1]
+n_analysis = analysis[0]
+n_folder = folders[0]
+
+## set up the template brain
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+p_threshold = 0.001 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 
-decoding = np.load(root_path + n_folder + n_age + '_' + n_analysis + '_morph.npz') 
-all_score = decoding['all_score']
-scores_perm_array = decoding['scores_perm_array']
-ind = decoding['ind']
-stc1.data=np.array([all_score,all_score]).transpose()
-stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
+for n_age in age:
+    print("Doing age " + n_age)
+    random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
+    duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
+    triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
+    random = random0[random0.files[0]]
+    duple = duple0[duple0.files[0]]
+    triple = triple0[triple0.files[0]]
+    freqs = random0[random0.files[1]] 
+
+    duple_random = duple-random
+    triple_random = triple-random         
+        
+    wholebrain_spatio_temporal_cluster_test(duple_random,'duple',n_age,n_folder,p_threshold,src,freqs)
+    wholebrain_spatio_temporal_cluster_test(triple_random,'triple',n_age,n_folder,p_threshold,src,freqs)
+        
+#%%####################################### Correlation Analysis
