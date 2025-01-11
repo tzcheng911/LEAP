@@ -921,7 +921,7 @@ fmax=fmax,)
 FOI = [6,7, 12,13, 30,31] # beat rate, meter rate, mu, beta
 print("Computing adjacency.")
 adjacency = mne.spatial_src_adjacency(src)
-p_threshold = 0.001
+p_threshold = 0.001 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 df = np.shape(MEG_duple)[0] - 1  # degrees of freedom for the test
 t_threshold = stats.distributions.t.ppf(1 - p_threshold / 2, df=df)
 
