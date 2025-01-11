@@ -20,7 +20,7 @@ from mne.time_frequency import tfr_morlet, tfr_multitaper, tfr_stockwell, Averag
 from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time,read_connectivity
 from mne_connectivity.viz import plot_connectivity_circle
 from mne.viz import circular_layout
-
+import pickle
 import matplotlib.pyplot as plt 
 
 #%%####################################### Define functions
@@ -113,8 +113,8 @@ plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 
 #%% Parameters
 age = ['7mo','11mo','br'] 
-folders = ['SSEP/','ERSP/','decoding/','connectivity/'] # random, duple, triple
-analysis = ['psds','bc_percent_power','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
+folders = ['SSEP/','decoding/','connectivity/'] # random, duple, triple
+analysis = ['psds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
 which_data_type = ['_sensor_','_roi_','_roi_redo_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
 
 #%%####################################### Visualize the sensor level 
@@ -205,20 +205,33 @@ for n_age in age:
                 print(decoding_triple[n])
 
 #%%####################################### Visualize the source level: wholebrain 
-n_age = age [0]
-n_folder = folders[2]
-data_type = which_data_type[2]
-
-decoding_duple = np.load(root_path + n_folder + n_age + data_type +'decodingACC_duple.npy') 
-decoding_triple = np.load(root_path + n_folder + n_age + data_type +'decodingACC_triple.npy') 
+data_type = which_data_type[-1]
+n_analysis = analysis[1]
+n_folder = folders[1]
+n_meter = 'triple' # 'duple' or 'triple'
+## set up the template brain
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+fsave_vertices = [s["vertno"] for s in src]
+p_threshold = 0.001 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 
-# all_score = decoding['all_score']
-# scores_perm_array = decoding['scores_perm_array']
-# ind = decoding['ind']
-stc1.data=np.array([decoding_duple,decoding_duple]).transpose()
-stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
+for n_age in age:
+    if n_folder == 'SSEP/':
+        with open(root_path + n_folder + n_age + '_SSEP_wholebrain_cluster_test_' + n_meter + '.pkl', 'rb') as f:
+            clu = pickle.load(f)
+        good_cluster_inds = np.where(clu[2] < 0.01)[0]
+        good_clusters = [clu[1][idx] for idx in good_cluster_inds]
 
-stc1.data=np.array([decoding_triple,decoding_triple]).transpose()
-stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
+        for c in good_clusters:
+            print(c[0])
+
+        stc_all_cluster_vis = summarize_clusters_stc(
+            clu, p_thresh = 0.01, vertices=fsave_vertices, subject="fsaverage"
+        )
+        stc_all_cluster_vis.plot(src=src,clim=dict(kind="percent",lims=[99.7,99.75,99.975])) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
+
+    elif n_folder == 'decoding/':
+        decoding_acc = np.load(root_path + n_folder + n_age + data_type + 'decodingACC_' + n_meter +'.npy') 
+        stc1.data = np.array([decoding_acc,decoding_acc]).transpose()
+        stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
+        
