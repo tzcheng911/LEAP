@@ -18,6 +18,7 @@ import time
 import random
 import copy
 import scipy.stats as stats
+from scipy.stats import pearsonr
 from scipy import stats,signal
 from scipy.io import wavfile
 import mne
@@ -386,4 +387,47 @@ for n_age in age:
     wholebrain_spatio_temporal_cluster_test(duple_random,'duple',n_age,n_folder,p_threshold,src,freqs)
     wholebrain_spatio_temporal_cluster_test(triple_random,'triple',n_age,n_folder,p_threshold,src,freqs)
         
-#%%####################################### Correlation Analysis
+#%%##### Correlation analysis between neural responses and CDI
+## Extract variables
+n_folder = folders[3]
+n_analysis = analysis[3]
+data_type = which_data_type[2]
+
+nlines = 10
+FOI = 'Beta' # Delta, Theta, Alpha, Beta 
+fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+if data_type == '_roi_':
+    label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+    nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
+elif data_type == '_roi_redo_':
+    # label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
+    label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
+    nROI = np.arange(0,len(label_names),1)
+    
+if n_folder == 'connectivity/':
+    for n_age in age:
+        print("Doing connectivity " + n_age)
+        random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+        duple = read_connectivity(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+        triple = read_connectivity(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+        freqs = random.freqs
+        random_conn = random.get_data(output='dense')
+        duple_conn = duple.get_data(output='dense')
+        triple_conn = triple.get_data(output='dense')
+        
+for n_age in age:
+    for n in nROI: 
+        print("Doing ROI SSEP: " + label_names[n])
+        if n_folder == 'SSEP/':
+            random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
+            duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
+            triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
+            random = random0[random0.files[0]]
+            duple = duple0[duple0.files[0]]
+            triple = triple0[triple0.files[0]]
+            freqs = random0[random0.files[1]]   
+            
+## Check the subjects who have CDI 
+CDI_WG = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=0)
+CDI_WS = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=2)
+corr_p = pearsonr(MEG, CDI_WS)
