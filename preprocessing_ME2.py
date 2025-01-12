@@ -278,8 +278,8 @@ def do_epoch(data, subject, run, events):
     return evoked,epochs_cortical
 
 ########################################
-root_path='/media/tzcheng/storage/BabyRhythm/'
-# root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
+# root_path='/media/tzcheng/storage/BabyRhythm/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
 os.chdir(root_path)
 
 #%%## parameters 
@@ -290,7 +290,7 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('br_'): 
+    if file.startswith('me2_'): 
         subjects.append(file)
 
 ## check if there is prebad txt with the raw data: 49 subjects don't have it
