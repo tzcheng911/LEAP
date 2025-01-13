@@ -265,7 +265,7 @@ root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 #%% Parameters
-age = ['7mo','11mo','br'] 
+ages = ['7mo','11mo','br'] 
 folders = ['SSEP/','ERSP/','decoding/','connectivity/'] # random, duple, triple
 analysis = ['psds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
 which_data_type = ['_sensor_','_roi_','_roi_redo5_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
@@ -319,7 +319,7 @@ elif data_type == '_roi_redo_':
 
 if n_folder == 'connectivity/':
     convert_Conn_to_csv(data_type,label_names,n_analysis,n_folder,1,0) # Connectivity between Auditory & Motor 
-    for n_age in age:
+    for n_age in ages:
         print("Doing connectivity " + n_age)
         random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
         duple = read_connectivity(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis) 
@@ -333,7 +333,7 @@ if n_folder == 'connectivity/':
         print("-------------------Doing triple-------------------")
         stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
 
-for n_age in age:
+for n_age in ages:
     for n in nROI: 
         print("Doing ROI SSEP: " + label_names[n])
         if n_folder == 'SSEP/':
@@ -371,7 +371,7 @@ stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 p_threshold = 0.001 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 
-for n_age in age:
+for n_age in ages:
     print("Doing age " + n_age)
     random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
     duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
@@ -388,7 +388,16 @@ for n_age in age:
     wholebrain_spatio_temporal_cluster_test(triple_random,'triple',n_age,n_folder,p_threshold,src,freqs)
         
 #%%##### Correlation analysis between neural responses and CDI
-## Extract variables
+subj_all = []
+subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
+           '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/']
+for n_age,age in enumerate(ages[:-1]):# only need the me2_7m and me2_11m
+    for file in os.listdir(subj_path[n_age]):
+        if file.startswith('me2_'):
+            subj_all.append(file[:-3]) # get ride of the _7m or _ 11m
+
+######## Extract variables to do correlation
+## Neural measurements
 n_folder = folders[3]
 n_analysis = analysis[3]
 data_type = which_data_type[2]
@@ -427,7 +436,10 @@ for n_age in age:
             triple = triple0[triple0.files[0]]
             freqs = random0[random0.files[1]]   
             
-## Check the subjects who have CDI 
+## CDI score
 CDI_WG = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=0)
 CDI_WS = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=2)
+# select the subjects who has neural data 
+
+
 corr_p = pearsonr(MEG, CDI_WS)
