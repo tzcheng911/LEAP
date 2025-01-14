@@ -265,6 +265,7 @@ root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 #%% Parameters
+conditions = ['_02','_03','_04']
 ages = ['7mo','11mo','br'] 
 folders = ['SSEP/','ERSP/','decoding/','connectivity/'] # random, duple, triple
 analysis = ['psds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
@@ -387,23 +388,8 @@ for n_age in ages:
     wholebrain_spatio_temporal_cluster_test(duple_random,'duple',n_age,n_folder,p_threshold,src,freqs)
     wholebrain_spatio_temporal_cluster_test(triple_random,'triple',n_age,n_folder,p_threshold,src,freqs)
         
-#%%##### Correlation analysis between neural responses and CDI
-subj_all = []
-subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
-           '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/']
-for n_age,age in enumerate(ages[:-1]):# only need the me2_7m and me2_11m
-    for file in os.listdir(subj_path[n_age]):
-        if file.startswith('me2_'):
-            subj_all.append(file[:-3]) # get ride of the _7m or _ 11m
-
-######## Extract variables to do correlation
-## Neural measurements
-n_folder = folders[3]
-n_analysis = analysis[3]
+#%%##### Correlation analysis between neural responses and CDI   
 data_type = which_data_type[2]
-
-nlines = 10
-FOI = 'Beta' # Delta, Theta, Alpha, Beta 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
     label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
@@ -413,33 +399,66 @@ elif data_type == '_roi_redo_':
     label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
     nROI = np.arange(0,len(label_names),1)
     
-if n_folder == 'connectivity/':
-    for n_age in age:
-        print("Doing connectivity " + n_age)
-        random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
-        duple = read_connectivity(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis) 
-        triple = read_connectivity(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis) 
-        freqs = random.freqs
-        random_conn = random.get_data(output='dense')
-        duple_conn = duple.get_data(output='dense')
-        triple_conn = triple.get_data(output='dense')
-        
-for n_age in age:
-    for n in nROI: 
-        print("Doing ROI SSEP: " + label_names[n])
-        if n_folder == 'SSEP/':
-            random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
-            duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
-            triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
-            random = random0[random0.files[0]]
-            duple = duple0[duple0.files[0]]
-            triple = triple0[triple0.files[0]]
-            freqs = random0[random0.files[1]]   
-            
+subj_7mo = []
+subj_11mo = []
+subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
+           '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/']
+for n_age,age in enumerate(ages[:-1]):# only need the me2_7m and me2_11m
+    for file in os.listdir(subj_path[n_age]):
+        if file.endswith('7m'):
+            subj_7mo.append(file[:-3]) # get rid of the _7m
+        elif file.endswith('11m'):
+            subj_11mo.append(file[:-4]) # get rid of the _11m
+        else:
+            print('check the file')
+
+######## Extract variables to do correlation
 ## CDI score
-CDI_WG = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=0)
-CDI_WS = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=2)
-# select the subjects who has neural data 
+CDI_WG0 = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=0)
+CDI_WS0 = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=2)
+
+CDI_WG_7mo = CDI_WG0[CDI_WG0['ParticipantId'].isin(subj_7mo)] # select the subjects who has neural data 
+CDI_WG_11mo = CDI_WG0[CDI_WG0['ParticipantId'].isin(subj_11mo)] # select the subjects who has neural data 
+CDI_WS_7mo = CDI_WS0[CDI_WS0['ParticipantId'].isin(subj_7mo)] # select the subjects who has neural data 
+CDI_WS_11mo = CDI_WS0[CDI_WS0['ParticipantId'].isin(subj_11mo)] # select the subjects who has neural data 
+
+######## decide variables for correlation
+CDI_score = 'VOCAB' # WG('UWORDS','PWORDS','UWRDPER','PWRDPER'), WS('M3L','VOCAB')
+CDIAge = 24 # WG(12, 15), WS(18,21,24,27,30)
+# CDI = CDI_WG_7mo[CDI_WG_7mo['CDIAge'] == CDIAge][CDI_score]
+CDI = CDI_WS_7mo[CDI_WS_7mo['CDIAge'] == CDIAge][CDI_score]
+
+# Subjects who has neural data but does not have CDI data: 7mo ('me2_203', 'me2_120', 'me2_117')
+subj_noCDI = list(set(subj_7mo) - set(CDI_WG0['ParticipantId'])) # same result in list(set(subj_all) - set(CDI_WS0['ParticipantId']))   
+subj_noCDI_ind = [2,8,25] # CAUTION hardcoded manual input here, check if this is the data storing order for 7mo in group_ME2.py (confirmed 2025/1/13 Zoe)
+
+## Neural measurements: conn
+age = '7mo'
+for n_cond,cond in enumerate(conditions):
+    conn0 = read_connectivity(root_path + 'connectivity/' + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type + 'conn_plv') 
+    conn = conn0.get_data(output='dense')
+    conn = np.delete(conn,subj_noCDI_ind,axis=0) # delete the 3 subjects 'me2_203', 'me2_120', 'me2_117' who don't have CDI
+    conn_theta = conn[:,2,1,ff(conn0.freqs,4):ff(conn0.freqs,8)].mean(-1)
+    conn_alpha = conn[:,2,1,ff(conn0.freqs,8):ff(conn0.freqs,12)].mean(-1)
+    
+    plt.figure()
+    plt.scatter(conn_theta,CDI)
+    print(pearsonr(conn_theta, CDI))
+    print(pearsonr(conn_alpha, CDI))
 
 
+age = '11mo'
+for n_cond,cond in enumerate(conditions):
+    conn0 = read_connectivity(root_path + 'connectivity/' + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type + 'conn_plv') 
+    conn = conn0.get_data(output='dense')
+    conn0.freqs
+
+## Neural measurements: SSEP
+for n in nROI: 
+    for n_cond,cond in enumerate(conditions):
+        SSEP0 = np.load(root_path + 'SSEP/' + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type +'psds.npz') 
+        SSEP = SSEP0[SSEP0.files[0]]
+        psds[psds.files[1]] 
+        
+## calculate correlation
 corr_p = pearsonr(MEG, CDI_WS)
