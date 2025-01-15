@@ -198,6 +198,7 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_126': ['MEG0312', 'MEG1712'],
     'sld_127': ['MEG0312', 'MEG1712'],
     'sld_129': ['MEG0312', 'MEG1712'],
+    'sld_131': ['MEG0323', 'MEG2513','MEG0713', 'MEG0733'],
     }
     if time == '_t1':
         params.mf_prebad = t1_prebad
@@ -349,7 +350,7 @@ os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = '_t1' # first time (6 mo) '_t1' or second time (12 mo) '_t2' or third time (14mo) '_t3' coming back, or 0 for cbs
+time = '_t3' # first time (6 mo) '_t1' or second time (12 mo) '_t2' or third time (14mo) '_t3' coming back, or 0 for cbs
 direction = "ba_to_pa"
 do_cabr = False # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
@@ -360,7 +361,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld_105'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = ['sld_152']
+subjects = ['sld_131']
 
 #%%###### do the jobs
 for s in subjects:
@@ -392,13 +393,13 @@ for s in subjects:
         del raw,raw_erm,raw_filt,raw_erm_filt
 
 #%%###### get the cbsb_118 cov from the baseline
-epochs = mne.read_epochs(root_path + s + '/sss_fif/' + s + time + run + '_otp_raw_sss_proj_f_cABR_e.fif')
-epochs = mne.read_epochs(root_path + s + '/sss_fif/' + s + time + run + '_otp_raw_sss_proj_f80450_ffr_e_200.fif')
+# epochs = mne.read_epochs(root_path + s + '/sss_fif/' + s + time + run + '_otp_raw_sss_proj_f_cABR_e.fif')
+# epochs = mne.read_epochs(root_path + s + '/sss_fif/' + s + time + run + '_otp_raw_sss_proj_f80450_ffr_e_200.fif')
 
-noise_cov = mne.compute_covariance(epochs, tmin = None, tmax=0.0)
-fname_erm_out = root_path + '/' + s + '/sss_fif/' + s + time +run + '_erm_otp_raw_sss_proj_f_ffr-cov'
-fname_erm_out = root_path + '/' + s + '/sss_fif/' + s + time +run + '_erm_otp_raw_sss_proj_f80450_ffr-cov'
-mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
+# noise_cov = mne.compute_covariance(epochs, tmin = None, tmax=0.0)
+# fname_erm_out = root_path + '/' + s + '/sss_fif/' + s + time +run + '_erm_otp_raw_sss_proj_f_ffr-cov'
+# fname_erm_out = root_path + '/' + s + '/sss_fif/' + s + time +run + '_erm_otp_raw_sss_proj_f80450_ffr-cov'
+# mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
 
 
 #%%###### delete the cbs_118 from the group file
