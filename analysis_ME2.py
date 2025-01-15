@@ -85,8 +85,9 @@ def do_connectivity(data, f_name, fmin, fmax, f_step, MEG_fs, directional):
         con_methods = ["gc"]
         con = spectral_connectivity_time(
             data,
-            indices = (np.array([[2, 3], [2, 3], [7, 26], [8,27], [0, 1], [71, 107],[2, 3],[2, 3]]),  # seeds
-            np.array([[0, 1], [71, 107],[2, 3],[2, 3],[2, 3], [2, 3], [7, 26], [8,27]])),  # targets
+            # indices = (np.array([[2, 3], [2, 3], [7, 26], [8,27], [0, 1], [71, 107],[2, 3],[2, 3]]),  # seeds
+            # np.array([[0, 1], [71, 107],[2, 3],[2, 3],[2, 3], [2, 3], [7, 26], [8,27]])),  # targets
+            indices = (np.array([[0]]),np.array([[1]])),  # Auditory to Motor
             freqs = freqs,
             method=con_methods,
             mode="multitaper", # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
@@ -95,7 +96,21 @@ def do_connectivity(data, f_name, fmin, fmax, f_step, MEG_fs, directional):
             fmax=fmax,
             faverage=False,
             n_jobs=1,)
-        con.save(root_path + 'connectivity/' + f_name + 'GC')
+        con.save(root_path + 'connectivity/' + f_name + '_conn_GC_AM')
+        con = spectral_connectivity_time(
+            data,
+            # indices = (np.array([[2, 3], [2, 3], [7, 26], [8,27], [0, 1], [71, 107],[2, 3],[2, 3]]),  # seeds
+            # np.array([[0, 1], [71, 107],[2, 3],[2, 3],[2, 3], [2, 3], [7, 26], [8,27]])),  # targets
+            indices = (np.array([[1]]),np.array([[0]])),  # # Motor to Auditory
+            freqs = freqs,
+            method=con_methods,
+            mode="multitaper", # if using cwt_morlet, add cwt_freqs = nfreq = np.array([1,2,3,4,5])
+            sfreq=MEG_fs,
+            fmin=fmin,
+            fmax=fmax,
+            faverage=False,
+            n_jobs=1,)
+        con.save(root_path + 'connectivity/' + f_name + '_conn_GC_MA')
     else:
         con_methods = ["plv","coh","pli"]
         con = spectral_connectivity_time( # Compute frequency- and time-frequency-domain connectivity measures
@@ -179,9 +194,9 @@ if __name__ == '__main__':
                 f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + data_type 
             MEG = np.load(root_path + 'data/' + f_name + '.npy') 
             
-            psds = do_SSEP(MEG, f_name, fmin=0.5, fmax=5, MEG_fs=MEG_fs)
+            # psds = do_SSEP(MEG, f_name, fmin=0.5, fmax=5, MEG_fs=MEG_fs)
             # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
-            con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
+            con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=True)
             
             del MEG
 
