@@ -212,25 +212,26 @@ def extract_CDI(MEGAge,CDIAge,CDIscore):
     for n_age,age in enumerate(ages):# only need the me2_7m and me2_11m
         for file in os.listdir(subj_path[n_age]):
             if file.endswith('7m'):
-                print('append ' + file[:-3])
+                print('append ' + file)
                 subj_7mo.append(file[:-3]) 
             elif file.endswith('11m'):
-                print('append ' + file[:-4])
+                print('append ' + file)
                 subj_11mo.append(file[:-4])
 
     ## Select subjects CDI score for those who have neural data
+    CDI_WG0 = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=0)
     CDI_WS0 = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=2)
     CDI_WS_7mo = CDI_WS0[CDI_WS0['ParticipantId'].isin(subj_7mo)] # select the subjects who has neural data 
     CDI_WS_11mo = CDI_WS0[CDI_WS0['ParticipantId'].isin(subj_11mo)] # select the subjects who has neural data 
     
     ## De-select subjects who has neural data but does not have CDI data: 7mo ('me2_203', 'me2_120', 'me2_117')
-    subj_noCDI = list(set(subj_7mo) - set(CDI_WG0['ParticipantId'])) # same result in list(set(subj_all) - set(CDI_WS0['ParticipantId']))   
+    subj_noCDI = list(set(subj_7mo) - set(CDI_WS0['ParticipantId'])) # same result in list(set(subj_all) - set(CDI_WG0['ParticipantId']))   
     subj_noCDI_ind = [2,8,25] # CAUTION hardcoded manual input here, check if this is the data storing order for 7mo in group_ME2.py (confirmed 2025/1/13 Zoe)
-
     if MEGAge == '7mo':
         CDI = CDI_WS_7mo[CDI_WS_7mo['CDIAge'] == CDIAge][CDIscore]
     elif MEGAge == '11mo':
         CDI = CDI_WS_11mo[CDI_WS_11mo['CDIAge'] == CDIAge][CDIscore]
+    return CDI, subj_noCDI
 
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
@@ -326,7 +327,7 @@ for n_age in ages:
     stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
 
 #%%####################################### Correlation analysis between neural responses and CDI   
-CDI = extract_CDI('7mo',27,'VOCAB')
+CDI,subj_noCDI = extract_CDI('7mo',27,'VOCAB')
 MEG = extract_MEG('7mo','_roi_redo5_','psds','_03')
 
 data_type = which_data_type[2]
