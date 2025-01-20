@@ -14,44 +14,15 @@ Currently don't have the computing power to run ERSP and conn on the whole brain
 
 #%%####################################### Import library  
 import numpy as np
-import time
 import random
-import copy
-import scipy.stats as stats
-from scipy import stats,signal
-from scipy.io import wavfile
 import mne
-from mne import spatial_src_adjacency
-from mne.stats import spatio_temporal_cluster_1samp_test, summarize_clusters_stc
-from mne.time_frequency import tfr_morlet, tfr_multitaper, tfr_stockwell, AverageTFRArray
-from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time,read_connectivity
-from mne_connectivity.viz import plot_connectivity_circle
-from mne.viz import circular_layout
-from mne.decoding import (
-    SlidingEstimator,
-    GeneralizingEstimator,
-    Scaler,
-    cross_val_multiscore,
-    LinearModel,
-    get_coef,
-    Vectorizer,
-    CSP,
-)
+from mne.decoding import cross_val_multiscore
+from mne_connectivity import spectral_connectivity_time
 import os
-import sklearn 
-from sklearn.decomposition import PCA, FastICA
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.model_selection import StratifiedKFold, LeaveOneOut
-from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.svm import SVC
-import matplotlib.pyplot as plt 
-
-#%%####################################### Set path
-root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
-subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 #%%####################################### Define functions
 def do_SSEP(data, f_name, fmin, fmax, MEG_fs):  
@@ -201,12 +172,13 @@ def redo_ROI(new_ROI): ## still working on this function
             for index, ROI in enumerate(new_ROI):
                 MEG[:,index,:] = MEG0[:,new_ROI[ROI],:].mean(axis=1)
                 np.save(root_path + 'data/' + f_name + '.npy', MEG)
-                
+
+#%%####################################### Do the jobs           
 if __name__ == '__main__':
-    #%% Redo ROI if needed
-    new_ROI = {"Auditory": [72,76, 108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
-    redo_ROI(new_ROI)
-    
+    #%%####################################### Set path
+    root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
+    subjects_dir = '/media/tzcheng/storage2/subjects/'
+
     #%% Parameters
     age = ['7mo','11mo','br']  
     run = ['_02','_03','_04'] # random, duple, triple
@@ -214,10 +186,15 @@ if __name__ == '__main__':
     data_type = which_data_type[2]
     MEG_fs = 250
 
+    #%% Redo ROI if needed
+    new_ROI = {"Auditory": [72,76, 108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
+    redo_ROI(new_ROI)
+    
     #%%####################################### Run the psds, tfr, conn
     ## Can run psds, tfr and conn for sensor, ROI and wholebrain. The research interests are: 
     ## 1. psds of the sensor, ROI, whole brain 
     ## 2. conn between the ROIs
+    ## Load each condition one by one
     for n_age in age:
         for n_run in run:
             if data_type == '_sensor':
@@ -232,7 +209,7 @@ if __name__ == '__main__':
 
     #%%####################################### Run the decoding
     ## Can run decoding on sensor, ROI and wholebrain. The research interests are on the wholebrain decoding results
-    ## Decode the duple vs. random and triple vs. random
+    ## Decode the duple vs. random and triple vs. random, need to load at least two conditions
     #%% Decode across subjects
     for n_age in age:
         MEG_random = np.load(root_path + 'data/' + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + '.npy')
