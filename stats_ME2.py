@@ -118,9 +118,64 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
     ax=ax)
     fig.tight_layout() 
 
-
-def stats_corr():
-
+def convert_to_csv(data_type,ROIs,n_analysis,n_folder):
+    lm_np = []
+    sub_col = [] 
+    age_col = []
+    cond_col = []
+    ages = ['7mo','11mo','br'] 
+    conditions = ['_02','_03','_04']
+    subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
+               '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/',
+               '/media/tzcheng/storage/BabyRhythm/'] # NEED TO BE THE ORDER OF where 7mo, 11mo and br data at
+    if data_type == which_data_type[1] or data_type == which_data_type[2]:
+        print('-----------------Extracting ROI data-----------------')
+        ROI_col = []
+    
+        for n_age,age in enumerate(ages):
+            print(age)
+            for n_cond,cond in enumerate(conditions):
+                print(cond)
+                for nROI, ROI in enumerate(ROIs):
+                    print(ROI)
+                    data0 = np.load(root_path + n_folder + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
+                    data1 = data0[data0.files[0]]
+                    print(np.shape(data1))
+                    data2 = np.vstack((data1[:,nROI,[6,7]].mean(axis=1),data1[:,nROI,[12,13]].mean(axis=1),data1[:,nROI,[30,31]].mean(axis=1))).transpose()
+                    lm_np.append(data2)
+                    for file in os.listdir(subj_path[n_age]):
+                        if file.startswith('7m') or file.startswith('11m') or file.startswith('br'):
+                            sub_col.append(file)
+                            cond_col.append(cond)
+                            age_col.append(age)
+                        else:
+                            print('check the file')
+        lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col, 'ROI':ROI_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'3.3Hz': np.concatenate(lm_np)[:,2]})
+        lm_df.to_csv(root_path + n_folder + 'SSEP_roi.csv')
+    elif data_type == which_data_type[0]:
+        lm_np = []
+        sub_col = [] 
+        age_col = []
+        cond_col = []
+        print('-----------------Extracting sensor data-----------------')
+        for n_age,age in enumerate(ages):
+            print(age)
+            for n_cond,cond in enumerate(conditions):
+                print(cond)
+                data0 = np.load(root_path + n_folder + age + '_group' + cond + '_rs_mag6pT' + data_type + n_analysis +'.npz') 
+                data1 = data0[data0.files[0]].mean(axis=1)
+                print(np.shape(data1))
+                data2 = np.vstack((data1[:,[6,7]].mean(axis=1),data1[:,[12,13]].mean(axis=1),data1[:,[30,31]].mean(axis=1))).transpose()
+                lm_np.append(data2)
+                for file in os.listdir(subj_path[n_age]):
+                    if file.startswith('7m') or file.startswith('11m') or file.startswith('br'):
+                        sub_col.append(file)
+                        cond_col.append(cond)
+                        age_col.append(age)
+                    else:
+                        print('check the file')
+        lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'3.3Hz': np.concatenate(lm_np)[:,2]})
+        lm_df.to_csv(root_path + n_folder + 'SSEP_sensor.csv')
 
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
