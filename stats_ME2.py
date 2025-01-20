@@ -194,16 +194,6 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
             lm_df.to_csv(root_path + n_folder + n_analysis + data_type + '.csv')
 
 def extract_CDI(MEGAge,CDIAge,CDIscore):
-    fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-    if data_type == '_roi_':
-        label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-        nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
-    elif data_type == '_roi_redo_':
-        label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
-    elif data_type == '_roi_redo5_':
-        label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
-    nROI = np.arange(0,len(label_names),1)
-    
     ages = ['7mo','11mo']
     subj_7mo = []
     subj_11mo = []
@@ -232,6 +222,39 @@ def extract_CDI(MEGAge,CDIAge,CDIscore):
     elif MEGAge == '11mo':
         CDI = CDI_WS_11mo[CDI_WS_11mo['CDIAge'] == CDIAge][CDIscore]
     return CDI, subj_noCDI
+
+def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,SSEP_FOI):
+    if n_analysis == 'conn_plv':
+        conn0 = read_connectivity(root_path + 'connectivity/' + MEGAge + '_group' + n_condition + '_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+        conn = conn0.get_data(output='dense')
+        if age == '7mo':
+            conn = np.delete(conn,subj_noCDI_ind,axis=0) # delete the 3 subjects 'me2_203', 'me2_120', 'me2_117' who don't have CDI
+        conn_delta = conn[:,2,1,ff(conn0.freqs,1):ff(conn0.freqs,4)].mean(-1)
+        conn_theta = conn[:,2,1,ff(conn0.freqs,4):ff(conn0.freqs,8)].mean(-1)
+        conn_alpha = conn[:,2,1,ff(conn0.freqs,8):ff(conn0.freqs,12)].mean(-1)
+        conn_beta = conn[:,2,1,ff(conn0.freqs,15):ff(conn0.freqs,30)].mean(-1)
+        if conn_FOI == 'delta':
+            return conn_delta
+        elif conn_FOI == 'theta':
+            return conn_theta
+        elif conn_FOI == 'alpha':
+            return conn_alpha      
+        elif conn_FOI == 'beta':
+            return conn_beta      
+    elif n_analysis == 'psds':
+        SSEP0 = np.load(root_path + 'SSEP/' + MEGAge + '_group' + n_condition + '_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
+        SSEP = SSEP0[SSEP0.files[0]]
+        if age == '7mo':
+            SSEP = np.delete(SSEP,subj_noCDI_ind,axis=0) # delete the 3 subjects 'me2_203', 'me2_120', 'me2_117' who don't have CDI
+        SSEP_triple = SSEP[:,:,ff(SSEP0[SSEP0.files[1]],1.11)]
+        SSEP_duple = SSEP[:,:,ff(SSEP0[SSEP0.files[1]],1.67)]
+        SSEP_beat = SSEP[:,:,ff(SSEP0[SSEP0.files[1]],3.33)]
+        if SSEP_FOI == '1.11 Hz':
+            return SSEP_triple
+        elif SSEP_FOI == '1.67 Hz':
+            return SSEP_duple
+        elif conn_FOI == '3.33 Hz':
+            return SSEP_beat      
 
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
@@ -327,53 +350,22 @@ for n_age in ages:
     stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
 
 #%%####################################### Correlation analysis between neural responses and CDI   
+fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+if data_type == '_roi_':
+    label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+    nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
+elif data_type == '_roi_redo_':
+    label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
+    nROI = np.arange(0,len(label_names),1)
+elif data_type == '_roi_redo5_':
+    label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
+    nROI = np.arange(0,len(label_names),1)
+
+## Extract CDI and MEG for correlation 
 CDI,subj_noCDI = extract_CDI('7mo',27,'VOCAB')
-MEG = extract_MEG('7mo','_roi_redo5_','psds','_03')
+MEG = extract_MEG('7mo','_roi_redo5_','psds','_03',subj_noCDI_ind,conn_FOI,SSEP_FOI)
 
-data_type = which_data_type[2]
-
-## Neural measurements: conn
-age = '11mo'
-for n_cond,cond in enumerate(conditions):
-    conn0 = read_connectivity(root_path + 'connectivity/' + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type + 'conn_plv') 
-    conn = conn0.get_data(output='dense')
-    if age == '7mo':
-        conn = np.delete(conn,subj_noCDI_ind,axis=0) # delete the 3 subjects 'me2_203', 'me2_120', 'me2_117' who don't have CDI
-        CDI = CDI_WS_7mo[CDI_WS_7mo['CDIAge'] == CDIAge][CDI_score]
-        # CDI = CDI_WG_7mo[CDI_WG_7mo['CDIAge'] == CDIAge][CDI_score]
-    else:
-        CDI = CDI_WS_11mo[CDI_WS_11mo['CDIAge'] == CDIAge][CDI_score]
-
-    conn_theta = conn[:,2,1,ff(conn0.freqs,4):ff(conn0.freqs,8)].mean(-1)
-    conn_alpha = conn[:,2,1,ff(conn0.freqs,8):ff(conn0.freqs,12)].mean(-1)
-    
-    # plt.figure()
-    # plt.scatter(conn_theta,CDI)
-    print(pearsonr(conn_theta, CDI))
-    print(pearsonr(conn_alpha, CDI))
-
-## Neural measurements: SSEP
-age = '11mo'
-for n_cond,cond in enumerate(conditions):
-    SSEP0 = np.load(root_path + 'SSEP/' + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type +'psds.npz') 
-    SSEP = SSEP0[SSEP0.files[0]]
-    if age == '7mo':
-        SSEP = np.delete(SSEP,subj_noCDI_ind,axis=0) # delete the 3 subjects 'me2_203', 'me2_120', 'me2_117' who don't have CDI
-        CDI = CDI_WS_7mo[CDI_WS_7mo['CDIAge'] == CDIAge][CDI_score]
-        # CDI = CDI_WG_7mo[CDI_WG_7mo['CDIAge'] == CDIAge][CDI_score]
-    else:
-        CDI = CDI_WS_11mo[CDI_WS_11mo['CDIAge'] == CDIAge][CDI_score]
-        
-    SSEP_triple = SSEP[:,:,ff(SSEP0[SSEP0.files[1]],1.11)]
-    SSEP_duple = SSEP[:,:,ff(SSEP0[SSEP0.files[1]],1.67)]
-    SSEP_beat = SSEP[:,:,ff(SSEP0[SSEP0.files[1]],3.33)]
-    
-    for nROI,ROI in enumerate(label_names):
-        # plt.figure()
-        # plt.scatter(conn_theta,CDI)
-        print(cond + ' 1.11 Hz ' + ROI)
-        print(pearsonr(SSEP_triple[:,nROI], CDI))
-        print(cond + ' 1.67 Hz ' + ROI)  
-        print(pearsonr(SSEP_duple[:,nROI], CDI))
-        print(cond + ' 3.33 Hz ' + ROI)
-        print(pearsonr(SSEP_beat[:,nROI], CDI))
+plt.figure()
+plt.scatter(MEG,CDI)
+print(pearsonr(MEG, CDI))
+print(pearsonr(MEG, CDI))
