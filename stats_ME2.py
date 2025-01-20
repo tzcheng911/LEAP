@@ -17,7 +17,6 @@ import os
 import pickle
 import pandas as pd
 import numpy as np
-import random
 import scipy.stats as stats
 from scipy.stats import pearsonr
 import mne
@@ -60,9 +59,11 @@ def stats_SSEP(X,freqs,nonparametric):
         print('t statistics: ' + str(t))
         print('p-value: ' + str(p))
 
-def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold,src,freqs):
+def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold,freqs):
     ## Compute non-parametric 2D cluster test (across freqs and vertex) on X (psd1 - psd2) and save the cluster results
     print("Computing adjacency.")
+    stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
+    src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
     adjacency = mne.spatial_src_adjacency(src)
     
     ## set the cluster settings 
@@ -118,64 +119,54 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
     ax=ax)
     fig.tight_layout() 
 
-def convert_to_csv(data_type,ROIs,n_analysis,n_folder):
+def convert_to_csv(data_type,labels,n_analysis,n_folder):
     lm_np = []
     sub_col = [] 
     age_col = []
     cond_col = []
+    ROI_col = []
     ages = ['7mo','11mo','br'] 
     conditions = ['_02','_03','_04']
     subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
                '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/',
                '/media/tzcheng/storage/BabyRhythm/'] # NEED TO BE THE ORDER OF where 7mo, 11mo and br data at
-    if data_type == which_data_type[1] or data_type == which_data_type[2]:
-        print('-----------------Extracting ROI data-----------------')
-        ROI_col = []
-    
-        for n_age,age in enumerate(ages):
-            print(age)
-            for n_cond,cond in enumerate(conditions):
-                print(cond)
-                for nROI, ROI in enumerate(ROIs):
+    for n_age,age in enumerate(ages):
+        print(age)
+        for n_cond,cond in enumerate(conditions):
+            print(cond)
+            if data_type == which_data_type[1] or data_type == which_data_type[2]:
+                print('-----------------Extracting ROI data-----------------')
+                for nROI, ROI in enumerate(labels):
                     print(ROI)
                     data0 = np.load(root_path + n_folder + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
                     data1 = data0[data0.files[0]]
+                    freqs = data0[data0.files[1]]
                     print(np.shape(data1))
-                    data2 = np.vstack((data1[:,nROI,[6,7]].mean(axis=1),data1[:,nROI,[12,13]].mean(axis=1),data1[:,nROI,[30,31]].mean(axis=1))).transpose()
+                    data2 = np.vstack((data1[:,nROI,ff(freqs,1.11)],data1[:,nROI,ff(freqs,1.67)],data1[:,nROI,ff(freqs,3.33)])).transpose()
                     lm_np.append(data2)
                     for file in os.listdir(subj_path[n_age]):
-                        if file.startswith('7m') or file.startswith('11m') or file.startswith('br'):
+                        if file.endswith('7m') or file.endswith('11m') or file.startswith('br'):
+                            print('save '  + file)
                             sub_col.append(file)
                             cond_col.append(cond)
                             age_col.append(age)
-                        else:
-                            print('check the file')
-        lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col, 'ROI':ROI_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'3.3Hz': np.concatenate(lm_np)[:,2]})
-        lm_df.to_csv(root_path + n_folder + 'SSEP_roi.csv')
-    elif data_type == which_data_type[0]:
-        lm_np = []
-        sub_col = [] 
-        age_col = []
-        cond_col = []
-        print('-----------------Extracting sensor data-----------------')
-        for n_age,age in enumerate(ages):
-            print(age)
-            for n_cond,cond in enumerate(conditions):
-                print(cond)
+                            ROI_col.append(ROI)
+                lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col, 'ROI':ROI_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'3.3Hz': np.concatenate(lm_np)[:,2]})
+            elif data_type == which_data_type[0]:
+                print('-----------------Extracting sensor data-----------------')
                 data0 = np.load(root_path + n_folder + age + '_group' + cond + '_rs_mag6pT' + data_type + n_analysis +'.npz') 
                 data1 = data0[data0.files[0]].mean(axis=1)
                 print(np.shape(data1))
                 data2 = np.vstack((data1[:,[6,7]].mean(axis=1),data1[:,[12,13]].mean(axis=1),data1[:,[30,31]].mean(axis=1))).transpose()
                 lm_np.append(data2)
                 for file in os.listdir(subj_path[n_age]):
-                    if file.startswith('7m') or file.startswith('11m') or file.startswith('br'):
+                    if file.endswith('7m') or file.endswith('11m') or file.startswith('br'):
+                        print('save '  + file)
                         sub_col.append(file)
                         cond_col.append(cond)
                         age_col.append(age)
-                    else:
-                        print('check the file')
-        lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'3.3Hz': np.concatenate(lm_np)[:,2]})
-        lm_df.to_csv(root_path + n_folder + 'SSEP_sensor.csv')
+                lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'3.3Hz': np.concatenate(lm_np)[:,2]})
+            lm_df.to_csv(root_path + n_folder + 'SSEP' + data_type + '.csv')
 
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
@@ -191,9 +182,9 @@ which_data_type = ['_sensor_','_roi_','_roi_redo5_','_morph_']
 #%%####################################### Analysis on the sensor SSEP
 for n_age in ages:
     print("Doing age " + n_age)
-    random = np.load(root_path + n_folder + n_age + '_group_02_rs_mag6pT_sensor_psds.npz') 
-    duple = np.load(root_path + n_folder + n_age + '_group_03_rs_mag6pT_sensor_psds.npz') 
-    triple = np.load(root_path + n_folder + n_age + '_group_04_rs_mag6p_sensor_psds.npz') 
+    random = np.load(root_path + 'SSEP/' + n_age + '_group_02_rs_mag6pT_sensor_psds.npz') 
+    duple = np.load(root_path + 'SSEP/' + n_age + '_group_03_rs_mag6pT_sensor_psds.npz') 
+    triple = np.load(root_path + 'SSEP/' + n_age + '_group_04_rs_mag6p_sensor_psds.npz') 
     freqs = random[random.files[1]]
     psds_random = random[random.files[0]].mean(axis = 1)
     psds_duple = duple[duple.files[0]].mean(axis = 1)
@@ -202,6 +193,7 @@ for n_age in ages:
     stats_SSEP(psds_duple-psds_random,freqs,nonparametric=False)
     print("-------------------Doing triple-------------------")
     stats_SSEP(psds_triple-psds_random,freqs,nonparametric=False)
+convert_to_csv('_sensor_',0,'psds','SSEP/')
 
 #%%####################################### Analysis on the ROI SSEP
 n_folder = folders[0] # 0: SSEP
@@ -231,7 +223,8 @@ for n_age in ages:
         stats_SSEP(duple[:,n,:],random[:,n,:],freqs,nonparametric=True)
         print("-------------------Doing triple-------------------")
         stats_SSEP(triple[:,n,:],random[:,n,:],freqs,nonparametric=True)
-
+convert_to_csv(data_type,label_names,n_analysis,n_folder)
+    
 #%%####################################### Analysis on the whole brain SSEP
 p_threshold = 0.001 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 for n_age in ages:
@@ -243,8 +236,8 @@ for n_age in ages:
     duple = duple0[duple0.files[0]]
     triple = triple0[triple0.files[0]]
     freqs = random0[random0.files[1]] 
-    wholebrain_spatio_temporal_cluster_test(duple-random,'duple',n_age,n_folder,p_threshold,src,freqs)
-    wholebrain_spatio_temporal_cluster_test(triple-random,'triple',n_age,n_folder,p_threshold,src,freqs)
+    wholebrain_spatio_temporal_cluster_test(duple-random,'duple',n_age,n_folder,p_threshold,freqs)
+    wholebrain_spatio_temporal_cluster_test(triple-random,'triple',n_age,n_folder,p_threshold,freqs)
 
 #%%####################################### Analysis on the ROI conn
 n_folder = folders[3] # 0: connectivity/
