@@ -7,6 +7,7 @@ Run statistical analysis on the output SSEP (sensor, ROI, whole brian), conn (RO
 Apply stats_SSEP on sensor and ROI SSEP
 Apply spatio_temporal_cluster_test on whole brian SSEP
 Apply stats_CONN on ROI
+Apply correlation between (1) AM conn and CDI (2) SSEP and CDI (whole brain results)
 Input: .npy files in the "analyzed data" i.e. SSEP, ERSP, decoding, connectivity folders
 Output: some figures, statistic results (stats, p-value)
 
@@ -18,7 +19,7 @@ import pickle
 import pandas as pd
 import numpy as np
 import scipy.stats as stats
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 import mne
 from mne_connectivity.viz import plot_connectivity_circle
 from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time,read_connectivity
@@ -168,6 +169,45 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder):
                 lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'3.3Hz': np.concatenate(lm_np)[:,2]})
             lm_df.to_csv(root_path + n_folder + 'SSEP' + data_type + '.csv')
 
+def extract_CDI(MEGAge,CDIAge,CDIscore):
+    fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+    if data_type == '_roi_':
+        label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+        nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
+    elif data_type == '_roi_redo_':
+        label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
+    elif data_type == '_roi_redo5_':
+        label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
+    nROI = np.arange(0,len(label_names),1)
+    
+    ages = ['7mo','11mo']
+    subj_7mo = []
+    subj_11mo = []
+    subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
+            '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/']
+    for n_age,age in enumerate(ages):# only need the me2_7m and me2_11m
+        for file in os.listdir(subj_path[n_age]):
+            if file.endswith('7m'):
+                print('append ' + file[:-3])
+                subj_7mo.append(file[:-3]) 
+            elif file.endswith('11m'):
+                print('append ' + file[:-4])
+                subj_11mo.append(file[:-4])
+
+    ## Select subjects CDI score for those who have neural data
+    CDI_WS0 = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=2)
+    CDI_WS_7mo = CDI_WS0[CDI_WS0['ParticipantId'].isin(subj_7mo)] # select the subjects who has neural data 
+    CDI_WS_11mo = CDI_WS0[CDI_WS0['ParticipantId'].isin(subj_11mo)] # select the subjects who has neural data 
+    
+    ## De-select subjects who has neural data but does not have CDI data: 7mo ('me2_203', 'me2_120', 'me2_117')
+    subj_noCDI = list(set(subj_7mo) - set(CDI_WG0['ParticipantId'])) # same result in list(set(subj_all) - set(CDI_WS0['ParticipantId']))   
+    subj_noCDI_ind = [2,8,25] # CAUTION hardcoded manual input here, check if this is the data storing order for 7mo in group_ME2.py (confirmed 2025/1/13 Zoe)
+
+    if MEGAge == '7mo':
+        CDI = CDI_WS_7mo[CDI_WS_7mo['CDIAge'] == CDIAge][CDIscore]
+    elif MEGAge == '11mo':
+        CDI = CDI_WS_11mo[CDI_WS_11mo['CDIAge'] == CDIAge][CDIscore]
+
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -262,46 +302,10 @@ for n_age in ages:
     stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
 
 #%%####################################### Correlation analysis between neural responses and CDI   
+CDI = extract_CDI('7mo',27,'VOCAB')
+MEG = extract_MEG('7mo','_roi_redo5_','psds','_03')
+
 data_type = which_data_type[2]
-fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-if data_type == '_roi_':
-    label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-    nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
-elif data_type == '_roi_redo_':
-    # label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
-    label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
-    nROI = np.arange(0,len(label_names),1)
-    
-subj_7mo = []
-subj_11mo = []
-subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
-           '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/']
-for n_age,age in enumerate(ages[:-1]):# only need the me2_7m and me2_11m
-    for file in os.listdir(subj_path[n_age]):
-        if file.endswith('7m'):
-            subj_7mo.append(file[:-3]) # get rid of the _7m
-        elif file.endswith('11m'):
-            subj_11mo.append(file[:-4]) # get rid of the _11m
-        else:
-            print('check the file')
-
-######## Extract variables to do correlation
-## CDI score
-CDI_WG0 = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=0)
-CDI_WS0 = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=2)
-
-CDI_WG_7mo = CDI_WG0[CDI_WG0['ParticipantId'].isin(subj_7mo)] # select the subjects who has neural data 
-CDI_WG_11mo = CDI_WG0[CDI_WG0['ParticipantId'].isin(subj_11mo)] # select the subjects who has neural data 
-CDI_WS_7mo = CDI_WS0[CDI_WS0['ParticipantId'].isin(subj_7mo)] # select the subjects who has neural data 
-CDI_WS_11mo = CDI_WS0[CDI_WS0['ParticipantId'].isin(subj_11mo)] # select the subjects who has neural data 
-
-######## decide variables for correlation
-CDI_score = 'VOCAB' # WG('UWORDS','PWORDS','UWRDPER','PWRDPER'), WS('M3L','VOCAB')
-CDIAge = 27 # WG(12, 15), WS(18,21,24,27,30) me2_313_11m has missing 24 mo WS data, do 27 instead
-
-# Subjects who has neural data but does not have CDI data: 7mo ('me2_203', 'me2_120', 'me2_117')
-subj_noCDI = list(set(subj_7mo) - set(CDI_WG0['ParticipantId'])) # same result in list(set(subj_all) - set(CDI_WS0['ParticipantId']))   
-subj_noCDI_ind = [2,8,25] # CAUTION hardcoded manual input here, check if this is the data storing order for 7mo in group_ME2.py (confirmed 2025/1/13 Zoe)
 
 ## Neural measurements: conn
 age = '11mo'
@@ -324,6 +328,7 @@ for n_cond,cond in enumerate(conditions):
     print(pearsonr(conn_alpha, CDI))
 
 ## Neural measurements: SSEP
+age = '11mo'
 for n_cond,cond in enumerate(conditions):
     SSEP0 = np.load(root_path + 'SSEP/' + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type +'psds.npz') 
     SSEP = SSEP0[SSEP0.files[0]]
