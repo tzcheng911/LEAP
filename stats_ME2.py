@@ -11,42 +11,15 @@ Input: .npy files in the "analyzed data" i.e. SSEP, ERSP, decoding, connectivity
 #%%####################################### Import library  
 import os
 import pickle
-import statsmodels.api as sm
 import pandas as pd
 import numpy as np
-import time
 import random
-import copy
 import scipy.stats as stats
 from scipy.stats import pearsonr
-from scipy import stats,signal
-from scipy.io import wavfile
 import mne
-from mne import spatial_src_adjacency
-from mne.stats import spatio_temporal_cluster_1samp_test, summarize_clusters_stc
-from mne.time_frequency import tfr_morlet, tfr_multitaper, tfr_stockwell, AverageTFRArray
-from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time,read_connectivity
 from mne_connectivity.viz import plot_connectivity_circle
+from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time,read_connectivity
 from mne.viz import circular_layout
-from mne.decoding import (
-    SlidingEstimator,
-    GeneralizingEstimator,
-    Scaler,
-    cross_val_multiscore,
-    LinearModel,
-    get_coef,
-    Vectorizer,
-    CSP,
-)
-import sklearn 
-from sklearn.decomposition import PCA, FastICA
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.model_selection import StratifiedKFold, LeaveOneOut
-from sklearn.feature_selection import SelectKBest, f_classif
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.svm import SVC
 import matplotlib.pyplot as plt 
 
 #%%####################################### Define functions
