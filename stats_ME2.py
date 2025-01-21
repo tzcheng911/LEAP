@@ -191,7 +191,7 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
                           'Alpha conn': np.concatenate(lm_np)[:,2],
                           'Beta conn': np.concatenate(lm_np)[:,3],
                           'Broadband conn': np.concatenate(lm_np)[:,4]})
-            lm_df.to_csv(root_path + n_folder + n_analysis + data_type + '.csv')
+            lm_df.to_csv(root_path + n_folder + n_analysis + data_type + labels[ROI1][0] + label_names[ROI2][0] + '.csv')
 
 def extract_CDI(MEGAge,CDIAge,CDIscore):
     ages = ['7mo','11mo']
@@ -221,18 +221,18 @@ def extract_CDI(MEGAge,CDIAge,CDIscore):
         CDI = CDI_WS_7mo[CDI_WS_7mo['CDIAge'] == CDIAge][CDIscore]
     elif MEGAge == '11mo':
         CDI = CDI_WS_11mo[CDI_WS_11mo['CDIAge'] == CDIAge][CDIscore]
-    return CDI, subj_noCDI
+    return CDI, subj_noCDI_ind
 
-def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,SSEP_FOI):
+def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,ROI1,ROI2,SSEP_FOI):
     if n_analysis == 'conn_plv':
         conn0 = read_connectivity(root_path + 'connectivity/' + MEGAge + '_group' + n_condition + '_stc_rs_mne_mag6pT' + data_type + n_analysis) 
         conn = conn0.get_data(output='dense')
-        if age == '7mo':
+        if MEGAge == '7mo':
             conn = np.delete(conn,subj_noCDI_ind,axis=0) # delete the 3 subjects 'me2_203', 'me2_120', 'me2_117' who don't have CDI
-        conn_delta = conn[:,2,1,ff(conn0.freqs,1):ff(conn0.freqs,4)].mean(-1)
-        conn_theta = conn[:,2,1,ff(conn0.freqs,4):ff(conn0.freqs,8)].mean(-1)
-        conn_alpha = conn[:,2,1,ff(conn0.freqs,8):ff(conn0.freqs,12)].mean(-1)
-        conn_beta = conn[:,2,1,ff(conn0.freqs,15):ff(conn0.freqs,30)].mean(-1)
+        conn_delta = conn[:,ROI1,ROI2,ff(conn0.freqs,1):ff(conn0.freqs,4)].mean(-1)
+        conn_theta = conn[:,ROI1,ROI2,ff(conn0.freqs,4):ff(conn0.freqs,8)].mean(-1)
+        conn_alpha = conn[:,ROI1,ROI2,ff(conn0.freqs,8):ff(conn0.freqs,12)].mean(-1)
+        conn_beta = conn[:,ROI1,ROI2,ff(conn0.freqs,15):ff(conn0.freqs,30)].mean(-1)
         if conn_FOI == 'delta':
             return conn_delta
         elif conn_FOI == 'theta':
@@ -244,7 +244,7 @@ def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,
     elif n_analysis == 'psds':
         SSEP0 = np.load(root_path + 'SSEP/' + MEGAge + '_group' + n_condition + '_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
         SSEP = SSEP0[SSEP0.files[0]]
-        if age == '7mo':
+        if MEGAge == '7mo':
             SSEP = np.delete(SSEP,subj_noCDI_ind,axis=0) # delete the 3 subjects 'me2_203', 'me2_120', 'me2_117' who don't have CDI
         SSEP_triple = SSEP[:,:,ff(SSEP0[SSEP0.files[1]],1.11)]
         SSEP_duple = SSEP[:,:,ff(SSEP0[SSEP0.files[1]],1.67)]
@@ -348,24 +348,48 @@ for n_age in ages:
     stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis)
     print("-------------------Doing triple-------------------")
     stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
+convert_to_csv('_morph_',label_names,'conn_plv','connectivity/',2,1)
 
 #%%####################################### Correlation analysis between neural responses and CDI   
+data_type = '_roi_redo5_'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
     label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
     nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
 elif data_type == '_roi_redo_':
     label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
-    nROI = np.arange(0,len(label_names),1)
 elif data_type == '_roi_redo5_':
     label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
-    nROI = np.arange(0,len(label_names),1)
+    
+## correlation between conn and CDI: sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
+CDI,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
+MEG = extract_MEG('7mo',data_type,'conn_plv','_03',subj_noCDI_ind,'theta',1,0,'1.67 Hz')
+# plt.figure()
+# plt.scatter(MEG,CDI)
+print(pearsonr(MEG, CDI))
+print(spearmanr(MEG, CDI))
 
-## Extract CDI and MEG for correlation 
+## correlation between ROI SSEP and CDI 
 CDI,subj_noCDI = extract_CDI('7mo',27,'VOCAB')
-MEG = extract_MEG('7mo','_roi_redo5_','psds','_03',subj_noCDI_ind,conn_FOI,SSEP_FOI)
+MEG = extract_MEG('7mo',data_type,'psds','_03',subj_noCDI_ind,'theta',2,1,'1.67 Hz')
+for n,ROI in enumerate(label_names):
+    plt.figure()
+    plt.scatter(MEG[:,n],CDI)
+    print(pearsonr(MEG[:,n], CDI))
+    print(pearsonr(MEG[:,n], CDI))
 
-plt.figure()
-plt.scatter(MEG,CDI)
-print(pearsonr(MEG, CDI))
-print(pearsonr(MEG, CDI))
+## correlation between whole brain SSEP and CDI 
+r_all = []
+p_all = []
+CDI,subj_noCDI = extract_CDI('7mo',27,'VOCAB')
+MEG = extract_MEG('7mo',data_type,'psds','_03',subj_noCDI_ind,'theta',2,1,'1.67 Hz')
+for n in np.arange(0,len(MEG[0])):
+    print('Doing vertex ' + str(n))
+    tmp_r,tmp_p = pearsonr(MEG[:,n],CDI)
+    r_all.append(tmp_r)
+    p_all.append(tmp_p)
+
+stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+stc1.data = np.array([r_all,r_all]).transpose()
+stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
