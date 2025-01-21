@@ -152,7 +152,6 @@ n_folder = folders[3]
 n_analysis = analysis[3]
 data_type = which_data_type[2]
 
-vmin = 0.75
 vmax = 1
 nlines = 10
 FOI = 'Theta'
