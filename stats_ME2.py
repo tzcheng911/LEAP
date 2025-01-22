@@ -272,15 +272,15 @@ for n_age in ages:
     print("Doing age " + n_age)
     random = np.load(root_path + 'SSEP/' + n_age + '_group_02_rs_mag6pT_sensor_psds.npz') 
     duple = np.load(root_path + 'SSEP/' + n_age + '_group_03_rs_mag6pT_sensor_psds.npz') 
-    triple = np.load(root_path + 'SSEP/' + n_age + '_group_04_rs_mag6p_sensor_psds.npz') 
+    triple = np.load(root_path + 'SSEP/' + n_age + '_group_04_rs_mag6pT_sensor_psds.npz') 
     freqs = random[random.files[1]]
     psds_random = random[random.files[0]].mean(axis = 1)
     psds_duple = duple[duple.files[0]].mean(axis = 1)
     psds_triple = triple[triple.files[0]].mean(axis = 1)
     print("-------------------Doing duple-------------------")
-    stats_SSEP(psds_duple-psds_random,freqs,nonparametric=False)
+    stats_SSEP(psds_duple-psds_random,freqs,nonparametric=True)
     print("-------------------Doing triple-------------------")
-    stats_SSEP(psds_triple-psds_random,freqs,nonparametric=False)
+    stats_SSEP(psds_triple-psds_random,freqs,nonparametric=True)
 convert_to_csv('_sensor_',0,'psds','SSEP/')
 
 #%%####################################### Analysis on the ROI SSEP
@@ -348,7 +348,7 @@ for n_age in ages:
     stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis)
     print("-------------------Doing triple-------------------")
     stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
-convert_to_csv('_morph_',label_names,'conn_plv','connectivity/',2,1)
+convert_to_csv('_roi_redo5_',label_names,'conn_plv','connectivity/',2,0)
 
 #%%####################################### Correlation analysis between neural responses and CDI   
 data_type = '_roi_redo5_'
@@ -360,18 +360,29 @@ elif data_type == '_roi_redo_':
     label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
 elif data_type == '_roi_redo5_':
     label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
-    
+
+ROI1 = 4
+ROI2 = 3
+meter = '_03'
 ## correlation between conn and CDI: sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
-CDI,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
-MEG = extract_MEG('7mo',data_type,'conn_plv','_03',subj_noCDI_ind,'theta',1,0,'1.67 Hz')
-# plt.figure()
-# plt.scatter(MEG,CDI)
+CDI1,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
+MEG1 = extract_MEG('7mo',data_type,'conn_plv',meter,subj_noCDI_ind,'theta',ROI1,ROI2,'1.67 Hz')
+CDI2,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
+MEG2 = extract_MEG('11mo',data_type,'conn_plv',meter,subj_noCDI_ind,'theta',ROI1,ROI2,'1.67 Hz')
+CDI = pd.concat([CDI1,CDI2])
+MEG = np.concatenate((MEG1,MEG2))
+plt.figure()
+plt.scatter(MEG,CDI)
 print(pearsonr(MEG, CDI))
-print(spearmanr(MEG, CDI))
+# print(spearmanr(MEG, CDI))
 
 ## correlation between ROI SSEP and CDI 
-CDI,subj_noCDI = extract_CDI('7mo',27,'VOCAB')
-MEG = extract_MEG('7mo',data_type,'psds','_03',subj_noCDI_ind,'theta',2,1,'1.67 Hz')
+CDI1,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
+MEG1 = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,'1.67 Hz')
+CDI2,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
+MEG2 = extract_MEG('11mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,'1.67 Hz')
+CDI = pd.concat([CDI1,CDI2])
+MEG = np.concatenate((MEG1,MEG2))
 for n,ROI in enumerate(label_names):
     plt.figure()
     plt.scatter(MEG[:,n],CDI)
@@ -379,10 +390,15 @@ for n,ROI in enumerate(label_names):
     print(pearsonr(MEG[:,n], CDI))
 
 ## correlation between whole brain SSEP and CDI 
+data_type = '_morph_'
 r_all = []
 p_all = []
-CDI,subj_noCDI = extract_CDI('7mo',27,'VOCAB')
-MEG = extract_MEG('7mo',data_type,'psds','_03',subj_noCDI_ind,'theta',2,1,'1.67 Hz')
+CDI1,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
+MEG1 = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,'1.67 Hz')
+CDI2,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
+MEG2 = extract_MEG('11mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,'1.67 Hz')
+CDI = pd.concat([CDI1,CDI2])
+MEG = np.concatenate((MEG1,MEG2))
 for n in np.arange(0,len(MEG[0])):
     print('Doing vertex ' + str(n))
     tmp_r,tmp_p = pearsonr(MEG[:,n],CDI)
