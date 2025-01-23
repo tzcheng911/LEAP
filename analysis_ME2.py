@@ -153,7 +153,7 @@ def do_decoding(X1, X2, ts, te, model, seed):
         all_score.append(score)
     return all_score
 
-def redo_ROI(new_ROI): ## still working on this function
+def redo_ROI(new_ROI): 
     ## Average or select ROIs from the 114 labels
     # Auditory (STG 72,108, HG 76, 112), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
     # Basal ganglia group (7,8,9,16,26,27,28,31): out of all include caudate (7 26) and putamen (8 27) only based on Cannon & Patel 2020 TICS, putamen is most relevant 
@@ -182,12 +182,13 @@ if __name__ == '__main__':
     #%% Parameters
     age = ['7mo','11mo','br']  
     run = ['_02','_03','_04'] # random, duple, triple
-    which_data_type = ['_sensor','_roi','_roi_redo5','_morph']
+    which_data_type = ['_sensor','_roi','_roi_redo4','_morph']
     data_type = which_data_type[2]
     MEG_fs = 250
 
     #%% Redo ROI if needed
     new_ROI = {"Auditory": [72,76, 108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
+    new_ROI = {"Auditory": [72,76, 108,112], "SensoriMotor": [66,102,59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
     redo_ROI(new_ROI)
     
     #%%####################################### Run the psds, tfr, conn
@@ -203,8 +204,8 @@ if __name__ == '__main__':
                 f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + data_type 
             MEG = np.load(root_path + 'data/' + f_name + '.npy') 
             psds = do_SSEP(MEG, f_name, fmin=0.5, fmax=5, MEG_fs=MEG_fs)
-            tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
-            con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=True)
+            # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
+            con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
             del MEG
 
     #%%####################################### Run the decoding
