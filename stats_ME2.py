@@ -355,23 +355,23 @@ convert_to_csv('_roi_redo4_',label_names,'conn_plv','connectivity/',3,0)
 data_type = '_roi_redo4_'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
-    label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+    s = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
     nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
 elif data_type == '_roi_redo_':
     label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
 elif data_type == '_roi_redo5_':
     label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
 #%%
-ROI1 = 2
-ROI2 = 0
-FOI = 'alpha'
-meter = '_02'
+ROI1 = 3
+ROI2 = 2
+FOI = 'beta'
+meter = '_03'
 peak_freq = '1.67 Hz'
 ## correlation between conn and CDI: sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
-CDI1,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
-MEG1 = extract_MEG('7mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq)
-CDI2,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
-MEG2 = extract_MEG('7mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq)
+CDI1,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
+MEG1 = extract_MEG('11mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq)
+CDI2,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
+MEG2 = extract_MEG('11mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq)
 CDI = pd.concat([CDI1,CDI2])
 MEG = np.concatenate((MEG1,MEG2))
 # plt.figure()
