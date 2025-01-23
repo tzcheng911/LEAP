@@ -265,7 +265,7 @@ ages = ['7mo','11mo','br']
 conditions = ['_02','_03','_04'] # random, duple, triple
 folders = ['SSEP/','ERSP/','decoding/','connectivity/'] 
 analysis = ['psds','conn_plv','conn_coh','conn_pli','conn_GC_AM','conn_GC_MA']
-which_data_type = ['_sensor_','_roi_','_roi_redo5_','_morph_'] 
+which_data_type = ['_sensor_','_roi_','_roi_redo4_','_morph_'] 
 
 #%%####################################### Analysis on the sensor SSEP
 for n_age in ages:
@@ -278,23 +278,24 @@ for n_age in ages:
     psds_duple = duple[duple.files[0]].mean(axis = 1)
     psds_triple = triple[triple.files[0]].mean(axis = 1)
     print("-------------------Doing duple-------------------")
-    stats_SSEP(psds_duple-psds_random,freqs,nonparametric=True)
+    stats_SSEP(psds_duple-psds_random,freqs,True)
     print("-------------------Doing triple-------------------")
-    stats_SSEP(psds_triple-psds_random,freqs,nonparametric=True)
-convert_to_csv('_sensor_',0,'psds','SSEP/')
+    stats_SSEP(psds_triple-psds_random,freqs,True)
+convert_to_csv('_sensor_',0,'psds','SSEP',1,0)
 
 #%%####################################### Analysis on the ROI SSEP
 n_folder = folders[0] # 0: SSEP
 n_analysis = analysis[0] # 0: psds
-data_type = which_data_type[2] # 1:_roi_ or 2:_roi_redo5_
+data_type = which_data_type[2] # 1:_roi_ or 2:_roi_redo_
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
     label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
     nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
-elif data_type == '_roi_redo5_':
+elif data_type == '_roi_redo4_':
     # label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
-    label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
+    # label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
+    label_names = np.asarray(["Auditory", "SensoryMotor", "BG", "IFG"])
     nROI = np.arange(0,len(label_names),1)
 
 for n_age in ages:
@@ -311,7 +312,7 @@ for n_age in ages:
         stats_SSEP(duple[:,n,:],random[:,n,:],freqs,nonparametric=True)
         print("-------------------Doing triple-------------------")
         stats_SSEP(triple[:,n,:],random[:,n,:],freqs,nonparametric=True)
-convert_to_csv(data_type,label_names,n_analysis,n_folder)
+convert_to_csv(data_type,label_names,n_analysis,n_folder,1,0)
     
 #%%####################################### Analysis on the whole brain SSEP
 p_threshold = 0.001 # set a cluster forming threshold based on a p-value for the cluster based permutation test
@@ -348,10 +349,10 @@ for n_age in ages:
     stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis)
     print("-------------------Doing triple-------------------")
     stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
-convert_to_csv('_roi_redo5_',label_names,'conn_plv','connectivity/',2,0)
+convert_to_csv('_roi_redo4_',label_names,'conn_plv','connectivity/',3,0)
 
 #%%####################################### Correlation analysis between neural responses and CDI   
-data_type = '_roi_redo5_'
+data_type = '_roi_redo4_'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
     label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
@@ -360,22 +361,25 @@ elif data_type == '_roi_redo_':
     label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
 elif data_type == '_roi_redo5_':
     label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
-
-ROI1 = 4
-ROI2 = 3
-meter = '_03'
+#%%
+ROI1 = 2
+ROI2 = 0
+FOI = 'alpha'
+meter = '_02'
+peak_freq = '1.67 Hz'
 ## correlation between conn and CDI: sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
 CDI1,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
-MEG1 = extract_MEG('7mo',data_type,'conn_plv',meter,subj_noCDI_ind,'theta',ROI1,ROI2,'1.67 Hz')
-CDI2,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
-MEG2 = extract_MEG('11mo',data_type,'conn_plv',meter,subj_noCDI_ind,'theta',ROI1,ROI2,'1.67 Hz')
+MEG1 = extract_MEG('7mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq)
+CDI2,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
+MEG2 = extract_MEG('7mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq)
 CDI = pd.concat([CDI1,CDI2])
 MEG = np.concatenate((MEG1,MEG2))
-plt.figure()
-plt.scatter(MEG,CDI)
+# plt.figure()
+# plt.scatter(MEG,CDI)
+print('Conn between ' + label_names[ROI1] + ' ' + label_names[ROI2])
 print(pearsonr(MEG, CDI))
 # print(spearmanr(MEG, CDI))
-
+#%%
 ## correlation between ROI SSEP and CDI 
 CDI1,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
 MEG1 = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,'1.67 Hz')
