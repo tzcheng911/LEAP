@@ -14,15 +14,9 @@ library(car)
 ################################################################# Load the ROI data
 alldataL = read.csv("lAM_roi_redo10_conn_plv.csv")
 alldataR = read.csv("rAM_roi_redo10_conn_plv.csv")
-alldata = read.csv("AM_roi_redo5_conn_plv.csv")
 alldata = read.csv("roi_redo5_conn_GC_MA.csv")
 alldata = read.csv("roi_redo5_conn_GC_M_seed_MI.csv")
-
-# pool the left and right ROIs if needed to 5 ROIs from 10 ROIs
-alldata=rbind(alldataL,alldataR)
-alldata = alldata %>%
-  group_by(sub_id,age,condition) %>%
-  summarize(Delta.conn = mean(Delta.conn), Theta.conn = mean(Theta.conn), Alpha.conn = mean(Alpha.conn), Beta.conn = mean(Beta.conn), Broadband.conn = mean(Broadband.conn),Nsubs=n_distinct(sub_id), .groups = "drop") 
+alldata = read.csv("conn_plv_roi_redo5_IB.csv")
 
 # log transform to achieve normality
 alldata = alldata %>% 
@@ -38,6 +32,7 @@ alldata = alldata %>%
 
 alldata$age = relevel(alldata$age,ref="7mo")
 alldata$condition = relevel(alldata$condition,ref="_02")
+
 
 ## Descriptive stats
 # Connectivity
