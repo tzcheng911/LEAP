@@ -60,6 +60,7 @@ def plot_SSEP(psds,freqs,title):
     plt.figure()
     plot_err(psds,'k',freqs)
     plt.xlim([freqs[0],freqs[-1]])
+    plt.ylim([0,4.25e-25])
     plt.title(title)
 
 def plot_CONN(conn,freqs,nlines,vmin,vmax,FOI,label_names,title):
@@ -108,7 +109,7 @@ root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 #%%####################################### Load the audio files
-fs, audio = wavfile.read(root_path + 'Stimuli/Duple300.wav') # Random, Duple300, Triple300
+fs, audio = wavfile.read(root_path + 'Stimuli/Random/random15rr.wav') # Random, Duple300, Triple300
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 
 #%% Parameters
@@ -121,9 +122,6 @@ which_data_type = ['_sensor_','_roi_','_roi_redo_','_morph_'] ## currently not a
 n_folder = folders[0]
 n_analysis = analysis[0]
 data_type = which_data_type[0]
-psds_random_all = []
-psds_duple_all = []
-psds_triple_all = []
 
 for n_age in age:
     print("Doing age " + n_age)
@@ -140,18 +138,16 @@ for n_age in age:
     psds_random = random.mean(axis = 1)
     psds_duple = duple.mean(axis = 1)
     psds_triple = triple.mean(axis = 1)
-    # plot_SSEP(psds_random,freqs)
-    # plot_SSEP(psds_duple,freqs)
-    # plot_SSEP(psds_triple,freqs)
-    psds_random_all.append(psds_random)
-    psds_duple_all.append(psds_duple)
-    psds_triple_all.append(psds_triple)
+    plot_SSEP(psds_random,freqs,'MEG_random_psds')
+    plot_SSEP(psds_duple,freqs,'MEG_duple_psds')
+    plot_SSEP(psds_triple,freqs,'MEG_triple_psds')
 
 #%%####################################### Visualize on the source level: ROI 
 n_folder = folders[3]
 n_analysis = analysis[3]
 data_type = which_data_type[2]
 
+vmin = 0.5
 vmax = 1
 nlines = 10
 FOI = 'Theta'
@@ -212,20 +208,20 @@ n_meter = 'triple' # 'duple' or 'triple'
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 fsave_vertices = [s["vertno"] for s in src]
-p_threshold = 0.001 # set a cluster forming threshold based on a p-value for the cluster based permutation test
+p_threshold = 0.01 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 
 for n_age in age:
     if n_folder == 'SSEP/':
         with open(root_path + n_folder + n_age + '_SSEP_wholebrain_cluster_test_' + n_meter + '.pkl', 'rb') as f:
             clu = pickle.load(f)
-        good_cluster_inds = np.where(clu[2] < 0.01)[0]
+        good_cluster_inds = np.where(clu[2] < p_threshold)[0]
         good_clusters = [clu[1][idx] for idx in good_cluster_inds]
 
         for c in good_clusters:
             print(c[0])
 
         stc_all_cluster_vis = summarize_clusters_stc(
-            clu, p_thresh = 0.01, vertices=fsave_vertices, subject="fsaverage"
+            clu, p_thresh = p_threshold, vertices=fsave_vertices, subject="fsaverage"
         )
         stc_all_cluster_vis.plot(src=src,clim=dict(kind="percent",lims=[99.7,99.75,99.975])) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
 
