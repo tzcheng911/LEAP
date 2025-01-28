@@ -23,6 +23,7 @@ Notes:
 The correspondance between event tage and sound are
 10. sld_143_t1 only get through 170 trials: cut out the last trial raw_file = raw.copy().crop(tmax=900.5) (manually create the event file)
 11. sld_145_t1 only get through half of the trials raw_file = raw_file.copy().crop(tmax=455)
+11. sld_151_t1 only get through half of the trials raw_file = raw_file.copy().crop(tmax=624)
                         TTl                  event code
 standard                448                  1 and 2 (alt)
 dev1                    484                  3 and 5 (alt)
@@ -270,7 +271,7 @@ os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
-time = '_t3' # '_t1' first time (6 mo) or '_t2' second time (12 mo) or '_t3' third time coming back, or 0 for cbs
+time = '_t1' # '_t1' first time (6 mo) or '_t2' second time (12 mo) or '_t3' third time coming back, or 0 for cbs
 direction = "ba_to_pa"
 
 # https://uwnetid-my.sharepoint.com/:x:/r/personal/babyleap_uw_edu/_layouts/15/Doc.aspx?sourcedoc=%7B4CDEB132-CCF5-4641-AFEF-43E17E28C126%7D&file=SLD%20Tracking%20&%20Runsheets.xlsx=&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0&action=default&mobileredirect=true
@@ -283,8 +284,8 @@ for file in os.listdir():
         subj.append(file)
 
 ## do individual by individual(s), check the time t1, t2 or t3 too
-subj = ['sld_131']
-conditions = ['2']
+subj = ['sld_151']
+conditions = ['4']
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]
@@ -300,6 +301,7 @@ for n,s in enumerate(subj):
     # raw_file = raw_file.copy().crop(tmax=900.5) # for sld_143_t1
     # raw_file = raw_file.copy().crop(tmax=455) # for sld_145_t1
     # raw_file = raw_file.copy().crop(tmax=786) # for sld_129_t3
+    # raw_file = raw_file.copy().crop(tmax=624) # for sld_151_t1
     find_events(raw_file, s,run,time)
     events=process_events(s,run,time)
     check=check_events(events,condition)
