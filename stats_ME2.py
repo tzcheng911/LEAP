@@ -222,7 +222,7 @@ def extract_CDI(MEGAge,CDIAge,CDIscore):
     elif MEGAge == '11mo':
         CDI = CDI_WS_11mo[CDI_WS_11mo['CDIAge'] == CDIAge][CDIscore]
     return CDI, subj_noCDI_ind
-
+    
 def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,ROI1,ROI2,SSEP_FOI):
     if n_analysis == 'conn_plv':
         conn0 = read_connectivity(root_path + 'connectivity/' + MEGAge + '_group' + n_condition + '_stc_rs_mne_mag6pT' + data_type + n_analysis) 
@@ -248,13 +248,18 @@ def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,
             SSEP = np.delete(SSEP,subj_noCDI_ind,axis=0) # delete the 3 subjects 'me2_203', 'me2_120', 'me2_117' who don't have CDI
         SSEP_triple = SSEP[:,:,ff(SSEP0[SSEP0.files[1]],1.11)]
         SSEP_duple = SSEP[:,:,ff(SSEP0[SSEP0.files[1]],1.67)]
+        SSEP_triple_1harm = SSEP[:,:,ff(SSEP0[SSEP0.files[1]],2.22)]
         SSEP_beat = SSEP[:,:,ff(SSEP0[SSEP0.files[1]],3.33)]
         if SSEP_FOI == '1.11 Hz':
             return SSEP_triple
         elif SSEP_FOI == '1.67 Hz':
             return SSEP_duple
+        elif SSEP_FOI == '2.22 Hz':
+            return SSEP_triple_1harm
         elif conn_FOI == '3.33 Hz':
-            return SSEP_beat      
+            return SSEP_beat   
+        else:
+            print("Freqs not exist.")
 
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
@@ -315,7 +320,7 @@ for n_age in ages:
 convert_to_csv(data_type,label_names,n_analysis,n_folder,1,0)
     
 #%%####################################### Analysis on the whole brain SSEP
-p_threshold = 0.001 # set a cluster forming threshold based on a p-value for the cluster based permutation test
+p_threshold = 0.05 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 for n_age in ages:
     print("Doing age " + n_age)
     random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_morph_psds.npz') 
@@ -352,6 +357,8 @@ for n_age in ages:
 convert_to_csv('_roi_redo4_',label_names,'conn_plv','connectivity/',3,0)
 
 #%%####################################### Correlation analysis between neural responses and CDI   
+meter = '_04'
+peak_freq = '2.22 Hz'
 data_type = '_roi_redo4_'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
@@ -361,32 +368,30 @@ elif data_type == '_roi_redo_':
     label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
 elif data_type == '_roi_redo5_':
     label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
-#%%
-ROI1 = 3
-ROI2 = 2
-FOI = 'beta'
-meter = '_03'
-peak_freq = '1.67 Hz'
+elif data_type == '_roi_redo4_':
+    label_names = np.asarray(["Auditory", "SensoryMotor", "BG", "IFG"])
+
+## correlation between ROI CONN and CDI 
+ROI1 = 1
+ROI2 = 0
+FOI = 'theta'
+
 ## correlation between conn and CDI: sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
-CDI1,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
-MEG1 = extract_MEG('11mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq)
-CDI2,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
-MEG2 = extract_MEG('11mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq)
-CDI = pd.concat([CDI1,CDI2])
-MEG = np.concatenate((MEG1,MEG2))
+CDI,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
+MEG = extract_MEG('11mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq)
+# CDI = pd.concat([CDI1,CDI2])
+# MEG = np.concatenate((MEG1,MEG2))
 # plt.figure()
 # plt.scatter(MEG,CDI)
 print('Conn between ' + label_names[ROI1] + ' ' + label_names[ROI2])
 print(pearsonr(MEG, CDI))
 # print(spearmanr(MEG, CDI))
-#%%
+
 ## correlation between ROI SSEP and CDI 
-CDI1,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
-MEG1 = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,'1.67 Hz')
-CDI2,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
-MEG2 = extract_MEG('11mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,'1.67 Hz')
-CDI = pd.concat([CDI1,CDI2])
-MEG = np.concatenate((MEG1,MEG2))
+CDI,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
+MEG = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq)
+# CDI = pd.concat([CDI1,CDI2])
+# MEG = np.concatenate((MEG1,MEG2))
 for n,ROI in enumerate(label_names):
     plt.figure()
     plt.scatter(MEG[:,n],CDI)
@@ -397,12 +402,10 @@ for n,ROI in enumerate(label_names):
 data_type = '_morph_'
 r_all = []
 p_all = []
-CDI1,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
-MEG1 = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,'1.67 Hz')
-CDI2,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
-MEG2 = extract_MEG('11mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,'1.67 Hz')
-CDI = pd.concat([CDI1,CDI2])
-MEG = np.concatenate((MEG1,MEG2))
+CDI,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
+MEG = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq)
+# CDI = pd.concat([CDI1,CDI2])
+# MEG = np.concatenate((MEG1,MEG2))
 for n in np.arange(0,len(MEG[0])):
     print('Doing vertex ' + str(n))
     tmp_r,tmp_p = pearsonr(MEG[:,n],CDI)
