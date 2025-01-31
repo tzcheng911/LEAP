@@ -21,7 +21,7 @@ src = mne.read_source_spaces(subjects_dir + subject + '/bem/fsaverage-vol-5-src.
 
 ## Get the atlas labels 
 fname_aseg = subjects_dir + subject + '/mri/aparc+aseg.mgz'
-label_names = mne.get_volume_labels_from_aseg(fname_aseg)
+label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
 
 #%% create a dummy eye matrix to feed in as stc.data
 dummy = np.eye(stc1.shape[0])
@@ -40,7 +40,7 @@ np.save('ROI_lookup.npy',np.array(label_v_ind, dtype=object),allow_pickle=True)
 label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
 
 #%%
-nv = 19870
+nv = 13703
 v_ind = np.where(src[0]['vertno'] == nv)
 for nlabel in np.arange(0,len(label_names),1):
     if v_ind in label_v_ind[nlabel][0]:
