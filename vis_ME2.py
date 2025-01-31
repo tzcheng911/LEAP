@@ -201,14 +201,14 @@ for n_age in age:
 
 #%%####################################### Visualize the source level: wholebrain 
 data_type = which_data_type[-1]
-n_analysis = analysis[1]
-n_folder = folders[1]
+n_analysis = analysis[0]
+n_folder = folders[0]
 n_meter = 'triple' # 'duple' or 'triple'
 ## set up the template brain
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 fsave_vertices = [s["vertno"] for s in src]
-p_threshold = 0.01 # set a cluster forming threshold based on a p-value for the cluster based permutation test
+p_threshold = 0.05 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 
 for n_age in age:
     if n_folder == 'SSEP/':
@@ -224,6 +224,7 @@ for n_age in age:
             clu, p_thresh = p_threshold, vertices=fsave_vertices, subject="fsaverage"
         )
         stc_all_cluster_vis.plot(src=src,clim=dict(kind="percent",lims=[99.7,99.75,99.975])) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
+        stc_all_cluster_vis.plot(src=src) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
 
     elif n_folder == 'decoding/':
         decoding_acc = np.load(root_path + n_folder + n_age + data_type + 'decodingACC_' + n_meter +'.npy') 
