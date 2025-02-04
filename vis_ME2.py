@@ -116,7 +116,7 @@ plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 age = ['7mo','11mo','br'] 
 folders = ['SSEP/','decoding/','connectivity/'] # random, duple, triple
 analysis = ['psds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
-which_data_type = ['_sensor_','_roi_','_roi_redo_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
+which_data_type = ['_sensor_','_roi_','_roi_redo4_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
 
 #%%####################################### Visualize the sensor level 
 n_folder = folders[0]
@@ -143,8 +143,8 @@ for n_age in age:
     plot_SSEP(psds_triple,freqs,'MEG_triple_psds')
 
 #%%####################################### Visualize on the source level: ROI 
-n_folder = folders[3]
-n_analysis = analysis[3]
+n_folder = folders[2]
+n_analysis = analysis[2]
 data_type = which_data_type[2]
 
 vmin = 0.5
@@ -158,7 +158,10 @@ if data_type == '_roi_':
     nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
 elif data_type == '_roi_redo_':
     label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
-    nROI = np.arange(0,len(label_names),1)
+elif data_type == '_roi_redo5_':
+    label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
+elif data_type == '_roi_redo4_':
+    label_names = np.asarray(["Auditory", "SensoryMotor", "BG", "IFG"])
 
 # Auditory (STG 72,108, HG 76,112), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
 # Basal ganglia group (7,8,9,16,26,27,28,31): out of all include caudate (7 26) and putamen (8 27) only based on Cannon & Patel 2020 TICS, putamen is most relevant 
@@ -176,7 +179,7 @@ for n_age in age:
         random_conn = random.get_data(output='dense')
         duple_conn = duple.get_data(output='dense')
         triple_conn = triple.get_data(output='dense')
-        plot_CONN(random_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_random_' + n_analysis)
+        # plot_CONN(random_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_random_' + n_analysis)
         plot_CONN(duple_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_duple_' + n_analysis)
         plot_CONN(triple_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_triple_' + n_analysis)
     else:
