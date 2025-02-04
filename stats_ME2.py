@@ -362,7 +362,7 @@ peak_freq = '2.22 Hz'
 data_type = '_roi_redo4_'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
-    s = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+    label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
     nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
 elif data_type == '_roi_redo_':
     label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
@@ -372,17 +372,17 @@ elif data_type == '_roi_redo4_':
     label_names = np.asarray(["Auditory", "SensoryMotor", "BG", "IFG"])
 
 ## correlation between ROI CONN and CDI 
-ROI1 = 1
-ROI2 = 0
-FOI = 'theta'
+ROI1 = 2
+ROI2 = 1
+FOI = 'alpha'
 
 ## correlation between conn and CDI: sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
 CDI,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
 MEG = extract_MEG('11mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq)
 # CDI = pd.concat([CDI1,CDI2])
 # MEG = np.concatenate((MEG1,MEG2))
-# plt.figure()
-# plt.scatter(MEG,CDI)
+plt.figure()
+plt.scatter(MEG,CDI)
 print('Conn between ' + label_names[ROI1] + ' ' + label_names[ROI2])
 print(pearsonr(MEG, CDI))
 # print(spearmanr(MEG, CDI))
