@@ -1,8 +1,8 @@
 clear 
 close all
 
-addpath(genpath('/Users/t.z.cheng/Downloads/dss'))
-cd('/Users/t.z.cheng/Downloads/dss/MEG_f80450/dss_input/')
+addpath(genpath('/home/tzcheng/Downloads/dss'))
+cd('/media/tzcheng/storage2/CBS/mat/MEG_f/dss_input')
 
 subjects = dir("*.mat");
 
