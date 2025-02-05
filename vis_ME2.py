@@ -149,8 +149,8 @@ data_type = which_data_type[2]
 
 vmin = 0.5
 vmax = 1
-nlines = 10
-FOI = 'Theta'
+nlines = 2
+FOI = 'alpha'
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
