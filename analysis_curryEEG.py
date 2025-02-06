@@ -149,7 +149,6 @@ BA_idx_sort = np.where(np.isin(np.array(ind),np.array(BA_idx)))
 TA_idx_sort = np.where(np.isin(np.array(ind),np.array(TA_idx)))
 NA_idx_sort = np.where(np.isin(np.array(ind),np.array(NA_idx)))
 
-
 EEG_env_conn_contrast = np.zeros((ntr,nch,27))
 EEG_env_conn_target = np.zeros((ntr,nch,27))
 EEG_env_conn_bg = np.zeros((ntr,nch,27))
