@@ -196,12 +196,12 @@ root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
-n_top = 'replicate_f' # could number of IC: 3 or 10, or dss: dss_f80450, dss
+n_top = '3' # could number of IC: 3 or 10, or dss: dss_f80450, dss
 n_trial = '200' # 'ntrial_200/' or 'ntrial_all/' or ''
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
 times = stc1.times
 
-did_pca = '_'  # '_': without or with pca "_pcffr80450_" the filter between 80 and 450 Hz is applied
+did_pca = '_pcffr80450_'  # '_': without or with pca "_pcffr80450_" the filter between 80 and 450 Hz is applied
 filename_ffr_ba = 'group_ba' + did_pca
 filename_ffr_mba = 'group_mba' + did_pca
 filename_ffr_pa = 'group_pa' + did_pca
@@ -213,7 +213,7 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
+baby_or_adult = 'cbsb_meg_analysis' # baby or adult
 input_data = 'wholebrain' # ROI or wholebrain or sensor or pcffr
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
