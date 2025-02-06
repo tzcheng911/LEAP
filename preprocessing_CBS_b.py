@@ -151,7 +151,7 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_150': ['MEG0312', 'MEG1712'],
     'sld_152': ['MEG0733', 'MEG2012','MEG2513'],
     'sld_151': ['MEG0733', 'MEG0323'],
-    'sld_151': ['MEG0733', 'MEG0323','MEG0713', 'MEG2513']
+    'sld_153': ['MEG0733', 'MEG0323','MEG0713', 'MEG2513']
     }
     
     t2_prebad = {
@@ -370,7 +370,7 @@ subjects = ['sld_153']
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    do_otp(s,time)
+    # do_otp(s,time)
     do_sss(s,st_correlation,int_order,time)
     for run in runs:
         if time == 0:
