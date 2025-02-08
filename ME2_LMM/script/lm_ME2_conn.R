@@ -16,7 +16,7 @@ alldataL = read.csv("lAM_roi_redo10_conn_plv.csv")
 alldataR = read.csv("rAM_roi_redo10_conn_plv.csv")
 alldata = read.csv("roi_redo5_conn_GC_MA.csv")
 alldata = read.csv("roi_redo5_conn_GC_M_seed_MI.csv")
-alldata = read.csv("conn_plv_roi_redo4_SA.csv")
+alldata = read.csv("conn_plv_roi_redo4_BS.csv")
 
 # log transform to achieve normality 
 alldata = alldata %>% 
