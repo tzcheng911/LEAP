@@ -63,13 +63,13 @@ summary_alldata = alldata %>%
             seMeterD = sd(X1.67Hz)/sqrt(Nsubs),seMeterT = sd(X1.11Hz)/sqrt(Nsubs),seBeat = sd(X3.3Hz)/sqrt(Nsubs))
 
 ################################################################# run ANOVA
-which_ROI = "BG" # AuditoryL,AuditoryR,MotorL,MotorR,SensoryL,SensoryR,BGL,BGR,IFGL,IFGR, or the recode ROI without L/R
+which_ROI = "Auditory" # AuditoryL,AuditoryR,MotorL,MotorR,SensoryL,SensoryR,BGL,BGR,IFGL,IFGR, or the recode ROI without L/R
 
 duple_random = filter(alldata,condition != "_04", ROI == which_ROI)
 triple_random = filter(alldata,condition != "_03", ROI == which_ROI)
 summary(lmer(log_X1.67Hz ~ 1+ condition*age + (1|sub_id),data=duple_random))
-summary(lmer(log_X3.3Hz ~ 1+ condition*age + (1|sub_id),data=duple_random))
 summary(lmer(log_X1.11Hz ~ 1+ condition*age + (1|sub_id),data=triple_random))
+summary(lmer(log_X3.3Hz ~ 1+ condition*age + (1|sub_id),data=duple_random))
 summary(lmer(log_X3.3Hz ~ 1+ condition*age + (1|sub_id),data=triple_random))
 
 ## Visualization
