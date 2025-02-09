@@ -18,8 +18,6 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.svm import SVC
 import time
 import random
-
-
 import mne
 from mne.minimum_norm import apply_inverse_epochs, read_inverse_operator
 from mne.preprocessing import Xdawn
