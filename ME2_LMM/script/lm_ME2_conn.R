@@ -16,17 +16,20 @@ alldataL = read.csv("lAM_roi_redo10_conn_plv.csv")
 alldataR = read.csv("rAM_roi_redo10_conn_plv.csv")
 alldata = read.csv("roi_redo5_conn_GC_MA.csv")
 alldata = read.csv("roi_redo5_conn_GC_M_seed_MI.csv")
-alldata = read.csv("conn_plv_roi_redo4_BS.csv")
+alldata = read.csv("conn_plv_roi_redo4_IA.csv")
 
 # log transform to achieve normality 
 alldata = alldata %>% 
   mutate(log_Delta.conn = log(Delta.conn),log_Theta.conn = log(Theta.conn), log_Alpha.conn = log(Alpha.conn), log_Beta.conn = log(Beta.conn))
 
 # Mutate new factors and re-level
+alldata$age[alldata$age =='br'] = 'Adults'
 alldata = alldata %>%
   mutate(age = as.factor(age))
 alldata = alldata %>%
   mutate(condition = as.factor(condition))
+alldata = alldata %>%
+  mutate(sub_id = as.factor(sub_id))
 alldata = alldata %>%
   mutate(sub_id = as.factor(sub_id))
 
@@ -74,19 +77,19 @@ summary(lmer(Alpha.conn ~ 1+ condition*age + (1|sub_id),data=triple_random))
 summary(lmer(Beta.conn ~ 1+ condition*age + (1|sub_id),data=triple_random))
 
 ## Visualization
-ggplot(alldata, aes(x = age, y = Theta.conn, fill = condition)) +
-  geom_bar(stat="summary", position='dodge') +
-  stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
-  geom_point(position = position_jitterdodge(jitter.width = 0.1,dodge.width = 0.9), color="black")+
-  ylim(0,1)+
-  theme_bw()
-
-ggplot(alldata, aes(x = age, y = Alpha.conn, fill = condition)) +
-  geom_bar(stat="summary", position='dodge') +
-  stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
-  geom_point(position = position_jitterdodge(jitter.width = 0.1,dodge.width = 0.9), color="black")+
-  ylim(0,1)+
-  theme_bw()
+# ggplot(alldata, aes(x = age, y = Theta.conn, fill = condition)) +
+#   geom_bar(stat="summary", position='dodge') +
+#   stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
+#   geom_point(position = position_jitterdodge(jitter.width = 0.1,dodge.width = 0.9), color="black")+
+#   ylim(0,1)+
+#   theme_bw()
+# 
+# ggplot(alldata, aes(x = age, y = Alpha.conn, fill = condition)) +
+#   geom_bar(stat="summary", position='dodge') +
+#   stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
+#   geom_point(position = position_jitterdodge(jitter.width = 0.1,dodge.width = 0.9), color="black")+
+#   ylim(0,1)+
+#   theme_bw()
 
 # ggplot(duple_random, aes(x = age, y = Delta.conn, fill = condition)) +
 #   geom_bar(stat="summary", position='dodge') +
@@ -95,16 +98,20 @@ ggplot(alldata, aes(x = age, y = Alpha.conn, fill = condition)) +
 #   theme_bw()
 
 ggplot(duple_random, aes(x = age, y = Theta.conn, fill = condition)) +
+  scale_fill_manual(values=c("light grey","orange"))+
   geom_bar(stat="summary", position='dodge') +
   stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
   geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
-  theme_bw()
+  theme_minimal()
+ggsave("/Users/tzu-hanzoecheng/Documents/GitHub/LEAP/ME2_figures/Figure5_IA_duple_theta.pdf")
 
 ggplot(duple_random, aes(x = age, y = Alpha.conn, fill = condition)) +
+  scale_fill_manual(values=c("light grey","orange"))+
   geom_bar(stat="summary", position='dodge') +
   stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
   geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
-  theme_bw()
+  theme_minimal()
+ggsave("/Users/tzu-hanzoecheng/Documents/GitHub/LEAP/ME2_figures/Figure5_IA_duple_alpha.pdf")
 
 # ggplot(duple_random, aes(x = age, y = Beta.conn, fill = condition)) +
 #   geom_bar(stat="summary", position='dodge') +
@@ -125,16 +132,20 @@ ggplot(duple_random, aes(x = age, y = Alpha.conn, fill = condition)) +
 #   theme_bw()
 
 ggplot(triple_random, aes(x = age, y = Theta.conn, fill = condition)) +
+  scale_fill_manual(values=c("light grey","sky blue"))+
   geom_bar(stat="summary", position='dodge') +
   stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
   geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
-  theme_bw()
+  theme_minimal()
+ggsave("/Users/tzu-hanzoecheng/Documents/GitHub/LEAP/ME2_figures/Figure5_IA_triple_theta.pdf")
 
 ggplot(triple_random, aes(x = age, y = Alpha.conn, fill = condition)) +
+  scale_fill_manual(values=c("light grey","sky blue"))+
   geom_bar(stat="summary", position='dodge') +
   stat_summary(fun.data=mean_se, geom="errorbar", position = position_dodge(width = 0.9), width=.1,color="grey") +
   geom_point(position = position_jitterdodge(jitter.width = 0.3,dodge.width = 0.9), color="black")+
-  theme_bw()
+  theme_minimal()
+ggsave("/Users/tzu-hanzoecheng/Documents/GitHub/LEAP/ME2_figures/Figure5_IA_triple_alpha.pdf")
 
 # ggplot(triple_random, aes(x = age, y = Beta.conn, fill = condition)) +
 #   geom_bar(stat="summary", position='dodge') +
