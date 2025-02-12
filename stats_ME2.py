@@ -86,7 +86,22 @@ def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold
 
 def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
     XX = conn1-conn2
+    ## compare whole freq spectrum between conditions and ages 
+    # non-parametric
+    ROI1 = 2
+    ROI2 = 1
+    T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(XX[:,ROI1,ROI2,:], seed = 0,verbose='ERROR') # test which frequency in Sensorimotor-Auditory is significant
+    good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
+    for i in np.arange(0,len(good_cluster_inds),1):
+        print("The " + str(i+1) + "st significant cluster")
+        print(clusters[good_cluster_inds[i]])
+        print('Significant freqs: ' + str(freqs[clusters[good_cluster_inds[i]][0]]))
+    # parametric
+    t,p = stats.ttest_1samp(XX[:,ROI1,ROI2,:],0) 
+    good_cluster_inds = np.where(p < 0.05)[0]
+    print('Significant freqs: ' + str(freqs[good_cluster_inds]))
     
+    ## compare for a priori freq spectrum between conditions and ages 
     if FOI == "Delta": # 1-4 Hz
         X = XX[:,:,:,ff(freqs,1):ff(freqs,4)].mean(axis=3)
     elif FOI == "Theta": # 4-8 Hz
@@ -97,7 +112,7 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
         X = XX[:,:,:,ff(freqs,15):ff(freqs,30)].mean(axis=3)
     else:  # broadband
         X = XX.mean(axis=3)
-    
+            
     t,p = stats.ttest_1samp(X,0)
     labels = mne.read_labels_from_annot("sample", parc="aparc", subjects_dir=subjects_dir)
     label_colors = [label.color for label in labels]
