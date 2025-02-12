@@ -196,7 +196,7 @@ root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
-n_top = '3' # could number of IC: 3 or 10, or dss: dss_f80450, dss
+n_top = '10' # could number of IC: 3 or 10, or dss: dss_f80450, dss
 n_trial = '200' # 'ntrial_200/' or 'ntrial_all/' or ''
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
 times = stc1.times
