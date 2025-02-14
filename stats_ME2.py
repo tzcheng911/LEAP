@@ -37,6 +37,14 @@ def ff(input_arr,target):
             delta = abs(input_arr[i]-target)
     return idx
 
+def plot_err(group_stc,color,t):
+    group_avg=np.mean(group_stc,axis=0)
+    err=np.std(group_stc,axis=0)/np.sqrt(group_stc.shape[0])
+    up=group_avg+err
+    lw=group_avg-err
+    plt.plot(t,group_avg,color=color)
+    plt.fill_between(t,up,lw,color=color,alpha=0.5)
+    
 def stats_SSEP(X,freqs,nonparametric):
     ## Compute parametric t-test and non-parametric 1D cluster test (across freqs) on X (psd1 - psd2)
     if nonparametric: 
@@ -84,14 +92,13 @@ def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold
     with open(filename, 'wb') as f:
         pickle.dump(clu, f) # clu: clustering results of T_obs, clusters, cluster_p_values, H0
 
-def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
+def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2):
     XX = conn1-conn2
     ## compare whole freq spectrum between conditions and ages 
     # non-parametric
-    ROI1 = 2
-    ROI2 = 1
     T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(XX[:,ROI1,ROI2,:], seed = 0,verbose='ERROR') # test which frequency in Sensorimotor-Auditory is significant
     good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
+    print(cluster_p_values)
     for i in np.arange(0,len(good_cluster_inds),1):
         print("The " + str(i+1) + "st significant cluster")
         print(clusters[good_cluster_inds[i]])
@@ -99,7 +106,12 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
     # parametric
     t,p = stats.ttest_1samp(XX[:,ROI1,ROI2,:],0) 
     good_cluster_inds = np.where(p < 0.05)[0]
-    print('Significant freqs: ' + str(freqs[good_cluster_inds]))
+    print('Significant freqs for uncorrected ttest: ' + str(freqs[good_cluster_inds]))
+    
+    plt.figure()
+    plot_err(conn1[:,ROI1,ROI2,:],'m',freqs)
+    plot_err(conn2[:,ROI1,ROI2,:],'r',freqs)
+    plt.xlim([4,35])
     
     ## compare for a priori freq spectrum between conditions and ages 
     if FOI == "Delta": # 1-4 Hz
@@ -121,19 +133,19 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title):
     node_order.extend(label_names)  # reverse the order
     node_angles = circular_layout(
          label_names, node_order, start_pos=90, group_boundaries=[0, len(label_names) / 2])
-      
-    fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
-    plot_connectivity_circle(
-    1-p,
-    label_names,
-    n_lines=nlines, # plot the top n lines
-    vmin=0.95, # correspond to p = 0.05
-    vmax=1, # correspond to p = 0
-    node_angles=node_angles,
-    node_colors=label_colors,
-    title= title + " 1-p-value " + FOI,
-    ax=ax)
-    fig.tight_layout() 
+    
+    # fig, ax = plt.subplots(figsize=(8, 8), facecolor="black", subplot_kw=dict(polar=True))
+    # plot_connectivity_circle(
+    # 1-p,
+    # label_names,
+    # n_lines=nlines, # plot the top n lines
+    # vmin=0.95, # correspond to p = 0.05
+    # vmax=1, # correspond to p = 0
+    # node_angles=node_angles,
+    # node_colors=label_colors,
+    # title= title + " 1-p-value " + FOI,
+    # ax=ax)
+    # fig.tight_layout() 
 
 def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
     lm_np = []
@@ -311,7 +323,7 @@ data_type = which_data_type[2] # 1:_roi_ or 2:_roi_redo_
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 if data_type == '_roi_':
     label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-    nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
+    nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107]
 elif data_type == '_roi_redo4_':
     # label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
     # label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
@@ -353,22 +365,39 @@ n_folder = folders[3] # 0: connectivity/
 n_analysis = analysis[1] # 1:'conn_plv', 2:'conn_coh', 3:'conn_pli'
 data_type = which_data_type[2] # 1:_roi_ or 2:_roi_redo5_
 
+random_conn_all = []
+duple_conn_all = []
+triple_conn_all = []
+
 nlines = 10
+ROI1 = 2
+ROI2 = 1
 FOI = 'Beta' # Delta, Theta, Alpha, Beta 
 
-for n_age in ages:
+for n_age in ages[:-1]:
     print("Doing connectivity " + n_age)
     random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
     duple = read_connectivity(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis) 
     triple = read_connectivity(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis) 
-    freqs = random.freqs
+    freqs = np.array(random.freqs)
     random_conn = random.get_data(output='dense')
     duple_conn = duple.get_data(output='dense')
     triple_conn = triple.get_data(output='dense')
+    random_conn_all.append(random_conn)
+    duple_conn_all.append(duple_conn)
+    triple_conn_all.append(triple_conn)
     print("-------------------Doing duple-------------------")
-    stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis)
+    stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis,ROI1,ROI2)
     print("-------------------Doing triple-------------------")
-    stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis)
+    stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis,ROI1,ROI2)
+print("-------------------Doing duple-------------------")
+conn1 = duple_conn_all[0]-random_conn_all[0] # 7mo
+conn2 = duple_conn_all[1]-random_conn_all[1] # 11mo
+stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2)
+print("-------------------Doing triple-------------------")
+conn1 = triple_conn_all[0]-random_conn_all[0] # 7mo
+conn2 = triple_conn_all[1]-random_conn_all[1] # 11mo
+stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2)
 convert_to_csv('_roi_redo4_',label_names,'conn_plv','connectivity/',3,0)
 
 #%%####################################### Correlation analysis between neural responses and CDI   
@@ -387,8 +416,8 @@ elif data_type == '_roi_redo4_':
     label_names = np.asarray(["Auditory", "SensoryMotor", "BG", "IFG"])
 
 ## correlation between ROI CONN and CDI 
-ROI1 = 2
-ROI2 = 1
+ROI1 = 1
+ROI2 = 0
 FOI = 'alpha'
 
 ## correlation between conn and CDI: sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
