@@ -113,7 +113,7 @@ fs, audio = wavfile.read(root_path + 'Stimuli/Random/random15rr.wav') # Random, 
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 
 #%% Parameters
-age = ['7mo','11mo','br'] 
+ages = ['7mo','11mo','br'] 
 folders = ['SSEP/','decoding/','connectivity/'] # random, duple, triple
 analysis = ['psds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
 which_data_type = ['_sensor_','_roi_','_roi_redo4_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
@@ -123,7 +123,7 @@ n_folder = folders[0]
 n_analysis = analysis[0]
 data_type = which_data_type[0]
 
-for n_age in age:
+for n_age in ages:
     print("Doing age " + n_age)
     random = np.load(root_path + n_folder + n_age + '_group_02_rs_mag6pT' + data_type + n_analysis +'.npz') 
     duple = np.load(root_path + n_folder + n_age + '_group_03_rs_mag6pT' + data_type + n_analysis + '.npz') 
@@ -169,7 +169,12 @@ elif data_type == '_roi_redo4_':
 # Posterior Parietal: inferior parietal (50 86),  superior parietal (71 107)
 # roi_redo pools ROIs to be 6 new_ROIs = {"Auditory": [72,108], "Motor": [66,102], "Sensory": [64,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98],  "Posterior": [50,86,71,107]}
 
-for n_age in age:
+plt.figure()    
+color1 = ['m','r']
+color2 = ['c','b']
+ROI1 = 66
+ROI2 = 53
+for nn_age,n_age in enumerate(ages[:-1]):
     print("Doing age " + n_age)
     if n_folder == 'connectivity/':
         random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
@@ -179,11 +184,15 @@ for n_age in age:
         random_conn = random.get_data(output='dense')
         duple_conn = duple.get_data(output='dense')
         triple_conn = triple.get_data(output='dense')
+        
+        plot_err(duple_conn[:,ROI1,ROI2,:]-random_conn[:,ROI1,ROI2,:],color1[nn_age],freqs)
+        plot_err(triple_conn[:,ROI1,ROI2,:]-random_conn[:,ROI1,ROI2,:],color2[nn_age],freqs)
+        
         plt.figure()
         plt.title(n_age)
-        plot_err(duple_conn[:,2,1,:],'r',freqs)
-        plot_err(triple_conn[:,2,1,:],'b',freqs)
-        plot_err(random_conn[:,2,1,:],'k',freqs)
+        plot_err(duple_conn[:,ROI1,ROI2,:],'r',freqs)
+        plot_err(triple_conn[:,ROI1,ROI2,:],'b',freqs)
+        plot_err(random_conn[:,ROI1,ROI2,:],'k',freqs)
         plt.xlim([4,35])
         plot_CONN(random_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_random_' + n_analysis)
         plot_CONN(duple_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_duple_' + n_analysis)
