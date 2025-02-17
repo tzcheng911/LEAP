@@ -33,9 +33,8 @@ alldata = alldata %>%
 alldata = alldata %>%
   mutate(sub_id = as.factor(sub_id))
 
-alldata$age = relevel(alldata$age,ref="7mo")
+alldata$age = relevel(alldata$age,ref="Adults")
 alldata$condition = relevel(alldata$condition,ref="_02")
-
 
 ## Descriptive stats
 # Connectivity
