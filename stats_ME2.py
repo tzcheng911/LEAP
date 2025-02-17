@@ -92,7 +92,7 @@ def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold
     with open(filename, 'wb') as f:
         pickle.dump(clu, f) # clu: clustering results of T_obs, clusters, cluster_p_values, H0
 
-def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2):
+def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,ymin,ymax):
     XX = conn1-conn2
     ## compare whole freq spectrum between conditions and ages 
     # non-parametric
@@ -112,6 +112,8 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2):
     plot_err(conn1[:,ROI1,ROI2,:],'m',freqs)
     plot_err(conn2[:,ROI1,ROI2,:],'r',freqs)
     plt.xlim([4,35])
+    plt.ylim([ymin,ymax])
+    plt.vlines(x = freqs[good_cluster_inds],color='y',ymin = ymin, ymax=ymax)
     
     ## compare for a priori freq spectrum between conditions and ages 
     if FOI == "Delta": # 1-4 Hz
@@ -387,17 +389,18 @@ for n_age in ages[:-1]:
     duple_conn_all.append(duple_conn)
     triple_conn_all.append(triple_conn)
     print("-------------------Doing duple-------------------")
-    stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis,ROI1,ROI2)
+    stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis,ROI1,ROI2,0.39,1)
     print("-------------------Doing triple-------------------")
-    stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis,ROI1,ROI2)
+    stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis,ROI1,ROI2,0.39,1)
 print("-------------------Doing duple-------------------")
 conn1 = duple_conn_all[0]-random_conn_all[0] # 7mo
 conn2 = duple_conn_all[1]-random_conn_all[1] # 11mo
-stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2)
+stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2,-0.15,0.25)
 print("-------------------Doing triple-------------------")
 conn1 = triple_conn_all[0]-random_conn_all[0] # 7mo
 conn2 = triple_conn_all[1]-random_conn_all[1] # 11mo
-stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2)
+stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2,-0.15,0.25)
+
 convert_to_csv('_roi_redo4_',label_names,'conn_plv','connectivity/',3,0)
 
 #%%####################################### Correlation analysis between neural responses and CDI   
