@@ -252,7 +252,7 @@ def extract_CDI(MEGAge,CDIAge,CDIscore):
         CDI = CDI_WS_11mo[CDI_WS_11mo['CDIAge'] == CDIAge][CDIscore]
     return CDI, subj_noCDI_ind
     
-def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,ROI1,ROI2,SSEP_FOI):
+def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,ROI1,ROI2,SSEP_FOI,F1,F2):
     if n_analysis == 'conn_plv':
         conn0 = read_connectivity(root_path + 'connectivity/' + MEGAge + '_group' + n_condition + '_stc_rs_mne_mag6pT' + data_type + n_analysis) 
         conn = conn0.get_data(output='dense')
@@ -262,6 +262,7 @@ def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,
         conn_theta = conn[:,ROI1,ROI2,ff(conn0.freqs,4):ff(conn0.freqs,8)].mean(-1)
         conn_alpha = conn[:,ROI1,ROI2,ff(conn0.freqs,8):ff(conn0.freqs,12)].mean(-1)
         conn_beta = conn[:,ROI1,ROI2,ff(conn0.freqs,15):ff(conn0.freqs,30)].mean(-1)
+        conn_alpha_beta = conn[:,ROI1,ROI2,ff(conn0.freqs,F1):ff(conn0.freqs,F2)].mean(-1)
         if conn_FOI == 'delta':
             return conn_delta
         elif conn_FOI == 'theta':
@@ -269,7 +270,10 @@ def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,
         elif conn_FOI == 'alpha':
             return conn_alpha      
         elif conn_FOI == 'beta':
-            return conn_beta      
+            return conn_beta     
+        elif conn_FOI == 'alpha_beta':
+            print('From freqs ' + str(F1) + ' Hz to ' + str(F2) + ' Hz')
+            return conn_alpha_beta     
     elif n_analysis == 'psds':
         SSEP0 = np.load(root_path + 'SSEP/' + MEGAge + '_group' + n_condition + '_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
         SSEP = SSEP0[SSEP0.files[0]]
@@ -373,7 +377,7 @@ triple_conn_all = []
 
 nlines = 10
 ROI1 = 2
-ROI2 = 1
+ROI2 = 0
 FOI = 'Beta' # Delta, Theta, Alpha, Beta 
 
 for n_age in ages[:-1]:
@@ -404,7 +408,8 @@ stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2,-0
 convert_to_csv('_roi_redo4_',label_names,'conn_plv','connectivity/',3,0)
 
 #%%####################################### Correlation analysis between neural responses and CDI   
-meter = '_04'
+meter = '_03'
+age = '7mo'
 peak_freq = '2.22 Hz'
 data_type = '_roi_redo4_'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
@@ -419,21 +424,28 @@ elif data_type == '_roi_redo4_':
     label_names = np.asarray(["Auditory", "SensoryMotor", "BG", "IFG"])
 
 ## correlation between ROI CONN and CDI 
-ROI1 = 1
-ROI2 = 0
-FOI = 'alpha'
+ROI1 = 2
+ROI2 = 1
+F1 = 5
+F2 = 9
+FOI = 'alpha_beta'
 
 ## correlation between conn and CDI: sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
-CDI,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
-MEG = extract_MEG('11mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq)
+CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
+MEG = extract_MEG(age,data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2) 
+# CDI1,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
+# CDI2,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
+# MEG1 = extract_MEG('7mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2)
+# MEG2 = extract_MEG('11mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2)
 # CDI = pd.concat([CDI1,CDI2])
 # MEG = np.concatenate((MEG1,MEG2))
+
 plt.figure()
 plt.scatter(MEG,CDI)
 print('Conn between ' + label_names[ROI1] + ' ' + label_names[ROI2])
 print(pearsonr(MEG, CDI))
 # print(spearmanr(MEG, CDI))
-
+#%%
 ## correlation between ROI SSEP and CDI 
 CDI,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
 MEG = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq)
