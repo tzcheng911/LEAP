@@ -371,12 +371,12 @@ do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use th
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_b118'): # cbs_A for the adults and cbs_b for the infants
+    if file.startswith('cbs_A114'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 # subj = ['cbs_zoe']
 
 #%%##### do the jobs for MEG
-n_trials =  200 # can be an integer or 'all' using all the sounds
+n_trials =  'all' # can be an integer or 'all' using all the sounds
 # randomly select k sounds from each condition
 # each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
 # we have at least 200 sounds for each condition 
