@@ -133,7 +133,7 @@ def group_stc(subj,baby_or_adult,n_top, n_trial):
     np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr80450_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_dev1_roi)
     np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr80450_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_dev2_roi)
 
-#%%#######################################' + str(n_top) + '
+#%%#######################################'
 root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
 ## Parameters
