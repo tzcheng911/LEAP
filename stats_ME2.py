@@ -408,7 +408,7 @@ stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2,-0
 convert_to_csv('_roi_redo4_',label_names,'conn_plv','connectivity/',3,0)
 
 #%%####################################### Correlation analysis between neural responses and CDI   
-meter = '_03'
+meter = '_04'
 age = '7mo'
 peak_freq = '2.22 Hz'
 data_type = '_roi_redo4_'
@@ -426,8 +426,8 @@ elif data_type == '_roi_redo4_':
 ## correlation between ROI CONN and CDI 
 ROI1 = 2
 ROI2 = 1
-F1 = 5
-F2 = 9
+F1 = 4
+F2 = 35
 FOI = 'alpha_beta'
 
 ## correlation between conn and CDI: sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
@@ -442,6 +442,8 @@ MEG = extract_MEG(age,data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,pe
 
 plt.figure()
 plt.scatter(MEG,CDI)
+plt.ylim([50,710])
+plt.xlim([0.29,0.95])
 print('Conn between ' + label_names[ROI1] + ' ' + label_names[ROI2])
 print(pearsonr(MEG, CDI))
 # print(spearmanr(MEG, CDI))
