@@ -9,6 +9,7 @@ Investigate the ring pattern in cbs_A114
 """
 
 import mne
+from mne.beamformer import apply_lcmv, make_lcmv
 import os
 
 root_path='/media/tzcheng/storage2/CBS/'
@@ -33,13 +34,29 @@ s = subjects[0]
 file_in = root_path + s + '/sss_fif/' + s
 evokeds = mne.read_evokeds(file_in + runs[0] + '_otp_raw_sss_proj_f80450_evoked_' + cond[0] + '_ffr_' + str(n_trial) +'.fif')[0]
 fwd = mne.read_forward_solution(file_in + '-fwd.fif')
-cov = mne.read_cov(file_in + runs[0] + '_erm_otp_raw_sss_proj_f80450_ffr-cov.fif')
 epoch = mne.read_epochs(file_in + runs[0] + '_otp_raw_sss_proj_f80450_ffr_e_' + str(n_trial) + '.fif')
-inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
+noise_cov = mne.read_cov(file_in + runs[0] + '_erm_otp_raw_sss_proj_f80450_ffr-cov.fif')
+data_cov = mne.compute_covariance(epoch, tmin=0, tmax=None)
+
+inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, noise_cov,loose=1,depth=0.8)
 evokeds_inv_stc = mne.minimum_norm.apply_inverse((evokeds), inverse_operator, pick_ori = None)
-        
 evokeds_inv_stc.plot(src = inverse_operator['src'])
-   
+
+filters = make_lcmv(
+    evokeds.info,
+    fwd,
+    data_cov,
+    reg=0.05,
+    noise_cov=noise_cov,
+    pick_ori="max-power",
+    weight_norm="unit-noise-gain",
+    rank='info',
+)
+    
+stc_lcmv = apply_lcmv(evokeds, filters)
+stc_lcmv.plot(src = inverse_operator['src'])
+
+#%% morphing
 fname_src_fsaverage = subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif'
 src_fs = mne.read_source_spaces(fname_src_fsaverage)
 morph = mne.compute_source_morph(
@@ -51,6 +68,7 @@ morph = mne.compute_source_morph(
     src_to=src_fs,
     verbose=True)
 evokeds_inv_stc_fsaverage = morph.apply(evokeds_inv_stc)
+
 
 ## Visualization
 trans=mne.read_trans(file_in + s + '-trans.fif')
