@@ -7,7 +7,7 @@ Convert the SSEP, conn results to csv files for LMM analysis in R.
 
 @author: tzcheng
 """
-
+/media/tzcheng/storage2/CBS
 #%%####################################### Import library  
 
 
