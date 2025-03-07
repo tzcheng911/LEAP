@@ -2,14 +2,16 @@ clear
 close all
 
 addpath(genpath('/home/tzcheng/Downloads/dss'))
-cd('/media/tzcheng/storage2/CBS/mat/MEG_f/dss_input')
+root_path = '/media/tzcheng/storage2/CBS/mat/';
+specific_path = 'MEG_f80450/ntrial_200/';
+cd(strcat(root_path, specific_path,'dss_input'))
 
 subjects = dir("*.mat");
 
 for subj = 1:size(subjects)
     filename = subjects(subj).name;
     load(filename);
-    meg = data(1:200,:,:); % trial * channels * time
+    meg = data(401:600,:,:); % trial * channels * time
     sr = 5000;
     times = linspace(-0.02, 0.2,1101);
     meg = permute(meg,[3, 2, 1]); % make it time * channels * trials
@@ -20,7 +22,7 @@ for subj = 1:size(subjects)
     z=nt_mmat(meg,todss); % matrix multiplication to convert data to normalized DSS components 
     megclean2=nt_tsr(meg,z); % regress out to get clean data - project back to the sensor space
     megclean2 = permute(megclean2,[3, 2, 1]);
-    save(strcat("clean_ba_",filename),"megclean2");
+    save(strcat(root_path,specific_path,"dss_output/clean_pa_",filename),"megclean2");
     clear megclean2 meg filename
     strcat('Finish subject ',num2str(subj))
 end
