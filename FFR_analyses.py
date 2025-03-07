@@ -767,9 +767,10 @@ SNR = np.array(rms_signal_s)/np.array(rms_noise_s)
 print('SNR: ' + str(np.array(SNR).mean()) + '(' + str(np.array(SNR).std()/np.sqrt(len(EEG_pa_FFR))) +')')
 
 #%%####################################### save the mat files of MEG sensor data for dss
+random.seed(15)
 root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
-n_trials = 'all'
+n_trials = 200
 all_score_lr = []
 all_score_svm = []
 subj = [] # A104 got some technical issue
@@ -796,11 +797,11 @@ for s in subj:
         dev2_e = mne.epochs.combine_event_ids(dev2_e, ['Deviant2p', 'Deviant2n'], {'Deviant2': 10})
         epochs = mne.concatenate_epochs([std_e,dev1_e,dev2_e])
     
-    X = np.squeeze(epochs.get_data())  
+    X = np.squeeze(epochs.get_data(picks='mag'))  ## only use the 102 mag sensors because actching deeper sources
     y = epochs.events[:, 2]  # target: standard, deviant1 and 2
     
     mdic = {"condition":y,"data":X}
-    fname = root_path + 'mat/MEG_f80450/ntrial_all/dss_input/' + s +'_MEG_epoch_f80450'
+    fname = root_path + 'mat/MEG_f80450/ntrial_200/dss_input/' + s +'_MEG_epoch_f80450_' + str(n_trials)
     savemat(fname + '.mat', mdic)
     del mdic, epochs
 
@@ -813,23 +814,35 @@ nch = 75
 epochs = mne.read_epochs(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_cABR_e.fif')
 evoked1 = mne.read_evokeds(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
 evoked2 = mne.read_evokeds(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+epochs = epochs.pick_types('mag')
+evoked1 = evoked1.pick_types('mag')
+evoked2 = evoked2.pick_types('mag')
 
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A118'): # cbs_A for the adults and cbs_b for the infants
+    if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 for s in subj:
-    meg = loadmat(root_path + 'mat/MEG_f/dss_input/' + s +'_MEG_epoch_f802000.mat')
+    meg = loadmat(root_path + 'mat/MEG_f80450/ntrial_200/dss_input/' + s +'_MEG_epoch_f80450_200.mat')
     meg = meg['data']
-    dss_clean_meg = loadmat(root_path + 'mat/MEG_f/dss_output/mba/clean_mba_' + s +'_MEG_epoch.mat')
+    dss_clean_meg = loadmat(root_path + 'mat/MEG_f80450/ntrial_200/dss_output/clean_ba_' + s +'_MEG_epoch_f80450_200.mat')
     dss_clean_meg = dss_clean_meg['megclean2']
+    
+    evoked1.data = meg[:200,:,:].mean(0)
+    evoked2.data = dss_clean_meg[:200,:,:].mean(0)
+    evoked1.plot_topo()
+    evoked2.plot_topo()
     
     fig, ax = plt.subplots(1,1)
     im = plt.imshow(meg[:200,:,:].mean(axis=1),aspect = 'auto', origin='lower', cmap='jet')
     plt.colorbar()
-    im.set_clim(-2e-13,2e-13)
+    im.set_clim(-2e-14,2e-14)
     
     fig, ax = plt.subplots(1,1)
     im = plt.imshow(dss_clean_meg[:,:,:].mean(axis=1),aspect = 'auto', origin='lower', cmap='jet')
     plt.colorbar()
-    im.set_clim(-2e-20,2e-20)
+    im.set_clim(-2e-22,2e-22)
+
+#%%####################################### only select the mag for group level FFR analysis
+evoked = evoked.pick_types('mag')
+data = evoked1.get_data(picks = 'mag')
