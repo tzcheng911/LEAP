@@ -220,8 +220,8 @@ for nn_age,n_age in enumerate(ages[:-1]):
 #%%####################################### Visualize the source level: wholebrain 
 data_type = which_data_type[-1]
 n_analysis = analysis[0]
-n_folder = folders[2]
-n_meter = 'duple' # 'duple' or 'triple'
+n_folder = folders[0]
+n_meter = 'triple' # 'duple' or 'triple'
 ## set up the template brain
 stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')

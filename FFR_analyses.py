@@ -775,12 +775,14 @@ all_score_lr = []
 all_score_svm = []
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
+    if file.startswith('cbs_A108'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 for s in subj:
-    file_in = root_path + '/' + s + '/sss_fif/' + s 
+    file_in = root_path + '/' + s + '/sss_fif/' + s   # load meg files
+    epochs = mne.read_epochs(file_in +'_01_otp_raw_sss_proj_f80450_ffr_e_all.fif')  # load meg files
+    
     # file_in = root_path + '/' + s + '/eeg/' + s # load eeg files
-    epochs = mne.read_epochs(file_in +'_01_otp_raw_sss_proj_f80450_ffr_e_' + str(n_trials) + '.fif') 
+    # epochs = mne.read_epochs(file_in +'_01_cABR_e_all.fif')   # load eeg files
     if n_trials == 'all':
         epochs = epochs
     elif n_trials == 200:
@@ -797,7 +799,7 @@ for s in subj:
         dev2_e = mne.epochs.combine_event_ids(dev2_e, ['Deviant2p', 'Deviant2n'], {'Deviant2': 10})
         epochs = mne.concatenate_epochs([std_e,dev1_e,dev2_e])
     
-    X = np.squeeze(epochs.get_data(picks='mag'))  ## only use the 102 mag sensors because actching deeper sources
+    X = np.squeeze(epochs.get_data(picks='mag'))  ## only use the 102 mag sensors because catching deeper sources
     y = epochs.events[:, 2]  # target: standard, deviant1 and 2
     
     mdic = {"condition":y,"data":X}
@@ -820,12 +822,12 @@ evoked2 = evoked2.pick_types('mag')
 
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
+    if file.startswith('cbs_A108'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 for s in subj:
     meg = loadmat(root_path + 'mat/MEG_f80450/ntrial_200/dss_input/' + s +'_MEG_epoch_f80450_200.mat')
     meg = meg['data']
-    dss_clean_meg = loadmat(root_path + 'mat/MEG_f80450/ntrial_200/dss_output/clean_ba_' + s +'_MEG_epoch_f80450_200.mat')
+    dss_clean_meg = loadmat(root_path + 'mat/MEG_f80450/ntrial_200/dss_output/ba/clean_ba_' + s +'_MEG_epoch_f80450_200.mat')
     dss_clean_meg = dss_clean_meg['megclean2']
     
     evoked1.data = meg[:200,:,:].mean(0)
