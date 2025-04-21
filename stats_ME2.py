@@ -408,8 +408,8 @@ stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2,-0
 convert_to_csv('_roi_redo4_',label_names,'conn_plv','connectivity/',3,0)
 
 #%%####################################### Correlation analysis between neural responses and CDI   
-meter = '_04'
-age = '11mo'
+meter = '_03'
+age = '7mo'
 peak_freq = '1.11 Hz'
 data_type = '_roi_redo4_'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
@@ -431,7 +431,7 @@ F2 = 35
 FOI = 'alpha_beta'
 
 ## correlation between conn and CDI: sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
-CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
+CDI,subj_noCDI_ind = extract_CDI(age,21,'VOCAB')
 MEG = extract_MEG(age,data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2) 
 # CDI1,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
 # CDI2,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
@@ -463,8 +463,8 @@ for n,ROI in enumerate(label_names):
 data_type = '_morph_'
 r_all = []
 p_all = []
-CDI,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
-MEG = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq)
+CDI,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
+MEG = extract_MEG('11mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq)
 # CDI = pd.concat([CDI1,CDI2])
 # MEG = np.concatenate((MEG1,MEG2))
 for n in np.arange(0,len(MEG[0])):
