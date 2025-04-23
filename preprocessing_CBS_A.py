@@ -14,7 +14,7 @@ Could be used on cbsb too after otp and sss!
 
 ###### Import library 
 import mne
-# import mnefun
+import mnefun
 import matplotlib
 from mne.preprocessing import maxwell_filter
 import numpy as np
