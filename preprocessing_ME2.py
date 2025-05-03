@@ -268,7 +268,9 @@ def do_epoch(data, subject, run, events):
     reject=dict(grad=4000e-13,mag=6e-12) # Zoe's ME2 criteria
     picks = mne.pick_types(data.info,meg=True,eeg=False) 
     epochs_cortical = mne.Epochs(data, events, event_id,tmin =-0.5, tmax=10.5,baseline=(-0.1,0),preload=True,proj=True,reject=reject,picks=picks)
-    # epochs_cortical.plot_drop_log()
+    # epochs_cortical.
+    
+    ()
     evoked=epochs_cortical['Trial_Onset'].average()
 
     # epochs_cortical.save(file_out + '_epoch.fif',overwrite=True)

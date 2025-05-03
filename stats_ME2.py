@@ -409,7 +409,7 @@ convert_to_csv('_roi_redo4_',label_names,'conn_plv','connectivity/',3,0)
 
 #%%####################################### Correlation analysis between neural responses and CDI   
 meter = '_03'
-age = '7mo'
+age = '11mo'
 peak_freq = '1.11 Hz'
 data_type = '_roi_redo4_'
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
@@ -426,12 +426,12 @@ elif data_type == '_roi_redo4_':
 ## correlation between ROI CONN and CDI 
 ROI1 = 1
 ROI2 = 0
-F1 = 4
-F2 = 35
+F1 = 6
+F2 = 9
 FOI = 'alpha_beta'
 
 ## correlation between conn and CDI: sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
-CDI,subj_noCDI_ind = extract_CDI(age,21,'VOCAB')
+CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
 MEG = extract_MEG(age,data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2) 
 # CDI1,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
 # CDI2,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
