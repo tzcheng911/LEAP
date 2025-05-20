@@ -180,21 +180,27 @@ for ntrial in np.arange(0,ntr,1):
     EEG_env_conn_target[ntrial,:,:] = np.squeeze(temp_conn[0,:,:])
     EEG_env_conn_bg[ntrial,:,:] = np.squeeze(temp_conn[1,:,:])
     EEG_env_conn_contrast[ntrial,:,:] = temp_conn_contrast
-np.save(root_path + 'EEG_env_conn_target-bg.npy',EEG_env_conn_contrast)
-np.save(root_path + 'EEG_env_conn_target.npy',EEG_env_conn_target)
-np.save(root_path + 'EEG_env_conn_bg.npy',EEG_env_conn_bg)
+np.save(root_path + 'EEG_env_conn_target-bg_r1.npy',EEG_env_conn_contrast)
+np.save(root_path + 'EEG_env_conn_target_r1.npy',EEG_env_conn_target)
+np.save(root_path + 'EEG_env_conn_bg_r1.npy',EEG_env_conn_bg)
 # get the ch index
 ch_names = epochs.info['ch_names']
 
 #%%######################################## Visualization
 fig, ax = plt.subplots()
-conn_contrast = np.squeeze(EEG_env_conn_contrast[NA_idx_sort,:,:10].mean(1)) # BA_idx_sort, TA_idx_sort, NA_idx_sort
+conn_contrast = np.squeeze(EEG_env_conn_contrast[BA_idx_sort,:,:10].mean(1)) # BA_idx_sort, TA_idx_sort, NA_idx_sort
 im, cbar = heatmap(conn_contrast, ch_names, con[0].freqs[:10], ax=ax,
                    cmap="jet_r", cbarlabel="EEG env Conn",aspect = 'auto',
                    vmin=-0.1,vmax=0.1)
 
 fig, ax = plt.subplots()
 conn = np.squeeze(EEG_env_conn_bg[BA_idx_sort,:,:].mean(1)) # BA_idx_sort, TA_idx_sort, NA_idx_sort
+im, cbar = heatmap(conn, ch_names, con[0].freqs, ax=ax,
+                   cmap="jet_r", cbarlabel="EEG env Conn",aspect = 'auto',
+                   vmin=0,vmax=0.8)
+
+fig, ax = plt.subplots()
+conn = np.squeeze(EEG_env_conn_target[BA_idx_sort,:,:].mean(1)) # BA_idx_sort, TA_idx_sort, NA_idx_sort
 im, cbar = heatmap(conn, ch_names, con[0].freqs, ax=ax,
                    cmap="jet_r", cbarlabel="EEG env Conn",aspect = 'auto',
                    vmin=0,vmax=0.8)
