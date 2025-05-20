@@ -367,7 +367,7 @@ for n_age in ages:
     wholebrain_spatio_temporal_cluster_test(triple-random,'triple',n_age,n_folder,p_threshold,freqs)
 
 #%%####################################### Analysis on the ROI conn
-n_folder = folders[3] # 0: connectivity/
+n_folder = folders[3] 
 n_analysis = analysis[1] # 1:'conn_plv', 2:'conn_coh', 3:'conn_pli'
 data_type = which_data_type[2] # 1:_roi_ or 2:_roi_redo5_
 
@@ -376,7 +376,7 @@ duple_conn_all = []
 triple_conn_all = []
 
 nlines = 10
-ROI1 = 2
+ROI1 = 1
 ROI2 = 0
 FOI = 'Beta' # Delta, Theta, Alpha, Beta 
 
@@ -406,6 +406,12 @@ conn2 = triple_conn_all[1]-random_conn_all[1] # 11mo
 stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2,-0.15,0.25)
 
 convert_to_csv('_roi_redo4_',label_names,'conn_plv','connectivity/',3,0)
+
+## Power analysis based on 7 mo duple vs. random conn 6-9 Hz sensorimotor-auditory conn
+XX = duple_conn-random_conn
+XX_6_9Hz = XX[:,:,:,30:47].mean(axis = 3)
+t,p = stats.ttest_1samp(XX_6_9Hz[:,ROI1,ROI2],0)  # t = 3.3107852817359644, p = 0.0028287652452972227
+d = XX_6_9Hz[:,ROI1,ROI2].mean()/XX_6_9Hz[:,ROI1,ROI2].std()
 
 #%%####################################### Correlation analysis between neural responses and CDI   
 meter = '_03'
