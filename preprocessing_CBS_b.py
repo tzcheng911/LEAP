@@ -155,7 +155,9 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_153': ['MEG0733', 'MEG0323','MEG0713', 'MEG2513'],
     'sld_154': ['MEG0733', 'MEG0323','MEG0713', 'MEG2513'],
     'sld_155': ['MEG0733', 'MEG0323','MEG0713', 'MEG2513','MEG2441'],
-    'sld_156': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713']
+    'sld_156': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713'],
+    'sld_157': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713'],
+    'sld_158': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713']
     }
     
     t2_prebad = {
@@ -189,7 +191,9 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_139': ['MEG0323', 'MEG2513', 'MEG0733'],
     'sld_141': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713'],
     'sld_142': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713'],
-    'sld_143': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713']
+    'sld_143': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713'],
+    'sld_145': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713'],
+    'sld_146': ['MEG0323','MEG0333', 'MEG2533', 'MEG0733','MEG0713']
     }
     
     t3_prebad = {
@@ -213,6 +217,8 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_132': ['MEG0323', 'MEG2512','MEG0713', 'MEG0733'],
     'sld_133': ['MEG0323', 'MEG2513'],
     'sld_135': ['MEG0323', 'MEG2513','MEG0713', 'MEG0733'],
+    'sld_137': ['MEG0323', 'MEG2513','MEG0713', 'MEG0733'],
+    'sld_138': ['MEG0323', 'MEG2513','MEG0713', 'MEG0733']
     }
     if time == '_t1':
         params.mf_prebad = t1_prebad
@@ -375,7 +381,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld_136'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = ['sld_142','sld_143']
+subjects = ['sld_145','sld_146']
 
 #%%###### do the jobs
 for s in subjects:
