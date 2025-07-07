@@ -24,7 +24,7 @@ root_path = '/media/tzcheng/storage/RASP/'
 # currydata = cr.read(root_path + '20240815/Acquisition_Pilot4_clicks.cdt')
 
 ## load the data with read_raw_curry()
-raw0 = mne.io.read_raw_curry(root_path + '20241008/Acquisition_pilot6.cdt', preload=True) # Random and soundmod_Pilot3 showed more clear AEP
+raw0 = mne.io.read_raw_curry(root_path + 'Data/20241008/Acquisition_pilot6.cdt', preload=True) # Random and soundmod_Pilot3 showed more clear AEP
 
 ## rotate the layout 180 degrees
 r = R.from_euler('z', 180, degrees=True)
@@ -36,7 +36,7 @@ for nch in np.arange(0,64,1):
     pos_180[nch,:] = r.apply(tmp_pos)
     raw0.info['chs'][nch]['loc'][:3] = r.apply(tmp_pos)
     
-montage = mne.channels.read_custom_montage(root_path + 'SynAmps2_Quik-Cap64_curryreader.loc')
+montage = mne.channels.read_custom_montage(root_path + 'Results/SynAmps2_Quik-Cap64_curryreader.loc')
 # raw0.set_montage("standard_1020", match_case=False,on_missing='warn')
 # raw0.plot_sensors(show_names = True,sphere="eeglab")
 # raw0.plot()
@@ -107,7 +107,9 @@ raw_avg_ref.filter(l_freq=1,h_freq=50,method='iir',iir_params=dict(order=4,ftype
 # epoch = mne.Epochs(raw_avg_ref,events, event_id=1,tmin=-0.1,tmax=0.3,baseline=(-0.05,0), proj='delayed',reject=dict(eeg=100e-6))
 # evoked = epoch.average()
 # evoked.plot_topomap(proj='interactive')
-epoch = mne.Epochs(raw_avg_ref,events, event_id=7,tmin=-0.1,tmax=1.5,baseline=(-0.1,0), proj=True,reject=dict(eeg=35-6)) # reject=dict(eeg=100e-6)
+epoch = mne.Epochs(raw_avg_ref,events, event_id=7,tmin=-0.1,tmax=1.5,baseline=(-0.1,0), proj=True,reject=dict(eeg=35-6)) # reject=dict(eeg=100e-6) # Zoe setting
+epoch2 = mne.Epochs(raw_avg_ref,events, event_id={'4': event_id['4']},tmin=-0.1,tmax=1.5,baseline=(-0.1,0), proj=True,reject=dict(eeg=35-6)) # reject=dict(eeg=100e-6) # Eloise setting
+
 evoked = epoch.average()
 
 #%% check the stim2 and stimtracker timing
