@@ -139,7 +139,7 @@ block = [2, 6, 7, 5, 8, 1, 4, 3] # sort this matrix by the presentation order fo
 env_matrix = np.load(root_path + 'stimuli_all/env_matrix.npy')
 ind = []
 for nblock in block:
-    tmp = csvFile.index[csvFile['Block Number']== (nblock)].tolist()
+    tmp = csvFile.index[csvFile['Block Number'] == (nblock)].tolist()
     ind.extend(tmp)
 env_matrix_sort = env_matrix[ind,:,:] # sort the env with the presenting order
 BA_idx = csvFile.index[csvFile['Condition'] == 'BA'].tolist()
