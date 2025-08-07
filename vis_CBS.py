@@ -69,7 +69,8 @@ evoked_s.plot_joint()
 mne.viz.plot_compare_evokeds(evoked_s, picks=["MEG0721"], combine="mean")
 mne.viz.plot_compare_evokeds(evoked_s, picks="meg", axes="topo") # plot all of them
 epoch.plot_sensors(kind='3d', ch_type='mag', ch_groups='position')
-chs = ["MEG0721","MEG0631","MEG0741","MEG1821"]proj = mne.io.read_raw_fif('/media/tzcheng/storage2/SLD/MEG/sld_101/sss_fif/sld_101_t1_01_otp_raw_sss_proj.fif')
+chs = ["MEG0721","MEG0631","MEG0741","MEG1821"]
+proj = mne.io.read_raw_fif('/media/tzcheng/storage2/SLD/MEG/sld_101/sss_fif/sld_101_t1_01_otp_raw_sss_proj.fif')
 mne.viz.plot_compare_evokeds(evoked_s, picks=chs, combine="mean", show_sensors="upper right")
 
 ## FFR
