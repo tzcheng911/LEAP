@@ -40,7 +40,7 @@ np.save('ROI_lookup.npy',np.array(label_v_ind, dtype=object),allow_pickle=True)
 label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
 
 #%%
-nv = 23848
+nv = 24758
 v_ind = np.where(src[0]['vertno'] == nv)
 for nlabel in np.arange(0,len(label_names),1):
     if v_ind in label_v_ind[nlabel][0]:
