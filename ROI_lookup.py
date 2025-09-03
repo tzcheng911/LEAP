@@ -35,12 +35,13 @@ for nlabel in np.arange(0,len(label_names),1):
     label_tc_dummy = mne.extract_label_time_course(stc_dummy,(fname_aseg,label_names[nlabel]),src)
     idx = np.where(label_tc_dummy[0]>0)
     label_v_ind.append(idx)
-np.save('ROI_lookup.npy',np.array(label_v_ind, dtype=object),allow_pickle=True)
+np.save('ROI_lookup_ANTS6-0Months3T.npy',np.array(label_v_ind, dtype=object),allow_pickle=True)
+
 #%% Key in the vertex number from the stc.plot to see which ROI it's in, and check whether this location is relevant 
 label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
 
 #%%
-nv = 24758
+nv = 10078
 v_ind = np.where(src[0]['vertno'] == nv)
 for nlabel in np.arange(0,len(label_names),1):
     if v_ind in label_v_ind[nlabel][0]:
