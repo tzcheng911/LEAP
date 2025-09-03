@@ -102,9 +102,9 @@ random.Random(0).shuffle(rand_ind)
 X = X[rand_ind,:,:]
 y = y[rand_ind]
 # adults
-MEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_ba_ffr_morph.npy')
-MEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_mba_ffr_morph.npy')
-MEG_pa_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_pa_ffr_morph.npy')
+MEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + 'group_ba_ffr_morph.npy')
+MEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + 'group_mba_ffr_morph.npy')
+MEG_pa_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + 'group_pa_ffr_morph.npy')
 
 # infants 
 MEG_ba_FFR = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/' + 'group_ba_ffr_morph.npy')
@@ -147,13 +147,13 @@ lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemp
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
 if ROI_wholebrain == 'ROI':
-    ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_ba + '_roi.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_mba + '_roi.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_pa + '_roi.npy',allow_pickle=True)
+    ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + filename_ffr_ba + '_roi.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + filename_ffr_mba + '_roi.npy',allow_pickle=True)
+    ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + filename_ffr_pa + '_roi.npy',allow_pickle=True)
 elif ROI_wholebrain == 'wholebrain':
-    ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_ba + '.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_mba + '.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_pa + '.npy',allow_pickle=True)
+    ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + filename_ffr_ba + '.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + filename_ffr_mba + '.npy',allow_pickle=True)
+    ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + filename_ffr_pa + '.npy',allow_pickle=True)
 else:
     print("Need to decide whether to use ROI or whole brain as feature.")
 X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0)
@@ -188,8 +188,8 @@ patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
 
 toc = time.time()
 
-np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_kall_' + filename + '.npy',scores_observed)
-np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_' + filename + '.npy',patterns)
+# np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_kall_' + filename + '.npy',scores_observed)
+# np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_' + filename + '.npy',patterns)
 
 #%%####################################### MEG decoding across time
 root_path='/media/tzcheng/storage2/CBS/'

@@ -22,7 +22,7 @@ os.chdir(root_path)
 subj = [] # A104 got some technical issue
 
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_b'):
         subj.append(file)
 runs = ['01','02']
 run = runs [0]
@@ -70,44 +70,46 @@ for s in subj:
     # group_mmr2.append(mmr2)
     
     # for the reverse
-    # std1 = mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_substd1_reverse_mmr.fif',allow_maxshield = True)[0]
-    # std2 = mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_substd2_reverse_mmr.fif',allow_maxshield = True)[0]
+    std1 = mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_substd1_reverse_mmr.fif',allow_maxshield = True)[0]
+    std2 = mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_fil50_evoked_substd2_reverse_mmr.fif',allow_maxshield = True)[0]
     # last_mba_nave.append(std1.nave)
     # last_pa_nave.append(std2.nave)
     # dev = mne.read_evokeds(root_path + s +'/eeg/' + s + '_' + run + '_evoked_dev_reverse_mmr.fif',allow_maxshield = True)[0]
     # mmr1 = dev.data - std1.data
     # mmr2 = dev.data - std2.data
-    # group_std1.append(std1.data)
-    # group_std2.append(std2.data)
+    group_std1.append(std1.data)
+    group_std2.append(std2.data)
     
     ## cABR
-    dev1=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f80450_evoked_dev1_ffr_all.fif')[0]
-    dev2=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f80450_evoked_dev2_ffr_all.fif')[0]
-    std=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f80450_evoked_substd_ffr_all.fif')[0]
-    group_ba.append(std.data)
-    group_mba.append(dev1.data)
-    group_pa.append(dev2.data)
+    # dev1=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f80450_evoked_dev1_ffr_all.fif')[0]
+    # dev2=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f80450_evoked_dev2_ffr_all.fif')[0]
+    # std=mne.read_evokeds(file_in+'_01_otp_raw_sss_proj_f80450_evoked_substd_ffr_all.fif')[0]
+    # group_ba.append(std.data)
+    # group_mba.append(dev1.data)
+    # group_pa.append(dev2.data)
 
 # group_dev1= np.asarray(group_dev1)
 # group_dev2= np.asarray(group_dev2)
 # group_std= np.asarray(group_std)
-# group_std1= np.asarray(group_std1)
-# group_std2= np.asarray(group_std2)
+group_std1= np.asarray(group_std1)
+group_std2= np.asarray(group_std2)
+
 # group_mmr1=np.asarray(group_mmr1)
 # group_mmr2=np.asarray(group_mmr2)
 # np.save(root_path + 'cbsA_meeg_analysis/group_dev1_sensor.npy',group_dev1)
 # np.save(root_path + 'cbsA_meeg_analysis/group_dev2_sensor.npy',group_dev2)
 # np.save(root_path + 'cbsA_meeg_analysis/group_std_sensor.npy',group_std)
-# np.save(root_path + 'cbsA_meeg_analysis/group_std1_reverse_sensor.npy',group_std1)
-# np.save(root_path + 'cbsA_meeg_analysis/group_std2_reverse_sensor.npy',group_std2)
+np.save(root_path + 'cbsb_meg_analysis/MEG/baby_group_std1_reverse_sensor.npy',group_std1)
+np.save(root_path + 'cbsb_meg_analysis/MEG/baby_group_std2_reverse_sensor.npy',group_std2)
+
 # np.save(root_path + 'cbsA_meeg_analysis/group_mmr1_sensor.npy',group_mmr1)
 # np.save(root_path + 'cbsA_meeg_analysis/group_mmr2_sensor.npy',group_mmr2)
-group_ba=np.asarray(group_ba)
-group_mba=np.asarray(group_mba)
-group_pa=np.asarray(group_pa)
-np.save(root_path + 'cbsb_meg_analysis/MEG/group_ba_ffr80450_all_sensor.npy',group_ba)
-np.save(root_path + 'cbsb_meg_analysis/MEG/group_mba_ffr80450_all_sensor.npy',group_mba)
-np.save(root_path + 'cbsb_meg_analysis/MEG/group_pa_ffr80450_all_sensor.npy',group_pa)
+# group_ba=np.asarray(group_ba)
+# group_mba=np.asarray(group_mba)
+# group_pa=np.asarray(group_pa)
+# np.save(root_path + 'cbsb_meg_analysis/MEG/group_ba_ffr80450_all_sensor.npy',group_ba)
+# np.save(root_path + 'cbsb_meg_analysis/MEG/group_mba_ffr80450_all_sensor.npy',group_mba)
+# np.save(root_path + 'cbsb_meg_analysis/MEG/group_pa_ffr80450_all_sensor.npy',group_pa)
 
 #%% output the source time series in npy files
 group_mmr1 = []

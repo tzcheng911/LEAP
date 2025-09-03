@@ -416,7 +416,7 @@ plt.xlabel('R2 score bins',fontsize=20)
 
 #%%####################################### Trial-by-trial decoding for each individual
 subjects_dir = '/media/tzcheng/storage2/subjects/'
-root_path='/media/tzcheng/storage/CBS/'
+root_path='/media/tzcheng/storage2/CBS/'
 s = 'cbs_b112'
 file_in = root_path + '/' + s + '/sss_fif/' + s
 
