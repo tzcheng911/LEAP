@@ -64,31 +64,34 @@ def do_inverse(s,morph,run,rfs,lambda2):
     
     src=mne.read_source_spaces(subjects_dir + s + '/bem/' + s + '-vol-5-src.fif')
     fname_aseg = subjects_dir + s + '/mri/aparc+aseg.mgz'
-    stc_mne_epoch_roi = mne.extract_label_time_course(stc_mne_epoch,fname_aseg,src,mode='mean',allow_empty=True)
-    stc_mne_epoch_roi = np.asarray(stc_mne_epoch_roi)
-    new_ROI = {"AuditoryL": [72,76],"AuditoryR": [108,112], "MotorL": [66],"MotorR": [102], "SensoryL": [59,64],"SensoryR": [95,100], "BGL": [7,8],"BGR": [26,27], "IFGL": [60,61,62], "IFGR": [96,97,98]}
-    MEG = np.zeros((np.shape(stc_mne_epoch_roi)[0],len(new_ROI),np.shape(stc_mne_epoch_roi)[2]))
-    for index, ROI in enumerate(new_ROI):
-        MEG[:,index,:] = stc_mne_epoch_roi[:,new_ROI[ROI],:].mean(axis=1)
-    np.save(file_in + run + '_stc_mne_epoch_rs100_mag6pT_roi_redo.npy',MEG)
-    np.save(file_in + run + '_stc_mne_epoch_rs100_mag6pT_roi.npy',stc_mne_epoch_roi)
+    # stc_mne_epoch_roi = mne.extract_label_time_course(stc_mne_epoch,fname_aseg,src,mode='mean',allow_empty=True)
+    # stc_mne_epoch_roi = np.asarray(stc_mne_epoch_roi)
+    # new_ROI = {"AuditoryL": [72,76],"AuditoryR": [108,112], "MotorL": [66],"MotorR": [102], "SensoryL": [59,64],"SensoryR": [95,100], "BGL": [7,8],"BGR": [26,27], "IFGL": [60,61,62], "IFGR": [96,97,98]}
+    # MEG = np.zeros((np.shape(stc_mne_epoch_roi)[0],len(new_ROI),np.shape(stc_mne_epoch_roi)[2]))
+    # for index, ROI in enumerate(new_ROI):
+    #     MEG[:,index,:] = stc_mne_epoch_roi[:,new_ROI[ROI],:].mean(axis=1)
+    # np.save(file_in + run + '_stc_mne_epoch_rs100_mag6pT_roi_redo.npy',MEG)
+    # np.save(file_in + run + '_stc_mne_epoch_rs100_mag6pT_roi.npy',stc_mne_epoch_roi)
     
-    # if morph == True:
-    #     print('Morph ' + s +  ' src space to common cortical space.')
-    #     fname_src_fsaverage = subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif'
-    #     src_fs = mne.read_source_spaces(fname_src_fsaverage)
-    #     morph = mne.compute_source_morph(
-    #         fwd["src"],
-    #         subject_from=s,
-    #         subjects_dir=subjects_dir,
-    #         niter_affine=[10, 10, 5],
-    #         niter_sdr=[10, 10, 5],  # just for speed
-    #         src_to=src_fs,
-    #         verbose=True)
-    #     # stc_lcmv_fsaverage = morph.apply(stc_lcmv)
-    #     # stc_lcmv_fsaverage.save(file_in + run + '_stc_lcmv_morph_mag6pT', overwrite=True)
-    #     stc_mne_fsaverage = morph.apply(stc_mne)
-    #     stc_mne_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT', overwrite=True)
+    if morph == True:
+        print('Morph ' + s +  ' src space to common cortical space.')
+        fname_src_fsaverage = subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif' # morph to adult brain template
+        fname_src_ANTS = '/media/tzcheng/storage2/subjects/ANTS6-0Months3T/bem/ANTS6-0Months3T-vol-5-src.fif' # morph to infant brain template
+        src_fs = mne.read_source_spaces(fname_src_fsaverage) # morph to adult brain template
+        src_fs = mne.read_source_spaces(fname_src_ANTS) # morph to infant brain template
+        morph = mne.compute_source_morph(
+            fwd["src"],
+            subject_from=s,
+            subject_to = None, # morph to infant brain template 
+            subjects_dir=subjects_dir,
+            niter_affine=[10, 10, 5],
+            niter_sdr=[10, 10, 5],  # just for speed
+            src_to=src_fs,
+            verbose=True)
+        # stc_lcmv_fsaverage = morph.apply(stc_lcmv)
+        # stc_lcmv_fsaverage.save(file_in + run + '_stc_lcmv_morph_mag6pT', overwrite=True)
+        stc_mne_fsaverage = morph.apply(stc_mne)
+        stc_mne_fsaverage.save(file_in + run + '_stc_mne_morph_ANTS6mo_mag6pT', overwrite=True)
         
     #     stc_mne_epoch_fsaverage = np.zeros((len(stc_mne_epoch),14629,np.shape(stc_mne_epoch[0])[1]))
     #     for ntrial in range(0,len(stc_mne_epoch)):
@@ -118,7 +121,7 @@ os.chdir(root_path)
 rfs=250
 lambda2 = 0.1111111111111111
 
-morph = False
+morph = True
 epoch_ROI = True
 
 runs = ['_02','_03','_04']
