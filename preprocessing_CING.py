@@ -1,16 +1,10 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Aug 8 11:28:12 2023
+Created on Sun Aug 24 00:28:07 2025
 
-Preprocessing for CBS_b, SLD and CING. Need to have events file ready from evtag.py
-Need to change the input file name "cbs_A" to "cbs_b" for infants
-Need to manually enter bad channels for sss from the experiment notes. 
-Need to change parameters st_correlation and int_order in sss for adult/infants
-Didn't save the product from ecg, eog project and filtering to save some space
-Could be used to run SLD too (change the root path, subject name, add the pre_bads)
-1. cbs_b118 emptyroom is sampled at 1000 Hz instead of 5000 Hz -> need to use the baseline for the empty room or the file from the day before or after
-2. cbs_b116 has fewer data points
-3. sld_146_t1 does not have EOG, just did ECG, comment out line 228, 229, 232, 234 that calculated EOG
+Preprocessing for CING.
+
 @author: tzcheng
 """
 
@@ -23,13 +17,11 @@ import numpy as np
 import os
 
 def do_otp(subject,time):
-    # root_path='/media/tzcheng/storage2/CBS/'+ subject +'/raw_fif/'
-    # root_path='/media/tzcheng/storage2/SLD/MEG/'+ subject +'/raw_fif/'
-    root_path='/media/tzcheng/storage2/SLD/MEG/'+ subject +'/raw_fif/'
+    root_path='/media/tzcheng/storage/cing/'+ subject +'/raw_fif/'
 
     os.chdir(root_path)
     #find all the raw files
-    runs=['erm'] # ['01','02','erm'] for the adults and ['01','erm'] for the infants
+    runs=['01','erm'] # ['01','02','erm'] for the adults and ['01','erm'] for the infants
     for run in runs:
         # file_in=root_path+'cbs'+str(subj)+'_'+str(run)+'_raw.fif'
         # file_out=root_path+'cbs'+str(subj)+'_'+str(run)+'_otp_raw.fif'
@@ -41,9 +33,7 @@ def do_otp(subject,time):
         raw_otp.save(file_out,overwrite=True)
 
 def do_sss(subject,st_correlation,int_order,time):
-    # root_path='/media/tzcheng/storage2/CBS/'
-    root_path='/media/tzcheng/storage2/SLD/MEG/'
-
+    root_path='/media/tzcheng/storage/cing/'
     os.chdir(root_path)
     params = mnefun.Params(n_jobs=6, n_jobs_mkl=1, n_jobs_fir='cuda',
                        n_jobs_resample='cuda', filter_length='auto')
@@ -51,7 +41,7 @@ def do_sss(subject,st_correlation,int_order,time):
     params.subjects = [subject]
 
     # params.work_dir = '/media/tzcheng/storage/CBS/'
-    params.work_dir = '/media/tzcheng/storage2/SLD/MEG/'
+    params.work_dir = '/media/tzcheng/storage/cing/'
     params.run_names = ['%s' + time + '_01_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
     params.runs_empty = ['%s' + time + '_erm_otp']
     params.subject_indices = [0] #to run individual participants
@@ -75,182 +65,14 @@ def do_sss(subject,st_correlation,int_order,time):
     params.movecomp = 'inter'
     # params.mf_prebad['cbs_A101'] = ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643']
     
-    t1_prebad = {
-    'cbs_A101': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A103': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG0911'],
-    'cbs_A104': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A105': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A106': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A107': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A108': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG0911'],
-    'cbs_A109': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG0313'],
-    'cbs_A110': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A111': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG2012'],
-    'cbs_A117': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A118': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG2012'],
-    'cbs_A119': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A121': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643', 'MEG2622'],
-    'cbs_A122': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_A123': ['MEG0122', 'MEG0333', 'MEG1612', 'MEG1643'],
-    'cbs_b901': ['MEG0312', 'MEG2411'],
-    'cbs_b902': ['MEG0312', 'MEG1712'],
-    'cbs_b101': ['MEG0312', 'MEG1712', 'MEG1831', 'MEG1841', 'MEG2021', 'MEG2231'],
-    'cbs_b102': ['MEG0312', 'MEG1712'],
-    'cbs_b103': ['MEG0312', 'MEG1712'],
-    'cbs_b106': ['MEG0312', 'MEG1712'],
-    'cbs_b107': ['MEG0312', 'MEG1712', 'MEG0441'],
-    'cbs_b110': ['MEG0312', 'MEG1712', 'MEG1942'],
-    'cbs_b111': ['MEG0312', 'MEG1712'],
-    'cbs_b112': ['MEG0312', 'MEG1712'],
-    'cbs_b113': ['MEG0312', 'MEG1712'],
-    'cbs_b114': ['MEG0312', 'MEG1712', 'MEG2612'],
-    'cbs_b116': ['MEG0312', 'MEG1712'],
-    'cbs_b117': ['MEG0312', 'MEG1712', 'MEG2011', 'MEG2241'],
-    'cbs_b118': ['MEG0312', 'MEG1712'],
-    'sld_105': ['MEG0312', 'MEG1712'],
-    'sld_101': ['MEG0312', 'MEG1712'],
-    'sld_103': ['MEG0312', 'MEG1712','MEG1013'],
-    'sld_102': ['MEG0312', 'MEG1712','MEG1013'],
-    'sld_104': ['MEG0312', 'MEG1712'],
-    'sld_107': ['MEG0312', 'MEG1712','MEG0921'],
-    'sld_108': ['MEG0312', 'MEG1712'],
-    'sld_110': ['MEG0312', 'MEG1712'],
-    'sld_113': ['MEG0312', 'MEG1712','MEG1831'],
-    'sld_112': ['MEG0312', 'MEG1712'],
-    'sld_111': ['MEG0312', 'MEG1712'],
-    'sld_114': ['MEG0312', 'MEG1712'],
-    'sld_115': ['MEG0312', 'MEG1712'],
-    'sld_116': ['MEG0312', 'MEG1712'],
-    'sld_117': ['MEG0312', 'MEG1712', 'MEG0631'],
-    'sld_118': ['MEG0312', 'MEG1712'],
-    'sld_119': ['MEG0312', 'MEG1712'],
-    'sld_121': ['MEG0312', 'MEG1712'],
-    'sld_122': ['MEG0312', 'MEG1712'],
-    'sld_123': ['MEG0312', 'MEG1712'],
-    'sld_124': ['MEG0312', 'MEG1712','MEG2512', 'MEG2641'],
-    'sld_125': ['MEG0312', 'MEG1712','MEG0911', 'MEG1721', 'MEG0642','MEG0441', 'MEG2543'],
-    'sld_126': ['MEG0312', 'MEG1712'],
-    'sld_127': ['MEG0312', 'MEG1712'],
-    'sld_128': ['MEG0312', 'MEG1712'],
-    'sld_129': ['MEG0312', 'MEG1712'],
-    'sld_130': ['MEG0312', 'MEG1712'],
-    'sld_131': ['MEG0312', 'MEG1712'],
-    'sld_133': ['MEG0312', 'MEG1712'],
-    'sld_135': ['MEG0312', 'MEG1712'],
-    'sld_136': ['MEG0312', 'MEG1712'],
-    'sld_138': ['MEG0312', 'MEG1712'],
-    'sld_139': ['MEG0312', 'MEG1712'],
-    'sld_140': ['MEG0312', 'MEG1712'],
-    'sld_141': ['MEG0312', 'MEG1712'],
-    'sld_142': ['MEG0312', 'MEG1712'],
-    'sld_143': ['MEG0312', 'MEG1712'],
-    'sld_144': ['MEG0312', 'MEG1712', 'MEG2533'],
-    'sld_145': ['MEG0312', 'MEG1712'],
-    'sld_146': ['MEG0312', 'MEG1712'],
-    'sld_147': ['MEG0312', 'MEG1712'],
-    'sld_148': ['MEG0312', 'MEG1712'],
-    'sld_149': ['MEG0312', 'MEG1712'],
-    'sld_150': ['MEG0312', 'MEG1712'],
-    'sld_152': ['MEG0733', 'MEG2012','MEG2513'],
-    'sld_151': ['MEG0733', 'MEG0323'],
-    'sld_153': ['MEG0733', 'MEG0323','MEG0713', 'MEG2513'],
-    'sld_154': ['MEG0733', 'MEG0323','MEG0713', 'MEG2513'],
-    'sld_155': ['MEG0733', 'MEG0323','MEG0713', 'MEG2513','MEG2441'],
-    'sld_156': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713'],
-    'sld_157': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713'],
-    'sld_158': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713'],
-    'sld_159': ['MEG0323', 'MEG2513','MEG0713', 'MEG0733','MEG1942'],
-    'sld_160': ['MEG0323', 'MEG1712','MEG0713', 'MEG0723'],
-    'sld_163': ['MEG0323','MEG0713', 'MEG0733'],
+    prebad = {
+    'cing_108': ['MEG0323', 'MEG0733','MEG0713'],
+    'cing_109': ['MEG1033', 'MEG2313','MEG0512'],
+    'cing_110': [ 'MEG1242','MEG2533'],
     }
     
-    t2_prebad = {
-    'sld_101': ['MEG0312', 'MEG1712'],
-    'sld_102': ['MEG0312', 'MEG1712'],
-    'sld_103': ['MEG0312', 'MEG1712'],
-    'sld_104': ['MEG0312', 'MEG1712'],
-    'sld_105': ['MEG0312', 'MEG1712'],
-    'sld_107': ['MEG0312', 'MEG1712'],
-    'sld_108': ['MEG0312', 'MEG1712','MEG2612'],
-    'sld_110': ['MEG0312', 'MEG1712','MEG1721','MEG0411', 'MEG0943','MEG0911'],
-    'sld_112': ['MEG0312', 'MEG1712','MEG1721', 'MEG0642','MEG0441', 'MEG2543'],
-    'sld_113': ['MEG0312', 'MEG1712','MEG0642','MEG2543'],
-    'sld_114': ['MEG0312', 'MEG1712'],
-    'sld_115': ['MEG0312', 'MEG1712','MEG1041'],
-    'sld_118': ['MEG0312', 'MEG1712'],
-    'sld_119': ['MEG0312', 'MEG1712'],
-    'sld_122': ['MEG0312', 'MEG1712'],
-    'sld_121': ['MEG0312', 'MEG1712'],
-    'sld_123': ['MEG0312', 'MEG1712'],
-    'sld_124': ['MEG0312', 'MEG1712'],
-    'sld_126': ['MEG0312', 'MEG1712'],
-    'sld_127': ['MEG0312', 'MEG1712'],
-    'sld_128': ['MEG0312', 'MEG1712', 'MEG2533'],
-    'sld_130': ['MEG1712', 'MEG1033', 'MEG1532', 'MEG1533', 'MEG1712', 'MEG2533'],
-    'sld_131': ['MEG0312', 'MEG1712'],
-    'sld_132': ['MEG0312', 'MEG1712','MEG2533'],
-    'sld_133': ['MEG0312', 'MEG1712','MEG2533'],
-    'sld_135': ['MEG0312', 'MEG1712'],
-    'sld_136': ['MEG0323', 'MEG2513','MEG0713', 'MEG0733'],
-    'sld_139': ['MEG0323', 'MEG2513', 'MEG0733'],
-    'sld_141': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713'],
-    'sld_142': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713'],
-    'sld_143': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713'],
-    'sld_145': ['MEG0323', 'MEG2513', 'MEG0733','MEG0713'],
-    'sld_146': ['MEG0323','MEG0333', 'MEG2533', 'MEG0733','MEG0713'],
-    'sld_148': ['MEG0323'],
-    'sld_147': ['MEG0323', 'MEG0713','MEG0733'],
-    'sld_149': ['MEG0323', 'MEG0713','MEG0733'],
-    'sld_150': ['MEG0323', 'MEG0713','MEG0733'],
-    'sld_152': ['MEG0323', 'MEG0713','MEG0733'],
-    'sld_153': ['MEG2533'],
-    'sld_154': ['MEG1033', 'MEG2141','MEG2533']
-    }
-    
-    t3_prebad = {
-    'sld_102': ['MEG0312', 'MEG1712'],
-    'sld_103': ['MEG0312', 'MEG1712','MEG1133', 'MEG2612', 'MEG2433'],
-    'sld_105': ['MEG0312', 'MEG1712'],
-    'sld_107': ['MEG0312', 'MEG1712'],
-    'sld_108': ['MEG0312', 'MEG1712','MEG2512'],
-    'sld_110': ['MEG0312', 'MEG1721','MEG0642','MEG0911'],
-    'sld_114': ['MEG0312', 'MEG1712'],
-    'sld_115': ['MEG0312', 'MEG1712'],
-    'sld_116': ['MEG0312', 'MEG1712'],
-    'sld_119': ['MEG0312', 'MEG1712'],
-    'sld_121': ['MEG0312', 'MEG1712'],
-    'sld_123': ['MEG0312', 'MEG1712'],
-    'sld_124': ['MEG0312', 'MEG1712'],
-    'sld_126': ['MEG0312', 'MEG1712'],
-    'sld_127': ['MEG0312', 'MEG1712'],
-    'sld_129': ['MEG0312', 'MEG1712'],
-    'sld_131': ['MEG0323', 'MEG2513','MEG0713', 'MEG0733'],
-    'sld_132': ['MEG0323', 'MEG2512','MEG0713', 'MEG0733'],
-    'sld_133': ['MEG0323', 'MEG2513'],
-    'sld_135': ['MEG0323', 'MEG2513','MEG0713', 'MEG0733'],
-    'sld_137': ['MEG0323', 'MEG2513','MEG0713', 'MEG0733'],
-    'sld_138': ['MEG0323', 'MEG2513','MEG0713', 'MEG0733'],
-    'sld_139': ['MEG0323', 'MEG0713'],
-    'sld_141': ['MEG0323', 'MEG0713','MEG0733','MEG2513'],
-    'sld_140': ['MEG0323', 'MEG0713','MEG0733'],
-    'sld_142': ['MEG0323', 'MEG0713','MEG0733'],
-    'sld_143': ['MEG0323', 'MEG0713','MEG0733'],
-    'sld_144': ['MEG0323', 'MEG0713','MEG0733'],
-    'sld_145': ['MEG0323', 'MEG0713','MEG0733'],
-    'sld_146': ['MEG0323', 'MEG0713','MEG0733'],
-    'sld_147': ['MEG2141'],
-    'sld_150': ['MEG2533']
-    }
-    if time == '_t1':
-        params.mf_prebad = t1_prebad
-    elif time == '_t2':
-        params.mf_prebad = t2_prebad
-    elif time == '_t3':
-        params.mf_prebad = t3_prebad
-    else: 
-        print("Check the t1 or t2")
-    # make sure you cd to the working directory that have ct and cal files
-    
+    params.mf_prebad = prebad
+   
     mnefun.do_processing(
         params,
         do_score=False,  # do scoring
@@ -384,14 +206,13 @@ def do_epoch_cabr(data, subject, run,time):
     return evoked_substd,evoked_dev1,evoked_dev2,epochs
 
 ########################################
-# root_path='/media/tzcheng/storage2/CBS/'
-root_path='/media/tzcheng/storage2/SLD/MEG/'
+root_path='/media/tzcheng/storage/cing/'
 
 os.chdir(root_path)
 
 #%%## parameters 
 runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
-time = '_t2' # first time (6 mo) '_t1' or second time (12 mo) '_t2' or third time (14mo) '_t3' coming back, or 0 for cbs
+time = '' # first time (6 mo) '_t1' or second time (12 mo) '_t2' or third time (14mo) '_t3' coming back, or 0 for cbs
 direction = "ba_to_pa"
 do_cabr = False # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 st_correlation = 0.9 # 0.98 for adults and 0.9 for infants
@@ -400,15 +221,13 @@ lp = 50
 subjects = []
 
 for file in os.listdir():
-    if file.startswith('sld_136'): # cbs_b for the infants, sld for SLD infants
+    if file.startswith('cing'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = ['sld_154']
-
+subjects = ["cing_109","cing_110"]
 #%%###### do the jobs
 for s in subjects:
-    
     print(s)
-    do_otp(s,time)
+    # do_otp(s,time)
     do_sss(s,st_correlation,int_order,time)
     for run in runs:
         if time == 0:
