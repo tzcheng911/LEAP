@@ -2,7 +2,7 @@
 """
 Created on Tue Aug 8 11:28:12 2023
 
-Preprocessing for CBS_b. Need to have events file ready from evtag.py
+Preprocessing for CBS_b, SLD and CING. Need to have events file ready from evtag.py
 Need to change the input file name "cbs_A" to "cbs_b" for infants
 Need to manually enter bad channels for sss from the experiment notes. 
 Need to change parameters st_correlation and int_order in sss for adult/infants
@@ -24,11 +24,12 @@ import os
 
 def do_otp(subject,time):
     # root_path='/media/tzcheng/storage2/CBS/'+ subject +'/raw_fif/'
+    # root_path='/media/tzcheng/storage2/SLD/MEG/'+ subject +'/raw_fif/'
     root_path='/media/tzcheng/storage2/SLD/MEG/'+ subject +'/raw_fif/'
 
     os.chdir(root_path)
     #find all the raw files
-    runs=['01','erm'] # ['01','02','erm'] for the adults and ['01','erm'] for the infants
+    runs=['erm'] # ['01','02','erm'] for the adults and ['01','erm'] for the infants
     for run in runs:
         # file_in=root_path+'cbs'+str(subj)+'_'+str(run)+'_raw.fif'
         # file_out=root_path+'cbs'+str(subj)+'_'+str(run)+'_otp_raw.fif'
@@ -201,7 +202,9 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_147': ['MEG0323', 'MEG0713','MEG0733'],
     'sld_149': ['MEG0323', 'MEG0713','MEG0733'],
     'sld_150': ['MEG0323', 'MEG0713','MEG0733'],
-    'sld_152': ['MEG0323', 'MEG0713','MEG0733']
+    'sld_152': ['MEG0323', 'MEG0713','MEG0733'],
+    'sld_153': ['MEG2533'],
+    'sld_154': ['MEG1033', 'MEG2141','MEG2533']
     }
     
     t3_prebad = {
@@ -234,7 +237,9 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_143': ['MEG0323', 'MEG0713','MEG0733'],
     'sld_144': ['MEG0323', 'MEG0713','MEG0733'],
     'sld_145': ['MEG0323', 'MEG0713','MEG0733'],
-    'sld_146': ['MEG0323', 'MEG0713','MEG0733']
+    'sld_146': ['MEG0323', 'MEG0713','MEG0733'],
+    'sld_147': ['MEG2141'],
+    'sld_150': ['MEG2533']
     }
     if time == '_t1':
         params.mf_prebad = t1_prebad
@@ -397,10 +402,11 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld_136'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = ['sld_152']
+subjects = ['sld_154']
 
 #%%###### do the jobs
 for s in subjects:
+    
     print(s)
     do_otp(s,time)
     do_sss(s,st_correlation,int_order,time)
