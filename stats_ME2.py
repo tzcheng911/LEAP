@@ -456,7 +456,7 @@ print(pearsonr(MEG, CDI))
 #%%
 ## correlation between ROI SSEP and CDI 
 CDI,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
-MEG = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq)
+MEG = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
 # CDI = pd.concat([CDI1,CDI2])
 # MEG = np.concatenate((MEG1,MEG2))
 for n,ROI in enumerate(label_names):
@@ -469,8 +469,8 @@ for n,ROI in enumerate(label_names):
 data_type = '_morph_'
 r_all = []
 p_all = []
-CDI,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
-MEG = extract_MEG('11mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq)
+CDI,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
+MEG = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
 # CDI = pd.concat([CDI1,CDI2])
 # MEG = np.concatenate((MEG1,MEG2))
 for n in np.arange(0,len(MEG[0])):
