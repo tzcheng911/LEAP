@@ -108,12 +108,19 @@ def plot_CONN(conn,freqs,nlines,vmin,vmax,FOI,label_names,title):
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
+#%%####################################### set up the template brain
+stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
+fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
+
 #%%####################################### Load the audio files
 fs, audio = wavfile.read(root_path + 'Stimuli/Random/random15rr.wav') # Random, Duple300, Triple300
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 
 #%% Parameters
-ages = ['7mo','11mo','br'] 
+ages = ['7mo','11mo'] 
 folders = ['SSEP/','decoding/','connectivity/'] # random, duple, triple
 analysis = ['psds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
 which_data_type = ['_sensor_','_roi_','_roi_redo4_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
@@ -221,11 +228,7 @@ for nn_age,n_age in enumerate(ages[:-1]):
 data_type = which_data_type[-1]
 n_analysis = analysis[0]
 n_folder = folders[0]
-n_meter = 'duple' # 'duple' or 'triple'
-## set up the template brain
-stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
-src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
-fsave_vertices = [s["vertno"] for s in src]
+n_meter = 'triple' # 'duple' or 'triple'
 p_threshold = 0.05 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 
 for n_age in ages:
@@ -237,15 +240,35 @@ for n_age in ages:
 
         for c in good_clusters:
             print(c[0])
-
+            
+            ## print the min and max MNI coordinate for this cluster
+            # coord = [] 
+            # for i in np.arange(0,len(c[-1]),1):
+            #     coord.append(np.round(src[0]['rr'][src[0]['vertno'][c[-1][i]]]*1000))
+            # np_coord = np.array(coord)
+            # print("min MNI coord:" + str(np.min(np_coord,axis=0)))
+            # print("max MNI coord:" + str(np.max(np_coord,axis=0)))
+            
+            # ## get all the ROIs in this cluster (no repeat)
+            # ROIs = []
+            # for i in np.arange(0,len(c[-1]),1):
+            #     for nlabel in np.arange(0,len(label_names),1):
+            #         if c[-1][i] in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
+            #             ROIs.append(label_names[nlabel])
+            # print(ROIs)
+            
+        ## visualize this cluster
         stc_all_cluster_vis = summarize_clusters_stc(
-            clu, p_thresh = p_threshold, vertices=fsave_vertices, subject="fsaverage"
+            clu, p_thresh = p_threshold, vertices=src, subject="fsaverage"
         )
-        stc_all_cluster_vis.plot(src=src,clim=dict(kind="percent",lims=[99.7,99.75,99.975])) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
-        stc_all_cluster_vis.plot(src=src) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
-
+        # stc_all_cluster_vis.plot(src=src,clim=dict(kind="percent",lims=[99.7,99.75,99.975])) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
+        # stc_all_cluster_vis.plot(src=src) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
+        stc_all_cluster_vis.plot_3d(src=src)
+        
     elif n_folder == 'decoding/':
         decoding_acc = np.load(root_path + n_folder + n_age + data_type + 'decodingACC_' + n_meter +'.npy') 
         stc1.data = np.array([decoding_acc,decoding_acc]).transpose()
         stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
-        
+        stc1.plot_3d(src=src)
+
+#%%####################################### The correlation results are visualized in stats_ME2.py
