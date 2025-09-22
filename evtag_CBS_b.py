@@ -137,7 +137,7 @@ def check_events(events,condition):  ## processed events
             e2.append(3)
             
     path='/media/tzcheng/storage2/SLD/MEG/'
-    root_path='/media/tzcheng/storage/cing/'
+    path='/media/tzcheng/storage/cing/'
     # path='/media/tzcheng/storage2/CBS/'
     seq_file=path + 'seq'+ condition+'_200.npy'
     seq=np.load(seq_file)
@@ -286,12 +286,12 @@ direction = "ba_to_pa"
 subj = [] 
 check_all= []
 for file in os.listdir():
-    if file.startswith('cing'):
+    if file.startswith('cing_113'):
         subj.append(file)
 
 ## do individual by individual(s), check the time t1, t2 or t3 too
 
-conditions = ['4','6','5']
+conditions = ['4']
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]
