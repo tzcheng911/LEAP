@@ -298,6 +298,13 @@ def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
+#%%####################################### set up the template brain
+stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
+src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
+fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
+
 #%% Parameters
 ages = ['7mo','11mo','br'] 
 conditions = ['_02','_03','_04'] # random, duple, triple
@@ -478,8 +485,27 @@ for n in np.arange(0,len(MEG[0])):
     tmp_r,tmp_p = pearsonr(MEG[:,n],CDI)
     r_all.append(tmp_r)
     p_all.append(tmp_p)
+sig = np.where(np.asarray(p_all)<=0.05)
+mask = np.where(np.asarray(p_all)>0.05)
+p_all[mask] = 0
 
-stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
-src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+## print the min and max MNI coordinate for this cluster
+coord = [] 
+for i in np.arange(0,len(sig[0])):
+    coord.append(np.round(src[0]['rr'][src[0]['vertno'][sig[0][i]]]*1000))
+    np_coord = np.array(coord)
+print("min MNI coord:" + str(np.min(np_coord,axis=0)))
+print("max MNI coord:" + str(np.max(np_coord,axis=0)))
+            
+## get all the ROIs in this cluster (no repeat)
+ROIs = []
+for i in np.arange(0,len(sig[0])):
+    for nlabel in np.arange(0,len(label_names),1):
+        if sig[0][i] in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
+            ROIs.append(label_names[nlabel])
+print(ROIs)
+            
 stc1.data = np.array([r_all,r_all]).transpose()
-stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
+stc1.subject = 'fsaverage'
+# stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
+stc1.plot_3d(src=src)
