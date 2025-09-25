@@ -242,20 +242,20 @@ for n_age in ages:
             print(c[0])
             
             ## print the min and max MNI coordinate for this cluster
-            # coord = [] 
-            # for i in np.arange(0,len(c[-1]),1):
-            #     coord.append(np.round(src[0]['rr'][src[0]['vertno'][c[-1][i]]]*1000))
-            # np_coord = np.array(coord)
-            # print("min MNI coord:" + str(np.min(np_coord,axis=0)))
-            # print("max MNI coord:" + str(np.max(np_coord,axis=0)))
+            coord = [] 
+            for i in np.arange(0,len(c[-1]),1):
+                coord.append(np.round(src[0]['rr'][src[0]['vertno'][c[-1][i]]]*1000))
+            np_coord = np.array(coord)
+            print("min MNI coord:" + str(np.min(np_coord,axis=0)))
+            print("max MNI coord:" + str(np.max(np_coord,axis=0)))
             
-            # ## get all the ROIs in this cluster (no repeat)
-            # ROIs = []
-            # for i in np.arange(0,len(c[-1]),1):
-            #     for nlabel in np.arange(0,len(label_names),1):
-            #         if c[-1][i] in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
-            #             ROIs.append(label_names[nlabel])
-            # print(ROIs)
+            ## get all the ROIs in this cluster (no repeat)
+            ROIs = []
+            for i in np.arange(0,len(c[-1]),1):
+                for nlabel in np.arange(0,len(label_names),1):
+                    if c[-1][i] in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
+                        ROIs.append(label_names[nlabel])
+            print(ROIs)
             
         ## visualize this cluster
         stc_all_cluster_vis = summarize_clusters_stc(
