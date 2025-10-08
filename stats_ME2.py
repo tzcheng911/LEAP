@@ -562,10 +562,6 @@ print(r2_score(y,y_est))
 #### Without correction for multiple comparison
 r_all = []
 p_all = []
-CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
-MEG = extract_MEG(age,data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
-# CDI = pd.concat([CDI1,CDI2])
-# MEG = np.concatenate((MEG1,MEG2))
 for n in np.arange(0,len(MEG[0])):
     # print('Doing vertex ' + str(n))
     tmp_r,tmp_p = pearsonr(MEG[:,n],CDI)
@@ -593,12 +589,23 @@ print(ROIs)
 stc1.data = np.array([r_all,r_all]).transpose()
 stc1.subject = 'fsaverage'
 stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
-stc1.plot_3d(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
+stc1.plot_3d(src=src)
 
 #### Cluster-based permutation test correction for multiple comparison 
 filename = age + meter + '_' + peak_freq + '_permutation'
 results, cluster_stats, p_values, cluster_labels, max_cluster_stats = wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_value_threshold=0.05)
+results
+ind = np.where(cluster_labels == 3) ## this is a manual process
+stc1.data[ind,:] = 10 ## mark the significant cluster in yellow
+stc1.plot(src=src)
+stc1.plot_3d(src=src)
 
+for nv in src[0]['vertno'][ind]:
+    v_ind = np.where(src[0]['vertno'] == nv)
+    for nlabel in np.arange(0,len(label_names),1):
+        if v_ind in label_v_ind[nlabel][0]:
+            print("nv: " + str(nv), "idx: " + str(nlabel), "label: " + label_names[nlabel])
+        
 #%% Correlation analysis between wholebrain significant frequency-tagging clusters SSEP and CDI 
 #### get the significant clusters from frequency tagging results
 n_meter = 'duple' # make sure this is matching the meter
