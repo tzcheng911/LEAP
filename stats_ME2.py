@@ -92,7 +92,7 @@ def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold
     with open(filename, 'wb') as f:
         pickle.dump(clu, f) # clu: clustering results of T_obs, clusters, cluster_p_values, H0
 
-def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,ymin,ymax):
+def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,fmin, fmax,ymin,ymax):
     XX = conn1-conn2
     ## compare whole freq spectrum between conditions and ages 
     # non-parametric
@@ -105,8 +105,6 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,ymin,yma
         print(clusters[good_cluster_inds[i]])
         print('Significant freqs: ' + str(freqs[clusters[good_cluster_inds[i]][0]]))
     # parametric
-    fmin = 5
-    fmax = 10
     t,p = stats.ttest_1samp(XX[:,ROI1,ROI2,ff(freqs,fmin):ff(freqs,fmax)].mean(-1),0) 
     print('Significant freqs for uncorrected ttest (5-10 Hz): ' + 't-stats = ' + str(t))
     print('Significant freqs for uncorrected ttest (5-10 Hz): ' + 'p-value = ' + str(p))
@@ -466,6 +464,8 @@ triple_conn_all = []
 nlines = 10
 ROI1 = 1
 ROI2 = 0
+fmin = 6
+fmax = 9
 FOI = 'Beta' # Delta, Theta, Alpha, Beta 
 
 for n_age in ages[:-2]:
@@ -502,12 +502,12 @@ t,p = stats.ttest_1samp(XX_6_9Hz[:,ROI1,ROI2],0)  # t = 3.3107852817359644, p = 
 d = XX_6_9Hz[:,ROI1,ROI2].mean()/XX_6_9Hz[:,ROI1,ROI2].std()
 
 #%%####################################### Correlation analysis initial setting
-meter = conditions[1]
+meter = conditions[2]
 age = ages[0]
 data_type = which_data_type[3] # '_roi_redo4_' or other ROI files, or wholebrain data_type = '_morph_'
 
 ## parameter for the wholebrain SSEP test
-peak_freq = '1.67Hz' 
+peak_freq = '3.33Hz' 
 
 ## parameters for the ROI conn test
 ROI1 = 1 # correspond to the label_names
@@ -608,7 +608,8 @@ for nv in src[0]['vertno'][ind]:
         
 #%% Correlation analysis between wholebrain significant frequency-tagging clusters SSEP and CDI 
 #### get the significant clusters from frequency tagging results
-n_meter = 'duple' # make sure this is matching the meter
+n_meter = 'triple' # make sure this is matching the meter
+p_threshold = 0.05
 with open(root_path + 'SSEP/7mo_SSEP_wholebrain_cluster_test_' + n_meter + '.pkl', 'rb') as f:
             clu = pickle.load(f)
 good_cluster_inds = np.where(clu[2] < p_threshold)[0]
@@ -619,14 +620,23 @@ print('Number of good clusters: ' + str(len(good_clusters)))
 # only the first cluster match the peak freq = 1.67 Hz results, the 2nd and 3rd are not as relevant 
 
 #### Calculate correlation between the mean of significant cluster and CDI
-for n in np.arange(len(good_clusters)):
-    MEG_sig = MEG[:,good_clusters[n][-1]].mean(axis =1)
-    print(pearsonr(MEG_sig,CDI))
-    plt.figure()
-    plt.scatter(MEG_sig,CDI)
+for n_clu in np.arange(len(good_clusters)):
+    MEG_sig = MEG[:,good_clusters[n_clu][-1]]
+    print(pearsonr(MEG_sig.mean(axis =1),CDI))
+    # plt.figure()
+    # plt.scatter(MEG_sig.mean(axis =1),CDI)
     
-#### Calculate correlation 
-label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
+#### Calculate correlation between each v of significant cluster and CDI
+    r_all = []
+    p_all = []
+    for nv in np.arange(0,len(MEG_sig[0])):
+        # print('Doing vertex ' + str(n))
+        tmp_r,tmp_p = pearsonr(MEG_sig[:,nv],CDI)
+        r_all.append(tmp_r)
+        p_all.append(tmp_p)
+    sig = np.where(np.asarray(p_all)<=0.05)
+    print('cluster ' + str(n_clu) + ' significant v:' + str(sig))
+    mask = np.where(np.asarray(p_all)>0.05)
 
 #%%####################################### Model relationship between ROI conn and CDI   
 ## sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
