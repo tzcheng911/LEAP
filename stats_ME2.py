@@ -92,7 +92,7 @@ def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold
     with open(filename, 'wb') as f:
         pickle.dump(clu, f) # clu: clustering results of T_obs, clusters, cluster_p_values, H0
 
-def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,fmin, fmax,ymin,ymax):
+def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,fmin,fmax,ymin,ymax):
     XX = conn1-conn2
     ## compare whole freq spectrum between conditions and ages 
     # non-parametric
@@ -106,8 +106,8 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,fmin, fm
         print('Significant freqs: ' + str(freqs[clusters[good_cluster_inds[i]][0]]))
     # parametric
     t,p = stats.ttest_1samp(XX[:,ROI1,ROI2,ff(freqs,fmin):ff(freqs,fmax)].mean(-1),0) 
-    print('Significant freqs for uncorrected ttest (5-10 Hz): ' + 't-stats = ' + str(t))
-    print('Significant freqs for uncorrected ttest (5-10 Hz): ' + 'p-value = ' + str(p))
+    print('Significant freqs for uncorrected ttest (' + str(fmin) + '-' + str(fmax) + ' Hz): ' + 't-stats = ' + str(t))
+    print('Significant freqs for uncorrected ttest (' + str(fmin) + '-' + str(fmax) + ' Hz): ' + 'p-value = ' + str(p))
 
     t,p = stats.ttest_1samp(XX[:,ROI1,ROI2,:],0) 
     good_cluster_inds = np.where(p < 0.05)[0]
@@ -481,9 +481,9 @@ for n_age in ages[:-2]:
     duple_conn_all.append(duple_conn)
     triple_conn_all.append(triple_conn)
     print("-------------------Doing duple-------------------")
-    stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis,ROI1,ROI2,0.39,1)
+    stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis,ROI1,ROI2,fmin,fmax, 0.39,1)
     print("-------------------Doing triple-------------------")
-    stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis,ROI1,ROI2,0.39,1)
+    stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis,ROI1,ROI2,fmin,fmax, 0.39,1)
 print("-------------------Doing duple-------------------")
 conn1 = duple_conn_all[0]-random_conn_all[0] # 7mo
 conn2 = duple_conn_all[1]-random_conn_all[1] # 11mo
@@ -507,7 +507,7 @@ age = ages[0]
 data_type = which_data_type[3] # '_roi_redo4_' or other ROI files, or wholebrain data_type = '_morph_'
 
 ## parameter for the wholebrain SSEP test
-peak_freq = '3.33Hz' 
+peak_freq = '2.22Hz' 
 
 ## parameters for the ROI conn test
 ROI1 = 1 # correspond to the label_names
@@ -515,6 +515,17 @@ ROI2 = 0 # correspond to the label_names
 F1 = 7.49
 F2 = 8.17
 FOI = 'alpha_beta'
+
+peak_freqs = ['1.11Hz','2.22Hz','3.33Hz']
+for peak_freq in peak_freqs:
+    CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
+    MEG = extract_MEG(age,data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
+    MEG_rand = extract_MEG(age,data_type,'psds','_02',subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
+    MEG_diff = MEG - MEG_rand
+
+    filename = age + meter + '_' + peak_freq + '_diff_permutation'
+    print(filename)
+    results, cluster_stats, p_values, cluster_labels, max_cluster_stats = wholebrain_corr_cluster_test(MEG_diff, CDI, src, filename, n_permutations=500, p_value_threshold=0.05)
 
 if data_type == '_roi_':
     label_names = np.asarray(mne.get_volume_labels_from_aseg(subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'))
@@ -528,6 +539,8 @@ elif data_type == '_roi_redo4_':
 
 CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
 MEG = extract_MEG(age,data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
+MEG_rand = extract_MEG(age,data_type,'psds','_02',subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
+MEG_diff = MEG - MEG_rand
 
 #%%####################################### Model relationship between SSEP and CDI   
 #%% Correlation analysis between ROI SSEP and CDI 
@@ -564,7 +577,7 @@ r_all = []
 p_all = []
 for n in np.arange(0,len(MEG[0])):
     # print('Doing vertex ' + str(n))
-    tmp_r,tmp_p = pearsonr(MEG[:,n],CDI)
+    tmp_r,tmp_p = pearsonr(MEG_diff[:,n],CDI)
     r_all.append(tmp_r)
     p_all.append(tmp_p)
 sig = np.where(np.asarray(p_all)<=0.05)
@@ -592,18 +605,21 @@ stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
 stc1.plot_3d(src=src)
 
 #### Cluster-based permutation test correction for multiple comparison 
-filename = age + meter + '_' + peak_freq + '_permutation'
+filename = age + meter + '_' + peak_freq + '_diff_permutation'
 results, cluster_stats, p_values, cluster_labels, max_cluster_stats = wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_value_threshold=0.05)
-results
-ind = np.where(cluster_labels == 3) ## this is a manual process
+npz = np.load('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/correlation/7mo_03_3.33Hz_permutation.npz')
+print(npz['results'])
+ind = np.where(npz['cluster_labels'] == 8) ## this is a manual process
 stc1.data[ind,:] = 10 ## mark the significant cluster in yellow
 stc1.plot(src=src)
 stc1.plot_3d(src=src)
 
+ROIs = []
 for nv in src[0]['vertno'][ind]:
     v_ind = np.where(src[0]['vertno'] == nv)
     for nlabel in np.arange(0,len(label_names),1):
-        if v_ind in label_v_ind[nlabel][0]:
+        if v_ind in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
+            ROIs.append(label_names[nlabel])
             print("nv: " + str(nv), "idx: " + str(nlabel), "label: " + label_names[nlabel])
         
 #%% Correlation analysis between wholebrain significant frequency-tagging clusters SSEP and CDI 
