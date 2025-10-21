@@ -69,7 +69,9 @@ def do_sss(subject,st_correlation,int_order,time):
     'cing_108': ['MEG0323', 'MEG0733','MEG0713'],
     'cing_109': ['MEG1033', 'MEG2313','MEG0512'],
     'cing_110': [ 'MEG1242','MEG2533'],
+    'cing_112': [ 'MEG1242','MEG1043'],
     'cing_113': [ 'MEG1242','MEG1043'],
+    'cing_121': [ 'MEG1242','MEG1043']
     }
     
     params.mf_prebad = prebad
@@ -225,6 +227,7 @@ for file in os.listdir():
     if file.startswith('cing_113'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
 
+subjects = ['cing_112','cing_121']
 #%%###### do the jobs
 for s in subjects:
     print(s)
