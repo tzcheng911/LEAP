@@ -48,7 +48,7 @@ def find_events(raw_file,subj,block,time):
     events = np.concatenate((STI1,STI3,STI4),axis=0)
     events = events[events[:,0].argsort()] # sort by the latency
     # root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
-    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+    # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
     root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
     file_name_raw=root_path + str(subj) + time + str(block) +'_events_raw-eve.fif'
     mne.write_events(file_name_raw,events,overwrite=True)  ###write out raw events for double checking
@@ -56,7 +56,7 @@ def find_events(raw_file,subj,block,time):
 def process_events(subj,block,time):
      #find events
     # root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+    # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
     root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
     file_name_raw=root_path + str(subj) + time + str(block) +'_events_raw-eve.fif'
     events=mne.read_events(file_name_raw)  ###write out raw events for double checking
@@ -136,7 +136,7 @@ def check_events(events,condition):  ## processed events
         elif event[2]==6 or event[2]==7:
             e2.append(3)
             
-    path='/media/tzcheng/storage2/SLD/MEG/'
+    # path='/media/tzcheng/storage2/SLD/MEG/'
     path='/media/tzcheng/storage/cing/'
     # path='/media/tzcheng/storage2/CBS/'
     seq_file=path + 'seq'+ condition+'_200.npy'
@@ -192,7 +192,7 @@ def select_mmr_events(events,subj,block,time,direction): ## load the processed e
         
         mmr_event=np.concatenate((substd,dev1,dev2),axis=0)
         
-        root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+        # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
         root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
         # root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
         file_name_new=root_path + str(subj) + time + block + '_events_mmr-eve.fif'
@@ -219,7 +219,7 @@ def select_mmr_events(events,subj,block,time,direction): ## load the processed e
         dev_sample = [dev[i] for i in sorted(random.sample(range(len(dev)), sample_size))]
         
         mmr_event=np.concatenate((std1,std2,dev_sample),axis=0)
-        root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+        # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
         # root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
         root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
         file_name_new=root_path + str(subj) + time + block + '_events_mmr_reverse-eve.fif'
@@ -261,7 +261,7 @@ def select_cabr_events(events,subj,block,time): ## load the processed events
     substd2 = [std2[i] for i in sorted(random.sample(range(len(std2)), sample_size))]
     
     cabr_event=np.concatenate((substd1,substd2,dev1,dev2),axis=0)
-    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+    # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
     root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
     # root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
     file_name_new=root_path + str(subj) + time + block + '_events_cabr-eve.fif'
@@ -271,7 +271,7 @@ def select_cabr_events(events,subj,block,time): ## load the processed events
 #%% 
 ########################################
 # root_path='/media/tzcheng/storage2/CBS/'
-root_path='/media/tzcheng/storage2/SLD/MEG/'
+# root_path='/media/tzcheng/storage2/SLD/MEG/'
 root_path='/media/tzcheng/storage/cing/'
 os.chdir(root_path)
 
@@ -286,12 +286,12 @@ direction = "ba_to_pa"
 subj = [] 
 check_all= []
 for file in os.listdir():
-    if file.startswith('cing_113'):
+    if file.startswith('cing'):
         subj.append(file)
 
 ## do individual by individual(s), check the time t1, t2 or t3 too
-
-conditions = ['4']
+subj = ['cing_112','cing_121']
+conditions = ['6','1']
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]
