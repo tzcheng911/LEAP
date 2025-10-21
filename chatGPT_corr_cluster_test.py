@@ -43,13 +43,16 @@ for p in range(n_permutations):
     r_perm = np.array([pearsonr(neural[:, i], y_perm)[0] for i in range(n_sensors)])
     t_perm = r_perm * np.sqrt((n_subjects - 2) / (1 - r_perm**2))
     supra_perm = np.abs(t_perm) > t_crit
-    perm_labels, perm_n_clusters = label(supra_perm)
+    sub_adj_perm = adjacency_sparse[supra_perm][:, supra_perm]
+    perm_n_clusters, perm_labels = connected_components(sub_adj_perm, directed=False)
+    cluster_labels_perm = np.zeros(n_sensors, dtype=int)
+    cluster_labels_perm[supra_perm] = perm_labels + 1  # +1 to start cluster IDs at 1
     if perm_n_clusters > 0:
-        perm_stats = np.array([np.sum(np.abs(t_perm)[perm_labels == c + 1]) for c in range(perm_n_clusters)])
+        perm_stats = np.array([np.sum(np.abs(t_perm)[cluster_labels_perm == c + 1]) for c in range(perm_n_clusters)])
         max_cluster_stats[p] = np.max(perm_stats)
     else:
         max_cluster_stats[p] = 0
-
+        
 # --- Step 7: Compare observed cluster stats to null (family-wise correction)
 p_values = np.array([np.mean(max_cluster_stats >= s) for s in cluster_stats])
 
