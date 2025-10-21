@@ -322,7 +322,7 @@ def wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_
     t_crit = t.ppf(1 - p_value_threshold / 2, df=n_subjects - 2)  # two-tailed
     supra_thresh = np.abs(t_vals) > t_crit
 
-    # Step 4: Define clusters (1D case — adjacency = neighboring sensors)
+    # Step 4: Define clusters 
     sub_adj = adjacency_sparse[supra_thresh][:, supra_thresh]
     n_clusters, labels = connected_components(sub_adj, directed=False)
     cluster_labels = np.zeros(n_sensors, dtype=int)
@@ -339,9 +339,12 @@ def wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_
         r_perm = np.array([pearsonr(neural[:, i], y_perm)[0] for i in range(n_sensors)])
         t_perm = r_perm * np.sqrt((n_subjects - 2) / (1 - r_perm**2))
         supra_perm = np.abs(t_perm) > t_crit
-        perm_labels, perm_n_clusters = label(supra_perm)
+        sub_adj_perm = adjacency_sparse[supra_perm][:, supra_perm]
+        perm_n_clusters, perm_labels = connected_components(sub_adj_perm, directed=False)
+        cluster_labels_perm = np.zeros(n_sensors, dtype=int)
+        cluster_labels_perm[supra_perm] = perm_labels + 1  # +1 to start cluster IDs at 1
         if perm_n_clusters > 0:
-            perm_stats = np.array([np.sum(np.abs(t_perm)[perm_labels == c + 1]) for c in range(perm_n_clusters)])
+            perm_stats = np.array([np.sum(np.abs(t_perm)[cluster_labels_perm == c + 1]) for c in range(perm_n_clusters)])
             max_cluster_stats[p] = np.max(perm_stats)
         else:
             max_cluster_stats[p] = 0
@@ -464,8 +467,8 @@ triple_conn_all = []
 nlines = 10
 ROI1 = 1
 ROI2 = 0
-fmin = 6
-fmax = 9
+fmin = 5
+fmax = 10
 FOI = 'Beta' # Delta, Theta, Alpha, Beta 
 
 for n_age in ages[:-2]:
@@ -504,28 +507,17 @@ d = XX_6_9Hz[:,ROI1,ROI2].mean()/XX_6_9Hz[:,ROI1,ROI2].std()
 #%%####################################### Correlation analysis initial setting
 meter = conditions[2]
 age = ages[0]
-data_type = which_data_type[3] # '_roi_redo4_' or other ROI files, or wholebrain data_type = '_morph_'
+data_type = which_data_type[2] # '_roi_redo4_' or other ROI files, or wholebrain data_type = '_morph_'
 
 ## parameter for the wholebrain SSEP test
-peak_freq = '2.22Hz' 
+peak_freq = '3.33Hz' 
 
 ## parameters for the ROI conn test
-ROI1 = 1 # correspond to the label_names
-ROI2 = 0 # correspond to the label_names
-F1 = 7.49
-F2 = 8.17
+ROI1 = 2 # correspond to the label_names
+ROI2 = 1 # correspond to the label_names
+F1 = 5
+F2 = 10
 FOI = 'alpha_beta'
-
-peak_freqs = ['1.11Hz','2.22Hz','3.33Hz']
-for peak_freq in peak_freqs:
-    CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
-    MEG = extract_MEG(age,data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
-    MEG_rand = extract_MEG(age,data_type,'psds','_02',subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
-    MEG_diff = MEG - MEG_rand
-
-    filename = age + meter + '_' + peak_freq + '_diff_permutation'
-    print(filename)
-    results, cluster_stats, p_values, cluster_labels, max_cluster_stats = wholebrain_corr_cluster_test(MEG_diff, CDI, src, filename, n_permutations=500, p_value_threshold=0.05)
 
 if data_type == '_roi_':
     label_names = np.asarray(mne.get_volume_labels_from_aseg(subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'))
@@ -538,16 +530,43 @@ elif data_type == '_roi_redo4_':
     label_names = np.asarray(["Auditory", "SensoryMotor", "BG", "IFG"])
 
 CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
-MEG = extract_MEG(age,data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
-MEG_rand = extract_MEG(age,data_type,'psds','_02',subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
-MEG_diff = MEG - MEG_rand
+
+#%% run the loop
+meter = conditions[1]
+age = ages[0]
+data_type = which_data_type[3] # '_roi_redo4_' or other ROI files, or wholebrain data_type = '_morph_'
+
+## parameter for the wholebrain SSEP test
+peak_freqs = ['1.11Hz','2.22Hz','3.33Hz']
+peak_freqs = ['1.67Hz','3.33Hz']
+
+## parameters for the ROI conn test
+ROI1 = 2 # correspond to the label_names
+ROI2 = 1 # correspond to the label_names
+F1 = 6
+F2 = 9
+FOI = 'alpha_beta'
+
+CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
+for peak_freq in peak_freqs:
+    MEG = extract_MEG(age,data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
+    MEG_rand = extract_MEG(age,data_type,'psds','_02',subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
+    MEG_diff = MEG - MEG_rand
+    
+    filename = age + meter + '_' + peak_freq + '_permutation_fix'
+    print(filename)
+    results, cluster_stats, p_values, cluster_labels, max_cluster_stats = wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_value_threshold=0.05)
 
 #%%####################################### Model relationship between SSEP and CDI   
+MEG = extract_MEG(age,data_type,'psds',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2)
+MEG_rand = extract_MEG(age,data_type,'psds','_02',subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2)
+MEG_diff = MEG - MEG_rand
+
 #%% Correlation analysis between ROI SSEP and CDI 
 for n,ROI in enumerate(label_names):
     plt.figure()
-    plt.scatter(MEG[:,n],CDI)
-    print(pearsonr(MEG[:,n], CDI))
+    plt.scatter(MEG_diff[:,n],CDI)
+    print(pearsonr(MEG_diff[:,n], CDI))
 
 #%% SVR for either ROI or wholebrain SSEP and CDI   
 from sklearn.decomposition import PCA
@@ -624,7 +643,7 @@ for nv in src[0]['vertno'][ind]:
         
 #%% Correlation analysis between wholebrain significant frequency-tagging clusters SSEP and CDI 
 #### get the significant clusters from frequency tagging results
-n_meter = 'triple' # make sure this is matching the meter
+n_meter = 'duple' # make sure this is matching the meter
 p_threshold = 0.05
 with open(root_path + 'SSEP/7mo_SSEP_wholebrain_cluster_test_' + n_meter + '.pkl', 'rb') as f:
             clu = pickle.load(f)
@@ -652,12 +671,11 @@ for n_clu in np.arange(len(good_clusters)):
         p_all.append(tmp_p)
     sig = np.where(np.asarray(p_all)<=0.05)
     print('cluster ' + str(n_clu) + ' significant v:' + str(sig))
-    mask = np.where(np.asarray(p_all)>0.05)
 
 #%%####################################### Model relationship between ROI conn and CDI   
 ## sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
-CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
 MEG = extract_MEG(age,data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2) 
+
 # CDI1,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
 # CDI2,subj_noCDI_ind = extract_CDI('11mo',27,'VOCAB')
 # MEG1 = extract_MEG('7mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2)
@@ -668,7 +686,8 @@ MEG = extract_MEG(age,data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,pe
 plt.figure()
 plt.scatter(MEG,CDI)
 plt.ylim([50,710])
-plt.xlim([0.29,0.95])
+plt.xlim([0.2,0.95])
+plt.title('Conn between ' + label_names[ROI1] + ' ' + label_names[ROI2])
 print('Conn between ' + label_names[ROI1] + ' ' + label_names[ROI2])
 print(pearsonr(MEG, CDI))
 # print(spearmanr(MEG, CDI))
