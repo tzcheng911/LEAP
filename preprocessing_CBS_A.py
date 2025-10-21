@@ -267,7 +267,7 @@ def do_epoch_mmr_eeg(data, subject, run, direction):
         evoked_dev2.save(file_out + '_evoked_dev2_ba_mmr.fif',overwrite=True)
 
 def do_epoch_cabr(data, subject, run, n_trials ,hp,lp): 
-    random.seed(15)
+    random.seed(15) # add for replication
     ###### Read the event files (generated from evtag.py) 
     root_path = os.getcwd()
     cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_cabr-eve.fif')
@@ -353,7 +353,8 @@ def do_epoch_cabr_eeg(data, subject, run, n_trials):
     evoked_dev1.save(file_out + '_evoked_dev1_cabr_' + str(n_trials) + '.fif',overwrite=True)
     evoked_dev2.save(file_out + '_evoked_dev2_cabr_' + str(n_trials) + '.fif',overwrite=True)
     return evoked_substd,evoked_dev1,evoked_dev2,new_epochs
-########################################
+
+#%%########################################
 root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
 
@@ -365,18 +366,18 @@ runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 # runs = ['_unplug'] # for stimuli leakage test
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
-lp = 450 
+lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
 hp = 80
 do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_A114'): # cbs_A for the adults and cbs_b for the infants
+    if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 # subj = ['cbs_zoe']
 
 #%%##### do the jobs for MEG
-n_trials =  'all' # can be an integer or 'all' using all the sounds
+n_trials = 200 # can be an integer e.g. 200 or 'all' using all the sounds
 # randomly select k sounds from each condition
 # each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
 # we have at least 200 sounds for each condition 
@@ -393,14 +394,14 @@ for s in subj:
             raw = mne.io.read_raw_fif(filename, allow_maxshield=True,preload=True)
             raw_erm = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + run + '_erm_raw_sss_proj.fif', allow_maxshield=True,preload=True)
         else:
-            print ('Doing ECG/EOG projection...')
-            [raw,raw_erm] = do_projection(s,run)
-
+            # print ('Doing ECG/EOG projection...')
+            # [raw,raw_erm] = do_projection(s,run)
+            print ('No ECG/EOG projection files to use')
         print ('Doing filtering...')
         raw_filt = do_filtering(raw,lp,hp,do_cabr)
         raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
-        # print ('calculate cov...')
-        # do_cov(s,raw_erm_filt, do_cabr,hp,lp)
+        print ('calculate cov...')
+        do_cov(s,raw_erm_filt, do_cabr,hp,lp)
         print ('Doing epoch...')
         if do_cabr == True:
             do_epoch_cabr(raw_filt, s, run, n_trials,hp,lp)
