@@ -67,7 +67,7 @@ def do_inverse_FFR(s,evokeds_inv,run,nspeech,morph,n_top,n_trial,hp,lp):
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
     cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr-cov.fif')
-    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_f80450_ffr_e_' + str(n_trial) + '.fif')
+    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e_' + str(n_trial) + '.fif')
     inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
     evokeds_inv_stc = mne.minimum_norm.apply_inverse((evokeds_inv), inverse_operator, pick_ori = None)
 
@@ -84,13 +84,13 @@ def do_inverse_FFR(s,evokeds_inv,run,nspeech,morph,n_top,n_trial,hp,lp):
             src_to=src_fs,
             verbose=True)
         evokeds_inv_stc_fsaverage = morph.apply(evokeds_inv_stc)
-        evokeds_inv_stc_fsaverage.save(file_in + '_' + nspeech +'_pcffr80450_' + str(n_top) + str(n_trial) + '_morph', overwrite=True)
+        evokeds_inv_stc_fsaverage.save(file_in + '_' + nspeech +'_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + str(n_trial) + '_morph', overwrite=True)
 
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
-        evokeds_inv_stc.save(file_in + '_' + nspeech + '_pcffr80450_' + str(n_top), overwrite=True)
+        evokeds_inv_stc.save(file_in + '_' + nspeech + '_pcffr' + str(hp) + str(lp) + '_' + str(n_top), overwrite=True)
 
-def group_stc(subj,baby_or_adult,n_top, n_trial):
+def group_stc(subj,baby_or_adult,n_top, n_trial,hp,lp):
     group_std = []
     group_dev1 = []
     group_dev2 = []
@@ -106,9 +106,9 @@ def group_stc(subj,baby_or_adult,n_top, n_trial):
         print('Extracting ' + s + ' data')
         file_in = root_path + s + '/sss_fif/' + s
         
-        stc_std=mne.read_source_estimate(file_in+'_substd_pcffr80450_' + str(n_top) + str(n_trial) + '_morph-vl.stc')
-        stc_dev1=mne.read_source_estimate(file_in+'_dev1_pcffr80450_' + str(n_top) + str(n_trial) + '_morph-vl.stc')
-        stc_dev2=mne.read_source_estimate(file_in+'_dev2_pcffr80450_' + str(n_top) + str(n_trial) + '_morph-vl.stc')
+        stc_std=mne.read_source_estimate(file_in+'_substd_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + str(n_trial) + '_morph-vl.stc')
+        stc_dev1=mne.read_source_estimate(file_in+'_dev1_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + str(n_trial) + '_morph-vl.stc')
+        stc_dev2=mne.read_source_estimate(file_in+'_dev2_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + str(n_trial) + '_morph-vl.stc')
         group_std.append(stc_std.data)
         group_dev1.append(stc_dev1.data)
         group_dev2.append(stc_dev2.data)
@@ -126,12 +126,12 @@ def group_stc(subj,baby_or_adult,n_top, n_trial):
     group_std_roi = np.asarray(group_std_roi)
     group_dev1_roi = np.asarray(group_dev1_roi)
     group_dev2_roi = np.asarray(group_dev2_roi)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr80450_' + str(n_top) + '_' + str(n_trial) +'_morph.npy',group_std)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr80450_' + str(n_top) + '_' + str(n_trial) + '_morph.npy',group_dev1)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr80450_' + str(n_top) + '_' + str(n_trial) + '_morph.npy',group_dev2)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr80450_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_std_roi)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr80450_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_dev1_roi)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr80450_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_dev2_roi)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) +'_morph.npy',group_std)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) + '_morph.npy',group_dev1)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) + '_morph.npy',group_dev2)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_std_roi)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_dev1_roi)
+    np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_dev2_roi)
 
 #%%#######################################'
 root_path='/media/tzcheng/storage2/CBS/'
@@ -162,20 +162,20 @@ group_sensor = np.empty([len(subjects),3,306,1101])
 group_pca = np.empty([len(subjects),3,306,1101])
 group_pc_info = np.empty([len(subjects),3,n_top,2]) # Last dim: first is the ind, 2nd is the explained var ratio of the corresponding PC
 
-for ns,s in enumerate(subjects):
-    print(s)
-    for nspeech, speech in enumerate(cond):
-        file_in = root_path + s + '/sss_fif/' + s
-        # evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_evoked_' + speech + '_ffr_' + str(n_trial) +'.fif')[0]
-        # data = evokeds.get_data()
-        # pca_data,ind_components,explained_variance_ratio,data_topPC = select_PC(data,sfreq,fmin,fmax,lb,hb,n_top)
-        # evokeds.data = data_topPC
-        # group_sensor[ns,nspeech,:,:] = data_topPC
-        # group_pca[ns,nspeech,:,:] = pca_data
-        # group_pc_info[ns,nspeech,:,0] = ind_components
-        # group_pc_info[ns,nspeech,:,1] = explained_variance_ratio
-        # do_inverse_FFR(s,evokeds,run,speech,morph,n_top,n_trial,hp,lp)
-group_stc(subjects,baby_or_adult,n_top,n_trial)
+# for ns,s in enumerate(subjects):
+#     print(s)
+#     for nspeech, speech in enumerate(cond):
+#         file_in = root_path + s + '/sss_fif/' + s
+#         evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_evoked_' + speech + '_ffr_' + str(n_trial) +'.fif')[0]
+#         data = evokeds.get_data()
+#         pca_data,ind_components,explained_variance_ratio,data_topPC = select_PC(data,sfreq,fmin,fmax,lb,hb,n_top)
+#         evokeds.data = data_topPC
+#         group_sensor[ns,nspeech,:,:] = data_topPC
+#         group_pca[ns,nspeech,:,:] = pca_data
+#         group_pc_info[ns,nspeech,:,0] = ind_components
+#         group_pc_info[ns,nspeech,:,1] = explained_variance_ratio
+#         do_inverse_FFR(s,evokeds,run,speech,morph,n_top,n_trial,hp,lp)
+group_stc(subjects,baby_or_adult,n_top,n_trial,hp,lp)
 np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) + '_sensor.npy',group_sensor[:,0,:,:])
 np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) +'_sensor.npy',group_sensor[:,1,:,:])
 np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) +'_sensor.npy',group_sensor[:,2,:,:])
