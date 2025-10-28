@@ -131,15 +131,17 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
 times = stc1.times
+n_top = '3' # could number of IC: 3 or 10, or dss: dss_f80450, dss
+n_trial = '200' # 'ntrial_200/' or 'ntrial_all/' or ''
 
 ## parameter
 ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
 filename = 'ffr'
-filename_ffr_ba = 'group_ba_ffr_morph'
-filename_ffr_mba = 'group_mba_ffr_morph'
-filename_ffr_pa = 'group_pa_ffr_morph'
+filename_ffr_ba = 'group_ba_pcffr80200_'
+filename_ffr_mba = 'group_mba_pcffr80200_'
+filename_ffr_pa = 'group_pa_pcffr80200_'
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
@@ -147,13 +149,13 @@ lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemp
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
 if ROI_wholebrain == 'ROI':
-    ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + filename_ffr_ba + '_roi.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + filename_ffr_mba + '_roi.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + filename_ffr_pa + '_roi.npy',allow_pickle=True)
+    ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_ba + str(n_top) + '_' + str(n_trial) + '_roi.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_mba + str(n_top) + '_' + str(n_trial) + '_roi.npy',allow_pickle=True)
+    ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_roi.npy',allow_pickle=True)
 elif ROI_wholebrain == 'wholebrain':
-    ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + filename_ffr_ba + '.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + filename_ffr_mba + '.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + filename_ffr_pa + '.npy',allow_pickle=True)
+    ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_ba + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_mba + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
+    ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
 else:
     print("Need to decide whether to use ROI or whole brain as feature.")
 X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0)
