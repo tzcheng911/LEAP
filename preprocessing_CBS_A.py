@@ -266,7 +266,7 @@ def do_epoch_mmr_eeg(data, subject, run, direction):
         evoked_dev1.save(file_out + '_evoked_dev1_ba_mmr.fif',overwrite=True)
         evoked_dev2.save(file_out + '_evoked_dev2_ba_mmr.fif',overwrite=True)
 
-def do_epoch_cabr(data, subject, run, n_trials ,hp,lp): 
+def do_epoch_cabr(data, subject, run, n_trials,hp,lp): 
     random.seed(15) # add for replication
     ###### Read the event files (generated from evtag.py) 
     root_path = os.getcwd()
@@ -366,13 +366,13 @@ runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 # runs = ['_unplug'] # for stimuli leakage test
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
-lp = 450 # try 200 (suggested by Nike) or 450 (from Coffey paper)
+lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
 hp = 80
 do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_A'): # cbs_A for the adults and cbs_b for the infants
+    if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
         subj.append(file)
 # subj = ['cbs_zoe']
 
@@ -381,7 +381,7 @@ n_trials = 200 # can be an integer e.g. 200 or 'all' using all the sounds
 # randomly select k sounds from each condition
 # each trial has 4-8 sounds, there are 100 /ba/ and 50 /pa/ and 50 /mba/ trials
 # we have at least 200 sounds for each condition 
-
+print(subj)
 for s in subj:
     print(s)
     # do_otp(s)
