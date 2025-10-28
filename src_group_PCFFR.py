@@ -4,6 +4,8 @@
 Created on Tue Apr 30 16:01:53 2024
 Conducted dimension reduction for each subject using spectrum analysis. 
 Keep the components that include peaks between 90-100 Hz.
+Could be used in cbs_A and cbs_b
+cbs_b outliers: cbs_b116, cbs_b118
 @author: tzcheng
 """
 
@@ -148,33 +150,33 @@ lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
 hp = 80
 runs = ['_01','_02']
 cond = ['substd','dev1','dev2']
-baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
+baby_or_adult = 'cbsb_meg_analysis' # baby or adult
 
 run = runs[0]
 morph = True
 
 subjects = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_b'):
         subjects.append(file)
 
 group_sensor = np.empty([len(subjects),3,306,1101])
 group_pca = np.empty([len(subjects),3,306,1101])
 group_pc_info = np.empty([len(subjects),3,n_top,2]) # Last dim: first is the ind, 2nd is the explained var ratio of the corresponding PC
 
-# for ns,s in enumerate(subjects):
-#     print(s)
-#     for nspeech, speech in enumerate(cond):
-#         file_in = root_path + s + '/sss_fif/' + s
-#         evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_evoked_' + speech + '_ffr_' + str(n_trial) +'.fif')[0]
-#         data = evokeds.get_data()
-#         pca_data,ind_components,explained_variance_ratio,data_topPC = select_PC(data,sfreq,fmin,fmax,lb,hb,n_top)
-#         evokeds.data = data_topPC
-#         group_sensor[ns,nspeech,:,:] = data_topPC
-#         group_pca[ns,nspeech,:,:] = pca_data
-#         group_pc_info[ns,nspeech,:,0] = ind_components
-#         group_pc_info[ns,nspeech,:,1] = explained_variance_ratio
-#         do_inverse_FFR(s,evokeds,run,speech,morph,n_top,n_trial,hp,lp)
+for ns,s in enumerate(subjects):
+    print(s)
+    for nspeech, speech in enumerate(cond):
+        file_in = root_path + s + '/sss_fif/' + s
+        evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_evoked_' + speech + '_ffr_' + str(n_trial) +'.fif')[0]
+        data = evokeds.get_data()
+        pca_data,ind_components,explained_variance_ratio,data_topPC = select_PC(data,sfreq,fmin,fmax,lb,hb,n_top)
+        evokeds.data = data_topPC
+        group_sensor[ns,nspeech,:,:] = data_topPC
+        group_pca[ns,nspeech,:,:] = pca_data
+        group_pc_info[ns,nspeech,:,0] = ind_components
+        group_pc_info[ns,nspeech,:,1] = explained_variance_ratio
+        do_inverse_FFR(s,evokeds,run,speech,morph,n_top,n_trial,hp,lp)
 group_stc(subjects,baby_or_adult,n_top,n_trial,hp,lp)
 np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) + '_sensor.npy',group_sensor[:,0,:,:])
 np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) +'_sensor.npy',group_sensor[:,1,:,:])
