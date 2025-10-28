@@ -71,7 +71,10 @@ def do_sss(subject,st_correlation,int_order,time):
     'cing_110': [ 'MEG1242','MEG2533'],
     'cing_112': [ 'MEG1242','MEG1043'],
     'cing_113': [ 'MEG1242','MEG1043'],
-    'cing_121': [ 'MEG1242','MEG1043']
+    'cing_121': [ 'MEG1242','MEG1043'],
+    'cing_124': [ 'MEG1242'],
+    'cing_128': [ 'MEG1242','MEG1043'],
+    'cing_130': [ 'MEG1242','MEG1043']
     }
     
     params.mf_prebad = prebad
@@ -227,12 +230,12 @@ for file in os.listdir():
     if file.startswith('cing_113'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
 
-subjects = ['cing_112','cing_121']
+subjects = ['cing_128','cing_130']
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    do_otp(s,time)
-    do_sss(s,st_correlation,int_order,time)
+    # do_otp(s,time)
+    # do_sss(s,st_correlation,int_order,time)
     for run in runs:
         if time == 0:
             time = ""
