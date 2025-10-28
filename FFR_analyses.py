@@ -138,7 +138,7 @@ n_trial = '200' # 'ntrial_200/' or 'ntrial_all/' or ''
 ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
-filename = 'ffr'
+filename = 'pcffr80200'
 filename_ffr_ba = 'group_ba_pcffr80200_'
 filename_ffr_mba = 'group_mba_pcffr80200_'
 filename_ffr_pa = 'group_pa_pcffr80200_'
@@ -175,12 +175,12 @@ scores_observed = cross_val_multiscore(time_decod, X, y, cv=5, n_jobs=None) # le
 score = np.mean(scores_observed, axis=0)
 
 #Plot average decoding scores of 5 splits
-# TOI = np.linspace(0,450,num=2250)
-# fig, ax = plt.subplots(1)
-# ax.plot(TOI, scores_observed.mean(0), label="score")
-# ax.axhline(0.5, color="k", linestyle="--", label="chance")
-# ax.axvline(0, color="k")
-# plt.legend()
+TOI = np.linspace(-20,200,num=1101)
+fig, ax = plt.subplots(1)
+ax.plot(TOI, scores_observed.mean(0), label="score")
+ax.axhline(1/3, color="k", linestyle="--", label="chance")
+ax.axvline(0, color="k")
+plt.legend()
 
 # The fitting needs not be cross validated because the weights are based on
 # the training sets
@@ -190,20 +190,20 @@ patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
 
 toc = time.time()
 
-# np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_kall_' + filename + '.npy',scores_observed)
-# np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_' + filename + '.npy',patterns)
+np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_kall_' + filename + '.npy',scores_observed)
+np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_' + filename + '.npy',patterns)
 
 #%%####################################### MEG decoding across time
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
-n_top = '10' # could number of IC: 3 or 10, or dss: dss_f80450, dss
+n_top = '3' # could number of IC: 3 or 10, or dss: dss_f80450, dss
 n_trial = '200' # 'ntrial_200/' or 'ntrial_all/' or ''
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
 times = stc1.times
 
-did_pca = '_pcffr80450_'  # '_': without or with pca "_pcffr80450_" the filter between 80 and 450 Hz is applied
+did_pca = '_pcffr80200_'  # '_': without or with pca "_pcffr80450_" the filter between 80 and 450 Hz is applied
 filename_ffr_ba = 'group_ba' + did_pca
 filename_ffr_mba = 'group_mba' + did_pca
 filename_ffr_pa = 'group_pa' + did_pca
@@ -850,3 +850,14 @@ for s in subj:
 #%%####################################### only select the mag for group level FFR analysis
 evoked = evoked.pick_types('mag')
 data = evoked1.get_data(picks = 'mag')
+
+#%%####################################### reanalyze the 2018 dataset
+evoked_fnames = ['104','106','107','108','110','112','113','118','121','123','124','126','129','133']
+all_evokeds = []
+for fname in evoked_fnames:
+    # mne.read_evokeds can also take a single filename and return a list
+    # even if there's only one evoked object in the file
+    evokeds_from_file = mne.read_evokeds(fname + '_p10_evoked.fif')
+    all_evokeds.extend(evokeds_from_file)
+    
+all_evokeds[0].plot_topo()
