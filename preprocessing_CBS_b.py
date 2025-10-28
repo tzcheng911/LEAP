@@ -297,28 +297,28 @@ def do_projection(subject, run,time):
 
     return raw, raw_erm
 
-def do_filtering(data, lp, do_cabr):
+def do_filtering(data, lp, hp, do_cabr):
     ###### filtering
     if do_cabr == True:
         data.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5)
-        data.filter(l_freq=80,h_freq=2000,method='iir',iir_params=dict(order=4,ftype='butter'))
+        data.filter(l_freq=hp,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     else:
-        data.filter(l_freq=0,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
+        data.filter(l_freq=0,h_freq=50,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
 
-def do_cov(subject,data,time, do_cabr):
+def do_cov(subject,data,time, do_cabr,hp,lp):
     ###### noise covariance for each run based on its eog ecg proj
     if time == 0:
         time =''
     root_path = os.getcwd()
     fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + time +run + '_erm_otp_raw_sss_proj_f'
     if do_cabr == True:     
-        fname_erm_out = fname_erm + '_ffr-cov'
+        fname_erm_out = fname_erm + str(hp) + str(lp) + '_ffr-cov'
     else: 
         fname_erm_out = fname_erm + 'il50_mmr-cov'
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
     mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
-
+    
 def do_epoch_mmr(data, subject, run, time, direction):
     ###### Read the event files to do epoch    
     if time == 0:
@@ -364,14 +364,14 @@ def do_epoch_mmr(data, subject, run, time, direction):
         evoked_dev.save(file_out + '_evoked_dev_reverse_mmr.fif',overwrite=True)
     
 
-def do_epoch_cabr(data, subject, run,time):  
+def do_epoch_cabr(data, subject, run,time,hp,lp):  
     ###### Read the event files (generated from evtag.py) 
     if time == 0:
         time =''
     root_path = os.getcwd()
     cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + time + run + '_events_cabr-eve.fif')
-    file_out = root_path + '/' + subject + '/sss_fif/' + subject + time + run + '_otp_raw_sss_proj_f'
-    
+    file_out = root_path + '/' + subject + '/sss_fif/' + subject + time + run + '_otp_raw_sss_proj_f'+ str(hp) + str(lp)
+
     event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
     
     reject=dict(grad=4000e-13,mag=4e-12)
