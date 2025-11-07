@@ -215,8 +215,8 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-baby_or_adult = 'cbsb_meg_analysis' # baby or adult
-input_data = 'wholebrain' # ROI or wholebrain or sensor or pcffr
+baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
+input_data = 'ROI' # ROI or wholebrain or sensor or pcffr
 k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
 if input_data == 'sensor':
@@ -234,6 +234,7 @@ elif input_data == 'wholebrain':
 else:
     print("Need to decide whether to use ROI or whole brain as feature.")
 
+####################################### 3-way decoding: ba vs. pa vs. mba
 all_score = []
 ## Three way classification using ovr
 X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0)
@@ -264,10 +265,66 @@ for n in np.arange(0,np.shape(X)[1],1):
         score = np.mean(scores, axis=0)
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
-np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_decoding_accuracy_' + input_data +'_r15.npy',all_score)
+np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_3way_decoding_accuracy_' + input_data +'_r15.npy',all_score)
+
+####################################### 2-way decoding: ba vs. pa, ba vs. mba, pa vs. mba
+clf = make_pipeline(
+    StandardScaler(),  # z-score normalization
+    LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
+)  
+
+all_score_ba_mba = []
+X = np.concatenate((ffr_ba,ffr_mba),axis=0)
+y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba))))
+
+rand_ind = np.arange(0,len(X))
+random.Random(15).shuffle(rand_ind)
+
+X = X[rand_ind,:,:]
+y = y[rand_ind]
+for n in np.arange(0,np.shape(X)[1],1):
+        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
+        score = np.mean(scores, axis=0)
+        print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
+        all_score_ba_mba.append(score)
+np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_ba_mba_decoding_accuracy_' + input_data +'_r15.npy',all_score_ba_mba)
+
+all_score_ba_pa = []
+X = []
+y = []
+X = np.concatenate((ffr_ba,ffr_pa),axis=0)
+y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_pa))))
+
+X = X[rand_ind,:,:]
+y = y[rand_ind]
+for n in np.arange(0,np.shape(X)[1],1):
+        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
+        score = np.mean(scores, axis=0)
+        print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
+        all_score_ba_pa.append(score)
+np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_ba_pa_decoding_accuracy_' + input_data +'_r15.npy',all_score_ba_pa)
+
+all_score_mba_pa = []
+X = []
+y = []
+X = np.concatenate((ffr_mba,ffr_pa),axis=0)
+y = np.concatenate((np.repeat(0,len(ffr_mba)),np.repeat(1,len(ffr_pa))))
+
+X = X[rand_ind,:,:]
+y = y[rand_ind]
+for n in np.arange(0,np.shape(X)[1],1):
+        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
+        score = np.mean(scores, axis=0)
+        print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
+        all_score_mba_pa.append(score)
+np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_mba_pa_decoding_accuracy_' + input_data +'_r15.npy',all_score_mba_pa)
+
+## C and V section decoding: for ba, 10 ms + 90 ms = 100 ms; for mba and pa, 40 ms + 90 ms = 130 ms
+X1 = X[rand_ind,:,:np.shape(X)[-1]//2]
+X2 = X[rand_ind,:,np.shape(X)[-1]//2:]
 
 #%%####################################### check acc for each sensor, ROI or vertice
-acc_ind = np.where(np.array(all_score) >= 0.5)
+acc_ind = np.where(np.array(all_score) >= 1/3)
 
 ## visualize sensor
 evoked = mne.read_evokeds(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
@@ -283,6 +340,18 @@ np.argsort(all_score)
 ## visualize vertice
 stc1.data = np.array([all_score,all_score]).transpose()
 stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
+
+## list the hot spots
+label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
+high_acc = np.where(np.array(all_score) > 0.7)
+label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
+high_acc = np.array(high_acc[0])
+ROIs = []
+for i in np.arange(0,len(high_acc),1):
+    for nlabel in np.arange(0,len(label_names),1):
+        if high_acc[i] in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
+            ROIs.append(label_names[nlabel])
+print(ROIs)
 
 #%%####################################### Check for the EM artifats (averaging respectively across positive polarity and negative polarity)
 subjects_dir = '/media/tzcheng/storage2/subjects/'
