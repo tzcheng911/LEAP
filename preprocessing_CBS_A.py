@@ -372,7 +372,8 @@ do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use th
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
+    # if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
+    if file.startswith('brainstem'): # brainstem
         subj.append(file)
 # subj = ['cbs_zoe']
 
