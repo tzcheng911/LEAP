@@ -75,7 +75,8 @@ def do_sss(subject,st_correlation,int_order,time):
     'cing_124': [ 'MEG1242'],
     'cing_128': [ 'MEG1242','MEG1043'],
     'cing_130': [ 'MEG1242','MEG1043'],
-    'cing_125': [ 'MEG1242','MEG1043','MEG0943']
+    'cing_125': [ 'MEG1242','MEG1043','MEG0943'],
+    'cing_127': [ 'MEG1242','MEG1043','MEG2313']
     }
     
     params.mf_prebad = prebad
