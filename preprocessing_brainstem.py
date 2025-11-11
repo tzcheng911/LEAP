@@ -10,6 +10,7 @@ starting after otp and sss
 
 ###### Import library 
 import mne
+# import mnefun
 import matplotlib
 from mne.preprocessing import maxwell_filter
 import numpy as np
@@ -26,12 +27,12 @@ def do_projection(subject, condition, run):
     fname_erm_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_raw_sss_proj'
     raw_erm = mne.io.read_raw_fif(fname_erm + '.fif',allow_maxshield=True,preload=True)
         
-    ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='ECG064', n_grad=1, n_mag=1, reject=None)
+    ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='ECG064', n_grad=1, n_mag=1, n_jobs = 4, reject=None)
     ecg_epochs = mne.preprocessing.create_ecg_epochs(raw,ch_name='ECG064').average() # don't really need to assign the ch_name
-    ecg_epochs.plot_joint()
-    eog_projs, eog_events = mne.preprocessing.compute_proj_eog(raw, ch_name=['EOG061','EOG062','EOG063'], n_grad=1, n_mag=1, reject=None)
+    # ecg_epochs.plot_joint()
+    eog_projs, eog_events = mne.preprocessing.compute_proj_eog(raw, ch_name=['EOG061','EOG062','EOG063'], n_grad=1, n_mag=1,n_jobs = 4, reject=None)
     eog_epochs = mne.preprocessing.create_eog_epochs(raw,ch_name=['EOG061','EOG062','EOG063']).average() ## 
-    eog_epochs.plot_joint()
+    # eog_epochs.plot_joint()
 
     raw.add_proj(ecg_projs)
     raw.add_proj(eog_projs)
@@ -46,6 +47,7 @@ def do_filtering(data, lp, hp, do_cabr):
     ###### filtering
     if do_cabr == True:
         data.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5)
+        # data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5) # for the erm files have lower sampling rates
         data.filter(l_freq=hp,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     else:
         data.filter(l_freq=0,h_freq=50,method='iir',iir_params=dict(order=4,ftype='butter'))
@@ -62,7 +64,7 @@ def do_cov(subject,data, do_cabr,hp,lp):
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
     mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
 
-def do_epoch_cabr(data, subject, condition, run, n_trials,hp,lp): 
+def do_epoch_cabr(data, subject, condition, run,hp,lp): 
     root_path = os.getcwd()
     file_out = root_path + '/' + subject + '/sss_fif/' + subject + condition + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp)
     cabr_events=mne.find_events(raw,stim_channel=['STI101']) ###### had equal number of the positive and negative polarity (1500/block for each condition) randomized in STI003 and STI004. STI001 is just everything
@@ -71,8 +73,8 @@ def do_epoch_cabr(data, subject, condition, run, n_trials,hp,lp):
     picks = mne.pick_types(data.info,meg=True,eeg=False) 
     epochs = mne.Epochs(data, cabr_events, event_id=1,tmin =-0.02, tmax=0.2, baseline=(-0.02,0),reject=reject,picks=picks)
     evoked=epochs.average()  
-    epochs.save(file_out + '_ffr_e_' + condition + run + '.fif',overwrite=True)
-    evoked.save(file_out + '_evoked_ffr_' + condition + run + '.fif',overwrite=True)
+    epochs.save(file_out + '_ffr_e' + condition + run + '.fif',overwrite=True)
+    evoked.save(file_out + '_evoked_ffr' + condition + run + '.fif',overwrite=True)
 
     return evoked, epochs
 
@@ -120,11 +122,14 @@ def do_epoch_cabr_eeg(data, subject, condition, run, n_trials):
     return evoked_substd,evoked_dev1,evoked_dev2,new_epochs
 
 #%%########################################
+mne.set_config('MNE_MEMMAP_MIN_SIZE', '10M') 
+mne.set_config('MNE_CACHE_DIR', '/dev/shm')
+
 root_path='/media/tzcheng/storage/Brainstem/' # brainstem files
 os.chdir(root_path)
 
 ## parameters 
-conditions = ['_p10','_n40']
+conditions = ['_n40']
 runs = ['_01','_02'] 
 lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
 hp = 80
@@ -132,8 +137,11 @@ do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use th
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('brainstem'): # brainstem
+    if file.startswith('brainstem_107'): # brainstem
         subj.append(file)
+# subj = ['brainstem_121','brainstem_123','brainstem_126','brainstem_129'] 
+# for these four subjects empty room is sampled at 1000 Hz so the notch filter cannot go up to 2000
+# run the erm files to get cov manually set to data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5)
 
 #%%##### do the jobs for MEG
 print(subj)
@@ -143,7 +151,6 @@ for s in subj:
     # do_sss(s,st_correlation,int_order)
     for condition in conditions:
         for run in runs:
-            filename = root_path + s + '/sss_fif/' + s + run + '_otp_raw_sss_proj.fif'
             print ('Doing ECG/EOG projection...')
             [raw,raw_erm] = do_projection(s,condition,run)
             print ('Doing filtering...')
