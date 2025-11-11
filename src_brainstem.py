@@ -26,7 +26,6 @@ def do_foward(s):
     bem=mne.read_bem_solution(subjects_dir +  s + '/bem/' + s + '-5120-5120-5120-bem-sol.fif')
     fwd=mne.make_forward_solution(raw_file.info,trans,src,bem,meg=True,eeg=False)
     mne.write_forward_solution(file_in + s +'-fwd.fif',fwd,overwrite=True)
-
     return fwd, src
 
 def do_inverse_MMR(s,run, morph,ori):
