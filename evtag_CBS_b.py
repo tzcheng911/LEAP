@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+s#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Tue Nov  9 14:51:27 2021
@@ -23,7 +23,8 @@ Notes:
 The correspondance between event tage and sound are
 10. sld_143_t1 only get through 170 trials: cut out the last trial raw_file = raw.copy().crop(tmax=900.5) (manually create the event file)
 11. sld_145_t1 only get through half of the trials raw_file = raw_file.copy().crop(tmax=455)
-11. sld_151_t1 only get through half of the trials raw_file = raw_file.copy().crop(tmax=624)
+12. sld_151_t1 only get through half of the trials raw_file = raw_file.copy().crop(tmax=624)
+13. cing_127 Ashley accidentally quit before the last 5 trials raw_file = raw_file.copy().crop(tmax=936)
                         TTl                  event code
 standard                448                  1 and 2 (alt)
 dev1                    484                  3 and 5 (alt)
@@ -309,6 +310,7 @@ for n,s in enumerate(subj):
     # raw_file = raw_file.copy().crop(tmax=455) # for sld_145_t1
     # raw_file = raw_file.copy().crop(tmax=786) # for sld_129_t3
     # raw_file = raw_file.copy().crop(tmax=624) # for sld_151_t1
+    raw_file = raw_file.copy().crop(tmax=936) # for cing_127
     find_events(raw_file, s,run,time)
     events=process_events(s,run,time)
     check=check_events(events,condition)
