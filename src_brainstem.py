@@ -26,7 +26,6 @@ def do_foward(s):
     bem=mne.read_bem_solution(subjects_dir +  s + '_zoe/bem/' + s + '_zoe-5120-5120-5120-bem-sol.fif')
     fwd=mne.make_forward_solution(raw_file.info,trans,src,bem,meg=True,eeg=False)
     mne.write_forward_solution(file_in + s +'-fwd.fif',fwd,overwrite=True)
-
     return fwd, src
 
 def do_inverse_cABR(s,run, condition,morph):
