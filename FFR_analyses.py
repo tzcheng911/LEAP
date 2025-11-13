@@ -36,6 +36,8 @@ import pandas as pd
 import scipy.stats as stats
 from scipy.io import wavfile
 import time
+import copy
+
 
 from sklearn.decomposition import PCA, FastICA
 from sklearn.pipeline import make_pipeline
@@ -68,10 +70,21 @@ def plot_err(group_stc,color,t):
     plt.plot(t,group_avg,color=color)
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
 
+def ff(input_arr,target): 
+    ## find the idx of the closest freqeuncy (time) in freqs (times)
+    delta = 1000000000
+    idx = -1
+    for i, val in enumerate(input_arr):
+        if abs(input_arr[i]-target) < delta:
+            idx = i
+            delta = abs(input_arr[i]-target)
+    return idx
+
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_pa_cabr_morph-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+times = np.linspace(-20,200,1101)
 
 #%%####################################### Load audio and FFR
 ## audio 
@@ -201,8 +214,7 @@ os.chdir(root_path)
 n_top = '3' # could number of IC: 3 or 10, or dss: dss_f80450, dss
 n_trial = '200' # 'ntrial_200/' or 'ntrial_all/' or ''
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
-times = stc1.times
-
+# times = stc1.times
 did_pca = '_pcffr80200_'  # '_': without or with pca "_pcffr80450_" the filter between 80 and 450 Hz is applied
 filename_ffr_ba = 'group_ba' + did_pca
 filename_ffr_mba = 'group_mba' + did_pca
@@ -238,13 +250,8 @@ else:
 all_score = []
 ## Three way classification using ovr
 X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0)
+# X = np.concatenate((ffr_ba[:,:,ff(times,40):ff(times,130)],ffr_mba[:,:,ff(times,40):ff(times,130)],ffr_pa[:,:,ff(times,40):ff(times,130)]),axis=0) # use just the V section
 y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba)),np.repeat(2,len(ffr_pa))))
-
-# X = np.concatenate((ffr_ba,ffr_mba),axis=0)
-# y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba))))
-
-# X = np.concatenate((ffr_ba,ffr_pa),axis=0)
-# y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(2,len(ffr_pa))))
 
 rand_ind = np.arange(0,len(X))
 random.Random(15).shuffle(rand_ind)
@@ -265,6 +272,7 @@ for n in np.arange(0,np.shape(X)[1],1):
         score = np.mean(scores, axis=0)
         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
         all_score.append(score)
+# np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_3way_decoding_accuracy_V_section_' + input_data +'_r15.npy',all_score)
 np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_3way_decoding_accuracy_' + input_data +'_r15.npy',all_score)
 
 ####################################### 2-way decoding: ba vs. pa, ba vs. mba, pa vs. mba
@@ -275,6 +283,8 @@ clf = make_pipeline(
 
 all_score_ba_mba = []
 X = np.concatenate((ffr_ba,ffr_mba),axis=0)
+# X = np.concatenate((ffr_ba[:,:,ff(times,10):ff(times,100)],ffr_mba[:,:,ff(times,40):ff(times,130)]),axis=0)
+
 y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba))))
 
 rand_ind = np.arange(0,len(X))
@@ -294,6 +304,7 @@ X = []
 y = []
 X = np.concatenate((ffr_ba,ffr_pa),axis=0)
 y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_pa))))
+# X = np.concatenate((ffr_ba[:,:,ff(times,10):ff(times,100)],ffr_pa[:,:,ff(times,40):ff(times,130)]),axis=0)
 
 X = X[rand_ind,:,:]
 y = y[rand_ind]
@@ -309,6 +320,8 @@ X = []
 y = []
 X = np.concatenate((ffr_mba,ffr_pa),axis=0)
 y = np.concatenate((np.repeat(0,len(ffr_mba)),np.repeat(1,len(ffr_pa))))
+X = np.concatenate((ffr_mba[:,:,ff(times,40):ff(times,130)],ffr_pa[:,:,ff(times,40):ff(times,130)]),axis=0)
+
 
 X = X[rand_ind,:,:]
 y = y[rand_ind]
@@ -930,3 +943,148 @@ for fname in evoked_fnames:
     all_evokeds.extend(evokeds_from_file)
     
 all_evokeds[0].plot_topo()
+
+
+#%%####################################### decoding for single channel EEG
+root_path='/home/tzcheng/Documents/GitHub/Paper0_Paradigm/'
+## first run
+std = np.load(root_path + 'group_std_ffr_eeg_200.npy')
+dev1 = np.load(root_path + 'group_dev1_ffr_eeg_200.npy')
+dev2 = np.load(root_path + 'group_dev2_ffr_eeg_200.npy')
+
+## second run
+# std = np.load(root_path + 'group_02_std_ffr_eeg_150.npy') # use 150 or all trials
+# dev1 = np.load(root_path + 'group_02_dev1_ffr_eeg_150.npy')
+# dev2 = np.load(root_path + 'group_02_dev2_ffr_eeg_150.npy')
+
+## classifier
+clf = make_pipeline(
+    StandardScaler(),  # z-score normalization
+    SVC(kernel='rbf',gamma='auto',C=0.1)  
+)
+
+####################################### 3-way decoding: ba vs. pa vs. mba
+y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
+
+## preserve the subject ba, mba, pa relationship but randomize the order across subjects
+rand_ind = np.arange(0,len(std))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((std[rand_ind,:],dev1[rand_ind,:],dev2[rand_ind,:]),axis=0)
+
+scores = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+score = np.mean(scores, axis=0)
+print("Accuracy: %0.1f%%" % (100 * score,))
+
+####################################### 2-way decoding: ba vs. pa, ba vs. mba, pa vs. mba
+y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1))))
+rand_ind = np.arange(0,len(std))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((std[rand_ind,:],dev1[rand_ind,:]),axis=0)
+
+scores_ba_mba = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+score_ba_mba = np.mean(scores_ba_mba, axis=0)
+print("Decoding Accuracy between ba vs. mba: %0.1f%%" % (100 * score_ba_mba,))
+
+rand_ind = np.arange(0,len(std))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((std[rand_ind,:],dev2[rand_ind,:]),axis=0)
+
+scores_ba_pa = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+score_ba_pa = np.mean(scores_ba_pa, axis=0)
+print("Decoding Accuracy between ba vs. pa: %0.1f%%" % (100 * score_ba_pa,))
+
+rand_ind = np.arange(0,len(std))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((dev1[rand_ind,:],dev2[rand_ind,:]),axis=0)
+
+scores_mba_pa = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+score_mba_pa = np.mean(scores_mba_pa, axis=0)
+print("Decoding Accuracy between mba vs. pa: %0.1f%%" % (100 * score_mba_pa,))
+
+####################################### C and V section decoding: for ba, 10 ms + 90 ms = 100 ms; for mba and pa, 40 ms + 90 ms = 130 ms
+## epoch length -20 to 200 ms with sampling rate at 5000 Hz
+## Use C section to decode mba and pa
+y = np.concatenate((np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
+
+rand_ind = np.arange(0,len(std))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((dev1[rand_ind,ff(times,40):ff(times,130)],dev2[rand_ind,ff(times,40):ff(times,130)]),axis=0) # V section
+X = np.concatenate((dev1[rand_ind,ff(times,0):ff(times,40)],dev2[rand_ind,ff(times,0):ff(times,40)]),axis=0) # C section
+
+scores = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+score = np.mean(scores, axis=0)
+print("Accuracy: %0.1f%%" % (100 * score,))
+
+## Use V section to 3-way decode ba, mba and pa 
+y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
+
+## preserve the subject ba, mba, pa relationship but randomize the order across subjects
+rand_ind = np.arange(0,len(std))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((std[rand_ind,ff(times,10):ff(times,100)],dev1[rand_ind,ff(times,40):ff(times,130)],dev2[rand_ind,ff(times,40):ff(times,130)]),axis=0)
+
+scores = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+score = np.mean(scores, axis=0)
+print("Accuracy: %0.1f%%" % (100 * score,))
+
+## Use V section to 2-way decoding: ba vs. pa, ba vs. mba, pa vs. mba
+y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1))))
+rand_ind = np.arange(0,len(std))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((std[rand_ind,ff(times,10):ff(times,100)],dev1[rand_ind,ff(times,40):ff(times,130)]),axis=0)
+
+scores_ba_mba = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+score_ba_mba = np.mean(scores_ba_mba, axis=0)
+print("Decoding Accuracy between ba vs. mba: %0.1f%%" % (100 * score_ba_mba,))
+
+rand_ind = np.arange(0,len(std))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((std[rand_ind,ff(times,10):ff(times,100)],dev2[rand_ind,ff(times,40):ff(times,130)]),axis=0)
+
+scores_ba_pa = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+score_ba_pa = np.mean(scores_ba_pa, axis=0)
+print("Decoding Accuracy between ba vs. pa: %0.1f%%" % (100 * score_ba_pa,))
+
+rand_ind = np.arange(0,len(std))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((dev1[rand_ind,ff(times,40):ff(times,130)],dev2[rand_ind,ff(times,40):ff(times,130)]),axis=0)
+
+scores_mba_pa = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+score_mba_pa = np.mean(scores_mba_pa, axis=0)
+print("Decoding Accuracy between mba vs. pa: %0.1f%%" % (100 * score_mba_pa,))
+
+## complete randomization
+rand_ind = np.arange(0,len(X))
+random.Random(2).shuffle(rand_ind)
+X = X[rand_ind,:]
+y = y[rand_ind]
+
+scores = cross_val_multiscore(clf, X, y, cv=5, n_jobs=None) 
+score = np.mean(scores, axis=0)
+print("Accuracy: %0.1f%%" % (100 * score,))
+
+## Run permutation on MMR or FFR
+n_perm=500
+scores_perm=[]
+for i in range(n_perm):
+    yp = copy.deepcopy(y)
+    random.shuffle(yp)
+    clf = make_pipeline(
+        StandardScaler(),  # z-score normalization
+        SVC(kernel='rbf',gamma='auto',C=0.1)  
+    )
+    # Run cross-validated decoding analyses:
+    scores = cross_val_multiscore(clf, X, yp, cv=18, n_jobs=None) # X can be MMR or cABR
+    scores_perm.append(np.mean(scores,axis=0))
+    # print("Iteration " + str(i))
+scores_perm_array=np.asarray(scores_perm)
+
+plt.figure()
+plt.hist(scores_perm_array,bins=15,color='grey')
+plt.vlines(score,ymin=0,ymax=1000,color='r',linewidth=2)
+# plt.vlines(np.percentile(scores_perm_array,90),ymin=0,ymax=1000,color='',linewidth=2)
+plt.vlines(np.percentile(scores_perm_array,95),ymin=0,ymax=1000,color='grey',linewidth=2)
+plt.ylabel('Count',fontsize=20)
+plt.xlabel('Accuracy',fontsize=20)
+print('Accuracy: ' + str(score))
+print('95%: ' + str(np.percentile(scores_perm_array,95)))
