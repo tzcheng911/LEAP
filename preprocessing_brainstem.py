@@ -46,8 +46,8 @@ def do_projection(subject, condition, run):
 def do_filtering(data, lp, hp, do_cabr):
     ###### filtering
     if do_cabr == True:
-        data.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5)
-        # data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5) # for the erm files have lower sampling rates
+        # data.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5)
+        data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5) # for the erm files have lower sampling rates
         data.filter(l_freq=hp,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     else:
         data.filter(l_freq=0,h_freq=50,method='iir',iir_params=dict(order=4,ftype='butter'))
@@ -67,14 +67,14 @@ def do_cov(subject,data, do_cabr,hp,lp):
 def do_epoch_cabr(data, subject, condition, run,hp,lp): 
     root_path = os.getcwd()
     file_out = root_path + '/' + subject + '/sss_fif/' + subject + condition + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp)
-    cabr_events=mne.find_events(raw,stim_channel=['STI101']) ###### had equal number of the positive and negative polarity (1500/block for each condition) randomized in STI003 and STI004. STI001 is just everything
+    cabr_events=mne.find_events(data,stim_channel=['STI101']) ###### had equal number of the positive and negative polarity (1500/block for each condition) randomized in STI003 and STI004. STI001 is just everything
     
     reject=dict(grad=4000e-13,mag=4e-12)
     picks = mne.pick_types(data.info,meg=True,eeg=False) 
     epochs = mne.Epochs(data, cabr_events, event_id=1,tmin =-0.02, tmax=0.2, baseline=(-0.02,0),reject=reject,picks=picks)
     evoked=epochs.average()  
-    epochs.save(file_out + '_ffr_e' + condition + run + '.fif',overwrite=True)
-    evoked.save(file_out + '_evoked_ffr' + condition + run + '.fif',overwrite=True)
+    epochs.save(file_out + '_ffr_e.fif',overwrite=True)
+    evoked.save(file_out + '_evoked_ffr.fif',overwrite=True)
 
     return evoked, epochs
 
@@ -129,7 +129,7 @@ root_path='/media/tzcheng/storage/Brainstem/' # brainstem files
 os.chdir(root_path)
 
 ## parameters 
-conditions = ['_n40']
+conditions = ['_p10','_n40']
 runs = ['_01','_02'] 
 lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
 hp = 80
@@ -137,7 +137,7 @@ do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use th
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('brainstem_107'): # brainstem
+    if file.startswith('brainstem_'): # brainstem
         subj.append(file)
 # subj = ['brainstem_121','brainstem_123','brainstem_126','brainstem_129'] 
 # for these four subjects empty room is sampled at 1000 Hz so the notch filter cannot go up to 2000
@@ -151,18 +151,27 @@ for s in subj:
     # do_sss(s,st_correlation,int_order)
     for condition in conditions:
         for run in runs:
-            print ('Doing ECG/EOG projection...')
-            [raw,raw_erm] = do_projection(s,condition,run)
-            print ('Doing filtering...')
-            raw_filt = do_filtering(raw,lp,hp,do_cabr)
-            raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
-            print ('calculate cov...')
-            do_cov(s,raw_erm_filt, do_cabr,hp,lp)
-            print ('Doing epoch...')
-            if do_cabr == True:
-                do_epoch_cabr(raw_filt, s, condition, run,hp,lp)
-            else:
-                print('Doing something else than cabr.')
+            # print ('Doing ECG/EOG projection...')
+            # [raw,raw_erm] = do_projection(s,condition,run)
+            # print ('Doing filtering...')
+            # # raw_filt = do_filtering(raw,lp,hp,do_cabr)
+            # raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
+            # print ('calculate cov...')
+            # do_cov(s,raw_erm_filt, do_cabr,hp,lp)
+            # print ('Doing epoch...')
+            # if do_cabr == True:
+            #     do_epoch_cabr(raw_filt, s, condition, run,hp,lp)
+            # else:
+            #     print('Doing something else than cabr.')
+            file_in_epoch = root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e' + condition + run + '.fif'
+            file_in_evoked = root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_evoked_ffr' + condition + run + '.fif'
+            epoch = mne.read_epochs(file_in_epoch)
+            evoked = mne.read_evokeds(file_in_evoked)
+            epoch.save(file_in_epoch[:-11] + '.fif',overwrite=True)
+            evoked[0].save(file_in_evoked[:-11] + '.fif',overwrite=True)
+            os.remove(file_in_epoch)
+            os.remove(file_in_epoch[:-4] + '-1.fif')
+            os.remove(file_in_evoked)
 
 #%%##### do the jobs for EEG MMR
 # for s in subj:
