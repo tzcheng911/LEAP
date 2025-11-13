@@ -20,6 +20,7 @@ Level
 
 ## Import library  
 import mne
+import os
 from mne.decoding import UnsupervisedSpatialFilter
 from mne.preprocessing import ICA
 import matplotlib.pyplot as plt 
@@ -1091,7 +1092,6 @@ print('95%: ' + str(np.percentile(scores_perm_array,95)))
 
 #%%####################################### decoding acoustic signals from the misc, can add noise
 ## functions
-
 def do_filtering(data, lp, hp, do_cabr):
     ###### filtering
     if do_cabr == True:
@@ -1101,7 +1101,7 @@ def do_filtering(data, lp, hp, do_cabr):
         data.filter(l_freq=0,h_freq=50,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
 
-def do_epoch_cabr(data, subject, condition, run,hp,lp): 
+def do_epoch_cabr(data, subject, run,n_trials,hp,lp): 
     random.seed(15) # add for replication
     ###### Read the event files (generated from evtag.py) 
     root_path = os.getcwd()
@@ -1110,34 +1110,33 @@ def do_epoch_cabr(data, subject, condition, run,hp,lp):
     
     event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
     
-    reject=dict(grad=4000e-13,mag=4e-12)
     picks = mne.pick_types(data.info,misc=True) 
-    epochs = mne.Epochs(data, cabr_events, event_id,tmin =-0.02, tmax=0.2, baseline=(-0.02,0),reject=reject,picks=picks)
+    epochs = mne.Epochs(data, cabr_events, event_id,tmin =-0.02, tmax=0.2, baseline=(-0.02,0),picks=picks)
     new_epochs = epochs.copy().drop_bad()
     
     ## match the trial number for each sound
     ## get random number of sounds from all sounds
     ## neet to find p and n len after dropping bad, use the smaller one to be the full len
     if n_trials == 'all':
-        evoked_substd=epochs['Standardp','Standardn'].average()
-        evoked_dev1=epochs['Deviant1p','Deviant1n'].average()
-        evoked_dev2=epochs['Deviant2p','Deviant2n'].average()
+        evoked_substd=epochs['Standardp','Standardn'].average(picks='MISC001')
+        evoked_dev1=epochs['Deviant1p','Deviant1n'].average(picks='MISC001')
+        evoked_dev2=epochs['Deviant2p','Deviant2n'].average(picks='MISC001')
     else:
         rand_ind = random.sample(range(min(len(new_epochs['Standardp'].events),len(new_epochs['Standardn'].events))),n_trials//2) 
-        evoked_substd_p=epochs['Standardp'][rand_ind].average()
-        evoked_substd_n=epochs['Standardn'][rand_ind].average()
+        evoked_substd_p=epochs['Standardp'][rand_ind].average(picks='MISC001')
+        evoked_substd_n=epochs['Standardn'][rand_ind].average(picks='MISC001')
         evoked_substd = mne.combine_evoked([evoked_substd_p,evoked_substd_n], weights='equal')
         del rand_ind
     
         rand_ind = random.sample(range(min(len(new_epochs['Deviant1p'].events),len(new_epochs['Deviant1n'].events))),n_trials//2) 
-        evoked_dev1_p=new_epochs['Deviant1p'][rand_ind].average()
-        evoked_dev1_n=new_epochs['Deviant1n'][rand_ind].average()
+        evoked_dev1_p=new_epochs['Deviant1p'][rand_ind].average(picks='MISC001')
+        evoked_dev1_n=new_epochs['Deviant1n'][rand_ind].average(picks='MISC001')
         evoked_dev1 = mne.combine_evoked([evoked_dev1_p,evoked_dev1_n], weights='equal')
         del rand_ind
     
         rand_ind = random.sample(range(min(len(new_epochs['Deviant2p'].events),len(new_epochs['Deviant2n'].events))),n_trials//2) 
-        evoked_dev2_p=new_epochs['Deviant2p'][rand_ind].average()
-        evoked_dev2_n=new_epochs['Deviant2n'][rand_ind].average()
+        evoked_dev2_p=new_epochs['Deviant2p'][rand_ind].average(picks='MISC001')
+        evoked_dev2_n=new_epochs['Deviant2n'][rand_ind].average(picks='MISC001')
         evoked_dev2 = mne.combine_evoked([evoked_dev2_p,evoked_dev2_n], weights='equal')
         
     epochs.save(file_out + '_misc_e_' + str(n_trials) + '.fif',overwrite=True)
@@ -1166,10 +1165,9 @@ for file in os.listdir():
 print(subj)
 for s in subj:
     print(s)
-    filename = root_path + s + '/sss_fif/' + s + run + '_otp_raw_sss_proj.fif'
+    filename = root_path + s + '/sss_fif/' + s + run[0] + '_otp_raw_sss_proj.fif'
     raw = mne.io.read_raw_fif(filename, allow_maxshield=True,preload=True)
-    raw.pick(picks="misc").plot()
     print ('Doing filtering...')
     raw_filt = do_filtering(raw,lp,hp,do_cabr)
     print ('Doing epoch...')
-    do_epoch_cabr(raw_filt, s, run, n_trials,hp,lp)
+    do_epoch_cabr(raw_filt, s, run[0], n_trials,hp,lp)
