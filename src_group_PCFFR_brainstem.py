@@ -84,11 +84,11 @@ def do_inverse_FFR(s,evokeds_inv,condition,run,morph,n_top,hp,lp):
             src_to=src_fs,
             verbose=True)
         evokeds_inv_stc_fsaverage = morph.apply(evokeds_inv_stc)
-        evokeds_inv_stc_fsaverage.save(file_in + '_' + condition +'_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + str(n_trial) + '_morph', overwrite=True)
+        evokeds_inv_stc_fsaverage.save(file_in + '_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + condition + run + '_morph', overwrite=True)
 
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
-        evokeds_inv_stc.save(file_in + '_' + nspeech + '_pcffr' + str(hp) + str(lp) + '_' + str(n_top), overwrite=True)
+        evokeds_inv_stc.save(file_in + '_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + condition + run, overwrite=True)
 
 def group_stc(subj,condition,run,n_top,hp,lp):
     root_path='/media/tzcheng/storage/Brainstem/'
@@ -97,10 +97,13 @@ def group_stc(subj,condition,run,n_top,hp,lp):
     fname_aseg = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
 
     print('Extracting ' + s + ' data')
-    file_in = root_path + s + '/sss_fif/' + s + condition + run
-    stc=mne.read_source_estimate(file_in+'_morph-vl.stc')
+    file_in = root_path + s + '/sss_fif/' + s
+    stc=mne.read_source_estimate(file_in + '_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + condition + run + '_morph-vl.stc')
+    # stc=mne.read_source_estimate(file_in + condition + run + '_morph-vl.stc')
     stc_roi=mne.extract_label_time_course(stc,fname_aseg,src,mode='mean',allow_empty=True)
-    return stc
+    stc_data = stc.data
+    stc_roi_data = stc_roi.data
+    return stc_data,stc_roi_data
 #%%#######################################'
 root_path='/media/tzcheng/storage/Brainstem/'
 os.chdir(root_path)
@@ -114,7 +117,7 @@ n_top = 3 # change to 10
 n_trial = 200
 lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
 hp = 80
-runs = ['_01','_02']
+runs = ['_01'] # add the ['_01','_02'] for all runs, note that brainstem_107 only has run1 for p10
 conditions = ['_p10','_n40']
 group = []
 group_roi = []
@@ -134,33 +137,24 @@ group_pc_info = np.empty([len(subjects),len(conditions),len(runs),n_top,2]) # La
 
 for ns,s in enumerate(subjects):
     print(s)
-    for ncondition,condition in enumerate(subjects):
+    for ncondition,condition in enumerate(conditions):
         for nrun,run in enumerate(runs):
             file_in = root_path + s + '/sss_fif/' + s + condition + run
             evokeds = mne.read_evokeds(file_in + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_evoked_ffr.fif')[0]
             data = evokeds.get_data()
             pca_data,ind_components,explained_variance_ratio,data_topPC = select_PC(data,sfreq,fmin,fmax,lb,hb,n_top)
             evokeds.data = data_topPC
-            group_sensor[ns,ncondition,nrun,:,:] = data_topPC
-            group_pca[ns,ncondition,nrun,:,:] = pca_data
+            group_sensor[ns,ncondition,nrun,:len(data_topPC),:] = data_topPC # somehow brainstem_113 subject only has 305 channels
+            group_pca[ns,ncondition,nrun,:len(data_topPC),:] = pca_data # somehow brainstem_113 subject only has 305 channels
             group_pc_info[ns,ncondition,nrun,:,0] = ind_components
             group_pc_info[ns,ncondition,nrun,:,1] = explained_variance_ratio
             do_inverse_FFR(s,evokeds,condition,run,morph,n_top,hp,lp)
-            group_morph[ns,ncondition,nrun,:,:] = 
-            group_roi[ns,ncondition,nrun,:,:] = 
-            group_roi = group_stc(s,condition,run,n_top,hp,lp)
-group.append(stc_roi)
-group_roi.append(stc_roi)
-group = np.asarray(group)
-group_roi = np.asarray(group_roi)
+            group_morph[ns,ncondition,nrun,:,:],group_roi[ns,ncondition,nrun,:,:] = group_stc(s,condition,run,n_top,hp,lp)
 
-
-np.save(root_path + '/MEG/FFR/group_ba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_sensor.npy',group_sensor[:,0,:,:])
-np.save(root_path + '/MEG/FFR/group_mba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) +'_sensor.npy',group_sensor[:,1,:,:])
-np.save(root_path + '/MEG/FFR/group_pa_pcffr' + str(hp) + str(lp) + '_' + str(n_top) +'_sensor.npy',group_sensor[:,2,:,:])
-
-np.save(root_path + '/MEG/FFR/group_ba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + '_morph.npy',group)
-np.save(root_path + '/MEG/FFR/group_mba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + '_roi.npy',group_roi)
-
-np.save(root_path + '/MEG/FFR/group_f' + str(hp) + str(lp) + '_top_' + str(n_top) + 'pc_data.npy',group_pca)
-np.save(root_path + '/MEG/FFR/group_f' + str(hp) + str(lp) + '_top_' + str(n_top) +'pc_info.npy',group_pc_info)
+for ncondition,condition in enumerate(conditions):
+    for nrun,run in enumerate(runs):
+        np.save(root_path + '/MEG/FFR/group_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + condition + run + '_sensor.npy',group_sensor[:,ncondition,nrun,:,:])
+        np.save(root_path + '/MEG/FFR/group_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + condition + run + '_' + '_morph.npy',group_morph[:,ncondition,nrun,:,:])
+        np.save(root_path + '/MEG/FFR/group_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + condition + run + '_roi.npy',group_roi[:,ncondition,nrun,:,:])
+        np.save(root_path + '/MEG/FFR/group_f' + str(hp) + str(lp) + '_top_' + str(n_top) + condition + run + 'pc_data.npy',group_pca[:,ncondition,nrun,:,:])
+        np.save(root_path + '/MEG/FFR/group_f' + str(hp) + str(lp) + '_top_' + str(n_top) + condition + run +'pc_info.npy',group_pc_info[:,ncondition,nrun,:,:])
