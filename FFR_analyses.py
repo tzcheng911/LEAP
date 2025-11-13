@@ -1101,12 +1101,12 @@ def do_filtering(data, lp, hp, do_cabr):
         data.filter(l_freq=0,h_freq=50,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
 
-def do_epoch_cabr(data, subject, run,n_trials,hp,lp): 
+def do_epoch_cabr(data, s, run,n_trials,hp,lp): 
     random.seed(15) # add for replication
     ###### Read the event files (generated from evtag.py) 
     root_path = os.getcwd()
-    cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_cabr-eve.fif')
-    file_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp)
+    cabr_events = mne.read_events(root_path + '/' + s + '/events/' + s + run + '_events_cabr-eve.fif')
+    file_out = root_path + '/' + s + '/sss_fif/' + s + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp)
     
     event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
     
@@ -1144,8 +1144,6 @@ def do_epoch_cabr(data, subject, run,n_trials,hp,lp):
     evoked_dev1.save(file_out + '_evoked_dev1_misc_' + str(n_trials) + '.fif',overwrite=True)
     evoked_dev2.save(file_out + '_evoked_dev2_misc_' + str(n_trials) + '.fif',overwrite=True)
 
-    return evoked, epochs
-
 ## parameters 
 run = ['_01']
 lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
@@ -1161,6 +1159,10 @@ for file in os.listdir():
     # if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
     if file.startswith('cbs_A'): # brainstem
         subj.append(file)
+        
+#%%
+subj = subj[8:]
+['cbs_A105', 'cbs_A101', 'cbs_A114', 'cbs_A123', 'cbs_A121', 'cbs_A110', 'cbs_A117', 'cbs_A109', 'cbs_A103', 'cbs_A111']
 
 print(subj)
 for s in subj:
