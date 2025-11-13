@@ -46,8 +46,8 @@ def do_projection(subject, condition, run):
 def do_filtering(data, lp, hp, do_cabr):
     ###### filtering
     if do_cabr == True:
-        # data.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5)
-        data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5) # for the erm files have lower sampling rates
+        data.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5)
+        # data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5) # for the erm files have lower sampling rates
         data.filter(l_freq=hp,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     else:
         data.filter(l_freq=0,h_freq=50,method='iir',iir_params=dict(order=4,ftype='butter'))
@@ -151,27 +151,28 @@ for s in subj:
     # do_sss(s,st_correlation,int_order)
     for condition in conditions:
         for run in runs:
-            # print ('Doing ECG/EOG projection...')
-            # [raw,raw_erm] = do_projection(s,condition,run)
-            # print ('Doing filtering...')
-            # # raw_filt = do_filtering(raw,lp,hp,do_cabr)
-            # raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
-            # print ('calculate cov...')
-            # do_cov(s,raw_erm_filt, do_cabr,hp,lp)
-            # print ('Doing epoch...')
-            # if do_cabr == True:
-            #     do_epoch_cabr(raw_filt, s, condition, run,hp,lp)
-            # else:
-            #     print('Doing something else than cabr.')
-            file_in_epoch = root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e' + condition + run + '.fif'
-            file_in_evoked = root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_evoked_ffr' + condition + run + '.fif'
-            epoch = mne.read_epochs(file_in_epoch)
-            evoked = mne.read_evokeds(file_in_evoked)
-            epoch.save(file_in_epoch[:-11] + '.fif',overwrite=True)
-            evoked[0].save(file_in_evoked[:-11] + '.fif',overwrite=True)
-            os.remove(file_in_epoch)
-            os.remove(file_in_epoch[:-4] + '-1.fif')
-            os.remove(file_in_evoked)
+            print ('Doing ECG/EOG projection...')
+            [raw,raw_erm] = do_projection(s,condition,run)
+            print ('Doing filtering...')
+            raw_filt = do_filtering(raw,lp,hp,do_cabr)
+            raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
+            print ('calculate cov...')
+            do_cov(s,raw_erm_filt, do_cabr,hp,lp)
+            print ('Doing epoch...')
+            if do_cabr == True:
+                do_epoch_cabr(raw_filt, s, condition, run,hp,lp)
+            else:
+                print('Doing something else than cabr.')
+            ## remove files with wrong filenames
+            # file_in_epoch = root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e' + condition + run + '.fif'
+            # file_in_evoked = root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_evoked_ffr' + condition + run + '.fif'
+            # epoch = mne.read_epochs(file_in_epoch)
+            # evoked = mne.read_evokeds(file_in_evoked)
+            # epoch.save(file_in_epoch[:-11] + '.fif',overwrite=True)
+            # evoked[0].save(file_in_evoked[:-11] + '.fif',overwrite=True)
+            # os.remove(file_in_epoch)
+            # os.remove(file_in_epoch[:-4] + '-1.fif')
+            # os.remove(file_in_evoked)
 
 #%%##### do the jobs for EEG MMR
 # for s in subj:
