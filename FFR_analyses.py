@@ -111,10 +111,7 @@ MEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_ba_ffr_s
 MEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_mba_ffr_sensor.npy')
 MEG_pa_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_pa_ffr_sensor.npy')
 
-## MEG source vertices: more than 200 trials for nowrand_ind = np.arange(0,len(X))
-random.Random(0).shuffle(rand_ind)
-X = X[rand_ind,:,:]
-y = y[rand_ind]
+## MEG source vertices
 # adults
 MEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + 'group_ba_ffr_morph.npy')
 MEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + 'group_mba_ffr_morph.npy')
@@ -125,13 +122,13 @@ MEG_ba_FFR = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/' + 'group_ba_ffr_mo
 MEG_mba_FFR = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/' + 'group_mba_ffr_morph.npy')
 MEG_pa_FFR = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/' + 'group_pa_ffr_morph.npy')
 
-## MEG source ROI: more than 200 trials for now
+## MEG source ROI
 # adults
 MEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_ba_ffr_f80450_morph_roi.npy')
 MEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_mba_ffr_f80450_morph_roi.npy')
 MEG_pa_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_pa_ffr_f80450_morph_roi.npy')
 
-## MEG sensor: more than 200 trials for now
+## MEG sensor
 # adults
 MEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_ba_sensor.npy')
 MEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_mba_sensor.npy')
@@ -207,7 +204,7 @@ toc = time.time()
 np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_kall_' + filename + '.npy',scores_observed)
 np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_' + filename + '.npy',patterns)
 
-#%%####################################### MEG decoding across time
+#%%####################################### MEG decoding CBS across time
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
@@ -357,7 +354,7 @@ stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage
 
 ## list the hot spots
 label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
-high_acc = np.where(np.array(all_score) > 0.7)
+high_acc = np.where(np.array(all_score) > 0.9)
 label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
 high_acc = np.array(high_acc[0])
 ROIs = []
@@ -366,6 +363,67 @@ for i in np.arange(0,len(high_acc),1):
         if high_acc[i] in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
             ROIs.append(label_names[nlabel])
 print(ROIs)
+
+#%%####################################### MEG decoding brainstem dataset across time
+root_path='/media/tzcheng/storage/Brainstem/' # brainstem files
+subjects_dir = '/media/tzcheng/storage2/subjects/'
+os.chdir(root_path)
+
+n_top = '3' # could number of IC: 3 or 10, or dss: dss_f80450, dss
+stc1 = mne.read_source_estimate(root_path + 'brainstem_133/sss_fif/brainstem_133_pcffr80200_3_p10_01_morph-vl.stc')
+# times = stc1.times
+did_pca = '_pcffr80200_'  # '_': without or with pca "_pcffr80450_" the filter between 80 and 450 Hz is applied
+
+fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+
+## FFR relevant ROIs
+lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+
+input_data = 'ROI' # ROI or wholebrain or sensor or pcffr
+k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
+
+if input_data == 'sensor':
+    ffr_ba = np.load(root_path + '/MEG/FFR/group_f80200_p10_01_sensor.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + '/MEG/FFR/group_f80200_n40_01_sensor.npy',allow_pickle=True)
+elif input_data == 'ROI':
+    ffr_ba = np.load(root_path + '/MEG/FFR/group_f80200_p10_01_roi.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + '/MEG/FFR/group_f80200_n40_01_roi.npy',allow_pickle=True)
+elif input_data == 'wholebrain':
+    ffr_ba = np.load(root_path + '/MEG/FFR/group_f80200_p10_01_morph.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + '/MEG/FFR/group_f80200_n40_01_morph.npy',allow_pickle=True)
+else:
+    print("Need to decide whether to use ROI or whole brain as feature.")
+
+all_score = []
+X = np.concatenate((ffr_ba,ffr_mba),axis=0)
+# X = np.concatenate((ffr_ba[:,:,ff(times,40):ff(times,130)],ffr_mba[:,:,ff(times,40):ff(times,130)]),axis=0) # use just the V section
+y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba))))
+
+rand_ind = np.arange(0,len(X))
+random.Random(15).shuffle(rand_ind)
+X = X[rand_ind,:,:]
+
+## 1st vs. 2nd half decoding
+# X1 = X[rand_ind,:,:np.shape(X)[-1]//2]
+# X2 = X[rand_ind,:,np.shape(X)[-1]//2:]
+
+y = y[rand_ind]
+
+clf = make_pipeline(
+    StandardScaler(),  # z-score normalization
+    LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
+)    
+for n in np.arange(0,np.shape(X)[1],1):
+        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
+        score = np.mean(scores, axis=0)
+        print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
+        all_score.append(score)
+
+# np.save(root_path +'/MEG/FFR/'+ str(n_top) + '_3way_decoding_accuracy_V_section_' + input_data +'_r15.npy',all_score)
+np.save(root_path +'/MEG/FFR/'+ str(n_top) + '_decoding_accuracy_' + input_data +'_r15.npy',all_score)
+
 
 #%%####################################### Check for the EM artifats (averaging respectively across positive polarity and negative polarity)
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -1091,85 +1149,55 @@ print('Accuracy: ' + str(score))
 print('95%: ' + str(np.percentile(scores_perm_array,95)))
 
 #%%####################################### decoding acoustic signals from the misc, can add noise
-## functions
-def do_filtering(data, lp, hp, do_cabr):
-    ###### filtering
-    if do_cabr == True:
-        data.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5)
-        data.filter(l_freq=hp,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
-    else:
-        data.filter(l_freq=0,h_freq=50,method='iir',iir_params=dict(order=4,ftype='butter'))
-    return data
+root_path='/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/misc/'
+ts = ff(times,0) ## very important to set the window not including the final artifacts
+te = ff(times,150) ## very important to set the window not including the final artifacts
 
-def do_epoch_cabr(data, s, run,n_trials,hp,lp): 
-    random.seed(15) # add for replication
-    ###### Read the event files (generated from evtag.py) 
-    root_path = os.getcwd()
-    cabr_events = mne.read_events(root_path + '/' + s + '/events/' + s + run + '_events_cabr-eve.fif')
-    file_out = root_path + '/' + s + '/sss_fif/' + s + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp)
-    
-    event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
-    
-    picks = mne.pick_types(data.info,misc=True) 
-    epochs = mne.Epochs(data, cabr_events, event_id,tmin =-0.02, tmax=0.2, baseline=(-0.02,0),picks=picks)
-    new_epochs = epochs.copy().drop_bad()
-    
-    ## match the trial number for each sound
-    ## get random number of sounds from all sounds
-    ## neet to find p and n len after dropping bad, use the smaller one to be the full len
-    if n_trials == 'all':
-        evoked_substd=epochs['Standardp','Standardn'].average(picks='MISC001')
-        evoked_dev1=epochs['Deviant1p','Deviant1n'].average(picks='MISC001')
-        evoked_dev2=epochs['Deviant2p','Deviant2n'].average(picks='MISC001')
-    else:
-        rand_ind = random.sample(range(min(len(new_epochs['Standardp'].events),len(new_epochs['Standardn'].events))),n_trials//2) 
-        evoked_substd_p=epochs['Standardp'][rand_ind].average(picks='MISC001')
-        evoked_substd_n=epochs['Standardn'][rand_ind].average(picks='MISC001')
-        evoked_substd = mne.combine_evoked([evoked_substd_p,evoked_substd_n], weights='equal')
-        del rand_ind
-    
-        rand_ind = random.sample(range(min(len(new_epochs['Deviant1p'].events),len(new_epochs['Deviant1n'].events))),n_trials//2) 
-        evoked_dev1_p=new_epochs['Deviant1p'][rand_ind].average(picks='MISC001')
-        evoked_dev1_n=new_epochs['Deviant1n'][rand_ind].average(picks='MISC001')
-        evoked_dev1 = mne.combine_evoked([evoked_dev1_p,evoked_dev1_n], weights='equal')
-        del rand_ind
-    
-        rand_ind = random.sample(range(min(len(new_epochs['Deviant2p'].events),len(new_epochs['Deviant2n'].events))),n_trials//2) 
-        evoked_dev2_p=new_epochs['Deviant2p'][rand_ind].average(picks='MISC001')
-        evoked_dev2_n=new_epochs['Deviant2n'][rand_ind].average(picks='MISC001')
-        evoked_dev2 = mne.combine_evoked([evoked_dev2_p,evoked_dev2_n], weights='equal')
-        
-    epochs.save(file_out + '_misc_e_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_substd.save(file_out + '_evoked_substd_misc_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_dev1.save(file_out + '_evoked_dev1_misc_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_dev2.save(file_out + '_evoked_dev2_misc_' + str(n_trials) + '.fif',overwrite=True)
+std = np.load(root_path + 'adult_group_substd_misc_200.npy')[:,ts:te]
+dev1 = np.load(root_path + 'adult_group_dev1_misc_200.npy')[:,ts:te]
+dev2 = np.load(root_path + 'adult_group_dev2_misc_200.npy')[:,ts:te]
 
-## parameters 
-run = ['_01']
-lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
-hp = 80
-do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
-n_trials = 200
+## the codes below are identical to the ones used in eeg
+## classifier
+clf = make_pipeline(
+    StandardScaler(),  # z-score normalization
+    SVC(kernel='rbf',gamma='auto',C=0.1)  
+)
 
-## path
-root_path='/media/tzcheng/storage2/CBS/'
-os.chdir(root_path)
-subj = [] # A104 got some technical issue
-for file in os.listdir():
-    # if file.startswith('cbs_b'): # cbs_A for the adults and cbs_b for the infants
-    if file.startswith('cbs_A'): # brainstem
-        subj.append(file)
-        
-#%%
-subj = subj[8:]
-['cbs_A105', 'cbs_A101', 'cbs_A114', 'cbs_A123', 'cbs_A121', 'cbs_A110', 'cbs_A117', 'cbs_A109', 'cbs_A103', 'cbs_A111']
+####################################### 3-way decoding: ba vs. pa vs. mba
+y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
 
-print(subj)
-for s in subj:
-    print(s)
-    filename = root_path + s + '/sss_fif/' + s + run[0] + '_otp_raw_sss_proj.fif'
-    raw = mne.io.read_raw_fif(filename, allow_maxshield=True,preload=True)
-    print ('Doing filtering...')
-    raw_filt = do_filtering(raw,lp,hp,do_cabr)
-    print ('Doing epoch...')
-    do_epoch_cabr(raw_filt, s, run[0], n_trials,hp,lp)
+## preserve the subject ba, mba, pa relationship but randomize the order across subjects
+rand_ind = np.arange(0,len(std))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((std[rand_ind,:],dev1[rand_ind,:],dev2[rand_ind,:]),axis=0)
+
+scores = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+score = np.mean(scores, axis=0)
+print("Accuracy: %0.1f%%" % (100 * score,))
+
+####################################### 2-way decoding: ba vs. pa, ba vs. mba, pa vs. mba
+y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1))))
+rand_ind = np.arange(0,len(std))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((std[rand_ind,:],dev1[rand_ind,:]),axis=0)
+
+scores_ba_mba = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+score_ba_mba = np.mean(scores_ba_mba, axis=0)
+print("Decoding Accuracy between ba vs. mba: %0.1f%%" % (100 * score_ba_mba,))
+
+rand_ind = np.arange(0,len(std))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((std[rand_ind,:],dev2[rand_ind,:]),axis=0)
+
+scores_ba_pa = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+score_ba_pa = np.mean(scores_ba_pa, axis=0)
+print("Decoding Accuracy between ba vs. pa: %0.1f%%" % (100 * score_ba_pa,))
+
+rand_ind = np.arange(0,len(std))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((dev1[rand_ind,:],dev2[rand_ind,:]),axis=0)
+
+scores_mba_pa = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+score_mba_pa = np.mean(scores_mba_pa, axis=0)
+print("Decoding Accuracy between mba vs. pa: %0.1f%%" % (100 * score_mba_pa,))
