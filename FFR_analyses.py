@@ -354,7 +354,7 @@ stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage
 
 ## list the hot spots
 label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
-high_acc = np.where(np.array(all_score) > 0.9)
+high_acc = np.where(np.array(all_score) > 0.5)
 label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
 high_acc = np.array(high_acc[0])
 ROIs = []
@@ -992,7 +992,45 @@ for s in subj:
 evoked = evoked.pick_types('mag')
 data = evoked1.get_data(picks = 'mag')
 
-#%%####################################### reanalyze the 2018 dataset
+#%%####################################### reanalyze the 2018 brainstem dataset EEG
+root_path='/media/tzcheng/storage/Brainstem/EEG/'
+t=np.linspace(-0.02,0.25,1001) ## need to double check the epoch tmin and tmax
+
+## only include the subjects that have both p10 and n40
+# subjects_eng=['104','106','107','108','110','112','113','118','121','123','124','126','129','133']
+# subjects_spa=['202','203','204','205','206','212','214','215','220','221','222','223','224','225','226']
+
+subjects_eng=['104','106','107','108','110','112','113','118','121','123','124','126','129','133']
+subjects_spa=['202','203','204','205','206','214','215','220','221','222','223','224','225','226']
+
+p10_eng = []
+n40_eng = []
+p10_spa = []
+n40_spa = []
+
+for subj in subjects_eng:
+    evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
+    evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
+    p10_eng.append(evoked_p10)
+    n40_eng.append(evoked_n40)
+
+for subj in subjects_spa:
+    evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
+    evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
+    p10_spa.append(evoked_p10)
+    n40_spa.append(evoked_n40)
+
+p10_eng = np.asarray(p10_eng)
+n40_eng = np.asarray(n40_eng)
+p10_spa = np.asarray(p10_spa)
+n40_spa = np.asarray(n40_spa)
+
+np.save(root_path + 'p10_eng_eeg.npy',p10_eng)
+np.save(root_path + 'n40_eng_eeg.npy',n40_eng)
+np.save(root_path + 'p10_spa_eeg.npy',p10_spa)
+np.save(root_path + 'n40_spa_eeg.npy',n40_spa)
+
+#%%####################################### reanalyze the 2018 brainstem dataset MEG
 evoked_fnames = ['104','106','107','108','110','112','113','118','121','123','124','126','129','133']
 all_evokeds = []
 for fname in evoked_fnames:
@@ -1003,8 +1041,43 @@ for fname in evoked_fnames:
     
 all_evokeds[0].plot_topo()
 
+#%%####################################### decoding for single channel EEG brainstem
+root_path='/media/tzcheng/storage/Brainstem/EEG/'
 
-#%%####################################### decoding for single channel EEG
+p10_eng = np.load(root_path + 'p10_eng_eeg.npy')
+n40_eng = np.load(root_path + 'n40_eng_eeg.npy')
+p10_spa = np.load(root_path + 'p10_spa_eeg.npy')
+n40_spa = np.load(root_path + 'n40_spa_eeg.npy')
+
+## classifier
+clf = make_pipeline(
+    StandardScaler(),  # z-score normalization
+    SVC(kernel='rbf',gamma='auto',C=0.1)  
+)
+
+## decode english speaker
+ncv = 5
+y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(n40_eng))))
+rand_ind = np.arange(0,len(p10_eng))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((p10_eng[rand_ind,:],n40_eng[rand_ind,:]),axis=0)
+
+scores_eng = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
+score_eng = np.mean(scores_eng, axis=0)
+print("Decoding Accuracy between ba vs. mba in English speakers: %0.1f%%" % (100 * score_eng))
+
+## decode spanish speaker
+ncv = 5
+y = np.concatenate((np.repeat(0,len(p10_spa)),np.repeat(1,len(n40_spa))))
+rand_ind = np.arange(0,len(p10_spa))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((p10_spa[rand_ind,:],n40_spa[rand_ind,:]),axis=0)
+
+scores_spa = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
+score_spa = np.mean(scores_spa, axis=0)
+print("Decoding Accuracy between ba vs. mba in Spanish speakers: %0.1f%%" % (100 * score_spa))
+
+#%%####################################### decoding for single channel EEG CBS
 root_path='/home/tzcheng/Documents/GitHub/Paper0_Paradigm/'
 ## first run
 std = np.load(root_path + 'group_std_ffr_eeg_200.npy')
