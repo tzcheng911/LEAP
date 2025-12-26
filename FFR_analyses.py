@@ -1000,35 +1000,54 @@ t=np.linspace(-0.02,0.25,1001) ## need to double check the epoch tmin and tmax
 # subjects_eng=['104','106','107','108','110','112','113','118','121','123','124','126','129','133']
 # subjects_spa=['202','203','204','205','206','212','214','215','220','221','222','223','224','225','226']
 
-subjects_eng=['104','106','107','108','110','112','113','118','121','123','124','126','129','133']
-subjects_spa=['202','203','204','205','206','214','215','220','221','222','223','224','225','226']
+subjects_eng=['104','106','107','108','110','111','112','113','118','121','123','124','126','129','133']
+subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225','226'] ## 202 event code has some issues
+
 
 p10_eng = []
 n40_eng = []
 p10_spa = []
 n40_spa = []
 
-for subj in subjects_eng:
-    evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
-    evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
-    p10_eng.append(evoked_p10)
-    n40_eng.append(evoked_n40)
+# for subj in subjects_eng:
+#     evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
+#     evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
+#     p10_eng.append(evoked_p10)
+#     n40_eng.append(evoked_n40)
 
+# for subj in subjects_spa:
+#     evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
+#     evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
+#     p10_spa.append(evoked_p10)
+#     n40_spa.append(evoked_n40)
+    
+# for subj in subjects_eng:
+#     evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
+#     evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
+#     p10_eng.append(evoked_p10)
+#     n40_eng.append(evoked_n40)
+    
 for subj in subjects_spa:
-    evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
-    evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
-    p10_spa.append(evoked_p10)
-    n40_spa.append(evoked_n40)
+    evoked_p10 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/spa/brainstem_' + str(subj)+'_p10_01_evoked_cabr_all.fif')
+    evoked_n40 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/spa/brainstem_' + str(subj)+'_n40_01_evoked_cabr_all.fif')
+    p10_spa.append(evoked_p10[0].data)
+    n40_spa.append(evoked_n40[0].data)
 
-p10_eng = np.asarray(p10_eng)
-n40_eng = np.asarray(n40_eng)
-p10_spa = np.asarray(p10_spa)
-n40_spa = np.asarray(n40_spa)
+for subj in subjects_eng:
+    evoked_p10 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/eng/brainstem_' + str(subj)+'_p10_01_evoked_cabr_all.fif')
+    evoked_n40 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/eng/brainstem_' + str(subj)+'_n40_01_evoked_cabr_all.fif')
+    p10_eng.append(evoked_p10[0].data)
+    n40_eng.append(evoked_n40[0].data)
 
-np.save(root_path + 'p10_eng_eeg.npy',p10_eng)
-np.save(root_path + 'n40_eng_eeg.npy',n40_eng)
-np.save(root_path + 'p10_spa_eeg.npy',p10_spa)
-np.save(root_path + 'n40_spa_eeg.npy',n40_spa)
+p10_eng = np.squeeze(np.asarray(p10_eng))
+n40_eng = np.squeeze(np.asarray(n40_eng))
+p10_spa = np.squeeze(np.asarray(p10_spa))
+n40_spa = np.squeeze(np.asarray(n40_spa))
+
+np.save(root_path + 'p10_eng_eeg_ntrall_01.npy',p10_eng)
+np.save(root_path + 'n40_eng_eeg_ntrall_01.npy',n40_eng)
+np.save(root_path + 'p10_spa_eeg_ntrall_01.npy',p10_spa)
+np.save(root_path + 'n40_spa_eeg_ntrall_01.npy',n40_spa)
 
 #%%####################################### reanalyze the 2018 brainstem dataset MEG
 evoked_fnames = ['104','106','107','108','110','112','113','118','121','123','124','126','129','133']
@@ -1044,19 +1063,201 @@ all_evokeds[0].plot_topo()
 #%%####################################### decoding for single channel EEG brainstem
 root_path='/media/tzcheng/storage/Brainstem/EEG/'
 
-p10_eng = np.load(root_path + 'p10_eng_eeg.npy')
-n40_eng = np.load(root_path + 'n40_eng_eeg.npy')
-p10_spa = np.load(root_path + 'p10_spa_eeg.npy')
-n40_spa = np.load(root_path + 'n40_spa_eeg.npy')
+p10_eng = np.load(root_path + 'p10_eng_eeg_ntrall_01.npy')
+n40_eng = np.load(root_path + 'n40_eng_eeg_ntrall_01.npy')
+p10_spa = np.load(root_path + 'p10_spa_eeg_ntrall_01.npy')
+n40_spa = np.load(root_path + 'n40_spa_eeg_ntrall_01.npy')
+
+# p10_eng = np.load(root_path + 'p10_eng_eeg_ntr200_01.npy')
+# n40_eng = np.load(root_path + 'n40_eng_eeg_ntr200_01.npy')
+# p10_spa = np.load(root_path + 'p10_spa_eeg_ntr200_01.npy')
+# n40_spa = np.load(root_path + 'n40_spa_eeg_ntr200_01.npy')
 
 ## classifier
 clf = make_pipeline(
     StandardScaler(),  # z-score normalization
     SVC(kernel='rbf',gamma='auto',C=0.1)  
+    # SVC(kernel='linear', C=1)
 )
 
-## decode english speaker
-ncv = 5
+#%% ## get the spectrogram
+import librosa
+import librosa.display
+
+x = p10_spa.mean(0)
+x = x.astype(np.float32)
+x = x/np.max(np.abs(x))
+
+fs = 5000
+
+nfft = 128
+S = librosa.stft(
+    x,
+    n_fft = nfft,
+    hop_length = nfft//16,
+    win_length = nfft,
+    window = 'hann')
+S_db = librosa.amplitude_to_db(np.abs(S),ref=np.max)
+
+## Plot the waveform
+fig, ax = plt.subplots(figsize=(10, 4))
+librosa.display.waveshow(x,sr=fs,ax=ax, color = 'purple')
+ax.set(title='Audio Waveform (Time Series)')
+ax.set_xlabel("Time")
+ax.set_ylabel("Amplitude")
+
+## Plot the spectrogram
+fig, ax = plt.subplots(figsize=(10, 4))
+im = librosa.display.specshow(
+    S_db,
+    sr=fs,
+    hop_length=nfft//16,
+    x_axis='time',
+    y_axis='hz',
+    cmap='magma',
+    ax=ax,
+    vmin=-20,
+    vmax=0
+    
+)
+ax.set_title('Spectrogram')
+ax.set_ylim([0,800])
+fig.colorbar(im, ax=ax, format="%+2.0f dB")
+plt.show()
+
+#%%
+# --- Compute onset envelope to highlight bursts ---
+onset_env = librosa.onset.onset_strength(y=x, sr=fs, hop_length=nfft//16)
+# --- Detect approximate burst times ---
+onset_frames = librosa.onset.onset_detect(onset_envelope=onset_env, sr=fs, hop_length=nfft//16)
+onset_times = librosa.frames_to_time(onset_frames, sr=fs, hop_length=nfft//16)
+
+# --- Plot spectrogram ---
+plt.figure(figsize=(10, 4))
+librosa.display.specshow(S, sr=fs, hop_length=nfft//16, x_axis='time', y_axis='hz', cmap='magma')
+plt.colorbar(format="%+2.0f dB")
+plt.title("Spectrogram with Consonant Burst (c)")
+
+# --- Overlay burst markers ---
+for t in onset_times:
+    plt.axvline(t, color='cyan', linestyle='--', alpha=0.8, label='Burst')
+plt.tight_layout()
+plt.show()
+
+#%% ## decode eng vs. spa speakers: keep both n = 15
+all_scores_p10 = []
+all_scores_n40 = []
+ncv = len(p10_eng)
+y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(p10_eng))))
+niter = 1000 # see how the random seed affects accuracy
+for n_iter in np.arange(0,niter,1):
+    rand_ind_spa = np.arange(0,len(p10_spa))
+    random.shuffle(rand_ind_spa)
+    rand_ind_eng = np.arange(0,len(p10_eng))
+    random.shuffle(rand_ind_eng)
+    X_p10 = np.concatenate((p10_eng[rand_ind_eng,ff(times,0):ff(times,40)],p10_spa[rand_ind_spa[:-1],ff(times,0):ff(times,40)]),axis=0)
+    X_n40 = np.concatenate((n40_eng[rand_ind_eng,ff(times,0):ff(times,55)],n40_spa[rand_ind_spa[:-1],ff(times,0):ff(times,55)]),axis=0)
+    scores_p10  = cross_val_multiscore(clf, X_p10 , y, cv=ncv, n_jobs=None)
+    scores_n40 = cross_val_multiscore(clf, X_n40, y, cv=ncv, n_jobs=None)
+    all_scores_p10.append(np.mean(scores_p10, axis=0))
+    all_scores_n40.append(np.mean(scores_n40, axis=0))
+    print("iter " + str(n_iter) + " p10 Decoding Accuracy between English and Spanish speakers: %0.1f%%" % (100 * np.mean(scores_p10, axis=0)))
+    print("iter " + str(n_iter) + " n40 Decoding Accuracy between English and Spanish speakers: %0.1f%%" % (100 * np.mean(scores_n40, axis=0)))
+all_scores_p10 = np.array(all_scores_p10)
+all_scores_n40 = np.array(all_scores_n40)
+
+fig, ax = plt.subplots(1)
+plt.hist(all_scores_p10,bins=10, alpha=0.6)
+plt.hist(all_scores_n40,bins=10, alpha=0.6)
+plt.ylabel('Count',fontsize=20)
+plt.xlabel('Accuracy',fontsize=20)
+plt.xlim(0,1)
+plt.legend(['p10','n40'])
+ax.axvline(0.5, color="grey",linestyle='--')
+ax.axvline(np.mean(all_scores_p10), color="skyblue",linewidth=2)
+ax.axvline(np.mean(all_scores_n40), color="orange",linewidth=2)
+
+print('p10 Accuracy: ' + str(np.mean(all_scores_p10)))
+print('n40 Accuracy: ' + str(np.mean(all_scores_n40)))
+
+#%%####################################### Trial-by-trial decoding for spa vs. eng: not working well
+n_trials = 1000
+root_path='/media/tzcheng/storage/Brainstem/EEG/'
+    
+subjects_eng=['104','106','107','108','110','111','112','113','118','121','123','124','126','129','133']
+subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225'] # trim 226 so be n = 15 too
+# subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225','226'] 
+
+data_eng = []
+data_spa = []
+    
+all_score_svm = []
+
+for se, sp in zip(subjects_eng,subjects_spa):
+    epochs_eng = mne.read_epochs(root_path + 'preprocessed/ntrial_all/eng/brainstem_' + se  +'_p10_01_cabr_e_all.fif').pick_types(eeg=True, exclude=[])
+    epochs_spa = mne.read_epochs(root_path + 'preprocessed/ntrial_all/spa/brainstem_' + sp  +'_p10_01_cabr_e_all.fif').pick_types(eeg=True, exclude=[])
+
+    random.seed(15)
+    rand_ind = random.sample(range(min(len(epochs_eng['44'].events),len(epochs_eng['88'].events))),n_trials//2) 
+    epochs_eng = mne.concatenate_epochs([epochs_eng['44'][rand_ind],epochs_eng['88'][rand_ind]])
+    rand_ind = random.sample(range(min(len(epochs_spa['44'].events),len(epochs_spa['88'].events))),n_trials//2) 
+    epochs_spa = mne.concatenate_epochs([epochs_spa['44'][rand_ind],epochs_spa['88'][rand_ind]])
+        
+    data_eng.append(epochs_eng.get_data())
+    data_spa.append(epochs_spa.get_data())  
+
+data_eng = np.squeeze(data_eng)
+data_spa = np.squeeze(data_spa)
+
+nt = np.shape(data_eng)[-1]
+X_eng = data_eng.reshape(-1,nt)
+X_spa = data_spa.reshape(-1,nt)
+
+X = np.concatenate((X_eng,X_spa),axis=0)
+y = np.concatenate((np.repeat(0,len(X_eng)),np.repeat(1,len(X_spa))))
+                   
+## SVM showed higher accuracy in trial-by-trial decoding
+clf = make_pipeline(
+    StandardScaler(),
+    SVC(kernel='rbf',gamma='auto')  
+   )
+
+scores = cross_val_multiscore(clf, X, y, cv=5, n_jobs=4) 
+score = np.mean(scores, axis=0)
+print("Trial-by-trial decoding accuracy: %0.1f%%" % (100 * score,))
+all_score_svm.append(score)
+    
+#%% ## plot the data to examine
+plt.figure()
+plt.title('p10 response')
+plt.plot(np.linspace(-0.02,0.2,1101),p10_eng.mean(0))
+plt.plot(np.linspace(-0.02,0.2,1101),p10_spa.mean(0))
+plt.xlim(-0.02,0.2)
+plt.ylim(-5e-7, 5e-7)
+plt.legend(['Eng','Spa'])
+
+plt.figure()
+plt.title('English vs. Spanish speakers differential p10 response')
+plt.plot(np.linspace(-0.02,0.2,1101),p10_eng.mean(0)-p10_spa.mean(0))
+plt.xlim(-0.02,0.2)
+plt.ylim(-5e-7, 5e-7)
+
+plt.figure()
+plt.title('n40 response')
+plt.plot(np.linspace(-0.02,0.2,1101),n40_eng.mean(0))
+plt.plot(np.linspace(-0.02,0.2,1101),n40_spa.mean(0))
+plt.xlim(-0.02,0.2)
+plt.ylim(-5e-7, 5e-7)
+plt.legend(['Eng','Spa'])
+
+plt.figure()
+plt.title('English vs. Spanish speakers differential n40 response')
+plt.plot(np.linspace(-0.02,0.2,1101),n40_eng.mean(0)-n40_spa.mean(0))
+plt.xlim(-0.02,0.2)
+plt.ylim(-5e-7, 5e-7)
+
+#%% ## decode english speaker
+ncv = len(p10_eng)
 y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(n40_eng))))
 rand_ind = np.arange(0,len(p10_eng))
 random.Random(2).shuffle(rand_ind)
@@ -1067,7 +1268,7 @@ score_eng = np.mean(scores_eng, axis=0)
 print("Decoding Accuracy between ba vs. mba in English speakers: %0.1f%%" % (100 * score_eng))
 
 ## decode spanish speaker
-ncv = 5
+ncv = len(p10_spa)
 y = np.concatenate((np.repeat(0,len(p10_spa)),np.repeat(1,len(n40_spa))))
 rand_ind = np.arange(0,len(p10_spa))
 random.Random(2).shuffle(rand_ind)
@@ -1076,6 +1277,88 @@ X = np.concatenate((p10_spa[rand_ind,:],n40_spa[rand_ind,:]),axis=0)
 scores_spa = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
 score_spa = np.mean(scores_spa, axis=0)
 print("Decoding Accuracy between ba vs. mba in Spanish speakers: %0.1f%%" % (100 * score_spa))
+
+# ## plot the data to examine
+plt.figure()
+plt.title('English speakers')
+plt.plot(np.linspace(-0.02,0.2,1101),p10_eng.mean(0))
+plt.plot(np.linspace(-0.02,0.2,1101),n40_eng.mean(0))
+plt.xlim(-0.02,0.2)
+plt.ylim(-5e-7, 5e-7)
+plt.legend(['p10','n40'])
+
+plt.figure()
+plt.title('English speakers differential response b/t p10 and n40')
+plt.plot(np.linspace(-0.02,0.2,1101),p10_eng.mean(0)-n40_eng.mean(0))
+plt.xlim(-0.02,0.2)
+plt.legend(['p10','n40'])
+plt.ylim(-5e-7, 5e-7)
+
+plt.figure()
+plt.title('Spanish speakers')
+plt.plot(np.linspace(-0.02,0.2,1101),p10_spa.mean(0))
+plt.plot(np.linspace(-0.02,0.2,1101),n40_spa.mean(0))
+plt.xlim(-0.02,0.2)
+plt.ylim(-5e-7, 5e-7)
+plt.legend(['p10','n40'])
+
+plt.figure()
+plt.title('Spanish speakers differential response b/t p10 and n40')
+plt.plot(np.linspace(-0.02,0.2,1101),p10_spa.mean(0)-n40_spa.mean(0))
+plt.xlim(-0.02,0.2)
+plt.legend(['p10','n40'])
+plt.ylim(-5e-7, 5e-7)
+
+## see the weights 
+from sklearn.model_selection import StratifiedKFold
+cv = StratifiedKFold(n_splits=ncv, shuffle=False)
+
+weights = []
+scores = []
+
+for train_idx, test_idx in cv.split(X, y):
+    scaler = StandardScaler()
+    X_train = scaler.fit_transform(X[train_idx])
+    X_test  = scaler.transform(X[test_idx])
+    
+    clf = SVC(kernel='linear', C=1)
+    clf.fit(X[train_idx], y[train_idx])
+
+    scores.append(clf.score(X[test_idx], y[test_idx]))
+    weights.append(clf.coef_.squeeze())
+
+
+weights = np.array(weights)   # shape: (n_folds, n_timepoints)
+plt.figure()
+plt.plot(np.linspace(-0.02,0.2,1101),np.mean(weights,axis=0))
+plt.xlim(-0.02,0.2)
+plt.ylim(-7e-6, 7e-6)
+plt.title('SVM weights across time')
+
+#%%###################################### C and V section decoding: for ba, 10 ms + 90 ms = 100 ms; for mba, 40 ms + 90 ms = 130 ms
+## epoch length -20 to 200 ms with sampling rate at 5000 Hz
+## Use C section to decode mba and ba
+## decode english speaker
+ncv = len(p10_eng)
+y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(n40_eng))))
+rand_ind = np.arange(0,len(p10_eng))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((p10_eng[rand_ind,ff(times,0):ff(times,50)],n40_eng[rand_ind,ff(times,0):ff(times,50)]),axis=0) # C section
+
+scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None) # takes about 10 mins to run
+score = np.mean(scores, axis=0)
+print("Decoding Accuracy between ba vs. mba consonant 0-50 ms in English speakers: %0.1f%%" % (100 * score,))
+
+## decode spanish speaker
+ncv = len(p10_spa)
+y = np.concatenate((np.repeat(0,len(p10_spa)),np.repeat(1,len(n40_spa))))
+rand_ind = np.arange(0,len(p10_spa))
+random.Random(2).shuffle(rand_ind)
+X = np.concatenate((p10_spa[rand_ind,ff(times,0):ff(times,50)],n40_spa[rand_ind,ff(times,0):ff(times,50)]),axis=0) # C section
+
+scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None) # takes about 10 mins to run
+score = np.mean(scores, axis=0)
+print("Decoding Accuracy between ba vs. mba consonant 0-50 ms in Spanish speakers: %0.1f%%" % (100 * score,))
 
 #%%####################################### decoding for single channel EEG CBS
 root_path='/home/tzcheng/Documents/GitHub/Paper0_Paradigm/'
