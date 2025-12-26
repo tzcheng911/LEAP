@@ -71,60 +71,74 @@ def do_epoch_cabr(data, subject, condition, run,hp,lp):
     
     reject=dict(grad=4000e-13,mag=4e-12)
     picks = mne.pick_types(data.info,meg=True,eeg=False) 
-    epochs = mne.Epochs(data, cabr_events, event_id=1,tmin =-0.02, tmax=0.2, baseline=(-0.02,0),reject=reject,picks=picks)
+    epochs = mne.Epochs(data, cabr_events, tmin =-0.02, tmax=0.2, baseline=(-0.02,0),reject=reject,picks=picks)
     evoked=epochs.average()  
     epochs.save(file_out + '_ffr_e.fif',overwrite=True)
     evoked.save(file_out + '_evoked_ffr.fif',overwrite=True)
 
     return evoked, epochs
+    
+def find_eeg(raw_file,subject,condition,run):
+    if 'EEG030' in raw_file.info['ch_names']:
+        raw_file.pick_channels(['EEG030','MISC001','STI001','STI003','STI004','STI101'])
+        print("EEG030 for " + subject)
+    else:
+        raw_file.pick_channels(['EEG034','MISC001','STI001','STI003','STI004','STI101'])
+        print("EEG034 for " + subject)
+    raw_file.save('/media/tzcheng/storage/Brainstem/EEG/raw/' + subject + condition + run + '_raw.fif',overwrite=True)
+    return raw_file
 
-def do_epoch_cabr_eeg(data, subject, condition, run, n_trials):  
+def find_events(raw_file):
+    STI1 = mne.find_events(raw_file,stim_channel='STI001') 
+    STI3 = mne.find_events(raw_file,stim_channel='STI003')
+    STI4 = mne.find_events(raw_file,stim_channel='STI004')
+    STI1[:,2] = 1 # 3000
+    STI3[:,2] = 4 # 1500 
+    STI4[:,2] = 8 # 1500
+    events_raw = np.concatenate((STI1,STI3,STI4),axis=0)
+    events_raw = events_raw[events_raw[:,0].argsort()] # sort by the latency
+    
+    events = events_raw
+    e=[]
+    for event in events_raw:
+        e.append(event[2])
+    ## dealing with the event codes
+    ind1=[i for i, x in enumerate(e) if x==1] ## find all the indices for 1 because it marks the precise timing
+    
+    # should always be 4-1-8-1-4-...etc. the 4 and 8 mark the polarity, 1 marks the accurate timing
+    for i in ind1:
+        if e[i-1]==4:
+             events[i][2] = 44 # use this to do the epoch
+        elif e[i-1]==8:
+            events[i][2] = 88 # use this to do the epoch
+    return events
+    
+def do_epoch_cabr_eeg(data, events, subject, condition, run, n_trials):  
     ###### Read the event files (generated from evtag.py) 
+    random.seed(15)
     root_path = os.getcwd()
-    cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_cabr-eve.fif')
-    file_out = root_path + '/' + subject + '/eeg/' + subject + run 
-    
-    event_id = {'Standardp':1,'Standardn':2, 'Deviant1p':3,'Deviant1n':5, 'Deviant2p':6,'Deviant2n':7}
-    
-    reject=dict(bio=35e-6)
-    epochs = mne.Epochs(data, cabr_events, event_id,tmin =-0.02, tmax=0.2, baseline=(-0.02,0),reject=reject)
+    file_out = root_path + '/EEG/preprocessed/ntrial_' + str(n_trials) +'/brainstem_' + subject + condition + run 
+    reject=dict(eeg=100e-6) ## follow the 2018 paper
+    epochs = mne.Epochs(data, events, event_id = [44,88],tmin =-0.02, tmax=0.20, baseline=(-0.02,0),reject=reject) ## the paper tmin tmax is -0.01, 0.15 but it cuts out the signal, so use -0.02 and 0.2 
     new_epochs = epochs.copy().drop_bad()
-
     ## match the trial number for each sound
     ## get random number of sounds from all sounds
     ## neet to find p and n len after dropping bad, use the smaller one to be the full len
     if n_trials == 'all':
-        evoked_substd=epochs['Standardp','Standardn'].average(picks=('bio'))
-        evoked_dev1=epochs['Deviant1p','Deviant1n'].average(picks=('bio'))
-        evoked_dev2=epochs['Deviant2p','Deviant2n'].average(picks=('bio'))
+        evoked=new_epochs.average(picks=('eeg'))
     else:
-        rand_ind = random.sample(range(min(len(new_epochs['Standardp'].events),len(new_epochs['Standardn'].events))),n_trials//2) 
-        evoked_substd_p=new_epochs['Standardp'][rand_ind].average(picks=('bio'))
-        evoked_substd_n=new_epochs['Standardn'][rand_ind].average(picks=('bio'))
-        evoked_substd = mne.combine_evoked([evoked_substd_p,evoked_substd_n], weights='equal')
-        del rand_ind
-    
-        rand_ind = random.sample(range(min(len(new_epochs['Deviant1p'].events),len(new_epochs['Deviant1n'].events))),n_trials//2) 
-        evoked_dev1_p=new_epochs['Deviant1p'][rand_ind].average(picks=('bio'))
-        evoked_dev1_n=new_epochs['Deviant1n'][rand_ind].average(picks=('bio'))
-        evoked_dev1 = mne.combine_evoked([evoked_dev1_p,evoked_dev1_n], weights='equal')
-        del rand_ind
-    
-        rand_ind = random.sample(range(min(len(new_epochs['Deviant2p'].events),len(new_epochs['Deviant2n'].events))),n_trials//2) 
-        evoked_dev2_p=new_epochs['Deviant2p'][rand_ind].average(picks=('bio'))
-        evoked_dev2_n=new_epochs['Deviant2n'][rand_ind].average(picks=('bio'))
-        evoked_dev2 = mne.combine_evoked([evoked_dev2_p,evoked_dev2_n], weights='equal')
-
+        rand_ind = random.Random().sample(range(min(len(new_epochs['44'].events),len(new_epochs['88'].events))),n_trials//2) 
+        evoked_p=new_epochs['44'][rand_ind].average(picks=('eeg'))
+        evoked_n=new_epochs['88'][rand_ind].average(picks=('eeg'))
+        evoked = mne.combine_evoked([evoked_p,evoked_n], weights='equal')
+        
     new_epochs.save(file_out + '_cabr_e_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_substd.save(file_out + '_evoked_substd_cabr_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_dev1.save(file_out + '_evoked_dev1_cabr_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_dev2.save(file_out + '_evoked_dev2_cabr_' + str(n_trials) + '.fif',overwrite=True)
-    return evoked_substd,evoked_dev1,evoked_dev2,new_epochs
+    evoked.save(file_out + '_evoked_cabr_' + str(n_trials) + '.fif',overwrite=True)
+    return evoked, new_epochs
 
-#%%########################################
-mne.set_config('MNE_MEMMAP_MIN_SIZE', '10M') 
-mne.set_config('MNE_CACHE_DIR', '/dev/shm')
-
+#%%######################################## 
+# mne.set_config('MNE_MEMMAP_MIN_SIZE', '10M') 
+# mne.set_config('MNE_CACHE_DIR', '/dev/shm')
 root_path='/media/tzcheng/storage/Brainstem/' # brainstem files
 os.chdir(root_path)
 
@@ -139,6 +153,7 @@ subj = [] # A104 got some technical issue
 for file in os.listdir():
     if file.startswith('brainstem_'): # brainstem
         subj.append(file)
+
 # subj = ['brainstem_121','brainstem_123','brainstem_126','brainstem_129'] 
 # for these four subjects empty room is sampled at 1000 Hz so the notch filter cannot go up to 2000
 # run the erm files to get cov manually set to data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5)
@@ -174,27 +189,35 @@ for s in subj:
             # os.remove(file_in_epoch[:-4] + '-1.fif')
             # os.remove(file_in_evoked)
 
-#%%##### do the jobs for EEG MMR
-# for s in subj:
-#     print(s)
-#     for run in runs:
-#         raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
-#         # raw_file = mne.io.Raw('/media/tzcheng/storage2/CBS/cbs_zoe/raw_fif/cbs_zoe' + run + '_raw.fif',allow_maxshield=True,preload=True) # for stimuli leakage test
-#         raw_file.filter(l_freq=0,h_freq=50,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
-#         raw_file.pick_channels(['BIO004'])
-#         do_epoch_mmr_eeg(raw_file, s, run, direction)
+#%%##### save EEG from the MEG recording file
+## brainstem_107,brainstem_113 EEG030, the rest 100x use EEG034
+for s in subj:
+    print(s)
+    for condition in conditions:
+        for run in runs:
+            file_in=root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss.fif'
+            raw_file = mne.io.read_raw_fif(file_in,preload=True,allow_maxshield=True)
+            eeg = find_eeg(raw_file,s,condition,run)
+            
+#%%##### do the jobs for EEG 
+n_trials = 200 ## 'all' or 200 or any number
 
-#%%##### do the jobs for EEG FFR
-# for s in subj:
-#     print(s)
-#     for run in runs:
-#         raw_file=mne.io.Raw('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_raw.fif',allow_maxshield=True,preload=True)
-#         # raw_file = mne.io.Raw('/media/tzcheng/storage2/CBS/cbs_zoe/raw_fif/cbs_zoe' + run + '_raw.fif',allow_maxshield=True,preload=True) # for stimuli leakage test
-#         raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('bio'))
-#         raw_file.filter(l_freq=80,h_freq=2000,picks=('bio'),method='iir',iir_params=dict(order=4,ftype='butter'))
-#         raw_file.pick_channels(['BIO004'])
-#         do_epoch_cabr_eeg(raw_file, s, run, n_trials)
+## These are the sbujects selected by their categorical perception that showed a clear categorization
+subjects_eng=['104','106','107','108','110','111','112','113','118','121','123','124','126','129','133']
+subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225','226'] ## 202 event code has some issues
 
+for s in subjects_eng:
+    print(s)
+    for condition in conditions:
+        for run in runs:
+            input_file = root_path + 'EEG/raw/brainstem_' + s + condition + run +'_raw.fif'
+            raw_file = mne.io.Raw(input_file,preload=True,allow_maxshield=True)
+            # raw_file.copy().pick(picks="stim").plot()
+            events = find_events(raw_file)
+            raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('eeg'))
+            raw_file.filter(l_freq=80,h_freq=2000,picks=('eeg'),method='iir',iir_params=dict(order=4,ftype='butter'))
+            [evoked,epochs] = do_epoch_cabr_eeg(raw_file, events, s, condition, run, n_trials)
+            
 #%%##### check the number of avg in evoked files
 # nave_mmr_std = []
 # nave_mmr_dev1 = []
