@@ -1,4 +1,4 @@
-s#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Tue Nov  9 14:51:27 2021
@@ -291,8 +291,8 @@ for file in os.listdir():
         subj.append(file)
 
 ## do individual by individual(s), check the time t1, t2 or t3 too
-subj = ['cing_127'] # sld_157_t2 6
-conditions = ['4']
+subj = ['cing_126'] # sld_157_t2 6
+conditions = ['1']
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]
@@ -310,7 +310,7 @@ for n,s in enumerate(subj):
     # raw_file = raw_file.copy().crop(tmax=455) # for sld_145_t1
     # raw_file = raw_file.copy().crop(tmax=786) # for sld_129_t3
     # raw_file = raw_file.copy().crop(tmax=624) # for sld_151_t1
-    raw_file = raw_file.copy().crop(tmax=936) # for cing_127
+    # raw_file = raw_file.copy().crop(tmax=936) # for cing_127
     find_events(raw_file, s,run,time)
     events=process_events(s,run,time)
     check=check_events(events,condition)
