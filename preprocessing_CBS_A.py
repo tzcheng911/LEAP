@@ -313,6 +313,7 @@ def do_epoch_cabr(data, subject, run, n_trials,hp,lp):
 
 def do_epoch_cabr_eeg(data, subject, run, n_trials):  
     ###### Read the event files (generated from evtag.py) 
+    random.seed(15)
     root_path = os.getcwd()
     cabr_events = mne.read_events(root_path + '/' + subject + '/events/' + subject + run + '_events_cabr-eve.fif')
     file_out = root_path + '/' + subject + '/eeg/' + subject + run 
