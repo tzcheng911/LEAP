@@ -1063,15 +1063,15 @@ all_evokeds[0].plot_topo()
 #%%####################################### decoding for single channel EEG brainstem
 root_path='/media/tzcheng/storage/Brainstem/EEG/'
 
-p10_eng = np.load(root_path + 'p10_eng_eeg_ntrall_01.npy')
-n40_eng = np.load(root_path + 'n40_eng_eeg_ntrall_01.npy')
-p10_spa = np.load(root_path + 'p10_spa_eeg_ntrall_01.npy')
-n40_spa = np.load(root_path + 'n40_spa_eeg_ntrall_01.npy')
+# p10_eng = np.load(root_path + 'p10_eng_eeg_ntrall_01.npy')
+# n40_eng = np.load(root_path + 'n40_eng_eeg_ntrall_01.npy')
+# p10_spa = np.load(root_path + 'p10_spa_eeg_ntrall_01.npy')
+# n40_spa = np.load(root_path + 'n40_spa_eeg_ntrall_01.npy')
 
-# p10_eng = np.load(root_path + 'p10_eng_eeg_ntr200_01.npy')
-# n40_eng = np.load(root_path + 'n40_eng_eeg_ntr200_01.npy')
-# p10_spa = np.load(root_path + 'p10_spa_eeg_ntr200_01.npy')
-# n40_spa = np.load(root_path + 'n40_spa_eeg_ntr200_01.npy')
+p10_eng = np.load(root_path + 'p10_eng_eeg_ntr200_01.npy')
+n40_eng = np.load(root_path + 'n40_eng_eeg_ntr200_01.npy')
+p10_spa = np.load(root_path + 'p10_spa_eeg_ntr200_01.npy')
+n40_spa = np.load(root_path + 'n40_spa_eeg_ntr200_01.npy')
 
 ## classifier
 clf = make_pipeline(
@@ -1084,7 +1084,7 @@ clf = make_pipeline(
 import librosa
 import librosa.display
 
-x = p10_spa.mean(0)
+x = n40_eng.mean(0)
 x = x.astype(np.float32)
 x = x/np.max(np.abs(x))
 
