@@ -228,7 +228,7 @@ for nn_age,n_age in enumerate(ages[:-1]):
 data_type = which_data_type[-1]
 n_analysis = analysis[0]
 n_folder = folders[0]
-n_meter = 'triple' # 'duple' or 'triple'
+n_meter = 'duple' # 'duple' or 'triple'
 p_threshold = 0.05 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 
 for n_age in ages:
@@ -241,21 +241,34 @@ for n_age in ages:
         for c in good_clusters:
             print(c[0])
             
-            ## print the min and max MNI coordinate for this cluster
+            ## print the min and max and mean MNI coordinate for this cluster
             coord = [] 
             for i in np.arange(0,len(c[-1]),1):
                 coord.append(np.round(src[0]['rr'][src[0]['vertno'][c[-1][i]]]*1000))
             np_coord = np.array(coord)
             print("min MNI coord:" + str(np.min(np_coord,axis=0)))
             print("max MNI coord:" + str(np.max(np_coord,axis=0)))
+            print("mean MNI coord (center of mass):" + str(np.mean(np_coord,axis=0)))
             
             ## get all the ROIs in this cluster (no repeat)
+            # ROIs = []
+            # for i in np.arange(0,len(c[-1]),1):
+            #     for nlabel in np.arange(0,len(label_names),1):
+            #         if c[-1][i] in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
+            #             ROIs.append(label_names[nlabel])
+            # print(ROIs)
+            
+            ## get all the ROIs in this cluster (with repeat)
             ROIs = []
+            count_ROIs = []
             for i in np.arange(0,len(c[-1]),1):
                 for nlabel in np.arange(0,len(label_names),1):
-                    if c[-1][i] in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
+                    if c[-1][i] in label_v_ind[nlabel][0]:
                         ROIs.append(label_names[nlabel])
-            print(ROIs)
+            ROIs.sort()
+            for label in label_names:
+                count_ROIs.append(ROIs.count(label))
+                print(str(ROIs.count(label)) + " " + label)
             
         ## visualize this cluster
         stc_all_cluster_vis = summarize_clusters_stc(
