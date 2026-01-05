@@ -55,15 +55,15 @@ def stats_SSEP(X,freqs,nonparametric):
             print(clusters[good_cluster_inds[i]])
             print('Significant freqs: ' + str(freqs[clusters[good_cluster_inds[i]]]))
     else:   
-        t,p = stats.ttest_1samp(X[:,ff(freqs,1.11)].mean(axis=1),0) # meter 1.11 Hz
+        t,p = stats.ttest_1samp(X[:,ff(freqs,1.11)],0) # meter 1.11 Hz
         print('Testing freqs: ' + str(ff(freqs,1.11)))
         print('t statistics: ' + str(t))
         print('p-value: ' + str(p))
-        t,p = stats.ttest_1samp(X[:,ff(freqs,1.67)].mean(axis=1),0) # meter 1.67 Hz
+        t,p = stats.ttest_1samp(X[:,ff(freqs,1.67)],0) # meter 1.67 Hz
         print('Testing freqs: ' + str(ff(freqs,1.67)))
         print('t statistics: ' + str(t))
         print('p-value: ' + str(p))
-        t,p = stats.ttest_1samp(X[:,ff(freqs,3.33)].mean(axis=1),0) # beat 3.3 Hz
+        t,p = stats.ttest_1samp(X[:,ff(freqs,3.33)],0) # beat 3.3 Hz
         print('Testing freqs: ' + str(ff(freqs,3.33)))
         print('t statistics: ' + str(t))
         print('p-value: ' + str(p))
@@ -436,9 +436,9 @@ for n_age in ages:
         triple = triple0[triple0.files[0]]
         freqs = random0[random0.files[1]]          
         print("-------------------Doing duple-------------------")
-        stats_SSEP(duple[:,n,:],random[:,n,:],freqs,nonparametric=True)
+        stats_SSEP(duple[:,n,:]-random[:,n,:],freqs,False)
         print("-------------------Doing triple-------------------")
-        stats_SSEP(triple[:,n,:],random[:,n,:],freqs,nonparametric=True)
+        stats_SSEP(triple[:,n,:]-random[:,n,:],freqs,False)
 convert_to_csv(data_type,label_names,n_analysis,n_folder,1,0)
     
 #%%####################################### Analysis on the wholebrain SSEP
