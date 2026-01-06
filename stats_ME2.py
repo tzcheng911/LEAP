@@ -436,9 +436,9 @@ for n_age in ages:
         triple = triple0[triple0.files[0]]
         freqs = random0[random0.files[1]]          
         print("-------------------Doing duple-------------------")
-        stats_SSEP(duple[:,n,:]-random[:,n,:],freqs,False)
+        stats_SSEP(duple[:,n,:]-random[:,n,:],freqs,True)
         print("-------------------Doing triple-------------------")
-        stats_SSEP(triple[:,n,:]-random[:,n,:],freqs,False)
+        stats_SSEP(triple[:,n,:]-random[:,n,:],freqs,True)
 convert_to_csv(data_type,label_names,n_analysis,n_folder,1,0)
     
 #%%####################################### Analysis on the wholebrain SSEP
