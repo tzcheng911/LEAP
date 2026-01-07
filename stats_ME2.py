@@ -505,7 +505,7 @@ t,p = stats.ttest_1samp(XX_6_9Hz[:,ROI1,ROI2],0)  # t = 3.3107852817359644, p = 
 d = XX_6_9Hz[:,ROI1,ROI2].mean()/XX_6_9Hz[:,ROI1,ROI2].std()
 
 #%%####################################### Correlation analysis initial setting
-meter = conditions[2]
+meter = conditions[1]
 age = ages[0]
 data_type = which_data_type[2] # '_roi_redo4_' or other ROI files, or wholebrain data_type = '_morph_'
 
@@ -532,7 +532,7 @@ elif data_type == '_roi_redo4_':
 CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
 
 #%% run the loop
-meter = conditions[1]
+meter = conditions[2]
 age = ages[0]
 data_type = which_data_type[3] # '_roi_redo4_' or other ROI files, or wholebrain data_type = '_morph_'
 
@@ -564,9 +564,10 @@ MEG_diff = MEG - MEG_rand
 
 #%% Correlation analysis between ROI SSEP and CDI 
 for n,ROI in enumerate(label_names):
-    plt.figure()
-    plt.scatter(MEG_diff[:,n],CDI)
-    print(pearsonr(MEG_diff[:,n], CDI))
+    # plt.figure()
+    # plt.scatter(MEG_diff[:,n],CDI)
+    print(ROI)
+    print(pearsonr(MEG[:,n], CDI))
 
 #%% SVR for either ROI or wholebrain SSEP and CDI   
 from sklearn.decomposition import PCA
