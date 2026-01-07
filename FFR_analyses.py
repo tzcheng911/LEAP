@@ -81,58 +81,54 @@ def ff(input_arr,target):
             delta = abs(input_arr[i]-target)
     return idx
 
+def load_CBS_file(file_type, sound_type, subject_type):
+    ## load and plot the time series of 'p10','n40','p40' for 'audio', 'eeg', 'sensor', 'ROI', 'morph' in "infants" or "adults"
+    root_path = '/media/tzcheng/storage2/CBS/'
+    fs = 5000
+    # map sound names when needed
+    sound_map = {
+        'p10': 'ba',
+        'p40': 'pa',
+        'n40': 'mba'
+    }
+    if file_type == 'audio':
+        fs, signal = wavfile.read(root_path + '/stimuli/' + sound_type + '.wav')
+    elif file_type == 'EEG':
+        signal = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_' + sound_type + '_ffr_eeg_200.npy')
+    elif file_type in ('sensor', 'morph_roi','morph'): ## for the MEG
+        name = sound_map.get(sound_type, sound_type)
+        if subject_type == 'adults':
+            signal = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_' + name + '_pcffr80200_3_200_' + file_type + '.npy')
+        elif subject_type == 'infants':   
+            signal = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/ntrial_200/group_' + name + '_pcffr80200_3_200_' + file_type + '.npy')
+    return fs, signal
+
+def load_BS_file(file_type, ntrial):
+    root_path = '/media/tzcheng/storage/Brainstem/'
+    fs = 5000
+    if file_type == 'EEG':
+        p10_eng = np.load(root_path + 'EEG/p10_eng_eeg_ntr' + ntrial + '_01.npy')
+        n40_eng = np.load(root_path + 'EEG/n40_eng_eeg_ntr' + ntrial + '_01.npy')
+        p10_spa = np.load(root_path + 'EEG/p10_spa_eeg_ntr' + ntrial + '_01.npy')
+        n40_spa = np.load(root_path + 'EEG/n40_spa_eeg_ntr' + ntrial + '_01.npy')
+    ## not yet implemented MEG load elif file_type in ('sensor', 'roi','morph'):
+    return fs, p10_eng, n40_eng, p10_spa, n40_spa
+
+def do_sliding_decoding:
+    ## decode conditions from spatial features at each time point
+    
+def do_time_decoding:
+    ## decode conditions from time series
+
+def do_SNR:
+
+def do_xcorr:
+    
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_pa_cabr_morph-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 times = np.linspace(-20,200,1101)
-
-#%%####################################### Load audio and FFR
-## audio 
-fs, ba_audio = wavfile.read(root_path + 'stimuli/+10.wav')
-fs, mba_audio = wavfile.read(root_path + 'stimuli/-40.wav')
-fs, pa_audio = wavfile.read(root_path + 'stimuli/+40.wav')
-
-# Downsample
-fs_new = 5000
-num_std = int((len(ba_audio)*fs_new)/fs)
-num_dev = int((len(pa_audio)*fs_new)/fs)  # #sample_new/fs_new=#sample/fs find number of samples in the resampled data
-audio_ba = signal.resample(ba_audio, num_std, t=None, axis=0, window=None)
-audio_mba = signal.resample(mba_audio, num_dev, t=None, axis=0, window=None)
-audio_pa = signal.resample(pa_audio, num_dev, t=None, axis=0, window=None)
-
-## EEG
-EEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_ffr_eeg_200.npy')
-EEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_ffr_eeg_200.npy')
-EEG_pa_FFR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_ffr_eeg_200.npy')
-
-## MEG sensors
-MEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_ba_ffr_sensor.npy')
-MEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_mba_ffr_sensor.npy')
-MEG_pa_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_pa_ffr_sensor.npy')
-
-## MEG source vertices
-# adults
-MEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + 'group_ba_ffr_morph.npy')
-MEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + 'group_mba_ffr_morph.npy')
-MEG_pa_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_all/' + 'group_pa_ffr_morph.npy')
-
-# infants 
-MEG_ba_FFR = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/' + 'group_ba_ffr_morph.npy')
-MEG_mba_FFR = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/' + 'group_mba_ffr_morph.npy')
-MEG_pa_FFR = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/' + 'group_pa_ffr_morph.npy')
-
-## MEG source ROI
-# adults
-MEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_ba_ffr_f80450_morph_roi.npy')
-MEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_mba_ffr_f80450_morph_roi.npy')
-MEG_pa_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_pa_ffr_f80450_morph_roi.npy')
-
-## MEG sensor
-# adults
-MEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_ba_sensor.npy')
-MEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_mba_sensor.npy')
-MEG_pa_FFR = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + 'group_pa_sensor.npy')
 
 #%%####################################### Subject-by-subject MEG decoding for each condition 
 #%%####################################### Sliding estimator decoding
