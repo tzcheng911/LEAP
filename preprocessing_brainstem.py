@@ -218,31 +218,58 @@ for s in subjects_eng:
             raw_file.filter(l_freq=80,h_freq=2000,picks=('eeg'),method='iir',iir_params=dict(order=4,ftype='butter'))
             [evoked,epochs] = do_epoch_cabr_eeg(raw_file, events, s, condition, run, n_trials)
             
-#%%##### check the number of avg in evoked files
-# nave_mmr_std = []
-# nave_mmr_dev1 = []
-# nave_mmr_dev2 = []
-# nave_ffr_std = []
-# nave_ffr_dev1 = []
-# nave_ffr_dev2 = []
+#%%####################################### Save the group npy file
+root_path='/media/tzcheng/storage/Brainstem/EEG/'
+t=np.linspace(-0.02,0.25,1001) ## need to double check the epoch tmin and tmax
 
-# for s in subj:
-#     print(s)
-#     for run in runs:
-#         std_mmr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_substd_mmr.fif',allow_maxshield=True)
-#         dev1_mmr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev1_mmr.fif',allow_maxshield=True)
-#         dev2_mmr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev2_mmr.fif',allow_maxshield=True)
-#         std_ffr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_substd_cabr_all.fif',allow_maxshield=True)
-#         dev1_ffr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev1_cabr_all.fif',allow_maxshield=True)
-#         dev2_ffr =mne.read_evokeds('/media/tzcheng/storage2/CBS/'+s+'/eeg/'+s+ run +'_evoked_dev2_cabr_all.fif',allow_maxshield=True)
+## only include the subjects that have both p10 and n40
+# subjects_eng=['104','106','107','108','110','112','113','118','121','123','124','126','129','133']
+# subjects_spa=['202','203','204','205','206','212','214','215','220','221','222','223','224','225','226']
 
-#         nave_mmr_std.append(std_mmr[0].nave)
-#         nave_mmr_dev1.append(dev1_mmr[0].nave)
-#         nave_mmr_dev2.append(dev2_mmr[0].nave)
-#         nave_ffr_std.append(std_ffr[0].nave)
-#         nave_ffr_dev1.append(dev1_ffr[0].nave)
-#         nave_ffr_dev2.append(dev2_ffr[0].nave)
+subjects_eng=['104','106','107','108','110','111','112','113','118','121','123','124','126','129','133']
+subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225','226'] ## 202 event code has some issues
 
-# print(np.mean(nave_mmr_std))
-# print(np.mean(nave_mmr_dev1))
-# print(np.mean(nave_mmr_dev2))
+p10_eng = []
+n40_eng = []
+p10_spa = []
+n40_spa = []
+
+# for subj in subjects_eng:
+#     evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
+#     evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
+#     p10_eng.append(evoked_p10)
+#     n40_eng.append(evoked_n40)
+
+# for subj in subjects_spa:
+#     evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
+#     evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
+#     p10_spa.append(evoked_p10)
+#     n40_spa.append(evoked_n40)
+    
+# for subj in subjects_eng:
+#     evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
+#     evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
+#     p10_eng.append(evoked_p10)
+#     n40_eng.append(evoked_n40)
+    
+for subj in subjects_spa:
+    evoked_p10 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/spa/brainstem_' + str(subj)+'_p10_01_evoked_cabr_all.fif')
+    evoked_n40 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/spa/brainstem_' + str(subj)+'_n40_01_evoked_cabr_all.fif')
+    p10_spa.append(evoked_p10[0].data)
+    n40_spa.append(evoked_n40[0].data)
+
+for subj in subjects_eng:
+    evoked_p10 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/eng/brainstem_' + str(subj)+'_p10_01_evoked_cabr_all.fif')
+    evoked_n40 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/eng/brainstem_' + str(subj)+'_n40_01_evoked_cabr_all.fif')
+    p10_eng.append(evoked_p10[0].data)
+    n40_eng.append(evoked_n40[0].data)
+
+p10_eng = np.squeeze(np.asarray(p10_eng))
+n40_eng = np.squeeze(np.asarray(n40_eng))
+p10_spa = np.squeeze(np.asarray(p10_spa))
+n40_spa = np.squeeze(np.asarray(n40_spa))
+
+np.save(root_path + 'p10_eng_eeg_ntrall_01.npy',p10_eng)
+np.save(root_path + 'n40_eng_eeg_ntrall_01.npy',n40_eng)
+np.save(root_path + 'p10_spa_eeg_ntrall_01.npy',p10_spa)
+np.save(root_path + 'n40_spa_eeg_ntrall_01.npy',n40_spa)
