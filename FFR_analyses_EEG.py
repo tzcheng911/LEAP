@@ -72,7 +72,7 @@ def ff(input_arr,target):
     return idx
 
 def load_CBS_file(file_type, sound_type, subject_type):
-    ## load and plot the time series of 'p10','n40','p40' for 'audio', 'eeg', 'sensor', 'ROI', 'morph' in "infants" or "adults"
+    ## load and plot the time series of 'p10','n40','p40' for 'audio','misc', 'eeg', 'sensor', 'ROI', 'morph' in "infants" or "adults"
     root_path = '/media/tzcheng/storage2/CBS/'
     fs = 5000
     # map sound names when needed
@@ -83,6 +83,8 @@ def load_CBS_file(file_type, sound_type, subject_type):
     }
     if file_type == 'audio':
         fs, signal = wavfile.read(root_path + '/stimuli/' + sound_type + '.wav')
+    elif file_type == 'misc':
+        fs, signal = np.load(root_path + '/cbsA_meeg_analysis/misc/adult_group_' + sound_type + '_misc_200.npy')
     elif file_type == 'EEG':
         signal = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_' + sound_type + '_ffr_eeg_200.npy')
     elif file_type in ('sensor', 'morph_roi','morph'): ## for the MEG
@@ -247,9 +249,160 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,random_state=None):
     # plt.ylim(-7e-6, 7e-6)
     # plt.title('SVM weights across time')
 
-# def do_SNR:
+def do_SNR(data,times,ts,te,level):
+    ind_noise = np.where(times<ts)
+    ind_signal = np.where(np.logical_and(times>=ts, times<=te)) 
+    if level == 'group':
+        rms_noise_s = np.sqrt(np.mean(data.mean(0)[ind_noise]**2))
+        rms_signal_s = np.sqrt(np.mean(data.mean(0)[ind_signal]**2))
+        SNR = rms_signal_s/rms_noise_s
+    elif level == 'individual':
+        rms_noise_s = []
+        rms_signal_s = []
 
-# def do_xcorr:
+        for s in range(len(data)):
+            rms_noise_s.append(np.sqrt(np.mean(data[s,ind_noise]**2)))
+            rms_signal_s.append(np.sqrt(np.mean(data[s,ind_signal]**2)))
+        SNR = np.array(rms_signal_s)/np.array(rms_noise_s)
+    return SNR
+
+def zscore_and_normalize(x):
+    x = (x - np.mean(x)) / np.std(x)
+    return x / np.linalg.norm(x)
+
+def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te.level,lag_window_ms=(-14, -7)):
+    # Downsample
+    num = int((len(audio)*fs_eeg)/fs_audio)    
+    audio_rs = signal.resample(audio, num, t=None, axis=0, window=None)
+    times_audio = np.linspace(0,len(audio_rs)/fs_eeg,len(audio_rs))
+    times_eeg = np.linspace(-20,200,1101)
+
+    ## p10: noise burst from 0 ms (100th points) ts = 100 # 0.02s (i.e. 0.02s after noise burst) te = 500 # 0.1s
+    ## n40: noise burst from 40 ms (200th points) ts = 200 + 100 # .06s (i.e. 0.02s after noise burst) te = 650 # 0.13s
+    ## p40: noise burst from 0 ms (100th points) ts = 100 # 0.02s te = 650 # 0.13s
+    tslice_audio = slice(ff(times_audio, ts), ff(times_audio, te))
+    tslice_EEG = slice(ff(times_eeg, ts), ff(times_eeg, te))
+
+    stim = audio_rs[tslice_audio]
+    resp = EEG[:,tslice_EEG]
+    lags = signal.correlation_lags(len(stim),resp.shape[1])
+    lags_s = lags/fs_eeg
+
+    lag_min, lag_max = np.array(lag_window_ms)
+    lag_mask = (lags_s >= lag_min) & (lags_s <= lag_max)
+
+    stim_z = zscore_and_normalize(stim)
+
+    ## For grand average: a[n] is lagging behind b[n] by k sample periods
+    if level == 'group':
+        resp_mean = resp.mean(axis=0)
+        resp_z = zscore_and_normalize(resp_mean)
+        xcorr = signal.correlate(stim_z,resp_z,mode='full')
+        xcorr = abs(xcorr)
+        xcorr_win = xcorr[lag_mask]
+        lag_win = lags_s[lag_mask]
+        max_idx = np.argmax(xcorr_win)
+
+        return {
+            "xcorr_max": xcorr_win[max_idx],
+            "xcorr_lag_ms": lag_win[max_idx]
+        }
+    elif level == 'individual':
+        xcorr_max = []
+        xcorr_lag = []
+
+        for subj_resp in resp:
+            resp_z = zscore_and_normalize(subj_resp)
+            xcorr = np.abs(signal.correlate(stim_z, resp_z, mode="full"))
+
+            xcorr_win = xcorr[lag_mask]
+            lag_win = lags_s[lag_mask]
+
+            idx = np.argmax(xcorr_win)
+            xcorr_max.append(xcorr_win[idx])
+            xcorr_lag.append(lag_win[idx])
+
+        return {
+            "xcorr_max": np.array(xcorr_max),
+            "xcorr_lag_ms": np.array(xcorr_lag)
+        }
+
+    else:
+        raise ValueError("level must be 'group' or 'individual'")
+
+def do_autocorr(
+    eeg,
+    fs_eeg,
+    times_eeg,
+    ts,
+    te,
+    level="group",
+    lag_window_ms=(-50, 50)
+):
+    """
+    EEG autocorrelation.
+
+    Parameters
+    ----------
+    eeg : ndarray (n_subjects, n_times)
+    fs_eeg : float
+    times_eeg : ndarray
+    ts, te : float
+    level : {'group', 'individual'}
+    lag_window_ms : tuple
+    """
+
+    # --------------------
+    # Time slice
+    # --------------------
+    tslice = slice(ff(times_eeg, ts), ff(times_eeg, te))
+    resp = eeg[:, tslice]
+
+    n_times = resp.shape[1]
+
+    # --------------------
+    # Lags
+    # --------------------
+    lags = signal.correlation_lags(n_times, n_times)
+    lags_s = lags / fs_eeg
+
+    lag_min, lag_max = np.array(lag_window_ms)
+    lag_mask = (lags_s >= lag_min) & (lags_s <= lag_max)
+
+    # --------------------
+    # Group-level
+    # --------------------
+    if level == "group":
+        resp_mean = resp.mean(axis=0)
+        b = zscore_and_normalize(resp_mean)
+
+        acorr = signal.correlate(b, b, mode="full")
+        acorr = np.abs(acorr)
+
+        return {
+            "autocorr": acorr[lag_mask],
+            "lags_ms": lags_s[lag_mask] * 1000
+        }
+
+    # --------------------
+    # Individual-level
+    # --------------------
+    elif level == "individual":
+        acorr_all = []
+
+        for subj_resp in resp:
+            b = zscore_and_normalize(subj_resp)
+            acorr = signal.correlate(b, b, mode="full")
+            acorr_all.append(np.abs(acorr)[lag_mask])
+
+        return {
+            "autocorr": np.array(acorr_all),  # (subjects × lags)
+            "lags_ms": lags_s[lag_mask] * 1000
+        }
+
+    else:
+        raise ValueError("level must be 'group' or 'individual'")
+
 
 def plot_individuals(data_dict,n_cols,t):
     
@@ -377,7 +530,6 @@ trial_by_trial_decoding_acc = do_brainstem_trial_by_trial_decoding(root_path,n_t
 
 #%%####################################### Subject-by-subject EEG decoding brainstem dataset
 ## Run with one random seed 2
-t = np.linspace(-0.02, 0.2, 1101)
 ts = 0
 te = 90
 ## modify ts, te to do C and V section decoding [0, 40] ba C section
@@ -385,10 +537,10 @@ te = 90
 ## epoch length -20 to 200 ms with sampling rate at 5000 Hz
 ncv = 15
 randseed = 2
-decoding_acc = do_subject_by_subject_decoding([p10_eng, n40_eng], t, ts, te, ncv, randseed)
-decoding_acc = do_subject_by_subject_decoding([p10_spa, n40_spa], t, ts, te, ncv, randseed)
-decoding_acc = do_subject_by_subject_decoding([p10_eng, p10_spa], t, ts, te, ncv, randseed)
-decoding_acc = do_subject_by_subject_decoding([n40_eng, n40_spa], t, ts, te, ncv, randseed)
+decoding_acc = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, ncv, randseed)
+decoding_acc = do_subject_by_subject_decoding([p10_spa, n40_spa], times, ts, te, ncv, randseed)
+decoding_acc = do_subject_by_subject_decoding([p10_eng, p10_spa], times, ts, te, ncv, randseed)
+decoding_acc = do_subject_by_subject_decoding([n40_eng, n40_spa], times, ts, te, ncv, randseed)
 
 #%%# Run with iterative random seeds
 niter = 1000 # see how the random seed affects accuracy
@@ -402,9 +554,9 @@ perm = rng.permutation(len(p10_spa))
 for n_iter in np.arange(0,niter,1):
     print("iter " + str(n_iter))
     ## decode eng vs. spa speakers: keep both n = 15 vs. n1 = 15, n2 = 16 gave very higher than chance results
-    decoding_acc_p10 = do_subject_by_subject_decoding([p10_eng, p10_spa[perm,:][:-1,:]], t, ts, te, ncv, None)
+    decoding_acc_p10 = do_subject_by_subject_decoding([p10_eng, p10_spa[perm,:][:-1,:]], times, ts, te, ncv, None)
     scores_p10.append(np.mean(decoding_acc_p10, axis=0))
-    decoding_acc_n40 = do_subject_by_subject_decoding([n40_eng, n40_spa[perm,:][:-1,:]], t, ts, te, ncv, None)
+    decoding_acc_n40 = do_subject_by_subject_decoding([n40_eng, n40_spa[perm,:][:-1,:]], times, ts, te, ncv, None)
     scores_n40.append(np.mean(decoding_acc_n40, axis=0))
 scores_p10 = np.array(scores_p10)
 scores_n40 = np.array(scores_n40)
@@ -412,97 +564,35 @@ print(f"Accuracy: {np.mean(scores_p10):.3f}")
 print(f"Accuracy: {np.mean(scores_n40):.3f}")
 plot_decoding_histograms(scores_p10,scores_n40,bins=10,chance=0.5,labels=("p10", "n40"),xlim=(0, 1))
 
-#%%####################################### Subject-by-subject EEG decoding CBS dataset
+#%%####################################### Subject-by-subject EEG or misc decoding CBS dataset
 ## change ts and te for C and V section decoding: for ba, 10 ms + 90 ms = 100 ms; for mba and pa, 40 ms + 90 ms = 130 ms
 ## epoch length -20 to 200 ms with sampling rate at 5000 Hz
 ## Use C section to decode mba and pa
 ncv = len(std)
 ####################################### 3-way decoding: ba vs. pa vs. mba
-scores_ba_mba_pa = do_subject_by_subject_decoding([std,dev1,dev2], t, ts, te, ncv, randseed)
+scores_ba_mba_pa = do_subject_by_subject_decoding([std,dev1,dev2], times, ts, te, ncv, randseed)
 
 ####################################### 2-way decoding: ba vs. pa, ba vs. mba, pa vs. mba
-scores_ba_mba = do_subject_by_subject_decoding([std,dev1], t, ts, te, ncv, randseed)
+scores_ba_mba = do_subject_by_subject_decoding([std,dev1], times, ts, te, ncv, randseed)
 score_ba_mba = np.mean(scores_ba_mba, axis=0)
 print("Decoding Accuracy between ba vs. mba: %0.1f%%" % (100 * score_ba_mba,))
 
-scores_ba_pa = do_subject_by_subject_decoding([std,dev2], t, ts, te, ncv, randseed)
+scores_ba_pa = do_subject_by_subject_decoding([std,dev2], times, ts, te, ncv, randseed)
 score_ba_pa = np.mean(scores_ba_mba, axis=0)
 print("Decoding Accuracy between ba vs. pa: %0.1f%%" % (100 * score_ba_pa,))
 
-scores_mba_pa = do_subject_by_subject_decoding([dev1,dev2], t, ts, te, ncv, randseed)
-score_mba_pa = np.mean(scores_mba_pa, axis=0)
-print("Decoding Accuracy between mba vs. pa: %0.1f%%" % (100 * score_mba_pa,))
-
-#%%####################################### decoding acoustic signals from the misc, can add noise
-root_path='/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/misc/'
-ts = ff(times,0) ## very important to set the window not including the final artifacts
-te = ff(times,150) ## very important to set the window not including the final artifacts
-
-std = np.load(root_path + 'adult_group_substd_misc_200.npy')[:,ts:te]
-dev1 = np.load(root_path + 'adult_group_dev1_misc_200.npy')[:,ts:te]
-dev2 = np.load(root_path + 'adult_group_dev2_misc_200.npy')[:,ts:te]
-
-## the codes below are identical to the ones used in eeg
-## classifier
-clf = make_pipeline(
-    StandardScaler(),  # z-score normalization
-    SVC(kernel='rbf',gamma='auto',C=0.1)  
-)
-
-####################################### 3-way decoding: ba vs. pa vs. mba
-y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1)),np.repeat(2,len(dev2))))
-
-## preserve the subject ba, mba, pa relationship but randomize the order across subjects
-rand_ind = np.arange(0,len(std))
-random.Random(2).shuffle(rand_ind)
-X = np.concatenate((std[rand_ind,:],dev1[rand_ind,:],dev2[rand_ind,:]),axis=0)
-
-scores = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
-score = np.mean(scores, axis=0)
-print("Accuracy: %0.1f%%" % (100 * score,))
-
-####################################### 2-way decoding: ba vs. pa, ba vs. mba, pa vs. mba
-y = np.concatenate((np.repeat(0,len(std)),np.repeat(1,len(dev1))))
-rand_ind = np.arange(0,len(std))
-random.Random(2).shuffle(rand_ind)
-X = np.concatenate((std[rand_ind,:],dev1[rand_ind,:]),axis=0)
-
-scores_ba_mba = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
-score_ba_mba = np.mean(scores_ba_mba, axis=0)
-print("Decoding Accuracy between ba vs. mba: %0.1f%%" % (100 * score_ba_mba,))
-
-rand_ind = np.arange(0,len(std))
-random.Random(2).shuffle(rand_ind)
-X = np.concatenate((std[rand_ind,:],dev2[rand_ind,:]),axis=0)
-
-scores_ba_pa = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
-score_ba_pa = np.mean(scores_ba_pa, axis=0)
-print("Decoding Accuracy between ba vs. pa: %0.1f%%" % (100 * score_ba_pa,))
-
-rand_ind = np.arange(0,len(std))
-random.Random(2).shuffle(rand_ind)
-X = np.concatenate((dev1[rand_ind,:],dev2[rand_ind,:]),axis=0)
-
-scores_mba_pa = cross_val_multiscore(clf, X, y, cv=18, n_jobs=None) # takes about 10 mins to run
+scores_mba_pa = do_subject_by_subject_decoding([dev1,dev2], times, ts, te, ncv, randseed)
 score_mba_pa = np.mean(scores_mba_pa, axis=0)
 print("Decoding Accuracy between mba vs. pa: %0.1f%%" % (100 * score_mba_pa,))
 
 #%%####################################### Spectrum analysis
-tmin = 0
-tmax = 0.13
 fmin = 50
 fmax = 150
 
-subject = 'fsaverage'
-src = mne.read_source_spaces(subjects_dir + subject + '/bem/fsaverage-vol-5-src.fif')
-fname_aseg = subjects_dir + subject + '/mri/aparc+aseg.mgz'
-label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-
-## For audio
-audio = pa_audio
+signal = std.mean(0) # CBS: std, dev1, dev2 (EEG, audio, misc); brainstem: p10_eng, p10_spa, n40_eng, n40_spa (EEG)
 psds, freqs = mne.time_frequency.psd_array_welch(
-    audio,fs, # could replace with label time series
-    n_fft=len(audio),
+    signal,fs, # could replace with label time series
+    n_fft=len(signal),
     n_overlap=0,
     n_per_seg=None,
     fmin=fmin,
@@ -512,255 +602,22 @@ plt.title('pa audio spectrum')
 plt.plot(freqs,psds)
 plt.xlim([60, 140])
 
-## For each individual
-# MEG
-epochs = mne.read_epochs(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_cABR_e.fif')
-evoked = mne.read_evokeds(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
-sfreq = epochs.info["sfreq"]
-
-evoked.compute_psd("welch",
-   n_fft=int(sfreq * (tmax - tmin)),
-   n_overlap=0,
-   n_per_seg=None,
-   tmin=tmin,
-   tmax=tmax,
-   fmin=fmin,
-   fmax=fmax,
-   window="boxcar",
-   verbose=False,).plot(average=False,picks="data", exclude="bads")
-
-# EEG
-EEG = EEG_pa_FFR
-psds, freqs = mne.time_frequency.psd_array_welch(
-    EEG,sfreq, # could replace with label time series
-    n_fft=len(EEG[1,:]),
-    n_overlap=0,
-    n_per_seg=None,
-    fmin=fmin,
-    fmax=fmax,)
-plt.figure()
-plt.title('ba spectrum')
-plot_err(psds,'k',freqs)
-plt.xlim([60, 140])
-
-## For group results
-# EEG
-psds, freqs = mne.time_frequency.psd_array_welch(
-    EEG_ba_FFR.mean(0),sfreq, # could replace with label time series
-    n_fft=int(sfreq * (tmax - tmin)),
-    n_overlap=0,
-    n_per_seg=None,
-    fmin=fmin,
-    fmax=fmax,)
-plt.figure()
-plt.plot(freqs,psds)
-
-# MEG sensor
-psds, freqs = mne.time_frequency.psd_array_welch(
-    MEG_ba_FFR.mean(0),sfreq, # could replace with label time series
-    n_fft=int(sfreq * (tmax - tmin)),
-    n_overlap=0,
-    n_per_seg=None,
-    fmin=fmin,
-    fmax=fmax,)
-evoked.data = MEG_ba_FFR.mean(0)
-evk_spectrum = evoked.compute_psd("welch",
-   n_fft=int(sfreq * (tmax - tmin)),
-   n_overlap=0,
-   n_per_seg=None,
-   tmin=tmin,
-   tmax=tmax,
-   fmin=fmin,
-   fmax=fmax,
-   window="boxcar",
-   verbose=False,)
-
-evk_spectrum.plot_topo(color="k", fig_facecolor="w", axis_facecolor="w")
-
-# MEG sensor PCA
-psds, freqs = mne.time_frequency.psd_array_welch(
-    pca_data.transpose(),sfreq, # could replace with label time series
-    n_fft=int(sfreq * (tmax - tmin)),
-    n_overlap=0,
-    n_per_seg=None,
-    fmin=fmin,
-    fmax=fmax,)
-
-# MEG source
-psds, freqs = mne.time_frequency.psd_array_welch(
-    MEG_pa_FFR.mean(0)[43],sfreq, # could replace with label time series
-    n_fft=np.shape(MEG_pa_FFR)[2],
-    n_overlap=0,
-    n_per_seg=None,
-    fmin=fmin,
-    fmax=fmax,)
-        
-plt.figure()
-plt.plot(freqs,psds.transpose())
-
-#%%####################################### SNR analysis
-EEG = EEG_pa_FFR
-ind_noise = np.where(times<0)
-ind_signal = np.where(np.logical_and(times>=0, times<=0.13)) # 0.1 for ba and 0.13 for mba and pa
-
-## Group
-rms_noise_s = np.sqrt(np.mean(EEG.mean(0)[ind_noise]**2))
-rms_signal_s = np.sqrt(np.mean(EEG.mean(0)[ind_signal]**2))
-SNR = rms_signal_s/rms_noise_s
-
-## Individual
-rms_noise_s = []
-rms_signal_s = []
-
-for s in range(len(EEG_pa_FFR)):
-    rms_noise_s.append(np.sqrt(np.mean(EEG[s,ind_noise]**2)))
-    rms_signal_s.append(np.sqrt(np.mean(EEG[s,ind_signal]**2)))
-SNR = np.array(rms_signal_s)/np.array(rms_noise_s)
-print('SNR: ' + str(np.array(SNR).mean()) + '(' + str(np.array(SNR).std()/np.sqrt(len(EEG_pa_FFR))) +')')
-
-#%%####################################### xcorr analysis
-root_path='/home/tzcheng/Documents/GitHub/Paper0_Paradigm/'
-
-## Load FFR from 0
-std = np.load(root_path + 'group_std_ffr_eeg_200.npy')[:,100:]
-dev1 = np.load(root_path + 'group_dev1_ffr_eeg_200.npy')[:,100:]
-dev2 = np.load(root_path + 'group_dev2_ffr_eeg_200.npy')[:,100:]
-
-## second run
-std = np.load(root_path + 'group_02_std_ffr_eeg_150.npy')[:,100:] # use 150 or all trials
-dev1 = np.load(root_path + 'group_02_dev1_ffr_eeg_150.npy')[:,100:]
-dev2 = np.load(root_path + 'group_02_dev2_ffr_eeg_150.npy')[:,100:]
-
-# plt.figure()
-# plt.plot(np.linspace(0,0.13,650),dev2_audio_r)
-
-## Load real audio
-fs, std_audio = wavfile.read(root_path + '+10.wav')
-fs, dev1_audio = wavfile.read(root_path + '-40.wav')
-fs, dev2_audio = wavfile.read(root_path + '+40.wav')
-# Downsample
-fs_new = 5000
-num_std = int((len(std_audio)*fs_new)/fs)
-num_dev = int((len(dev2_audio)*fs_new)/fs)  # #sample_new/fs_new=#sample/fs find number of samples in the resampled data
-            
-std_audio = signal.resample(std_audio, num_std, t=None, axis=0, window=None)
-dev1_audio = signal.resample(dev1_audio, num_dev, t=None, axis=0, window=None)
-dev2_audio = signal.resample(dev2_audio, num_dev, t=None, axis=0, window=None)
-
-## Change audio0 and EEG0 to corresponding std, dev1, dev2
-# Run the corresponding code section below
-audio0 = std_audio
-EEG0 = std
-times0_audio = np.linspace(0,len(audio0)/fs_new,len(audio0))
-times0_eeg = np.linspace(0,len(EEG0[0])/fs_new,len(EEG0[0]))
-
-## std: noise burst from 0 ms 
-ts = 100 # 0.02s (i.e. 0.02s after noise burst)
-te = 500 # 0.1s
-audio = audio0[ts:te] # try 0.02 to 0.1 s for std
-EEG = EEG0[:,ts:te]
-times_audio = times0_audio[ts:te]
-times_eeg = times0_eeg[ts:te]
-lags = signal.correlation_lags(len(audio),len(EEG[0]))
-lags_s = lags/fs_new
-
-## dev 1: noise burst from 40 ms (200th points)
-ts = 200 + 100 # .06s (i.e. 0.02s after noise burst)
-te = 650 # 0.13s
-audio = audio0[ts:te] # try 0.042 to 0.13 s for dev2
-EEG = EEG0[:,ts:te]
-times_audio = times0_audio[ts:te]
-times_eeg = times0_eeg[ts:te]
-lags = signal.correlation_lags(len(audio),len(EEG[0]))
-lags_s = lags/fs_new
-
-## dev 2: noise burst from 0 ms (100th points)
-ts = 100 # 0.02s
-te = 650 # 0.13s
-audio = audio0[ts:te] # try 0.02 to 0.13 s for dev2
-EEG = EEG0[:,ts:te]
-times_audio = times0_audio[ts:te]
-times_eeg = times0_eeg[ts:te]
-lags = signal.correlation_lags(len(audio),len(EEG[0]))
-lags_s = lags/fs_new
-
-## select the lag window to be between 7 to 14 ms
-lag_window = [-0.007,-0.014]
-lag_window_ind = np.where((lags_s<=lag_window[0]) & (lags_s>=lag_window[1]))
-
-a = (audio - np.mean(audio))/np.std(audio)
-a = a / np.linalg.norm(a)
-
-## For grand average: a[n] is lagging behind b[n] by k sample periods
-b = (EEG.mean(axis=0) - np.mean(EEG.mean(axis=0)))/np.std(EEG.mean(axis=0))
-b = b / np.linalg.norm(b)
-xcorr = signal.correlate(a,b,mode='full')
-xcorr = abs(xcorr)
-# xcorr_max = max(xcorr)
-# xcorr_maxlag = np.argmax(xcorr)
-# print("max lag: ", str(lags_s[xcorr_maxlag]*1000))
-
-xcorr_max = max(xcorr[lag_window_ind]) # only select the xcorr from the time window shift
-xcorr_maxlag = np.argmax(xcorr[lag_window_ind])
-print("max lag: ", str(lags_s[lag_window_ind][xcorr_maxlag]*1000)) # only select the xcorr from the time window shift
-print("max xcorr: ", str(xcorr_max))
-
-## For each individual
-xcorr_all_s = []
-xcorr_lag_all_s = []
-
-for s in np.arange(0,len(std),1):
-    b = (EEG[s,:] - np.mean(EEG[s,:]))/np.std(EEG[s,:])
-    
-    ## the way matlab do xcorr normalization: the max is 1 if do a zero lag autocorrealtoin
-    b = b / np.linalg.norm(b)
-
-    xcorr = signal.correlate(a,b,mode='full')
-    xcorr = abs(xcorr)
-    xcorr_all_s.append(np.max(xcorr[lag_window_ind]))
-    xcorr_lag_all_s.append(np.argmax(xcorr[lag_window_ind]))
-    # xcorr_all_s.append(np.max(xcorr))
-    # xcorr_lag_all_s.append(np.argmax(xcorr))
-
-# print('abs xcorr between FFR & audio: ' + str(np.array(xcorr_all_s).mean()) + '(' + str(np.array(xcorr_all_s).std()/np.sqrt(len(std))) +')')
-# print('abs xcorr lag between FFR & audio (ms): ' + str(np.array(lags_s[xcorr_lag_all_s]*1000).mean())+ '(' + str(np.array(lags_s[xcorr_lag_all_s]*1000).std()/np.sqrt(len(std))) +')')
-# arr = np.array(xcorr_all_s)
-# rounded_arr = np.around(arr, decimals=3)
-# print(rounded_arr)
-# print(lags_s[xcorr_lag_all_s]*1000)
-
-print('abs xcorr between FFR & audio: ' + str(np.array(xcorr_all_s).mean()) + '(' + str(np.array(xcorr_all_s).std()/np.sqrt(len(std))) +')')
-print('abs xcorr lag between FFR & audio (ms): ' + str(np.array(lags_s[lag_window_ind][xcorr_lag_all_s]*1000).mean())+ '(' + str(np.array(lags_s[lag_window_ind][xcorr_lag_all_s]*1000).std()/np.sqrt(len(std))) +')')
-arr = np.array(xcorr_all_s)
-rounded_arr = np.around(arr, decimals=3)
-print(rounded_arr)
-print(lags_s[lag_window_ind][xcorr_lag_all_s]*1000)
-
-#%%####################################### spectrogram analysis
+#%%####################################### Spectrogram analysis
 import librosa
 import librosa.display
 
-x = n40_eng.mean(0)
-x = x.astype(np.float32)
-x = x/np.max(np.abs(x))
-
-fs = 5000
+signal = n40_eng.mean(0)
+signal = signal.astype(np.float32)
+signal = signal/np.max(np.abs(signal))
 
 nfft = 128
 S = librosa.stft(
-    x,
+    signal,
     n_fft = nfft,
     hop_length = nfft//16,
     win_length = nfft,
     window = 'hann')
 S_db = librosa.amplitude_to_db(np.abs(S),ref=np.max)
-
-## Plot the waveform
-fig, ax = plt.subplots(figsize=(10, 4))
-librosa.display.waveshow(x,sr=fs,ax=ax, color = 'purple')
-ax.set(title='Audio Waveform (Time Series)')
-ax.set_xlabel("Time")
-ax.set_ylabel("Amplitude")
 
 ## Plot the spectrogram
 fig, ax = plt.subplots(figsize=(10, 4))
@@ -773,41 +630,28 @@ im = librosa.display.specshow(
     cmap='magma',
     ax=ax,
     vmin=-20,
-    vmax=0
-    
+    vmax=0   
 )
 ax.set_title('Spectrogram')
 ax.set_ylim([0,800])
 fig.colorbar(im, ax=ax, format="%+2.0f dB")
 plt.show()
 
+#%%####################################### SNR analysis
+data = p10_eng
+ts = 0
+te = 130 # 100 for ba and 130 for mba and pa
+level = 'individual' # 'group' (mean first then SNR) or 'individual' (SNR on individual level then mean)
+SNR = do_SNR(data,time,ts,te,level)
+print('SNR: ' + str(np.array(SNR).mean()) + '(' + str(np.array(SNR).std()/np.sqrt(len(EEG_pa_FFR))) +')')
 
-#%%####################################### visualize the data to examine
-plt.figure()
-plt.title('p10 response')
-plt.plot(np.linspace(-0.02,0.2,1101),p10_eng.mean(0))
-plt.plot(np.linspace(-0.02,0.2,1101),p10_spa.mean(0))
-plt.xlim(-0.02,0.2)
-plt.ylim(-5e-7, 5e-7)
-plt.legend(['Eng','Spa'])
+#%%####################################### xcorr analysis
+level = 'group'
+fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
+fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
+fs_eeg, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
+xcorr_max, xcorr_lag_ms = do_xcorr(p10_audio,p10_eng,fs_audio,fs_eeg,ts,te.level,lag_window_ms=(-14, -7)):
 
-plt.figure()
-plt.title('English vs. Spanish speakers differential p10 response')
-plt.plot(np.linspace(-0.02,0.2,1101),p10_eng.mean(0)-p10_spa.mean(0))
-plt.xlim(-0.02,0.2)
-plt.ylim(-5e-7, 5e-7)
-
-plt.figure()
-plt.title('n40 response')
-plt.plot(np.linspace(-0.02,0.2,1101),n40_eng.mean(0))
-plt.plot(np.linspace(-0.02,0.2,1101),n40_spa.mean(0))
-plt.xlim(-0.02,0.2)
-plt.ylim(-5e-7, 5e-7)
-plt.legend(['Eng','Spa'])
-
-plt.figure()
-plt.title('English vs. Spanish speakers differential n40 response')
-plt.plot(np.linspace(-0.02,0.2,1101),n40_eng.mean(0)-n40_spa.mean(0))
-plt.xlim(-0.02,0.2)
-plt.ylim(-5e-7, 5e-7)
-
+#%%####################################### autocorr analysis
+level = 'group'
+autocorr, lags_ms = eeg_autocorr(p10_eng, fs_eeg, times, ts, te, level)
