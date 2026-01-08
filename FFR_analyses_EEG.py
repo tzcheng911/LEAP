@@ -21,8 +21,11 @@ Level
 #%%####################################### Import library  
 import mne
 import os
+import math
+import matplotlib.pyplot as plt
 from scipy import stats,signal
 from scipy.io import savemat, loadmat
+import numpy as np
 from numpy import dot
 from numpy.linalg import norm
 from scipy.stats import pearsonr
@@ -185,8 +188,7 @@ def do_brainstem_trial_by_trial_decoding(root_path,n_trials,decoding_type):
     all_score_svm.append(score)
     return all_score_svm
     
-def do_subject_by_subject_decoding:
-    if 
+def do_subject_by_subject_decoding(ts,te,niter):
     ## decode eng vs. spa speakers: keep both n = 15
     all_scores_p10 = []
     all_scores_n40 = []
@@ -245,37 +247,6 @@ def do_subject_by_subject_decoding:
     score_spa = np.mean(scores_spa, axis=0)
     print("Decoding Accuracy between ba vs. mba in Spanish speakers: %0.1f%%" % (100 * score_spa))
 
-    # ## plot the data to examine
-    plt.figure()
-    plt.title('English speakers')
-    plt.plot(np.linspace(-0.02,0.2,1101),p10_eng.mean(0))
-    plt.plot(np.linspace(-0.02,0.2,1101),n40_eng.mean(0))
-    plt.xlim(-0.02,0.2)
-    plt.ylim(-5e-7, 5e-7)
-    plt.legend(['p10','n40'])
-
-    plt.figure()
-    plt.title('English speakers differential response b/t p10 and n40')
-    plt.plot(np.linspace(-0.02,0.2,1101),p10_eng.mean(0)-n40_eng.mean(0))
-    plt.xlim(-0.02,0.2)
-    plt.legend(['p10','n40'])
-    plt.ylim(-5e-7, 5e-7)
-
-    plt.figure()
-    plt.title('Spanish speakers')
-    plt.plot(np.linspace(-0.02,0.2,1101),p10_spa.mean(0))
-    plt.plot(np.linspace(-0.02,0.2,1101),n40_spa.mean(0))
-    plt.xlim(-0.02,0.2)
-    plt.ylim(-5e-7, 5e-7)
-    plt.legend(['p10','n40'])
-
-    plt.figure()
-    plt.title('Spanish speakers differential response b/t p10 and n40')
-    plt.plot(np.linspace(-0.02,0.2,1101),p10_spa.mean(0)-n40_spa.mean(0))
-    plt.xlim(-0.02,0.2)
-    plt.legend(['p10','n40'])
-    plt.ylim(-5e-7, 5e-7)
-
     ## see the weights 
     from sklearn.model_selection import StratifiedKFold
     cv = StratifiedKFold(n_splits=ncv, shuffle=False)
@@ -306,7 +277,61 @@ def do_SNR:
 
 def do_xcorr:
 
+def plot_individuals(data_dict,n_cols,t):
+    
+    """
+    data_dict = {
+        'subj1': y1,
+        'subj2': y2,
+        ...
+    }
+    """
+    n_subj = len(data_dict)
+    n_rows = math.ceil(n_subj / n_cols)
 
+    fig, axes = plt.subplots(
+        n_rows, n_cols,
+        figsize=(4 * n_cols, 3 * n_rows),
+        sharex=True, sharey=True
+    )
+
+    axes = axes.flatten()
+
+    for ax, (subj, y) in zip(axes, data_dict.items()):
+        ax.plot(t,y)
+        ax.set_title(subj)
+
+    # remove empty subplots
+    for ax in axes[len(data_dict):]:
+        ax.axis('off')
+
+    plt.tight_layout()
+    plt.show()
+
+def plot_group_ffr(p10, n40, group_name,
+                   time,
+                   ylim=(-5e-7, 5e-7),
+                   n_times=1101):
+    """
+    Plot mean FFR responses and differential response for one group.
+    """
+    
+    # Mean responses
+    plt.figure()
+    plt.title(f'{group_name} speakers')
+    plt.plot(t, p10.mean(0), label='p10')
+    plt.plot(t, n40.mean(0), label='n40')
+    plt.xlim(tmin, tmax)
+    plt.ylim(*ylim)
+    plt.legend()
+
+    # Differential response
+    plt.figure()
+    plt.title(f'{group_name} speakers differential response (p10 − n40)')
+    plt.plot(t, p10.mean(0) - n40.mean(0))
+    plt.xlim(tmin, tmax)
+    plt.ylim(*ylim)
+    
 #%%####################################### Set path
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
@@ -314,6 +339,31 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_pa_cabr_morph-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 times = np.linspace(-20,200,1101)
+
+#%%####################################### load the data
+file_type = 'EEG'
+ntrial = '200'
+fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
+    
+#%%####################################### visualize the data to examine
+## plot individual FFRs
+subjects_eng=['104','106','107','108','110','111','112','113','118','121','123','124','126','129','133']
+subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225','226'] ## 202 event code has some issues
+t = np.linspace(-0.02, 0.2, 1101)
+
+subjects_eng_dict = dict(zip(subjects_eng, p10_eng))
+subjects_spa_dict = dict(zip(subjects_spa, p10_spa))
+n_cols = 3
+plot_individuals(subjects_eng_dict,n_cols,t)
+plot_individuals(subjects_spa_dict,n_cols,t)
+
+## plot average FFRs between p10 vs. n40
+plot_group_ffr(p10_eng, n40_eng, 'English', t)
+plot_group_ffr(p10_spa, n40_spa, 'Spanish', t)
+
+## plot average FFRs between spa and eng
+plot_group_ffr(p10_eng, p10_spa, 'p10')
+plot_group_ffr(n40_eng, n40_spa, 'n40')
 
 #%%####################################### Trial-by-trial EEG decoding for each individual
 root_path='/media/tzcheng/storage2/CBS/'
@@ -325,10 +375,6 @@ trial_by_tria_decoding_acc = do_subject_by_subject_decoding(root_path,n_trials=1
 
 
 #%%####################################### decoding for single channel EEG brainstem
-file_type = 'EEG'
-ntrial = 'all'
-fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial):
-
 ## classifier
 clf = make_pipeline(
     StandardScaler(),  # z-score normalization
