@@ -10,11 +10,6 @@ Analysis
 3. PCA
 4. spectrum
 
-Level
-1. sensor
-2. ROI 
-3. vertices
-
 @author: tzcheng
 """
 
@@ -188,90 +183,60 @@ def do_brainstem_trial_by_trial_decoding(root_path,n_trials,decoding_type):
     all_score_svm.append(score)
     return all_score_svm
     
-def do_subject_by_subject_decoding(ts,te,niter):
-    ## decode eng vs. spa speakers: keep both n = 15
-    all_scores_p10 = []
-    all_scores_n40 = []
-    ncv = len(p10_eng)
-    y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(p10_eng))))
-    niter = 1000 # see how the random seed affects accuracy
-    for n_iter in np.arange(0,niter,1):
-        rand_ind_spa = np.arange(0,len(p10_spa))
-        random.shuffle(rand_ind_spa)
-        rand_ind_eng = np.arange(0,len(p10_eng))
-        random.shuffle(rand_ind_eng)
-        X_p10 = np.concatenate((p10_eng[rand_ind_eng,ff(times,0):ff(times,40)],p10_spa[rand_ind_spa[:-1],ff(times,0):ff(times,40)]),axis=0)
-        X_n40 = np.concatenate((n40_eng[rand_ind_eng,ff(times,0):ff(times,55)],n40_spa[rand_ind_spa[:-1],ff(times,0):ff(times,55)]),axis=0)
-        scores_p10  = cross_val_multiscore(clf, X_p10 , y, cv=ncv, n_jobs=None)
-        scores_n40 = cross_val_multiscore(clf, X_n40, y, cv=ncv, n_jobs=None)
-        all_scores_p10.append(np.mean(scores_p10, axis=0))
-        all_scores_n40.append(np.mean(scores_n40, axis=0))
-        print("iter " + str(n_iter) + " p10 Decoding Accuracy between English and Spanish speakers: %0.1f%%" % (100 * np.mean(scores_p10, axis=0)))
-        print("iter " + str(n_iter) + " n40 Decoding Accuracy between English and Spanish speakers: %0.1f%%" % (100 * np.mean(scores_n40, axis=0)))
-    all_scores_p10 = np.array(all_scores_p10)
-    all_scores_n40 = np.array(all_scores_n40)
-
-    fig, ax = plt.subplots(1)
-    plt.hist(all_scores_p10,bins=10, alpha=0.6)
-    plt.hist(all_scores_n40,bins=10, alpha=0.6)
-    plt.ylabel('Count',fontsize=20)
-    plt.xlabel('Accuracy',fontsize=20)
-    plt.xlim(0,1)
-    plt.legend(['p10','n40'])
-    ax.axvline(0.5, color="grey",linestyle='--')
-    ax.axvline(np.mean(all_scores_p10), color="skyblue",linewidth=2)
-    ax.axvline(np.mean(all_scores_n40), color="orange",linewidth=2)
-
-    print('p10 Accuracy: ' + str(np.mean(all_scores_p10)))
-    print('n40 Accuracy: ' + str(np.mean(all_scores_n40)))
+def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,random_state=None):
+    """
+    X_list : list of ndarrays
+        One array per condition/category
+    """
+    ## classifier
+    clf = make_pipeline(
+        StandardScaler(),  # z-score normalization
+        SVC(kernel='rbf',gamma='auto',C=0.1)  
+        # SVC(kernel='linear', C=1)
+    )
+    tslice = slice(ff(times, ts), ff(times, te))
+    X = []
+    y = []
+    for label, Xi in enumerate(X_list):
+        X.append(Xi[:, tslice])
+        y.append(np.full(len(Xi), label))
     
-    ## decode eng vs. spa speakers: keep both n = 15
-    ncv = len(p10_eng)
-    y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(n40_eng))))
-    rand_ind = np.arange(0,len(p10_eng))
-    random.Random(2).shuffle(rand_ind)
-    X = np.concatenate((p10_eng[rand_ind,:],n40_eng[rand_ind,:]),axis=0)
-
-    scores_eng = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
-    score_eng = np.mean(scores_eng, axis=0)
-    print("Decoding Accuracy between ba vs. mba in English speakers: %0.1f%%" % (100 * score_eng))
-
-    ## decode spanish speaker
-    ncv = len(p10_spa)
-    y = np.concatenate((np.repeat(0,len(p10_spa)),np.repeat(1,len(n40_spa))))
-    rand_ind = np.arange(0,len(p10_spa))
-    random.Random(2).shuffle(rand_ind)
-    X = np.concatenate((p10_spa[rand_ind,:],n40_spa[rand_ind,:]),axis=0)
-
-    scores_spa = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
-    score_spa = np.mean(scores_spa, axis=0)
-    print("Decoding Accuracy between ba vs. mba in Spanish speakers: %0.1f%%" % (100 * score_spa))
+    X = np.concatenate(X, axis=0)
+    y = np.concatenate(y)
+    rng = np.random.default_rng(random_state)
+    perm = rng.permutation(len(y))
+    X = X[perm]
+    y = y[perm]
+    scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
+    score = np.mean(scores, axis=0)
+    print("Decoding Accuracy %0.1f%%" % (100 * score))
+    return scores
 
     ## see the weights 
-    from sklearn.model_selection import StratifiedKFold
-    cv = StratifiedKFold(n_splits=ncv, shuffle=False)
+    # from sklearn.model_selection import StratifiedKFold
+    # cv = StratifiedKFold(n_splits=ncv, shuffle=False)
 
-    weights = []
-    scores = []
+    # weights = []
+    # scores = []
 
-    for train_idx, test_idx in cv.split(X, y):
-        scaler = StandardScaler()
-        X_train = scaler.fit_transform(X[train_idx])
-        X_test  = scaler.transform(X[test_idx])
+    # for train_idx, test_idx in cv.split(X, y):
+    #     scaler = StandardScaler()
+    #     X_train = scaler.fit_transform(X[train_idx])
+    #     X_test  = scaler.transform(X[test_idx])
         
-        clf = SVC(kernel='linear', C=1)
-        clf.fit(X[train_idx], y[train_idx])
+    #     clf = SVC(kernel='linear', C=1)
+    #     clf.fit(X[train_idx], y[train_idx])
 
-        scores.append(clf.score(X[test_idx], y[test_idx]))
-        weights.append(clf.coef_.squeeze())
+    #     scores.append(clf.score(X[test_idx], y[test_idx]))
+    #     weights.append(clf.coef_.squeeze())
 
 
-    weights = np.array(weights)   # shape: (n_folds, n_timepoints)
-    plt.figure()
-    plt.plot(np.linspace(-0.02,0.2,1101),np.mean(weights,axis=0))
-    plt.xlim(-0.02,0.2)
-    plt.ylim(-7e-6, 7e-6)
-    plt.title('SVM weights across time')
+    # weights = np.array(weights)   # shape: (n_folds, n_timepoints)
+    # plt.figure()
+    # plt.plot(np.linspace(-0.02,0.2,1101),np.mean(weights,axis=0))
+    # plt.xlim(-0.02,0.2)
+    # plt.ylim(-7e-6, 7e-6)
+    # plt.title('SVM weights across time')
 
 def do_SNR:
 
@@ -331,7 +296,33 @@ def plot_group_ffr(p10, n40, group_name,
     plt.plot(t, p10.mean(0) - n40.mean(0))
     plt.xlim(tmin, tmax)
     plt.ylim(*ylim)
+
+def plot_decoding_histograms(scores_p10,
+    scores_n40,
+    bins=10,
+    chance=0.5,
+    labels=("p10", "n40"),
+    xlim=(0, 1)):
     
+    fig, ax = plt.subplots(1)
+
+    ax.hist(scores_p10, bins=bins, alpha=0.6)
+    ax.hist(scores_n40, bins=bins, alpha=0.6)
+
+    ax.set_ylabel("Count", fontsize=20)
+    ax.set_xlabel("Accuracy", fontsize=20)
+    ax.set_xlim(*xlim)
+
+    ax.legend(labels)
+
+    # chance line
+    ax.axvline(chance, color="grey", linestyle="--")
+
+    # mean lines
+    ax.axvline(np.mean(scores_p10), color="skyblue", linewidth=2)
+    ax.axvline(np.mean(scores_n40), color="orange", linewidth=2)
+    return fig, ax
+
 #%%####################################### Set path
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
@@ -365,7 +356,7 @@ plot_group_ffr(p10_spa, n40_spa, 'Spanish', t)
 plot_group_ffr(p10_eng, p10_spa, 'p10')
 plot_group_ffr(n40_eng, n40_spa, 'n40')
 
-#%%####################################### Trial-by-trial EEG decoding for each individual
+#%%####################################### Trial-by-trial EEG decoding for each individual of brainstem dataset
 root_path='/media/tzcheng/storage2/CBS/'
 trial_by_tria_decoding_acc = do_CBS_trial_by_trial_decoding(root_path,n_trials=200)
 
@@ -373,44 +364,37 @@ root_path= '/media/tzcheng/storage/Brainstem/EEG/'
 comparison = 'Eng/Spa' ## 'Eng/Spa' or 'p10/n40'
 trial_by_tria_decoding_acc = do_subject_by_subject_decoding(root_path,n_trials=1000,comparison)
 
-
-#%%####################################### decoding for single channel EEG brainstem
-## classifier
-clf = make_pipeline(
-    StandardScaler(),  # z-score normalization
-    SVC(kernel='rbf',gamma='auto',C=0.1)  
-    # SVC(kernel='linear', C=1)
-)
-
-# do_subject_by_subject_decoding(spa vs. eng in p10 and n40, all section, C and V)
-# do_subject_by_subject_decoding(n40 vs. p10 in spa and eng)
-
-#%%###################################### C and V section decoding: for ba, 10 ms + 90 ms = 100 ms; for mba, 40 ms + 90 ms = 130 ms
+#%%####################################### Subject-by-subject EEG decoding brainstem dataset
+## Run with one random seed 2
+t = np.linspace(-0.02, 0.2, 1101)
+ts = 0
+te = 90
+## modify ts, te to do C and V section decoding [0, 40] ba C section
+## for ba, 10 ms + 90 ms = 100 ms; for mba, 40 ms + 90 ms = 130 ms
 ## epoch length -20 to 200 ms with sampling rate at 5000 Hz
-## Use C section to decode mba and ba
-## decode english speaker
-ncv = len(p10_eng)
-y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(n40_eng))))
-rand_ind = np.arange(0,len(p10_eng))
-random.Random(2).shuffle(rand_ind)
-X = np.concatenate((p10_eng[rand_ind,ff(times,0):ff(times,50)],n40_eng[rand_ind,ff(times,0):ff(times,50)]),axis=0) # C section
+ncv = 15
+randseed = 2
+decoding_acc = do_subject_by_subject_decoding(p10_eng, n40_eng, t, ts, te, ncv, randseed)
 
-scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None) # takes about 10 mins to run
-score = np.mean(scores, axis=0)
-print("Decoding Accuracy between ba vs. mba consonant 0-50 ms in English speakers: %0.1f%%" % (100 * score,))
-
-## decode spanish speaker
-ncv = len(p10_spa)
-y = np.concatenate((np.repeat(0,len(p10_spa)),np.repeat(1,len(n40_spa))))
-rand_ind = np.arange(0,len(p10_spa))
-random.Random(2).shuffle(rand_ind)
-X = np.concatenate((p10_spa[rand_ind,ff(times,0):ff(times,50)],n40_spa[rand_ind,ff(times,0):ff(times,50)]),axis=0) # C section
-
-scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None) # takes about 10 mins to run
-score = np.mean(scores, axis=0)
-print("Decoding Accuracy between ba vs. mba consonant 0-50 ms in Spanish speakers: %0.1f%%" % (100 * score,))
+## Run with iterative random seeds
+niter = 1000 # see how the random seed affects accuracy
+scores_p10 = []
+scores_n40 = []
+for n_iter in np.arange(0,niter,1):
+    ## decode eng vs. spa speakers: keep both n = 15
+    decoding_acc_p10 = do_subject_by_subject_decoding(p10_eng, p10_spa, t, ts, te, ncv, randseed=None)
+    scores_p10.append(np.mean(decoding_acc_p10, axis=0))
+    decoding_acc_n40 = do_subject_by_subject_decoding(n40_eng, n40_spa, t, ts, te, ncv, randseed=None)
+    scores_n40.append(np.mean(decoding_acc_n40, axis=0))
+    print("iter " + str(n_iter) + " Decoding Accuracy: %0.1f%%" % (100 * np.mean(all_scores, axis=0)))
+scores_p10 = np.array(scores_p10)
+scores_n40 = np.array(scores_n40)
+print(f"Accuracy: {np.mean(scores_p10):.3f}")
+print(f"Accuracy: {np.mean(scores_n40):.3f}")
+plot_decoding_histograms(scores_p10,scores_n40,bins=10,chance=0.5,labels=("p10", "n40"),xlim=(0, 1))
 
 #%%####################################### decoding for single channel EEG CBS
+## write the decoding code not as x1, x2, ... but as X list to be more versatile 
 root_path='/home/tzcheng/Documents/GitHub/Paper0_Paradigm/'
 ## first run
 std = np.load(root_path + 'group_std_ffr_eeg_200.npy')
