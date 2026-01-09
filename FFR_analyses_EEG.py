@@ -18,36 +18,16 @@ import mne
 import os
 import math
 import matplotlib.pyplot as plt
-from scipy import stats,signal
-from scipy.io import savemat, loadmat
+from scipy.signal import butter, filtfilt, hilbert
+from scipy.io import savemat
 import numpy as np
-from numpy import dot
-from numpy.linalg import norm
-from scipy.stats import pearsonr
-import scipy as sp
-import pandas as pd
-import scipy.stats as stats
 from scipy.io import wavfile
 import time
-import copy
 from mne.decoding import (
-    SlidingEstimator,
-    GeneralizingEstimator,
-    Scaler,
     cross_val_multiscore,
-    LinearModel,
-    get_coef,
-    Vectorizer,
-    CSP,
 )
-
-from sklearn.decomposition import PCA, FastICA
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.model_selection import StratifiedKFold, LeaveOneOut
-from sklearn.feature_selection import SelectKBest, f_classif
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 import random
 
@@ -248,6 +228,59 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,random_state=None):
     # plt.xlim(-0.02,0.2)
     # plt.ylim(-7e-6, 7e-6)
     # plt.title('SVM weights across time')
+
+def bandpass_filter(data, fs, fmin, fmax, order=4):
+    nyq = fs / 2
+    b, a = butter(
+        order,
+        [fmin / nyq, fmax / nyq],
+        btype="band"
+    )
+    return filtfilt(b, a, data, axis=-1)
+
+def itpc_hilbert(
+    data,
+    fs,
+    fmin,
+    fmax,
+    axis=0
+):
+    """
+    Compute ITPC using Hilbert transform.
+
+    Parameters
+    ----------
+    data : ndarray
+        Shape (trials, times) or (trials, channels, times)
+    fs : float
+        Sampling rate (Hz)
+    fmin, fmax : float
+        Band-pass frequencies (Hz)
+    axis : int
+        Trial axis (default=0)
+
+    Returns
+    -------
+    itpc : ndarray
+        ITPC over time (and channels, if present)
+    """
+
+    # 1. Band-pass filter
+    data_filt = bandpass_filter(data, fs, fmin, fmax)
+
+    # 2. Hilbert transform
+    analytic = hilbert(data_filt, axis=-1)
+
+    # 3. Extract phase
+    phase = np.angle(analytic)
+
+    # 4. Unit phase vectors
+    phase_vec = np.exp(1j * phase)
+
+    # 5. Average across trials
+    itpc = np.abs(np.mean(phase_vec, axis=axis))
+
+    return itpc
 
 def do_SNR(data,times,ts,te,level):
     ind_noise = np.where(times<ts)
@@ -636,6 +669,9 @@ ax.set_title('Spectrogram')
 ax.set_ylim([0,800])
 fig.colorbar(im, ax=ax, format="%+2.0f dB")
 plt.show()
+
+#%%####################################### ITPC analysis
+itpc = itpc_hilbert(p10_eng, fs,fmin=90,fmax=110)
 
 #%%####################################### SNR analysis
 data = p10_eng
