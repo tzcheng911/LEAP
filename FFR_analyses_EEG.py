@@ -18,6 +18,7 @@ import mne
 import os
 import math
 import matplotlib.pyplot as plt
+from scipy import stats,signal
 from scipy.signal import butter, filtfilt, hilbert
 from scipy.io import savemat
 import numpy as np
@@ -303,17 +304,17 @@ def zscore_and_normalize(x):
     x = (x - np.mean(x)) / np.std(x)
     return x / np.linalg.norm(x)
 
-def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te.level,lag_window_ms=(-14, -7)):
+def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level,lag_window_ms=(-14, -7)):
     # Downsample
     num = int((len(audio)*fs_eeg)/fs_audio)    
     audio_rs = signal.resample(audio, num, t=None, axis=0, window=None)
     times_audio = np.linspace(0,len(audio_rs)/fs_eeg,len(audio_rs))
-    times_eeg = np.linspace(-20,200,1101)
+    times_eeg = np.linspace(-0.02,0.2,1101)
 
     ## p10: noise burst from 0 ms (100th points) ts = 100 # 0.02s (i.e. 0.02s after noise burst) te = 500 # 0.1s
     ## n40: noise burst from 40 ms (200th points) ts = 200 + 100 # .06s (i.e. 0.02s after noise burst) te = 650 # 0.13s
     ## p40: noise burst from 0 ms (100th points) ts = 100 # 0.02s te = 650 # 0.13s
-    tslice_audio = slice(ff(times_audio, ts), ff(times_audio, te))
+    tslice_audio = slice(ff(times_audio, ts), ff(times_audio, te)+1) ## hack to make sure slice in audio and eeg are the same length
     tslice_EEG = slice(ff(times_eeg, ts), ff(times_eeg, te))
 
     stim = audio_rs[tslice_audio]
@@ -469,7 +470,7 @@ def plot_individuals(data_dict,n_cols,t):
     plt.show()
 
 def plot_group_ffr(p10, n40, group_name,
-                   time,
+                   times,
                    ylim=(-5e-7, 5e-7),
                    n_times=1101):
     """
@@ -479,17 +480,17 @@ def plot_group_ffr(p10, n40, group_name,
     # Mean responses
     plt.figure()
     plt.title(f'{group_name} speakers')
-    plt.plot(t, p10.mean(0), label='p10')
-    plt.plot(t, n40.mean(0), label='n40')
-    plt.xlim(tmin, tmax)
+    plt.plot(time, p10.mean(0), label='p10')
+    plt.plot(time, n40.mean(0), label='n40')
+    plt.xlim(np.min(times), np.max(times))
     plt.ylim(*ylim)
     plt.legend()
 
     # Differential response
     plt.figure()
     plt.title(f'{group_name} speakers differential response (p10 − n40)')
-    plt.plot(t, p10.mean(0) - n40.mean(0))
-    plt.xlim(tmin, tmax)
+    plt.plot(time, p10.mean(0) - n40.mean(0))
+    plt.xlim(np.min(times), np.max(times))
     plt.ylim(*ylim)
 
 def plot_decoding_histograms(scores_p10,
@@ -520,7 +521,7 @@ def plot_decoding_histograms(scores_p10,
 
 #%%####################################### Set path
 subjects_dir = '/media/tzcheng/storage2/subjects/'
-times = np.linspace(-20,200,1101)
+times = np.linspace(-0.02, 0.2, 1101)
 
 #%%####################################### load the data
 file_type = 'EEG'
@@ -537,17 +538,16 @@ fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
 ## plot individual FFRs
 subjects_eng=['104','106','107','108','110','111','112','113','118','121','123','124','126','129','133']
 subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225','226'] ## 202 event code has some issues
-t = np.linspace(-0.02, 0.2, 1101)
 
 subjects_eng_dict = dict(zip(subjects_eng, p10_eng))
 subjects_spa_dict = dict(zip(subjects_spa, p10_spa))
 n_cols = 3
-plot_individuals(subjects_eng_dict,n_cols,t)
-plot_individuals(subjects_spa_dict,n_cols,t)
+plot_individuals(subjects_eng_dict,n_cols,times)
+plot_individuals(subjects_spa_dict,n_cols,times)
 
 ## plot average FFRs between p10 vs. n40
-plot_group_ffr(p10_eng, n40_eng, 'English', t)
-plot_group_ffr(p10_spa, n40_spa, 'Spanish', t)
+plot_group_ffr(p10_eng, n40_eng, 'English', times)
+plot_group_ffr(p10_spa, n40_spa, 'Spanish', times)
 
 ## plot average FFRs between spa and eng
 plot_group_ffr(p10_eng, p10_spa, 'p10')
@@ -622,7 +622,7 @@ print("Decoding Accuracy between mba vs. pa: %0.1f%%" % (100 * score_mba_pa,))
 fmin = 50
 fmax = 150
 
-signal = std.mean(0) # CBS: std, dev1, dev2 (EEG, audio, misc); brainstem: p10_eng, p10_spa, n40_eng, n40_spa (EEG)
+signal = dev1.mean(0) # CBS: std, dev1, dev2 (EEG, audio, misc); brainstem: p10_eng, p10_spa, n40_eng, n40_spa (EEG)
 psds, freqs = mne.time_frequency.psd_array_welch(
     signal,fs, # could replace with label time series
     n_fft=len(signal),
@@ -631,7 +631,7 @@ psds, freqs = mne.time_frequency.psd_array_welch(
     fmin=fmin,
     fmax=fmax,)
 plt.figure()
-plt.title('pa audio spectrum')
+plt.title('Spectrum')
 plt.plot(freqs,psds)
 plt.xlim([60, 140])
 
@@ -639,7 +639,7 @@ plt.xlim([60, 140])
 import librosa
 import librosa.display
 
-signal = n40_eng.mean(0)
+signal = std.mean(0)
 signal = signal.astype(np.float32)
 signal = signal/np.max(np.abs(signal))
 
@@ -671,22 +671,29 @@ fig.colorbar(im, ax=ax, format="%+2.0f dB")
 plt.show()
 
 #%%####################################### ITPC analysis
-itpc = itpc_hilbert(p10_eng, fs,fmin=90,fmax=110)
+fmin = 60
+fmax = 140
+itpc = itpc_hilbert(std, fs,fmin,fmax)
+plt.figure()
+plt.plot(times,itpc)
+plt.title('ITPC between ' + str(fmin) + ' Hz and ' + str(fmax) + ' Hz')
 
 #%%####################################### SNR analysis
-data = p10_eng
+data = std
 ts = 0
-te = 130 # 100 for ba and 130 for mba and pa
-level = 'individual' # 'group' (mean first then SNR) or 'individual' (SNR on individual level then mean)
-SNR = do_SNR(data,time,ts,te,level)
-print('SNR: ' + str(np.array(SNR).mean()) + '(' + str(np.array(SNR).std()/np.sqrt(len(EEG_pa_FFR))) +')')
+te = 200 # 100 for ba and 130 for mba and pa
+level = 'group' # 'group' (mean first then SNR) or 'individual' (SNR on individual level then mean)
+SNR = do_SNR(data,times,ts,te,level)
+print('SNR: ' + str(np.array(SNR).mean()) + '(' + str(np.array(SNR).std()/np.sqrt(len(data))) +')')
 
 #%%####################################### xcorr analysis
 level = 'group'
 fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
 fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
+
 fs_eeg, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
-xcorr_max, xcorr_lag_ms = do_xcorr(p10_audio,p10_eng,fs_audio,fs_eeg,ts,te.level,lag_window_ms=(-14, -7)):
+
+xcorr_max, xcorr_lag_ms = do_xcorr(p10_audio,std,fs_audio,fs_eeg,ts,te,level,lag_window_ms=(-14, -7))
 
 #%%####################################### autocorr analysis
 level = 'group'
