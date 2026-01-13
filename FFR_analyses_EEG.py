@@ -18,7 +18,7 @@ import mne
 import os
 import math
 import matplotlib.pyplot as plt
-from scipy import stats,signal
+from scipy import stats, signal
 from scipy.signal import butter, filtfilt, hilbert
 from scipy.io import savemat
 import numpy as np
@@ -175,7 +175,7 @@ def do_brainstem_trial_by_trial_decoding(root_path,n_trials,decoding_type):
     all_score_svm.append(score)
     return all_score_svm
     
-def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,random_state=None):
+def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     """
     X_list : list of ndarrays
         One array per condition/category
@@ -189,16 +189,29 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,random_state=None):
     tslice = slice(ff(times, ts), ff(times, te))
     X = []
     y = []
-    for label, Xi in enumerate(X_list):
-        X.append(Xi[:, tslice])
-        y.append(np.full(len(Xi), label))
     
-    X = np.concatenate(X, axis=0)
-    y = np.concatenate(y)
-    rng = np.random.default_rng(random_state)
-    perm = rng.permutation(len(y))
-    X = X[perm]
-    y = y[perm]
+    ## shuffle the order across participants but keep the pair
+    if shuffle == "keep pair":
+        rng = np.random.default_rng(random_state)
+        perm = rng.permutation(len(X_list[0]))
+        for label, Xi in enumerate(X_list):
+            X.append(Xi[perm, tslice])
+            y.append(np.full(len(Xi), label))
+        X = np.concatenate(X, axis=0)
+        y = np.concatenate(y)
+    
+    ## shuffle the order across participants fully
+    elif shuffle == "full":
+        for label, Xi in enumerate(X_list):
+            X.append(Xi[:, tslice])
+            y.append(np.full(len(Xi), label))
+        X = np.concatenate(X, axis=0)
+        y = np.concatenate(y)
+        rng = np.random.default_rng(random_state)
+        perm = rng.permutation(len(y))
+        X = X[perm]
+        y = y[perm]
+   
     scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
     score = np.mean(scores, axis=0)
     print("Decoding Accuracy %0.1f%%" % (100 * score))
@@ -304,7 +317,7 @@ def zscore_and_normalize(x):
     x = (x - np.mean(x)) / np.std(x)
     return x / np.linalg.norm(x)
 
-def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level,lag_window_ms=(-14, -7)):
+def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level,lag_window_ms=(-0.014, -0.007)):
     # Downsample
     num = int((len(audio)*fs_eeg)/fs_audio)    
     audio_rs = signal.resample(audio, num, t=None, axis=0, window=None)
@@ -330,8 +343,8 @@ def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level,lag_window_ms=(-14, -7)):
     ## For grand average: a[n] is lagging behind b[n] by k sample periods
     if level == 'group':
         resp_mean = resp.mean(axis=0)
-        resp_z = zscore_and_normalize(resp_mean)
-        xcorr = signal.correlate(stim_z,resp_z,mode='full')
+        resp_mean_z = zscore_and_normalize(resp_mean)
+        xcorr = signal.correlate(stim_z,resp_mean_z,mode='full')
         xcorr = abs(xcorr)
         xcorr_win = xcorr[lag_mask]
         lag_win = lags_s[lag_mask]
@@ -370,7 +383,7 @@ def do_autocorr(
     times_eeg,
     ts,
     te,
-    level="group",
+    level,
     lag_window_ms=(-50, 50)
 ):
     """
@@ -391,7 +404,6 @@ def do_autocorr(
     # --------------------
     tslice = slice(ff(times_eeg, ts), ff(times_eeg, te))
     resp = eeg[:, tslice]
-
     n_times = resp.shape[1]
 
     # --------------------
@@ -408,14 +420,14 @@ def do_autocorr(
     # --------------------
     if level == "group":
         resp_mean = resp.mean(axis=0)
-        b = zscore_and_normalize(resp_mean)
+        resp_mean_z = zscore_and_normalize(resp_mean)
 
-        acorr = signal.correlate(b, b, mode="full")
+        acorr = signal.correlate(resp_mean_z, resp_mean_z, mode="full")
         acorr = np.abs(acorr)
 
         return {
             "autocorr": acorr[lag_mask],
-            "lags_ms": lags_s[lag_mask] * 1000
+            "lags_ms": lags_s[lag_mask]
         }
 
     # --------------------
@@ -480,8 +492,8 @@ def plot_group_ffr(p10, n40, group_name,
     # Mean responses
     plt.figure()
     plt.title(f'{group_name} speakers')
-    plt.plot(time, p10.mean(0), label='p10')
-    plt.plot(time, n40.mean(0), label='n40')
+    plt.plot(times, p10.mean(0), label='p10')
+    plt.plot(times, n40.mean(0), label='n40')
     plt.xlim(np.min(times), np.max(times))
     plt.ylim(*ylim)
     plt.legend()
@@ -489,7 +501,7 @@ def plot_group_ffr(p10, n40, group_name,
     # Differential response
     plt.figure()
     plt.title(f'{group_name} speakers differential response (p10 − n40)')
-    plt.plot(time, p10.mean(0) - n40.mean(0))
+    plt.plot(times, p10.mean(0) - n40.mean(0))
     plt.xlim(np.min(times), np.max(times))
     plt.ylim(*ylim)
 
@@ -531,7 +543,8 @@ fs,dev1 = load_CBS_file(file_type, 'n40', subject_type)
 fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
-ntrial = 'all'
+file_type = 'EEG'
+ntrial = '200'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
     
 #%%####################################### visualize the data to examine
@@ -570,13 +583,19 @@ te = 90
 ## epoch length -20 to 200 ms with sampling rate at 5000 Hz
 ncv = 15
 randseed = 2
-decoding_acc = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, ncv, randseed)
-decoding_acc = do_subject_by_subject_decoding([p10_spa, n40_spa], times, ts, te, ncv, randseed)
-decoding_acc = do_subject_by_subject_decoding([p10_eng, p10_spa], times, ts, te, ncv, randseed)
-decoding_acc = do_subject_by_subject_decoding([n40_eng, n40_spa], times, ts, te, ncv, randseed)
+shuffle = "full"
+decoding_acc = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, ncv, 'keep pair', randseed)
+decoding_acc = do_subject_by_subject_decoding([p10_spa, n40_spa], times, ts, te, ncv, 'keep pair', randseed)
+decoding_acc = do_subject_by_subject_decoding([p10_eng, p10_spa], times, ts, te, ncv, 'full', randseed)
+decoding_acc = do_subject_by_subject_decoding([n40_eng, n40_spa], times, ts, te, ncv, 'full', randseed)
 
-#%%# Run with iterative random seeds
+#%%# Run with iterative random seeds to test spa vs. eng
+ts = 0
+te = 90
 niter = 1000 # see how the random seed affects accuracy
+ncv = 15
+shuffle = "full"
+
 scores_p10 = []
 scores_n40 = []
 
@@ -587,15 +606,38 @@ perm = rng.permutation(len(p10_spa))
 for n_iter in np.arange(0,niter,1):
     print("iter " + str(n_iter))
     ## decode eng vs. spa speakers: keep both n = 15 vs. n1 = 15, n2 = 16 gave very higher than chance results
-    decoding_acc_p10 = do_subject_by_subject_decoding([p10_eng, p10_spa[perm,:][:-1,:]], times, ts, te, ncv, None)
+    decoding_acc_p10 = do_subject_by_subject_decoding([p10_eng, p10_spa[perm,:][:-1,:]], times, ts, te, ncv, shuffle, None)
     scores_p10.append(np.mean(decoding_acc_p10, axis=0))
-    decoding_acc_n40 = do_subject_by_subject_decoding([n40_eng, n40_spa[perm,:][:-1,:]], times, ts, te, ncv, None)
+    decoding_acc_n40 = do_subject_by_subject_decoding([n40_eng, n40_spa[perm,:][:-1,:]], times, ts, te, ncv, shuffle, None)
     scores_n40.append(np.mean(decoding_acc_n40, axis=0))
 scores_p10 = np.array(scores_p10)
 scores_n40 = np.array(scores_n40)
 print(f"Accuracy: {np.mean(scores_p10):.3f}")
 print(f"Accuracy: {np.mean(scores_n40):.3f}")
 plot_decoding_histograms(scores_p10,scores_n40,bins=10,chance=0.5,labels=("p10", "n40"),xlim=(0, 1))
+
+#%%# Run with iterative random seeds to test p10 vs. n40 in spa vs. eng
+ts = 0
+te = 90
+niter = 1000 # see how the random seed affects accuracy
+shuffle = "keep pair"
+
+scores_spa = []
+scores_eng = []
+
+for n_iter in np.arange(0,niter,1):
+    print("iter " + str(n_iter))
+    ## decode p10 vs. n40 sounds
+    decoding_acc_eng = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, 15, shuffle, None)
+    scores_eng.append(np.mean(decoding_acc_eng, axis=0))
+    decoding_acc_spa = do_subject_by_subject_decoding([p10_spa, n40_spa], times, ts, te, 16, shuffle, None)
+    scores_spa.append(np.mean(decoding_acc_spa, axis=0))
+scores_spa = np.array(scores_spa)
+scores_eng = np.array(scores_eng)
+print(f"Accuracy: {np.mean(scores_eng):.3f}")
+print(f"Accuracy: {np.mean(scores_spa):.3f}")
+plot_decoding_histograms(scores_spa,scores_eng,bins=10,chance=0.5,labels=("spa", "eng"),xlim=(0, 1))
+
 
 #%%####################################### Subject-by-subject EEG or misc decoding CBS dataset
 ## change ts and te for C and V section decoding: for ba, 10 ms + 90 ms = 100 ms; for mba and pa, 40 ms + 90 ms = 130 ms
@@ -622,7 +664,7 @@ print("Decoding Accuracy between mba vs. pa: %0.1f%%" % (100 * score_mba_pa,))
 fmin = 50
 fmax = 150
 
-signal = dev1.mean(0) # CBS: std, dev1, dev2 (EEG, audio, misc); brainstem: p10_eng, p10_spa, n40_eng, n40_spa (EEG)
+signal = p10_eng.mean(0) # CBS: std, dev1, dev2 (EEG, audio, misc); brainstem: p10_eng, p10_spa, n40_eng, n40_spa (EEG)
 psds, freqs = mne.time_frequency.psd_array_welch(
     signal,fs, # could replace with label time series
     n_fft=len(signal),
@@ -630,7 +672,6 @@ psds, freqs = mne.time_frequency.psd_array_welch(
     n_per_seg=None,
     fmin=fmin,
     fmax=fmax,)
-plt.figure()
 plt.title('Spectrum')
 plt.plot(freqs,psds)
 plt.xlim([60, 140])
@@ -639,7 +680,7 @@ plt.xlim([60, 140])
 import librosa
 import librosa.display
 
-signal = std.mean(0)
+signal = p10_eng.mean(0)
 signal = signal.astype(np.float32)
 signal = signal/np.max(np.abs(signal))
 
@@ -673,8 +714,8 @@ plt.show()
 #%%####################################### ITPC analysis
 fmin = 60
 fmax = 140
-itpc = itpc_hilbert(std, fs,fmin,fmax)
-plt.figure()
+itpc = itpc_hilbert(n40_spa, fs,fmin,fmax)
+
 plt.plot(times,itpc)
 plt.title('ITPC between ' + str(fmin) + ' Hz and ' + str(fmax) + ' Hz')
 
@@ -692,9 +733,8 @@ fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
 fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
 
 fs_eeg, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
-
-xcorr_max, xcorr_lag_ms = do_xcorr(p10_audio,std,fs_audio,fs_eeg,ts,te,level,lag_window_ms=(-14, -7))
+xcorr = do_xcorr(n40_audio,std,fs_audio,fs_eeg,ts,te,level)
 
 #%%####################################### autocorr analysis
 level = 'group'
-autocorr, lags_ms = eeg_autocorr(p10_eng, fs_eeg, times, ts, te, level)
+autocorr = do_autocorr(std, fs_eeg, times, ts, te, level)
