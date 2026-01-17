@@ -255,6 +255,7 @@ def bandpass_filter(data, fs, fmin, fmax, order=4):
 def itpc_hilbert(
     data,
     fs,
+    times,ts,te,
     fmin,
     fmax,
     axis=0
@@ -278,7 +279,10 @@ def itpc_hilbert(
     itpc : ndarray
         ITPC over time (and channels, if present)
     """
-
+    # 0. crop the data
+    tslice = slice(ff(times, ts), ff(times, te))
+    data = data[:,tslice]
+    
     # 1. Band-pass filter
     data_filt = bandpass_filter(data, fs, fmin, fmax)
 
@@ -325,7 +329,11 @@ def do_SNR(data,times,ts,te,fmin, fmax, level):
         fmin=fmin,
         fmax=fmax,)
         SNR_s = psds_signal[ff(freqs_signal,91)]/psds_noise[ff(freqs_noise,91)] # find the closest peak to the audio ~90 Hz
-
+        SNR_s = np.max(psds_signal)/np.max(psds_noise)
+        
+        plt.figure()
+        plt.plot(freqs_signal,psds_signal)
+        plt.plot(freqs_signal,psds_noise)
     elif level == 'individual':
         ## temporal SNR
         rms_noise_s = []
@@ -344,6 +352,7 @@ def do_SNR(data,times,ts,te,fmin, fmax, level):
         n_per_seg=total_len,
         fmin=fmin,
         fmax=fmax,)
+        
         psds_signal, freqs_signal = mne.time_frequency.psd_array_welch(
         np.squeeze(data[:,ind_signal]),sfreq, # could replace with label time series
         n_fft=total_len,
@@ -351,8 +360,13 @@ def do_SNR(data,times,ts,te,fmin, fmax, level):
         n_per_seg=total_len,
         fmin=fmin,
         fmax=fmax,)
-
+        
+        plt.figure()
+        plt.plot(freqs_signal,np.mean(psds_signal,axis=0))
+        plt.plot(freqs_signal,np.mean(psds_noise,axis=0))
+        
         SNR_s = psds_signal[:,ff(freqs_signal,91)]/psds_noise[:,ff(freqs_noise,91)] # find the closest peak to the audio ~90 Hz
+        SNR_s = np.max(psds_signal,axis=0)/np.max(psds_noise,axis=0)
 
     return SNR_t, SNR_s
 
@@ -420,17 +434,19 @@ def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level,lag_window_ms=(-0.014, -0.007
     else:
         raise ValueError("level must be 'group' or 'individual'")
 
-def do_autocorr(
+def do_autocorr_sliding(
     eeg,
     fs_eeg,
     times_eeg,
     ts,
     te,
     level,
-    lag_window_ms=(-50, 50)
+    lag_window_ms=(-0.05, 0.05),
+    win_ms=0.04,
+    step_ms=0.02,
 ):
     """
-    EEG autocorrelation.
+    Sliding-window EEG autocorrelation.
 
     Parameters
     ----------
@@ -438,39 +454,68 @@ def do_autocorr(
     fs_eeg : float
     times_eeg : ndarray
     ts, te : float
+        Time window (in seconds) to analyze
     level : {'group', 'individual'}
     lag_window_ms : tuple
+        Lag window in ms (e.g., (-50, 50))
+    win_ms : float
+        Sliding window length in ms
+    step_ms : float
+        Step size in ms
     """
 
     # --------------------
     # Time slice
     # --------------------
     tslice = slice(ff(times_eeg, ts), ff(times_eeg, te))
-    resp = eeg[:, tslice]
-    n_times = resp.shape[1]
+    resp = eeg[:, tslice]  # (subjects × time)
+    n_subjects, n_times = resp.shape
 
     # --------------------
-    # Lags
+    # Convert window params to samples
     # --------------------
-    lags = signal.correlation_lags(n_times, n_times)
+    win_samp = int(win_ms / 1000 * fs_eeg)
+    step_samp = int(step_ms / 1000 * fs_eeg)
+
+    if win_samp >= n_times:
+        raise ValueError("Sliding window longer than data segment")
+
+    # --------------------
+    # Lags (defined by window length)
+    # --------------------
+    lags = signal.correlation_lags(win_samp, win_samp)
     lags_s = lags / fs_eeg
 
-    lag_min, lag_max = np.array(lag_window_ms)
+    lag_min, lag_max = np.array(lag_window_ms) / 1000
     lag_mask = (lags_s >= lag_min) & (lags_s <= lag_max)
+
+    lags_ms = lags_s[lag_mask] * 1000
+
+    # --------------------
+    # Sliding windows
+    # --------------------
+    win_starts = np.arange(0, n_times - win_samp + 1, step_samp)
+    win_centers = times_eeg[tslice][win_starts + win_samp // 2]
 
     # --------------------
     # Group-level
     # --------------------
     if level == "group":
         resp_mean = resp.mean(axis=0)
-        resp_mean_z = zscore_and_normalize(resp_mean)
 
-        acorr = signal.correlate(resp_mean_z, resp_mean_z, mode="full")
-        acorr = np.abs(acorr)
+        acorr_windows = []
+
+        for ws in win_starts:
+            seg = resp_mean[ws : ws + win_samp]
+            seg_z = zscore_and_normalize(seg)
+
+            acorr = signal.correlate(seg_z, seg_z, mode="full")
+            acorr_windows.append(np.abs(acorr)[lag_mask])
 
         return {
-            "autocorr": acorr[lag_mask],
-            "lags_ms": lags_s[lag_mask]
+            "autocorr": np.array(acorr_windows),  # (windows × lags)
+            "lags_ms": lags_ms,
+            "times": win_centers,
         }
 
     # --------------------
@@ -480,18 +525,25 @@ def do_autocorr(
         acorr_all = []
 
         for subj_resp in resp:
-            b = zscore_and_normalize(subj_resp)
-            acorr = signal.correlate(b, b, mode="full")
-            acorr_all.append(np.abs(acorr)[lag_mask])
+            subj_windows = []
+
+            for ws in win_starts:
+                seg = subj_resp[ws : ws + win_samp]
+                seg_z = zscore_and_normalize(seg)
+
+                acorr = signal.correlate(seg_z, seg_z, mode="full")
+                subj_windows.append(np.abs(acorr)[lag_mask])
+
+            acorr_all.append(subj_windows)
 
         return {
-            "autocorr": np.array(acorr_all),  # (subjects × lags)
-            "lags_ms": lags_s[lag_mask] * 1000
+            "autocorr": np.array(acorr_all),  # (subjects × windows × lags)
+            "lags_ms": lags_ms,
+            "times": win_centers,
         }
 
     else:
         raise ValueError("level must be 'group' or 'individual'")
-
 
 def plot_individuals(data_dict,n_cols,t):
     
@@ -578,7 +630,7 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 times = np.linspace(-0.02, 0.2, 1101)
 
 #%%####################################### load the data
-file_type = 'EEG'
+file_type = 'misc'
 subject_type = 'adults'
 fs,std = load_CBS_file(file_type, 'p10', subject_type)
 fs,dev1 = load_CBS_file(file_type, 'n40', subject_type)
@@ -586,7 +638,7 @@ fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
 file_type = 'EEG'
-ntrial = 'all'
+ntrial = '200'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
     
 #%%####################################### visualize the data to examine
@@ -634,7 +686,7 @@ decoding_acc = do_subject_by_subject_decoding([n40_eng, n40_spa], times, ts, te,
 #%%# Run with iterative random seeds to test spa vs. eng
 ts = 0
 te = 0.20
-niter = 5000 # see how the random seed affects accuracy
+niter = 1000 # see how the random seed affects accuracy
 ncv = 15
 shuffle = "full"
 
@@ -648,9 +700,9 @@ perm = rng.permutation(len(p10_spa))
 for n_iter in np.arange(0,niter,1):
     print("iter " + str(n_iter))
     ## decode eng vs. spa speakers: keep both n = 15 vs. n1 = 15, n2 = 16 gave very higher than chance results
-    decoding_acc_p10 = do_subject_by_subject_decoding([p10_eng, p10_spa[perm,:][:-1,:]], times, ts, te, ncv, shuffle, None)
+    decoding_acc_p10 = do_subject_by_subject_decoding([p10_eng, p10_spa[perm,:][:-1,:]], times, ts, 0.04, ncv, shuffle, None)
     scores_p10.append(np.mean(decoding_acc_p10, axis=0))
-    decoding_acc_n40 = do_subject_by_subject_decoding([n40_eng, n40_spa[perm,:][:-1,:]], times, ts, te, ncv, shuffle, None)
+    decoding_acc_n40 = do_subject_by_subject_decoding([n40_eng, n40_spa[perm,:][:-1,:]], times, ts, 0.07, ncv, shuffle, None)
     scores_n40.append(np.mean(decoding_acc_n40, axis=0))
 scores_p10 = np.array(scores_p10)
 scores_n40 = np.array(scores_n40)
@@ -660,7 +712,7 @@ plot_decoding_histograms(scores_p10,scores_n40,bins=5,chance=0.5,labels=("p10", 
 
 #%%# Run with iterative random seeds to test p10 vs. n40 in spa vs. eng
 ts = 0
-te = 0.13
+te = 0.20
 niter = 1000 # see how the random seed affects accuracy
 shuffle = "keep pair"
 
@@ -765,39 +817,52 @@ fig.colorbar(im, ax=ax, format="%+2.0f dB")
 plt.show()
 
 #%%####################################### ITPC analysis
+data = p10_spa
+
+ts = 0.025
+te = 0.1 # 100 for ba and 130 for mba and pa
+tslice = slice(ff(times, ts), ff(times, te))
 fmin = 60
 fmax = 140
-itpc = itpc_hilbert(n40_spa, fs,fmin,fmax)
-
-plt.plot(times,itpc)
+itpc = itpc_hilbert(data, fs,times,ts,te,fmin,fmax)
+# plt.figure()
+plt.plot(times[tslice],itpc)
+plt.xlim(times[tslice][0], times[tslice][-1])
+plt.legend(['eng','spa'])
 plt.title('ITPC between ' + str(fmin) + ' Hz and ' + str(fmax) + ' Hz')
 
 #%%####################################### SNR analysis
-data = p10_eng
+level = 'individual' # 'group' (mean first then SNR) or 'individual' (SNR on individual level then mean)
+
+data = n40_eng
+
 ts = 0
-te = 0.1 # 100 for ba and 130 for mba and pa
+te = 0.13 # 100 for ba and 130 for mba and pa
 fmin = 50
 fmax = 150
 
-level = 'group' # 'group' (mean first then SNR) or 'individual' (SNR on individual level then mean)
 SNR_t, SNR_s = do_SNR(data,times,ts,te,fmin, fmax,level)
 print('temporal SNR: ' + str(np.array(SNR_t).mean()) + '(' + str(np.array(SNR_t).std()/np.sqrt(len(data))) +')')
 print('spectral SNR: ' + str(np.array(SNR_s).mean()) + '(' + str(np.array(SNR_s).std()/np.sqrt(len(data))) +')')
 
 #%%####################################### xcorr analysis
-level = 'group'
+level = 'individual'
 
-ts = 0.02 # 0.02 for ba and pa, 0.06 for mba
-te = 0.1 # 0.1 for ba and 0.13 for mba and pa
+ts = 0 # 0.02 for ba and pa, 0.06 for mba
+te = 0.2 # 0.1 for ba and 0.13 for mba and pa
 
 fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
 fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
 
 fs_eeg, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
 
-xcorr = do_xcorr(n40_audio,n40_eng,fs_audio,fs_eeg,ts,te,level)
+xcorr = do_xcorr(p10_audio,p10_spa,fs_audio,fs_eeg,ts,te,level)
 print(xcorr)
+print(np.mean(xcorr['xcorr_max']))
+print(np.mean(xcorr['xcorr_lag_ms']))
+xcorr2 = xcorr['xcorr_max']
+lag2 = xcorr['xcorr_lag_ms']
 
 #%%####################################### autocorr analysis
 level = 'group'
-autocorr = do_autocorr(std, fs_eeg, times, ts, te, level)
+autocorr = do_autocorr_sliding(std, fs_eeg, times, ts, te, level)
