@@ -630,7 +630,7 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 times = np.linspace(-0.02, 0.2, 1101)
 
 #%%####################################### load the data
-file_type = 'misc'
+file_type = 'EEG'
 subject_type = 'adults'
 fs,std = load_CBS_file(file_type, 'p10', subject_type)
 fs,dev1 = load_CBS_file(file_type, 'n40', subject_type)
@@ -638,7 +638,7 @@ fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
 file_type = 'EEG'
-ntrial = '200'
+ntrial = 'all'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
     
 #%%####################################### visualize the data to examine
@@ -709,6 +709,29 @@ scores_n40 = np.array(scores_n40)
 print(f"Accuracy: {np.mean(scores_p10):.3f}")
 print(f"Accuracy: {np.mean(scores_n40):.3f}")
 plot_decoding_histograms(scores_p10,scores_n40,bins=5,chance=0.5,labels=("p10", "n40"),xlim=(0, 1))
+
+#%%# Run with iterative random seeds to test differential wave (n40-p10) between spa vs. eng
+ts = 0
+te = 0.15
+niter = 1000 # see how the random seed affects accuracy
+ncv = 15
+shuffle = "full"
+scores_diff = []
+
+## randomize the spanish speakers to use
+rng = np.random.default_rng(1)
+perm = rng.permutation(len(p10_spa))
+eng_diff = n40_eng-p10_eng
+spa_diff = n40_spa-p10_spa
+
+for n_iter in np.arange(0,niter,1):
+    print("iter " + str(n_iter))
+    ## decode eng vs. spa speakers: keep both n = 15 vs. n1 = 15, n2 = 16 gave very higher than chance results
+    decoding_acc = do_subject_by_subject_decoding([eng_diff, spa_diff[perm,:][:-1,:]], times, ts, te, ncv, shuffle, None)
+    scores_diff.append(np.mean(decoding_acc, axis=0))
+
+scores_diff = np.array(scores_diff)
+print(f"Accuracy: {np.mean(scores_diff):.3f}")
 
 #%%# Run with iterative random seeds to test p10 vs. n40 in spa vs. eng
 ts = 0
@@ -848,20 +871,20 @@ print('spectral SNR: ' + str(np.array(SNR_s).mean()) + '(' + str(np.array(SNR_s)
 #%%####################################### xcorr analysis
 level = 'individual'
 
-ts = 0 # 0.02 for ba and pa, 0.06 for mba
-te = 0.2 # 0.1 for ba and 0.13 for mba and pa
+ts = 0.02 # 0.02 for ba and pa, 0.06 for mba
+te = 0.1 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
 
 fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
 fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
 
 fs_eeg, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
 
-xcorr = do_xcorr(p10_audio,p10_spa,fs_audio,fs_eeg,ts,te,level)
-print(xcorr)
+xcorr = do_xcorr(p10_audio,p10_eng,fs_audio,fs_eeg,ts,te,level)
+# print(xcorr)
 print(np.mean(xcorr['xcorr_max']))
 print(np.mean(xcorr['xcorr_lag_ms']))
-xcorr2 = xcorr['xcorr_max']
-lag2 = xcorr['xcorr_lag_ms']
+xcorr1 = xcorr['xcorr_max']
+lag1= xcorr['xcorr_lag_ms']
 
 #%%####################################### autocorr analysis
 level = 'group'
