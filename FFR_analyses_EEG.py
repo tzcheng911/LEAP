@@ -374,7 +374,7 @@ def zscore_and_normalize(x):
     x = (x - np.mean(x)) / np.std(x)
     return x / np.linalg.norm(x)
 
-def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level,lag_window_ms=(-0.014, -0.007)):
+def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level,lag_window_s=(-0.014, -0.007)):
     # Downsample
     num = int((len(audio)*fs_eeg)/fs_audio)    
     audio_rs = signal.resample(audio, num, t=None, axis=0, window=None)
@@ -392,7 +392,7 @@ def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level,lag_window_ms=(-0.014, -0.007
     lags = signal.correlation_lags(len(stim),resp.shape[1])
     lags_s = lags/fs_eeg
 
-    lag_min, lag_max = np.array(lag_window_ms)
+    lag_min, lag_max = np.array(lag_window_s)
     lag_mask = (lags_s >= lag_min) & (lags_s <= lag_max)
 
     stim_z = zscore_and_normalize(stim)
@@ -638,7 +638,7 @@ fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
 file_type = 'EEG'
-ntrial = 'all'
+ntrial = '200'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
     
 #%%####################################### visualize the data to examine
@@ -734,26 +734,62 @@ scores_diff = np.array(scores_diff)
 print(f"Accuracy: {np.mean(scores_diff):.3f}")
 
 #%%# Run with iterative random seeds to test p10 vs. n40 in spa vs. eng
+## implement the permuation test to compare Eng p10/n40 acc and Spa p10/n40 acc
 ts = 0
 te = 0.20
 niter = 1000 # see how the random seed affects accuracy
 shuffle = "keep pair"
+randseed = 2
+ncv = 15
 
-scores_spa = []
-scores_eng = []
+## random select 15 spa subjects to match the 15 eng subjects
+rng0 = np.random.default_rng(1)
+perm = rng0.permutation(len(p10_spa))
+p10_spa_15 = p10_spa[perm,:][:-1,:]
+n40_spa_15 = n40_spa[perm,:][:-1,:]
 
+## real difference between eng and spa decoding accuracy of p10 vs. n40 sounds
+decoding_acc_eng = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, ncv, shuffle, randseed)
+decoding_acc_spa = do_subject_by_subject_decoding([p10_spa_15, n40_spa_15], times, ts, te, ncv, shuffle, randseed)
+diff_acc = np.mean(decoding_acc_eng, axis=0) - np.mean(decoding_acc_spa, axis=0)
+
+## permute between 2 language groups
+diff_scores_perm = []
+p10_all = np.vstack([p10_eng,p10_spa])
+n40_all = np.vstack([n40_eng,n40_spa])
+n_total = p10_all.shape[0]
+rng = np.random.default_rng(None)
+ 
 for n_iter in np.arange(0,niter,1):
     print("iter " + str(n_iter))
-    ## decode p10 vs. n40 sounds
-    decoding_acc_eng = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, 15, shuffle, None)
-    scores_eng.append(np.mean(decoding_acc_eng, axis=0))
-    decoding_acc_spa = do_subject_by_subject_decoding([p10_spa, n40_spa], times, ts, te, 16, shuffle, None)
-    scores_spa.append(np.mean(decoding_acc_spa, axis=0))
-scores_spa = np.array(scores_spa)
-scores_eng = np.array(scores_eng)
-print(f"Accuracy: {np.mean(scores_eng):.3f}")
-print(f"Accuracy: {np.mean(scores_spa):.3f}")
-plot_decoding_histograms(scores_spa,scores_eng,bins=10,chance=0.5,labels=("spa", "eng"),xlim=(0, 1))
+
+    perm_ind = rng.permutation(n_total)
+    group1_ind = perm_ind[:n_total//2]
+    group2_ind = perm_ind[n_total//2 + 1:]
+    p10_group1 = p10_all[group1_ind]
+    p10_group2 = p10_all[group2_ind]
+    n40_group1 = n40_all[group1_ind]
+    n40_group2 = n40_all[group2_ind]
+
+    decoding_acc_group1_perm = do_subject_by_subject_decoding([p10_group1, n40_group1], times, ts, te, ncv, shuffle, randseed)
+    decoding_acc_group2_perm = do_subject_by_subject_decoding([p10_group2, n40_group2], times, ts, te, ncv, shuffle, randseed)
+
+    diff_scores_perm.append(np.mean(decoding_acc_group1_perm, axis=0) - np.mean(decoding_acc_group2_perm, axis=0))
+diff_scores_perm = np.array(diff_scores_perm)
+print(f"Accuracy: {np.mean(diff_scores_perm):.3f}")
+
+fig, ax = plt.subplots(1)
+ax.hist(diff_scores_perm, bins=7, alpha=0.6)
+ax.set_ylabel("Count", fontsize=20)
+ax.set_xlabel("Accuracy Difference", fontsize=20)
+
+# chance line
+ax.axvline(np.mean(diff_scores_perm), color="grey", linestyle="--")
+# 95% line
+ax.axvline(np.percentile(diff_scores_perm,97.5),ymin=0,ymax=1000,color='grey',linewidth=2)
+# mean lines
+ax.axvline(diff_acc, color="red", linewidth=2)
+
 
 #%%####################################### Subject-by-subject EEG or misc decoding CBS dataset
 ## change ts and te for C and V section decoding: for ba, 10 ms + 90 ms = 100 ms; for mba and pa, 40 ms + 90 ms = 130 ms
@@ -871,20 +907,24 @@ print('spectral SNR: ' + str(np.array(SNR_s).mean()) + '(' + str(np.array(SNR_s)
 #%%####################################### xcorr analysis
 level = 'individual'
 
-ts = 0.02 # 0.02 for ba and pa, 0.06 for mba
-te = 0.1 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
+ts = 0.06 # 0.02 for ba and pa, 0.06 for mba
+te = 0.13 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
 
 fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
 fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
-
 fs_eeg, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
 
-xcorr = do_xcorr(p10_audio,p10_eng,fs_audio,fs_eeg,ts,te,level)
+audio = n40_audio
+EEG = n40_eng
+audio = stats.zscore(audio)
+EEG = stats.zscore(EEG,axis=-1)
+
+xcorr = do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level)
 # print(xcorr)
 print(np.mean(xcorr['xcorr_max']))
 print(np.mean(xcorr['xcorr_lag_ms']))
-xcorr1 = xcorr['xcorr_max']
-lag1= xcorr['xcorr_lag_ms']
+xcorr4 = xcorr['xcorr_max']
+lag4= xcorr['xcorr_lag_ms']
 
 #%%####################################### autocorr analysis
 level = 'group'
