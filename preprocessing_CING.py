@@ -40,7 +40,7 @@ def do_sss(subject,st_correlation,int_order,time):
 
     params.subjects = [subject]
 
-    # params.work_dir = '/media/tzcheng/storage/CBS/'
+    params.work_dir = '/media/tzcheng/storage/CBS/'
     params.work_dir = '/media/tzcheng/storage/cing/'
     params.run_names = ['%s' + time + '_01_otp'] # ['%s_01_otp','%s_02_otp'] for the adults and ['%s_01_otp'] for the infants
     params.runs_empty = ['%s' + time + '_erm_otp']
@@ -240,11 +240,11 @@ for file in os.listdir():
     if file.startswith('cing_113'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
 
-subjects = ['cing_152']
+subjects = ['cing_151']
 #%%###### do the jobs
 for s in subjects:
     print(s)
-    do_otp(s,time)
+    # do_otp(s,time)
     do_sss(s,st_correlation,int_order,time)
     for run in runs:
         if time == 0:
