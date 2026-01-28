@@ -18,7 +18,7 @@ Level
 @author: tzcheng
 """
 
-## Import library  
+#%%####################################### Import library
 import mne
 import os
 from mne.decoding import UnsupervisedSpatialFilter
@@ -62,6 +62,7 @@ from mne.decoding import (
     CSP,
 )
 
+#%%####################################### Define functions
 def plot_err(group_stc,color,t):
     group_avg=np.mean(group_stc,axis=0)
    #plt.figure()
@@ -117,8 +118,47 @@ def load_BS_file(file_type, ntrial):
 def do_sliding_decoding:
     ## decode conditions from spatial features at each time point
     
-def do_time_decoding:
-    ## decode conditions from time series
+def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
+    """
+    X_list : list of ndarrays
+        One array per condition/category
+    """
+    ## classifier
+    clf = make_pipeline(
+        StandardScaler(),  # z-score normalization
+        SVC(kernel='rbf',gamma='auto',C=0.1,class_weight='balanced')  
+        # SVC(kernel='linear', C=1)
+    )
+    tslice = slice(ff(times, ts), ff(times, te))
+    X = []
+    y = []
+    
+    ## shuffle the order across participants but keep the pair
+    if shuffle == "keep pair":
+        rng = np.random.default_rng(random_state)
+        perm = rng.permutation(len(X_list[0]))
+        for label, Xi in enumerate(X_list):
+            X.append(Xi[perm, tslice])
+            y.append(np.full(len(Xi), label))
+        X = np.concatenate(X, axis=0)
+        y = np.concatenate(y)
+    
+    ## shuffle the order across participants fully
+    elif shuffle == "full":
+        for label, Xi in enumerate(X_list):
+            X.append(Xi[:, tslice])
+            y.append(np.full(len(Xi), label))
+        X = np.concatenate(X, axis=0)
+        y = np.concatenate(y)
+        rng = np.random.default_rng(random_state)
+        perm = rng.permutation(len(y))
+        X = X[perm]
+        y = y[perm]
+   
+    scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
+    score = np.mean(scores, axis=0)
+    print("Decoding Accuracy %0.1f%%" % (100 * score))
+    return scores
 
 def do_SNR:
 
