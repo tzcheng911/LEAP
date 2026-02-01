@@ -41,6 +41,106 @@ def plot_err(group_stc,color,t):
     plt.plot(t,group_avg,color=color)
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
 
+def plot_AB_bar_with_points(
+    psds_A,
+    psds_B,
+    FOI,
+    labels=("A", "B"),
+    colors=("tab:grey", "#ff7f0e"),
+    ylabel="Value",
+    jitter=0.04,
+    figsize=(5, 4),
+    save_path = None
+):
+    """
+    Bar plot with individual datapoints and SE error bars.
+
+    Parameters
+    ----------
+    psds_A : ndarray (n_subjects, n_freqs)
+        Data for condition A
+    psds_B : ndarray (n_subjects, n_freqs)
+        Data for condition B
+    FOI : list or array
+        Frequency-of-interest indices
+    labels : tuple
+        X-axis labels for conditions
+    colors : tuple
+        Bar colors for A and B
+    ylabel : str
+        Y-axis label
+    jitter : float
+        Horizontal jitter for datapoints
+    figsize : tuple
+        Figure size
+    """
+
+    # ---- average over FOI ----
+    A = psds_A[:, FOI].mean(axis=1)
+    B = psds_B[:, FOI].mean(axis=1)
+
+    means = [A.mean(), B.mean()]
+    ses = [
+        A.std() / np.sqrt(len(A)),
+        B.std() / np.sqrt(len(B))
+    ]
+
+    x = np.array([0, 1])
+
+    # ---- plot ----
+    plt.figure(figsize=figsize)
+
+    # bars (background)
+    plt.bar(
+        x,
+        means,
+        color=colors,
+        alpha=0.6,
+        zorder=1
+    )
+
+    # datapoints (middle)
+    plt.scatter(
+        np.random.normal(x[0], jitter, len(A)),
+        A,
+        color="black",
+        zorder=2
+    )
+    plt.scatter(
+        np.random.normal(x[1], jitter, len(B)),
+        B,
+        color="black",
+        zorder=2
+    )
+
+    # error bars (front)
+    plt.errorbar(
+        x,
+        means,
+        yerr=ses,
+        fmt="none",
+        ecolor="lightgrey",
+        elinewidth=3,
+        capsize=6,
+        capthick=3,
+        zorder=3
+    )
+    
+    fontsize = 14
+   
+    # plt.ylim([0, 5.5e-25])
+    plt.xticks(x, labels, fontsize=fontsize)
+    plt.yticks(fontsize=12)
+    plt.ylabel(ylabel, fontsize=fontsize)
+    # remove top and right spines only
+    ax = plt.gca()
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    plt.tight_layout()
+    if save_path is not None:
+       plt.savefig(save_path, dpi=600, bbox_inches="tight", transparent=True)
+    plt.show()
+    
 def plot_audio(audio,fmin,fmax,fs):
     plt.figure()
     plt.plot(np.linspace(0,audio.size/fs,audio.size),audio)
@@ -148,6 +248,43 @@ for n_age in ages:
     plot_SSEP(psds_random,freqs,'MEG_random_psds')
     plot_SSEP(psds_duple,freqs,'MEG_duple_psds')
     plot_SSEP(psds_triple,freqs,'MEG_triple_psds')
+    
+    ## plot bar plot for the significant freqs based on non-parametric test (stats_ME2.py)
+    # Doing age 7mo
+    # -------------------Doing duple-------------------
+    # The 1st significant cluster
+    # (array([12, 13]),)
+    # Significant freqs: [1.63636364 1.72727273]
+    # The 2st significant cluster
+    # (array([30, 31, 32]),)
+    # Significant freqs: [3.27272727 3.36363636 3.45454545]
+    # -------------------Doing triple-------------------
+    # The 1st significant cluster
+    # (array([6, 7]),)
+    # Significant freqs: [1.09090909 1.18181818]
+    # The 2st significant cluster
+    # (array([18, 19]),)
+    # Significant freqs: [2.18181818 2.27272727]
+    # The 3st significant cluster
+    # (array([30, 31]),)
+    # Significant freqs: [3.27272727 3.36363636]
+
+    ## take the significant freqs to plug in FOI for each condition from above 
+    ## duple meter [12, 13] and beat [30, 31, 32]
+    FOI = [12, 13]
+    out_name = "meter rate 1.67 Hz"
+    
+    # orange #ff7f0e, blue #1f77b4
+    plot_AB_bar_with_points(psds_random, psds_duple,FOI,labels=("Random", "Duple"),
+                            colors=("tab:grey", "#ff7f0e"),ylabel="PSD at " + out_name,jitter=0.04,figsize=(5, 4),
+                            save_path="/home/tzcheng/Desktop/PSD_barplot_duple_meter.pdf")
+    
+    ## triple meter [6, 7], 1st horm [18, 19] and beat [30, 31]
+    FOI = [18, 19]
+    out_name = "meter rate 1.11 Hz"
+    plot_AB_bar_with_points(psds_random, psds_triple,FOI,labels=("Random", "Triple"),
+                            colors=("tab:grey", "#1f77b4"),ylabel="PSD at " + out_name,jitter=0.04,figsize=(5, 4),
+                            save_path="/home/tzcheng/Desktop/PSD_barplot_triple_meter.pdf")
 
 #%%####################################### Visualize on the source level: ROI 
 n_folder = folders[2]
@@ -218,6 +355,59 @@ for nn_age,n_age in enumerate(ages[:-1]):
                 plot_SSEP(random[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_random')
                 plot_SSEP(duple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_duple')
                 plot_SSEP(triple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_triple')
+                
+                # Doing ROI SSEP: Auditory
+                # -------------------Doing duple-------------------
+                # The 1st significant cluster
+                # (array([12, 13]),)
+                # Significant freqs: [1.63636364 1.72727273]
+                # The 2st significant cluster
+                # (array([29, 30, 31]),)
+                # Significant freqs: [3.18181818 3.27272727 3.36363636]
+                # The 3st significant cluster
+                # (array([48, 49]),)
+                # Significant freqs: [4.90909091 5.        ]
+                # -------------------Doing triple-------------------
+                # The 1st significant cluster
+                # (array([30, 31]),)
+                # Significant freqs: [3.27272727 3.36363636]
+                
+                # Doing ROI SSEP: SensoryMotor
+                # -------------------Doing duple-------------------
+                # The 1st significant cluster
+                # (array([29, 30, 31]),)
+                # Significant freqs: [3.18181818 3.27272727 3.36363636]
+                # -------------------Doing triple-------------------
+                # The 1st significant cluster
+                # (array([29, 30, 31]),)
+                # Significant freqs: [3.18181818 3.27272727 3.36363636]
+                
+                # Doing ROI SSEP: BG
+                # -------------------Doing duple-------------------
+                # The 1st significant cluster
+                # (array([30, 31]),)
+                # Significant freqs: [3.27272727 3.36363636]
+                # -------------------Doing triple-------------------
+                
+                ## take the significant freqs to plug in FOI for each condition from above 
+                ## duple meter [12, 13] and beat [30, 31, 32]
+                FOI = [12, 13]
+                ROI = 1
+                out_name = "meter rate 1.67 Hz"
+                
+                # orange #ff7f0e, blue #1f77b4
+                plot_AB_bar_with_points(random[:,ROI,:], duple[:,ROI,:],FOI,labels=("Random", "Duple"),
+                                        colors=("tab:grey", "#ff7f0e"),ylabel="PSD at " + out_name,jitter=0.04,figsize=(5, 4),
+                                        save_path="/home/tzcheng/Desktop/Figure3_ROI_SSEP/SM_PSD_barplot_duple_meter.pdf")
+                
+                ## triple meter [6, 7], 1st horm [18, 19] and beat [30, 31]
+                FOI = [18, 19]
+                ROI = 2
+                out_name = "meter rate 2.22 Hz"
+                plot_AB_bar_with_points(random[:,ROI,:], triple[:,ROI,:],FOI,labels=("Random", "Triple"),
+                                        colors=("tab:grey", "#1f77b4"),ylabel="PSD at " + out_name,jitter=0.04,figsize=(5, 4),
+                                        save_path="/home/tzcheng/Desktop/Figure3_ROI_SSEP/BG_PSD_barplot_triple_harm.pdf")
+                
             elif n_folder == 'decoding/':
                 decoding_duple = np.load(root_path + n_folder + n_age + data_type +'decodingACC_duple.npy') 
                 print(decoding_duple[n])
