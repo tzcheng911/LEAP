@@ -986,7 +986,7 @@ print(np.mean(xcorr['xcorr_lag_ms']))
 import pingouin as pg
 import pandas as pd
 
-df = pd.read_csv('/home/tzcheng/Downloads/FFR_xcorr - Brainstem - 3000.csv')
+df = pd.read_csv('/home/tzcheng/Downloads/FFR_xcorr_window2 - Brainstem - 3000.csv')
 aov = pg.mixed_anova(
     dv='xcorr_lags',
     within='condition',
