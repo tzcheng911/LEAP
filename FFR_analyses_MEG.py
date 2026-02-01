@@ -21,46 +21,21 @@ Level
 #%%####################################### Import library
 import mne
 import os
-from mne.decoding import UnsupervisedSpatialFilter
-from mne.preprocessing import ICA
-import matplotlib.pyplot as plt 
+import math
+import matplotlib.pyplot as plt
+from scipy import stats, signal
+from scipy.signal import butter, filtfilt, hilbert
+from scipy.io import savemat
 import numpy as np
-import os
-from scipy import stats,signal
-from scipy.io import savemat, loadmat
-from numpy import dot
-from numpy.linalg import norm
-from scipy.stats import pearsonr
-import scipy as sp
-import os
-import pandas as pd
-import scipy.stats as stats
 from scipy.io import wavfile
 import time
-import copy
-
-
-from sklearn.decomposition import PCA, FastICA
+from mne.decoding import (
+    cross_val_multiscore,
+)
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.model_selection import StratifiedKFold, LeaveOneOut
-from sklearn.feature_selection import SelectKBest, f_classif
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 import random
-from mne.minimum_norm import apply_inverse_epochs, read_inverse_operator
-from mne.preprocessing import Xdawn
-from mne.decoding import (
-    SlidingEstimator,
-    GeneralizingEstimator,
-    Scaler,
-    cross_val_multiscore,
-    LinearModel,
-    get_coef,
-    Vectorizer,
-    CSP,
-)
 
 #%%####################################### Define functions
 def plot_err(group_stc,color,t):
@@ -99,12 +74,12 @@ def load_CBS_file(file_type, sound_type, subject_type):
     elif file_type in ('sensor', 'morph_roi','morph'): ## for the MEG
         name = sound_map.get(sound_type, sound_type)
         if subject_type == 'adults':
-            signal = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_' + name + '_pcffr80200_3_200_' + file_type + '.npy')
+            signal = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_' + name + '_pcffr80450_3_200_' + file_type + '.npy')
         elif subject_type == 'infants':   
-            signal = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/ntrial_200/group_' + name + '_pcffr80200_3_200_' + file_type + '.npy')
+            signal = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/ntrial_200/group_' + name + '_pcffr80450_3_200_' + file_type + '.npy')
     return fs, signal
 
-def load_BS_file(file_type, ntrial):
+def load_brainstem_file(file_type, ntrial):
     root_path = '/media/tzcheng/storage/Brainstem/'
     fs = 5000
     if file_type == 'EEG':
@@ -112,11 +87,11 @@ def load_BS_file(file_type, ntrial):
         n40_eng = np.load(root_path + 'EEG/n40_eng_eeg_ntr' + ntrial + '_01.npy')
         p10_spa = np.load(root_path + 'EEG/p10_spa_eeg_ntr' + ntrial + '_01.npy')
         n40_spa = np.load(root_path + 'EEG/n40_spa_eeg_ntr' + ntrial + '_01.npy')
-    ## not yet implemented MEG load elif file_type in ('sensor', 'roi','morph'):
-    return fs, p10_eng, n40_eng, p10_spa, n40_spa
-
-def do_sliding_decoding:
-    ## decode conditions from spatial features at each time point
+        return fs, p10_eng, n40_eng, p10_spa, n40_spa
+    elif file_type in ('sensor', 'morph_roi','morph'): ## for the MEG
+        p10_eng = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_pcffr80450_3_p10_01_' + file_type + '.npy')
+        n40_eng = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_pcffr80450_3_n40_01_' + file_type + '.npy')
+        return fs, p10_eng, n40_eng
     
 def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     """
@@ -160,18 +135,178 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     print("Decoding Accuracy %0.1f%%" % (100 * score))
     return scores
 
-def do_SNR:
-
-def do_xcorr:
+def plot_group_ffr(data1, data2, label1,label2,
+                   times,
+                   ylim=(-5e-7, 5e-7),
+                   n_times=1101):
+    """
+    Plot mean FFR responses and differential response for one group.
+    """
     
+    # Mean responses
+    plt.figure()
+    plt.plot(times, data1.mean(0), label=label1)
+    plt.plot(times, data2.mean(0), label=label2)
+    plt.xlim(np.min(times), np.max(times))
+    plt.ylim(*ylim)
+    plt.legend()
+
+    # Differential response
+    plt.figure()
+    plt.title('Differential response')
+    plt.plot(times, data1.mean(0) - data2.mean(0))
+    plt.xlim(np.min(times), np.max(times))
+    plt.ylim(*ylim)
+    
+#%%####################################### Set path   
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_pa_cabr_morph-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 times = np.linspace(-20,200,1101)
 
+#%%####################################### load the data
+file_type = 'morph_roi'
+subject_type = 'adults'
+fs,std = load_CBS_file(file_type, 'p10', subject_type)
+fs,dev1 = load_CBS_file(file_type, 'n40', subject_type)
+fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
+    
+## brainstem
+file_type = 'EEG'
+ntrial = 'all'
+fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
+fs, p10_eng, n40_eng = load_brainstem_file(file_type, ntrial)
+
 #%%####################################### Subject-by-subject MEG decoding for each condition 
-#%%####################################### Sliding estimator decoding
+#%%# permuation test to compare p10/n40 vs. p10/p40 decoding in CBS eng
+
+## reduce dimension
+# get the mean
+std = std.mean(axis=1)
+dev1 = dev1.mean(axis=1)
+dev2 = dev2.mean(axis=1)
+
+# get the mag mean because it is more sensitive to the deep source
+epochs = mne.read_epochs(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_cABR_e.fif')
+indices_by_type = mne.channel_indices_by_type(epochs.info)
+std = std[:,indices_by_type['mag'],:]
+dev1 = dev1[:,indices_by_type['mag'],:]
+dev2 = dev2[:,indices_by_type['mag'],:]
+
+# ROI
+lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+nROI = 2
+std = std[:,rh_ROI_label[nROI],:] 
+dev1 = dev1[:,rh_ROI_label[nROI],:] 
+dev2 = dev2[:,rh_ROI_label[nROI],:]
+
+## run decoding
+ts = 0
+te = 0.20
+niter = 1000 # see how the random seed affects accuracy
+shuffle = "keep pair"
+randseed = 2
+ncv = len(std)
+
+## real difference between eng and spa decoding accuracy of p10 vs. n40 sounds
+decoding_acc_p10n40 = do_subject_by_subject_decoding([std, dev1], times, ts, te, ncv, shuffle, randseed)
+decoding_acc_p10p40 = do_subject_by_subject_decoding([std, dev2], times, ts, te, ncv, shuffle, randseed)
+diff_acc = np.mean(decoding_acc_p10n40, axis=0) - np.mean(decoding_acc_p10p40, axis=0)
+
+## permute between dev1 and dev2
+diff_scores_perm = []
+n40p40_all = np.vstack([dev1,dev2])
+n_total = len(n40p40_all)
+rng = np.random.default_rng(None)
+ 
+for n_iter in np.arange(0,niter,1):
+    print("iter " + str(n_iter))
+    
+    perm_ind = rng.permutation(n_total)
+    group1_ind = perm_ind[:n_total//2]
+    group2_ind = perm_ind[n_total//2:]
+    dev1_perm = n40p40_all[group1_ind]
+    dev2_perm = n40p40_all[group2_ind]
+    
+    decoding_acc_group1_perm = do_subject_by_subject_decoding([std, dev1_perm], times, ts, te, ncv, shuffle, randseed)
+    decoding_acc_group2_perm = do_subject_by_subject_decoding([std, dev2_perm], times, ts, te, ncv, shuffle, randseed)
+
+    diff_scores_perm.append(np.mean(decoding_acc_group1_perm, axis=0) - np.mean(decoding_acc_group2_perm, axis=0))
+diff_scores_perm = np.array(diff_scores_perm)
+print(f"Accuracy: {np.mean(diff_scores_perm):.3f}")
+
+fig, ax = plt.subplots(1)
+ax.hist(diff_scores_perm, bins=7, alpha=0.6)
+ax.set_ylabel("Count", fontsize=20)
+ax.set_xlabel("Accuracy Difference", fontsize=20)
+
+# chance line
+ax.axvline(np.mean(diff_scores_perm), color="grey", linestyle="--")
+# 95% line
+ax.axvline(np.percentile(diff_scores_perm,95),ymin=0,ymax=1000,color='grey',linewidth=2)
+# mean lines
+ax.axvline(diff_acc, color="red", linewidth=2)
+
+#%%####################################### Sliding estimator decoding brainstem eng speakers
+root_path='/media/tzcheng/storage/Brainstem/'
+subjects_dir = '/media/tzcheng/storage2/subjects/'
+os.chdir(root_path)
+stc1 = mne.read_source_estimate(root_path + 'brainstem_113/sss_fif/brainstem_113_pcffr80200_3_n40_01_morph-vl.stc')
+times = stc1.times
+
+## parameter
+ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
+k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
+
+fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+
+if ROI_wholebrain == 'ROI':
+    ffr_ba = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_p10_01_roi.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_n40_01_roi.npy',allow_pickle=True)
+elif ROI_wholebrain == 'wholebrain':
+    ffr_ba = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_p10_01_morph.npy',allow_pickle=True)
+    ffr_mba = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_n40_01_morph.npy',allow_pickle=True)
+else:
+    print("Need to decide whether to use ROI or whole brain as feature.")
+
+X = np.concatenate((ffr_ba,ffr_mba),axis=0)
+# X = X[:,:,ts:te] 
+y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_ba)))) #0 is for mmr1 and 1 is for mmr2
+
+# prepare a series of classifier applied at each time sample
+clf = make_pipeline(
+    StandardScaler(),  # z-score normalization
+    SelectKBest(f_classif, k=k_feature),  # select features for speed
+    LinearModel(),
+    )
+time_decod = SlidingEstimator(clf)
+
+# Run cross-validated decoding analyses
+scores_observed = cross_val_multiscore(time_decod, X, y, cv=5, n_jobs=None) # leave one out
+score = np.mean(scores_observed, axis=0)
+
+#Plot average decoding scores of 5 splits
+TOI = np.linspace(-20,200,num=1101)
+fig, ax = plt.subplots(1)
+ax.plot(TOI, scores_observed.mean(0), label="score")
+ax.axhline(1/3, color="k", linestyle="--", label="chance")
+ax.axvline(0, color="k")
+plt.legend()
+
+# The fitting needs not be cross validated because the weights are based on
+# the training sets
+time_decod.fit(X, y) # not changed after shuffling the initial
+# Retrieve patterns after inversing the z-score normalization step:
+patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
+
+#%%####################################### Sliding estimator decoding CBS
 tic = time.time()
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
