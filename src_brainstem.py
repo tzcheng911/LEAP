@@ -36,7 +36,7 @@ def do_inverse_cABR(s,run, condition,morph):
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
     cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_f80200_ffr-cov.fif')
     epoch = mne.read_epochs(file_in + condition + run + '_otp_raw_sss_proj_f80200_ffr_e.fif')
-    evoked = mne.read_evokeds(file_in + condition + run + '_otp_raw_sss_proj_f80200_evoked_ffr.fif')[0]
+    evoked = mne.read_evokeds(file_in + condition + run + '_otp_raw_sss_proj_f80200_ntrial200_evoked_ffr.fif')[0]
     
     inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
 
@@ -56,7 +56,7 @@ def do_inverse_cABR(s,run, condition,morph):
             src_to=src_fs,
             verbose=True)
         stc_fsaverage = morph.apply(stc)
-        stc_fsaverage.save(file_in + condition + run + '_morph', overwrite=True)
+        stc_fsaverage.save(file_in + condition + run + '_ntrial200_morph', overwrite=True)
 
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
@@ -69,13 +69,14 @@ os.chdir(root_path)
 morph = True
 ori = 'vector' # 'vector', None. 'sensor_sub' # 'sensor_sub' is doing dev-std subtraction on the sensor level then source localization
 
-conditions = ['_p10','_n40']
+conditions = ['_n40']
 runs = ['_01','_02'] 
 
 subj = [] 
 for file in os.listdir():
-    if file.startswith('brainstem_'):
+    if file.startswith('brainstem_107'):
         subj.append(file)
+
 for s in tqdm(subj):
     print(s)
     for condition in conditions:
