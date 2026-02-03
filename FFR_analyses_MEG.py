@@ -74,9 +74,9 @@ def load_CBS_file(file_type, sound_type, subject_type):
     elif file_type in ('sensor', 'morph_roi','morph'): ## for the MEG
         name = sound_map.get(sound_type, sound_type)
         if subject_type == 'adults':
-            signal = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_' + name + '_pcffr80450_3_200_' + file_type + '.npy')
+            signal = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_' + name + '_pcffr80200_3_200_' + file_type + '.npy')
         elif subject_type == 'infants':   
-            signal = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/ntrial_200/group_' + name + '_pcffr80450_3_200_' + file_type + '.npy')
+            signal = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/ntrial_200/group_' + name + '_pcffr80200_3_200_' + file_type + '.npy')
     return fs, signal
 
 def load_brainstem_file(file_type, ntrial):
@@ -88,9 +88,9 @@ def load_brainstem_file(file_type, ntrial):
         p10_spa = np.load(root_path + 'EEG/p10_spa_eeg_ntr' + ntrial + '_01.npy')
         n40_spa = np.load(root_path + 'EEG/n40_spa_eeg_ntr' + ntrial + '_01.npy')
         return fs, p10_eng, n40_eng, p10_spa, n40_spa
-    elif file_type in ('sensor', 'morph_roi','morph'): ## for the MEG
-        p10_eng = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_pcffr80450_3_p10_01_' + file_type + '.npy')
-        n40_eng = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_pcffr80450_3_n40_01_' + file_type + '.npy')
+    elif file_type in ('sensor', 'roi','morph'): ## for the MEG
+        p10_eng = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_p10_01_' + file_type + '.npy')
+        n40_eng = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_n40_01_' + file_type + '.npy')
         return fs, p10_eng, n40_eng
     
 def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
@@ -165,29 +165,31 @@ stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_pa_cabr_m
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-times = np.linspace(-20,200,1101)
+times = np.linspace(-0.02, 0.2, 1101)
 
 #%%####################################### load the data
-file_type = 'morph_roi'
+file_type = 'sensor'
 subject_type = 'adults'
-fs,std = load_CBS_file(file_type, 'p10', subject_type)
-fs,dev1 = load_CBS_file(file_type, 'n40', subject_type)
-fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
+fs,std_all = load_CBS_file(file_type, 'p10', subject_type)
+fs,dev1_all = load_CBS_file(file_type, 'n40', subject_type)
+fs,dev2_all = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
-file_type = 'EEG'
+file_type = 'sensor'
 ntrial = 'all'
-fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
-fs, p10_eng, n40_eng = load_brainstem_file(file_type, ntrial)
+# fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
+fs, p10_eng_all, n40_eng_all = load_brainstem_file(file_type, ntrial)
 
 #%%####################################### Subject-by-subject MEG decoding for each condition 
 #%%# permuation test to compare p10/n40 vs. p10/p40 decoding in CBS eng
 
 ## reduce dimension
 # get the mean
-std = std.mean(axis=1)
-dev1 = dev1.mean(axis=1)
-dev2 = dev2.mean(axis=1)
+std = std_all.mean(axis=1)
+dev1 = dev1_all.mean(axis=1)
+dev2 = dev2_all.mean(axis=1)
+p10_eng = p10_eng_all.mean(axis=1)
+n40_eng = n40_eng_all.mean(axis=1)
 
 # get the mag mean because it is more sensitive to the deep source
 epochs = mne.read_epochs(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_cABR_e.fif')
@@ -200,19 +202,23 @@ dev2 = dev2[:,indices_by_type['mag'],:]
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 nROI = 2
-std = std[:,rh_ROI_label[nROI],:] 
-dev1 = dev1[:,rh_ROI_label[nROI],:] 
-dev2 = dev2[:,rh_ROI_label[nROI],:]
+std = std_all[:,rh_ROI_label[nROI],:] 
+dev1 = dev1_all[:,rh_ROI_label[nROI],:] 
+dev2 = dev2_all[:,rh_ROI_label[nROI],:]
+p10_eng = p10_eng_all[:,rh_ROI_label[nROI],:] 
+n40_eng = n40_eng_all[:,rh_ROI_label[nROI],:] 
 
 ## run decoding
 ts = 0
-te = 0.20
+te = 0.2
 niter = 1000 # see how the random seed affects accuracy
 shuffle = "keep pair"
 randseed = 2
 ncv = len(std)
 
 ## real difference between eng and spa decoding accuracy of p10 vs. n40 sounds
+decoding_acc_p10n40 = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, 14, shuffle, randseed)
+
 decoding_acc_p10n40 = do_subject_by_subject_decoding([std, dev1], times, ts, te, ncv, shuffle, randseed)
 decoding_acc_p10p40 = do_subject_by_subject_decoding([std, dev2], times, ts, te, ncv, shuffle, randseed)
 diff_acc = np.mean(decoding_acc_p10n40, axis=0) - np.mean(decoding_acc_p10p40, axis=0)
