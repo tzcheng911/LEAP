@@ -183,8 +183,8 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     ## classifier
     clf = make_pipeline(
         StandardScaler(),  # z-score normalization
-        SVC(kernel='rbf',gamma='auto',C=0.1,class_weight='balanced')  
-        # SVC(kernel='linear', C=1)
+        # SVC(kernel='rbf',gamma='auto',C=0.1,class_weight='balanced')  
+        SVC(kernel='linear', C=1)
     )
     tslice = slice(ff(times, ts), ff(times, te))
     X = []
@@ -734,12 +734,17 @@ scores_diff = np.array(scores_diff)
 print(f"Accuracy: {np.mean(scores_diff):.3f}")
 
 #%%# permuation test to compare p10/n40 vs. p10/p40 decoding in eng
-ts = 0
-te = 0.20
+ts = -1000
+te = 1000
 niter = 1000 # see how the random seed affects accuracy
 shuffle = "keep pair"
 randseed = 2
 ncv = len(std)
+
+## Use sub section to decode EEG: [caution] need to reload the std, dev1, dev2 to ensure the full length
+std = std[:,slice(ff(times, 0.06), ff(times, 0.12))]
+dev1 = dev1[:,slice(ff(times, 0.06), ff(times, 0.12))]
+dev2 = dev2[:,slice(ff(times, 0.06), ff(times, 0.12))]
 
 ## real difference between eng and spa decoding accuracy of p10 vs. n40 sounds
 decoding_acc_p10n40 = do_subject_by_subject_decoding([std, dev1], times, ts, te, ncv, shuffle, randseed)
@@ -842,9 +847,10 @@ ax.axvline(diff_acc, color="red", linewidth=1)
 ## epoch length -20 to 200 ms with sampling rate at 5000 Hz
 
 ## Use V section to decode EEG
-std_v = std[:,slice(ff(times, 0.025), ff(times, 0.135))]
-dev1_v = dev1[:,slice(ff(times, 0.055), ff(times, 0.165))]
-dev2_v = dev2[:,slice(ff(times, 0.055), ff(times, 0.165))]
+# ts = 0.02, te = 0.13; ts = 0.06, te = 0.17
+std_v = std[:,slice(ff(times, 0.06), ff(times, 0.2))]
+dev1_v = dev1[:,slice(ff(times, 0.06), ff(times, 0.2))]
+dev2_v = dev2[:,slice(ff(times, 0.06), ff(times, 0.2))]
 
 scores_ba_mba_pa = do_subject_by_subject_decoding([std_v,dev1_v,dev2_v], times, -1000, 1000, 18, 'keep pair', None)
 scores_ba_mba = do_subject_by_subject_decoding([std_v,dev1_v], times, -1000, 1000, 18, 'keep pair', None)
@@ -953,15 +959,15 @@ print('spectral SNR: ' + str(np.array(SNR_s).mean()) + '(' + str(np.array(SNR_s)
 #%%####################################### xcorr analysis
 level = 'individual'
 
-ts = 0.02 # 0.02 for ba and pa, 0.06 for mba
-te = 0.13 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
+ts = 0 # 0.02 for ba and pa, 0.06 for mba
+te = 0.20 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
 
 fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
 fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
 fs_eeg, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
 
-audio = n40_audio
-EEG = n40_spa
+audio = p10_audio
+EEG = p10_eng
 audio = stats.zscore(audio)
 EEG = stats.zscore(EEG,axis=-1)
 
@@ -971,7 +977,6 @@ print(np.mean(xcorr['xcorr_max']))
 print(np.mean(xcorr['xcorr_lag_ms']))
 
 #%%
-
 xcorr1 = xcorr['xcorr_max']
 lag1 = xcorr['xcorr_lag_ms']
 
