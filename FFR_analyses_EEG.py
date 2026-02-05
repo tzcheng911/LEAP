@@ -184,7 +184,7 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     clf = make_pipeline(
         StandardScaler(),  # z-score normalization
         # SVC(kernel='rbf',gamma='auto',C=0.1,class_weight='balanced')  
-        SVC(kernel='linear', C=1)
+        SVC(kernel='linear', C=1,class_weight='balanced')
     )
     tslice = slice(ff(times, ts), ff(times, te))
     X = []
@@ -216,7 +216,27 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     score = np.mean(scores, axis=0)
     print("Decoding Accuracy %0.1f%%" % (100 * score))
     return scores
+    
+    ## using leave one out vs. leave one group out with stratified and matching subjects order give same results
+    # from sklearn.model_selection import LeaveOneGroupOut
+    # groups = np.concatenate((np.arange(0,18,1),np.arange(0,18,1)))
+    # logo = LeaveOneGroupOut()
+    # logo.get_n_splits(groups=groups)
+    # for i, (train_idx, test_idx) in enumerate(logo.split(X, y, groups)):
+    #     print(f"Fold {i}:")
+    #     print(f"  Train: index={train_idx}, group={groups[train_idx]}")
+    #     print(f"  Test:  index={test_idx}, group={groups[test_idx]}")
+    #     scaler = StandardScaler()
+    #     X_train = scaler.fit_transform(X[train_idx])
+    #     X_test  = scaler.transform(X[test_idx])
+        
+    #     clf = SVC(kernel='linear', C=1)
+    #     clf.fit(X_train, y[train_idx])
 
+    #     scores.append(clf.score(X_test, y[test_idx]))    
+    # score = np.mean(scores, axis=0)
+    # print("Decoding Accuracy %0.1f%%" % (100 * score))
+    
     ## see the weights 
     # from sklearn.model_selection import StratifiedKFold
     # cv = StratifiedKFold(n_splits=ncv, shuffle=False)
@@ -230,12 +250,13 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     #     X_test  = scaler.transform(X[test_idx])
         
     #     clf = SVC(kernel='linear', C=1)
-    #     clf.fit(X[train_idx], y[train_idx])
+    #     clf.fit(X_train, y[train_idx])
 
-    #     scores.append(clf.score(X[test_idx], y[test_idx]))
+    #     scores.append(clf.score(X_test, y[test_idx]))
     #     weights.append(clf.coef_.squeeze())
 
-
+    # score = np.mean(scores, axis=0)
+    # print("Decoding Accuracy %0.1f%%" % (100 * score))
     # weights = np.array(weights)   # shape: (n_folds, n_timepoints)
     # plt.figure()
     # plt.plot(np.linspace(-0.02,0.2,1101),np.mean(weights,axis=0))
@@ -638,7 +659,7 @@ fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
 file_type = 'EEG'
-ntrial = 'all'
+ntrial = '200'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
     
 #%%####################################### visualize the data to examine
@@ -671,17 +692,17 @@ trial_by_trial_decoding_acc = do_brainstem_trial_by_trial_decoding(root_path,n_t
 #%%####################################### Subject-by-subject EEG decoding brainstem dataset
 ## Run with one random seed 2
 ts = 0
-te = 0.13
+te = 0.2
 ## modify ts, te to do C and V section decoding [0, 40] ba C section
 ## for ba, 10 ms + 90 ms = 100 ms; for mba, 40 ms + 90 ms = 130 ms
 ## epoch length -20 to 200 ms with sampling rate at 5000 Hz
 ncv = 15
 randseed = 2
-shuffle = "full"
+
 decoding_acc = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, len(p10_eng), 'keep pair', randseed)
 decoding_acc = do_subject_by_subject_decoding([p10_spa, n40_spa], times, ts, te, len(p10_spa), 'keep pair', randseed)
 decoding_acc = do_subject_by_subject_decoding([p10_eng, p10_spa], times, ts, te, len(p10_eng), 'full', randseed)
-decoding_acc = do_subject_by_subject_decoding([n40_eng, n40_spa], times, ts, te, len(p10_spa), 'full', randseed)
+decoding_acc = do_subject_by_subject_decoding([n40_eng, n40_spa], times, ts, te, len(p10_eng), 'full', randseed)
 
 #%%# Run with iterative random seeds to test spa vs. eng
 ts = 0
@@ -715,7 +736,7 @@ ts = 0
 te = 0.15
 niter = 1000 # see how the random seed affects accuracy
 ncv = 15
-shuffle = "full"
+shuffle = "keep pair"
 scores_diff = []
 
 ## randomize the spanish speakers to use
@@ -734,17 +755,17 @@ scores_diff = np.array(scores_diff)
 print(f"Accuracy: {np.mean(scores_diff):.3f}")
 
 #%%# permuation test to compare p10/n40 vs. p10/p40 decoding in eng
-ts = -1000
-te = 1000
+ts = 0
+te = 0.06
 niter = 1000 # see how the random seed affects accuracy
 shuffle = "keep pair"
 randseed = 2
 ncv = len(std)
 
 ## Use sub section to decode EEG: [caution] need to reload the std, dev1, dev2 to ensure the full length
-std = std[:,slice(ff(times, 0.06), ff(times, 0.12))]
-dev1 = dev1[:,slice(ff(times, 0.06), ff(times, 0.12))]
-dev2 = dev2[:,slice(ff(times, 0.06), ff(times, 0.12))]
+# std = std[:,slice(ff(times, ts), ff(times, te))]
+# dev1 = dev1[:,slice(ff(times, ts), ff(times, te))]
+# dev2 = dev2[:,slice(ff(times, ts), ff(times, te))]
 
 ## real difference between eng and spa decoding accuracy of p10 vs. n40 sounds
 decoding_acc_p10n40 = do_subject_by_subject_decoding([std, dev1], times, ts, te, ncv, shuffle, randseed)
@@ -779,22 +800,22 @@ ax.set_ylabel("Count", fontsize=20)
 ax.set_xlabel("Accuracy Difference", fontsize=20)
 
 # chance line
-ax.axvline(np.mean(diff_scores_perm), color="grey", linestyle="--")
+ax.axvline(np.mean(diff_scores_perm), color="grey", linestyle="--", linewidth=2)
 # 95% line
 ax.axvline(np.percentile(diff_scores_perm,95),ymin=0,ymax=1000,color='grey',linewidth=2)
 # mean lines
-ax.axvline(diff_acc, color="red", linewidth=2)
+ax.axvline(diff_acc, color="red", linewidth=1)
 
-#%%# permuation test to compare Eng p10/n40 acc and Spa p10/n40 acce
+#%%# permuation test to compare Eng p10/n40 acc and Spa p10/n40 acc
 ts = 0
-te = 0.20
+te = 0.2
 niter = 1000 # see how the random seed affects accuracy
-shuffle = "keep pair"
+shuffle = "full"
 randseed = 2
 ncv = 15
 
 ## random select 15 spa subjects to match the 15 eng subjects
-rng0 = np.random.default_rng(1)
+rng0 = np.random.default_rng(0)
 perm = rng0.permutation(len(p10_spa))
 p10_spa_15 = p10_spa[perm,:][:-1,:]
 n40_spa_15 = n40_spa[perm,:][:-1,:]
@@ -813,7 +834,6 @@ rng = np.random.default_rng(None)
  
 for n_iter in np.arange(0,niter,1):
     print("iter " + str(n_iter))
-
     perm_ind = rng.permutation(n_total)
     group1_ind = perm_ind[:n_total//2]
     group2_ind = perm_ind[n_total//2:]
@@ -830,7 +850,7 @@ diff_scores_perm = np.array(diff_scores_perm)
 print(f"Accuracy: {np.mean(diff_scores_perm):.3f}")
 
 fig, ax = plt.subplots(1)
-ax.hist(diff_scores_perm, bins=5, alpha=0.6)
+ax.hist(diff_scores_perm, bins=7, alpha=0.6)
 ax.set_ylabel("Count", fontsize=20)
 ax.set_xlabel("Accuracy Difference", fontsize=20)
 
@@ -840,7 +860,6 @@ ax.axvline(np.mean(diff_scores_perm), color="grey", linestyle="--", linewidth=2)
 ax.axvline(np.percentile(diff_scores_perm,95),ymin=0,ymax=1000,color='grey', linestyle="--", linewidth=2)
 # mean lines
 ax.axvline(diff_acc, color="red", linewidth=1)
-
 
 #%%####################################### Subject-by-subject EEG or misc decoding CBS dataset
 ## change ts and te for C and V section decoding: for ba, 10 ms + 90 ms = 100 ms; for mba and pa, 40 ms + 90 ms = 130 ms
