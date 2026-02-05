@@ -406,14 +406,14 @@ def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level,lag_window_s=(-0.014, -0.007)
     ## p10: noise burst from 0 ms (100th points) ts = 100 # 0.02s (i.e. 0.02s after noise burst) te = 500 # 0.1s
     ## n40: noise burst from 40 ms (200th points) ts = 200 + 100 # 0.06s (i.e. 0.02s after noise burst) te = 650 # 0.13s
     ## p40: noise burst from 0 ms (100th points) ts = 100 # 0.02s te = 650 # 0.13s
-    tslice_audio = slice(ff(times_audio, ts), ff(times_audio, te)+1) ## +1 hack to make sure slice in audio and eeg are the same length
+    tslice_audio = slice(ff(times_audio, ts), ff(times_audio, te)) ## +1 hack to make sure slice in audio and eeg are the same length
     tslice_EEG = slice(ff(times_eeg, ts), ff(times_eeg, te))
 
     stim = audio_rs[tslice_audio]
     resp = EEG[:,tslice_EEG]
     lags = signal.correlation_lags(len(stim),resp.shape[1])
     lags_s = lags/fs_eeg
-
+    
     lag_min, lag_max = np.array(lag_window_s)
     lag_mask = (lags_s >= lag_min) & (lags_s <= lag_max)
 
@@ -447,15 +447,26 @@ def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level,lag_window_s=(-0.014, -0.007)
             idx = np.argmax(xcorr_win)
             xcorr_max.append(xcorr_win[idx])
             xcorr_lag.append(lag_win[idx])
+            
+            ## plot the signal
+            fig, axes = plt.subplots(
+                3, 1            )
+
+            axes = axes.flatten()
+            axes[0].plot(times_audio[tslice_audio], stim)
+            axes[1].plot(times_eeg[tslice_EEG],resp_z)
+            axes[2].plot(lags_s,xcorr)
+            axes[2].axvline(lag_min, color="grey", linestyle="--")
+            axes[2].axvline(lag_max, color="grey", linestyle="--")
 
         return {
             "xcorr_max": np.array(xcorr_max),
             "xcorr_lag_ms": np.array(xcorr_lag)
         }
-
     else:
         raise ValueError("level must be 'group' or 'individual'")
-
+    
+    
 def do_autocorr_sliding(
     eeg,
     fs_eeg,
@@ -660,7 +671,7 @@ fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
 file_type = 'EEG'
-ntrial = '200'
+ntrial = 'all'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
     
 #%%####################################### visualize the data to examine
@@ -968,7 +979,7 @@ level = 'individual' # 'group' (mean first then SNR) or 'individual' (SNR on ind
 data = n40_eng
 
 ts = 0
-te = 0.13 # 100 for ba and 130 for mba and pa
+te = 0.2 # 100 for ba and 130 for mba and pa
 fmin = 50
 fmax = 150
 
@@ -980,14 +991,14 @@ print('spectral SNR: ' + str(np.array(SNR_s).mean()) + '(' + str(np.array(SNR_s)
 level = 'individual'
 
 ts = 0 # 0.02 for ba and pa, 0.06 for mba
-te = 0.20 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
+te = 0.02 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
 
 fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
 fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
 fs_eeg, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
 
 audio = p10_audio
-EEG = p10_eng
+EEG = p10_spa
 audio = stats.zscore(audio)
 EEG = stats.zscore(EEG,axis=-1)
 
@@ -1011,7 +1022,7 @@ print(np.mean(xcorr['xcorr_lag_ms']))
 import pingouin as pg
 import pandas as pd
 
-df = pd.read_csv('/home/tzcheng/Downloads/FFR_xcorr_window2 - Brainstem - 3000.csv')
+df = pd.read_csv('/home/tzcheng/Downloads/FFR_xcorr_window3 - Brainstem - 200.csv')
 aov = pg.mixed_anova(
     dv='xcorr_lags',
     within='condition',
@@ -1021,21 +1032,40 @@ aov = pg.mixed_anova(
 )
 print(aov)
 
-df = pd.read_csv('/home/tzcheng/Downloads/FFR_xcorr - CBS.csv')
-condition1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_lags']
-condition2 = df.loc[(df["condition"] == 'n40') & (df["group"]== 'eng')]['xcorr_lags']
+df = pd.read_csv('/home/tzcheng/Downloads/FFR_xcorr_window4 - CBS.csv')
+condition1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_lags'].values
+condition2 = df.loc[(df["condition"] == 'n40') & (df["group"]== 'eng')]['xcorr_lags'].values
 stats.ttest_rel(condition1,condition2)
 
 ## run stats paired and independent ttest
 df.groupby(['condition', 'group'])['xcorr_coef'].mean()
-df.groupby(['condition', 'group'])['xcorr_lags'].mean()
+df.groupby(['condition', 'group'])['xcorr_lags'].mean()*1000
 
-condition1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_lags']
-condition2 = df.loc[(df["condition"] == 'n40') & (df["group"]== 'eng')]['xcorr_lags']
+condition1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'spa')]['xcorr_coef'].values
+condition2 = df.loc[(df["condition"] == 'n40') & (df["group"]== 'spa')]['xcorr_coef'].values
 stats.ttest_rel(condition1,condition2)
-group1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_lags']
-group2 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'spa')]['xcorr_lags']
+
+group1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_coef'].values
+group2 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'spa')]['xcorr_coef'].values
 stats.ttest_ind(group1,group2)
+
+## compare the diff of p10n40 between groups
+group1 = df.loc[(df["condition"] == 'n40') & (df["group"]== 'eng')]['xcorr_coef'].values - df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_coef'].values 
+group2 =  df.loc[(df["condition"] == 'n40') & (df["group"]== 'spa')]['xcorr_coef'].values - df.loc[(df["condition"] == 'p10') & (df["group"]== 'spa')]['xcorr_coef'].values
+stats.ttest_ind(group1,group2)
+
+## implement permutation test
+import numpy as np
+from scipy.stats import permutation_test
+
+def statistic(x, y, axis=0):
+    return np.mean(x, axis=axis) - np.mean(y, axis=axis)
+
+result = permutation_test((condition1, condition2), statistic, n_resamples=1000, alternative='two-sided')
+print(f"condition1 Mean: {np.mean(condition1):.2f}")
+print(f"condition2 Mean: {np.mean(condition2):.2f}")
+print(f"Observed Difference: {result.statistic:.2f}")
+print(f"P-value: {result.pvalue}")
 
 
 #%%####################################### autocorr analysis
