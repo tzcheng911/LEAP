@@ -101,8 +101,8 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     ## classifier
     clf = make_pipeline(
         StandardScaler(),  # z-score normalization
-        SVC(kernel='rbf',gamma='auto',C=0.1,class_weight='balanced')  
-        # SVC(kernel='linear', C=1)
+        # SVC(kernel='rbf',gamma='auto',C=0.1,class_weight='balanced')  
+        SVC(kernel='linear', C=1)
     )
     tslice = slice(ff(times, ts), ff(times, te))
     X = []
