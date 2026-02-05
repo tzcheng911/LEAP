@@ -167,6 +167,7 @@ def do_brainstem_trial_by_trial_decoding(root_path,n_trials,decoding_type):
     clf = make_pipeline(
         StandardScaler(),
         SVC(kernel='rbf',gamma='auto')  
+        # SVC(kernel='linear', C=1,class_weight='balanced')
        )
 
     scores = cross_val_multiscore(clf, X, y, cv=5, n_jobs=4) 
