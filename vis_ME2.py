@@ -41,6 +41,113 @@ def plot_err(group_stc,color,t):
     plt.plot(t,group_avg,color=color)
     plt.fill_between(t,up,lw,color=color,alpha=0.5)
 
+def plot_multiFreq_random_vs_rhythmic(
+    psds_random,
+    psds_rhythmic_list,
+    FOIs,
+    freq_labels,
+    rhythmic_labels,
+    colors_random="tab:grey",
+    colors_rhythmic=("#ff7f0e", "#1f77b4", "#2ca02c"),
+    ylabel="PSD",
+    jitter=0.04,
+    bar_width=0.32,
+    figsize=(7, 4),
+    save_path=None
+):
+    """
+    One plot: Random vs frequency-specific rhythmic conditions.
+
+    Parameters
+    ----------
+    psds_random : ndarray (n_subjects, n_freqs)
+    psds_rhythmic_list : list of ndarrays
+        [psds_duple, psds_triple, psds_beat, ...]
+    FOIs : list of lists
+        Frequency indices per rhythmic condition
+    freq_labels : list
+        X-axis labels (e.g., meter rates)
+    rhythmic_labels : list
+        Labels for rhythmic conditions (for legend)
+    """
+
+    n_freq = len(FOIs)
+    x_base = np.arange(n_freq)
+
+    plt.figure(figsize=figsize)
+
+    for i, (FOI, psds_rhythm) in enumerate(zip(FOIs, psds_rhythmic_list)):
+
+        # ---- average over FOI ----
+        R = psds_random[:, FOI].mean(axis=1)
+        Y = psds_rhythm[:, FOI].mean(axis=1)
+
+        means = [R.mean(), Y.mean()]
+        ses = [
+            R.std(ddof=1) / np.sqrt(len(R)),
+            Y.std(ddof=1) / np.sqrt(len(Y))
+        ]
+
+        xR = x_base[i] - bar_width / 2
+        xY = x_base[i] + bar_width / 2
+
+        # ---- bars ----
+        plt.bar(xR, means[0], width=bar_width,
+                color=colors_random, alpha=0.6, zorder=1)
+
+        plt.bar(xY, means[1], width=bar_width,
+                color=colors_rhythmic[i], alpha=0.6, zorder=1)
+
+        # ---- datapoints ----
+        plt.scatter(
+            np.random.normal(xR, jitter, len(R)),
+            R, color="black", zorder=2
+        )
+        plt.scatter(
+            np.random.normal(xY, jitter, len(Y)),
+            Y, color="black", zorder=2
+        )
+
+        # ---- error bars ----
+        plt.errorbar(
+            [xR, xY],
+            means,
+            yerr=ses,
+            fmt="none",
+            ecolor="lightgrey",
+            elinewidth=3,
+            capsize=6,
+            capthick=3,
+            zorder=3
+        )
+
+    # ---- axes ----
+    fontsize = 14
+    plt.xticks(x_base, freq_labels, fontsize=fontsize)
+    plt.yticks(fontsize=12)
+    plt.ylabel(ylabel, fontsize=fontsize)
+
+    ax = plt.gca()
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    # ---- legend ----
+    # ---- legend with custom order ----
+    legend_handles = [
+        plt.Rectangle((0, 0), 1, 1, color=colors_random, alpha=0.6),  # Random
+        plt.Rectangle((0, 0), 1, 1, color="#ff7f0e", alpha=0.6),       # Duple (orange)
+        plt.Rectangle((0, 0), 1, 1, color="tab:blue", alpha=0.6),      # Triple (blue)
+    ]
+    
+    legend_labels = ["Random", "Duple", "Triple"]
+    plt.legend(legend_handles, legend_labels, frameon=False)
+
+    plt.tight_layout()
+    if save_path is not None:
+        plt.savefig(save_path, dpi=600, bbox_inches="tight", transparent=True)
+    plt.show()
+
+
 def plot_AB_bar_with_points(
     psds_A,
     psds_B,
@@ -271,20 +378,46 @@ for n_age in ages:
 
     ## take the significant freqs to plug in FOI for each condition from above 
     ## duple meter [12, 13] and beat [30, 31, 32]
-    FOI = [12, 13]
-    out_name = "meter rate 1.67 Hz"
     
-    # orange #ff7f0e, blue #1f77b4
-    plot_AB_bar_with_points(psds_random, psds_duple,FOI,labels=("Random", "Duple"),
-                            colors=("tab:grey", "#ff7f0e"),ylabel="PSD at " + out_name,jitter=0.04,figsize=(5, 4),
-                            save_path="/home/tzcheng/Desktop/PSD_barplot_duple_meter.pdf")
+    #### plotting the results
+    # Random: always grey
+    color_random = "tab:grey"
     
-    ## triple meter [6, 7], 1st horm [18, 19] and beat [30, 31]
-    FOI = [18, 19]
-    out_name = "meter rate 1.11 Hz"
-    plot_AB_bar_with_points(psds_random, psds_triple,FOI,labels=("Random", "Triple"),
-                            colors=("tab:grey", "#1f77b4"),ylabel="PSD at " + out_name,jitter=0.04,figsize=(5, 4),
-                            save_path="/home/tzcheng/Desktop/PSD_barplot_triple_meter.pdf")
+    # Rhythmic: Duple = orange, Triple = blue
+    # Map your rhythmic data order:
+    colors_rhythmic = [
+        "tab:blue",     # Triple 1.11 Hz
+        "#ff7f0e",      # Duple 1.67 Hz
+        "tab:blue"      # Triple 2.22 Hz
+    ]
+    
+    ## beats
+    FOIs = [
+        [30, 31, 32],  # duple beat
+        [30, 31],  # triple beat
+    ]
+
+
+    ## meters
+    # FOIs = [
+    #     [6, 7],    # triple meter
+    #     [12, 13],  # duple meter
+    #     [18, 19],  # triple 1st harmonic
+    # ]
+    
+    plot_multiFreq_random_vs_rhythmic(
+        psds_random,
+        psds_rhythmic_list=[psds_triple,psds_duple],
+        FOIs=FOIs,
+        freq_labels=["3.33 Hz","3.33 Hz"],
+        rhythmic_labels=["Triple","Duple"],
+        colors_random=color_random,
+        colors_rhythmic=colors_rhythmic,
+        ylabel="PSD at beat rate",
+        save_path="/home/tzcheng/Desktop/sensor_PSD_barplot_all_beat.pdf"
+    )
+
+
 
 #%%####################################### Visualize on the source level: ROI 
 n_folder = folders[2]
