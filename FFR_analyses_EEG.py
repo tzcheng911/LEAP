@@ -990,15 +990,26 @@ print('spectral SNR: ' + str(np.array(SNR_s).mean()) + '(' + str(np.array(SNR_s)
 #%%####################################### xcorr analysis
 level = 'individual'
 
-ts = 0 # 0.02 for ba and pa, 0.06 for mba
-te = 0.02 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
+# lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+# rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+# nROI = 2
+# std = std_all[:,rh_ROI_label[nROI],:] 
+# dev1 = dev1_all[:,rh_ROI_label[nROI],:] 
+# dev2 = dev2_all[:,rh_ROI_label[nROI],:]
+
+# p10_eng = p10_eng_all[:,rh_ROI_label[nROI],:] 
+# n40_eng = n40_eng_all[:,rh_ROI_label[nROI],:] 
+
+ts = 0.02 # 0.02 for ba and pa, 0.06 for mba
+te = 0.13 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
 
 fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
 fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
+fs_audio, p40_audio = load_CBS_file('audio', 'p40', 'adults')
 fs_eeg, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
 
-audio = p10_audio
-EEG = p10_spa
+audio = p40_audio
+EEG = dev2
 audio = stats.zscore(audio)
 EEG = stats.zscore(EEG,axis=-1)
 
@@ -1008,10 +1019,10 @@ print(np.mean(xcorr['xcorr_max']))
 print(np.mean(xcorr['xcorr_lag_ms']))
 
 #%%
-xcorr1 = xcorr['xcorr_max']
-lag1 = xcorr['xcorr_lag_ms']
+xcorr3 = xcorr['xcorr_max']
+lag3 = xcorr['xcorr_lag_ms']
 
-stats.ttest_rel(xcorr1,xcorr2)
+stats.ttest_rel(xcorr1,xcorr3)
 
 #%%
 # print(xcorr)
@@ -1022,7 +1033,7 @@ print(np.mean(xcorr['xcorr_lag_ms']))
 import pingouin as pg
 import pandas as pd
 
-df = pd.read_csv('/home/tzcheng/Downloads/FFR_xcorr_window3 - Brainstem - 200.csv')
+df = pd.read_csv('/home/tzcheng/Downloads/FFR_xcorr_window4 - Brainstem - 200.csv')
 aov = pg.mixed_anova(
     dv='xcorr_lags',
     within='condition',
@@ -1033,20 +1044,26 @@ aov = pg.mixed_anova(
 print(aov)
 
 df = pd.read_csv('/home/tzcheng/Downloads/FFR_xcorr_window4 - CBS.csv')
-condition1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_lags'].values
-condition2 = df.loc[(df["condition"] == 'n40') & (df["group"]== 'eng')]['xcorr_lags'].values
+condition1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_coef'].values
+condition2 = df.loc[(df["condition"] == 'n40') & (df["group"]== 'eng')]['xcorr_coef'].values
 stats.ttest_rel(condition1,condition2)
 
 ## run stats paired and independent ttest
 df.groupby(['condition', 'group'])['xcorr_coef'].mean()
 df.groupby(['condition', 'group'])['xcorr_lags'].mean()*1000
 
+condition1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_coef'].values
+condition2 = df.loc[(df["condition"] == 'n40') & (df["group"]== 'eng')]['xcorr_coef'].values
+stats.ttest_rel(condition1,condition2)
 condition1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'spa')]['xcorr_coef'].values
 condition2 = df.loc[(df["condition"] == 'n40') & (df["group"]== 'spa')]['xcorr_coef'].values
 stats.ttest_rel(condition1,condition2)
 
-group1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_coef'].values
-group2 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'spa')]['xcorr_coef'].values
+group1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_lags'].values
+group2 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'spa')]['xcorr_lags'].values
+stats.ttest_ind(group1,group2)
+group1 = df.loc[(df["condition"] == 'n40') & (df["group"]== 'eng')]['xcorr_lags'].values 
+group2 =  df.loc[(df["condition"] == 'n40') & (df["group"]== 'spa')]['xcorr_lags'].values
 stats.ttest_ind(group1,group2)
 
 ## compare the diff of p10n40 between groups
