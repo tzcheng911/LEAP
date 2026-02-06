@@ -168,15 +168,15 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 times = np.linspace(-0.02, 0.2, 1101)
 
 #%%####################################### load the data
-file_type = 'sensor'
+file_type = 'morph_roi'
 subject_type = 'adults'
 fs,std_all = load_CBS_file(file_type, 'p10', subject_type)
 fs,dev1_all = load_CBS_file(file_type, 'n40', subject_type)
 fs,dev2_all = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
-file_type = 'sensor'
-ntrial = 'all'
+file_type = 'roi'
+ntrial = '200'
 # fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
 fs, p10_eng_all, n40_eng_all = load_brainstem_file(file_type, ntrial)
 
