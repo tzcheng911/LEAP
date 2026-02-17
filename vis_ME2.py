@@ -47,8 +47,8 @@ def plot_multiFreq_random_vs_rhythmic(
     FOIs,
     freq_labels,
     rhythmic_labels,
+    colors_rhythmic,
     colors_random="tab:grey",
-    colors_rhythmic=("#ff7f0e", "#1f77b4", "#2ca02c"),
     ylabel="PSD",
     jitter=0.04,
     bar_width=0.32,
@@ -131,122 +131,11 @@ def plot_multiFreq_random_vs_rhythmic(
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 
-    # ---- legend ----
-    # ---- legend with custom order ----
-    legend_handles = [
-        plt.Rectangle((0, 0), 1, 1, color=colors_random, alpha=0.6),  # Random
-        plt.Rectangle((0, 0), 1, 1, color="#ff7f0e", alpha=0.6),       # Duple (orange)
-        plt.Rectangle((0, 0), 1, 1, color="tab:blue", alpha=0.6),      # Triple (blue)
-    ]
-    
-    legend_labels = ["Random", "Duple", "Triple"]
-    plt.legend(legend_handles, legend_labels, frameon=False)
-
     plt.tight_layout()
     if save_path is not None:
         plt.savefig(save_path, dpi=600, bbox_inches="tight", transparent=True)
     plt.show()
 
-
-def plot_AB_bar_with_points(
-    psds_A,
-    psds_B,
-    FOI,
-    labels=("A", "B"),
-    colors=("tab:grey", "#ff7f0e"),
-    ylabel="Value",
-    jitter=0.04,
-    figsize=(5, 4),
-    save_path = None
-):
-    """
-    Bar plot with individual datapoints and SE error bars.
-
-    Parameters
-    ----------
-    psds_A : ndarray (n_subjects, n_freqs)
-        Data for condition A
-    psds_B : ndarray (n_subjects, n_freqs)
-        Data for condition B
-    FOI : list or array
-        Frequency-of-interest indices
-    labels : tuple
-        X-axis labels for conditions
-    colors : tuple
-        Bar colors for A and B
-    ylabel : str
-        Y-axis label
-    jitter : float
-        Horizontal jitter for datapoints
-    figsize : tuple
-        Figure size
-    """
-
-    # ---- average over FOI ----
-    A = psds_A[:, FOI].mean(axis=1)
-    B = psds_B[:, FOI].mean(axis=1)
-
-    means = [A.mean(), B.mean()]
-    ses = [
-        A.std() / np.sqrt(len(A)),
-        B.std() / np.sqrt(len(B))
-    ]
-
-    x = np.array([0, 1])
-
-    # ---- plot ----
-    plt.figure(figsize=figsize)
-
-    # bars (background)
-    plt.bar(
-        x,
-        means,
-        color=colors,
-        alpha=0.6,
-        zorder=1
-    )
-
-    # datapoints (middle)
-    plt.scatter(
-        np.random.normal(x[0], jitter, len(A)),
-        A,
-        color="black",
-        zorder=2
-    )
-    plt.scatter(
-        np.random.normal(x[1], jitter, len(B)),
-        B,
-        color="black",
-        zorder=2
-    )
-
-    # error bars (front)
-    plt.errorbar(
-        x,
-        means,
-        yerr=ses,
-        fmt="none",
-        ecolor="lightgrey",
-        elinewidth=3,
-        capsize=6,
-        capthick=3,
-        zorder=3
-    )
-    
-    fontsize = 14
-   
-    # plt.ylim([0, 5.5e-25])
-    plt.xticks(x, labels, fontsize=fontsize)
-    plt.yticks(fontsize=12)
-    plt.ylabel(ylabel, fontsize=fontsize)
-    # remove top and right spines only
-    ax = plt.gca()
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-    plt.tight_layout()
-    if save_path is not None:
-       plt.savefig(save_path, dpi=600, bbox_inches="tight", transparent=True)
-    plt.show()
     
 def plot_audio(audio,fmin,fmax,fs):
     plt.figure()
@@ -327,7 +216,7 @@ fs, audio = wavfile.read(root_path + 'Stimuli/Random/random15rr.wav') # Random, 
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 
 #%% Parameters
-ages = ['7mo','11mo'] 
+ages = ['7mo'] 
 folders = ['SSEP/','decoding/','connectivity/'] # random, duple, triple
 analysis = ['psds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
 which_data_type = ['_sensor_','_roi_','_roi_redo4_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
@@ -386,35 +275,35 @@ for n_age in ages:
     # Rhythmic: Duple = orange, Triple = blue
     # Map your rhythmic data order:
     colors_rhythmic = [
-        "tab:blue",     # Triple 1.11 Hz
-        "#ff7f0e",      # Duple 1.67 Hz
-        "tab:blue"      # Triple 2.22 Hz
+        "#1f77b4",
+        "#ff7f0e",     # Duple #ff7f0e
+        "#1f77b4"      # Triple #1f77b4
     ]
-    
+
     ## beats
-    FOIs = [
-        [30, 31, 32],  # duple beat
-        [30, 31],  # triple beat
-    ]
+    # FOIs = [
+    #     [30, 31, 32],  # duple beat
+    #     [30, 31],  # triple beat
+    # ]
 
 
     ## meters
-    # FOIs = [
-    #     [6, 7],    # triple meter
-    #     [12, 13],  # duple meter
-    #     [18, 19],  # triple 1st harmonic
-    # ]
+    FOIs = [
+        [6, 7],    # triple meter
+        [12, 13],  # duple meter
+        [18, 19],  # triple 1st harmonic
+    ]
     
     plot_multiFreq_random_vs_rhythmic(
         psds_random,
-        psds_rhythmic_list=[psds_triple,psds_duple],
+        psds_rhythmic_list=[psds_triple,psds_duple,psds_triple],
         FOIs=FOIs,
-        freq_labels=["3.33 Hz","3.33 Hz"],
-        rhythmic_labels=["Triple","Duple"],
+        freq_labels=["1.11 Hz","1.67 Hz","2.22 Hz"],
+        rhythmic_labels=["Duple","Triple"],
         colors_random=color_random,
         colors_rhythmic=colors_rhythmic,
-        ylabel="PSD at beat rate",
-        save_path="/home/tzcheng/Desktop/sensor_PSD_barplot_all_beat.pdf"
+        ylabel="PSD at meter rate",
+        save_path="/home/tzcheng/Desktop/sensor_PSD_barplot_all_meter.pdf"
     )
 
 
@@ -451,7 +340,7 @@ color1 = ['m','r']
 color2 = ['c','b']
 ROI1 = 66
 ROI2 = 53
-for nn_age,n_age in enumerate(ages[:-1]):
+for nn_age,n_age in enumerate(ages):
     print("Doing age " + n_age)
     if n_folder == 'connectivity/':
         random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
@@ -485,9 +374,9 @@ for nn_age,n_age in enumerate(ages[:-1]):
                 duple = duple0[duple0.files[0]]
                 triple = triple0[triple0.files[0]]
                 freqs = random0[random0.files[1]]          
-                plot_SSEP(random[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_random')
-                plot_SSEP(duple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_duple')
-                plot_SSEP(triple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_triple')
+                # plot_SSEP(random[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_random')
+                # plot_SSEP(duple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_duple')
+                # plot_SSEP(triple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_triple')
                 
                 # Doing ROI SSEP: Auditory
                 # -------------------Doing duple-------------------
@@ -524,22 +413,43 @@ for nn_age,n_age in enumerate(ages[:-1]):
                 
                 ## take the significant freqs to plug in FOI for each condition from above 
                 ## duple meter [12, 13] and beat [30, 31, 32]
-                FOI = [12, 13]
-                ROI = 1
-                out_name = "meter rate 1.67 Hz"
+               
+                color_random = "tab:grey"
                 
-                # orange #ff7f0e, blue #1f77b4
-                plot_AB_bar_with_points(random[:,ROI,:], duple[:,ROI,:],FOI,labels=("Random", "Duple"),
-                                        colors=("tab:grey", "#ff7f0e"),ylabel="PSD at " + out_name,jitter=0.04,figsize=(5, 4),
-                                        save_path="/home/tzcheng/Desktop/Figure3_ROI_SSEP/SM_PSD_barplot_duple_meter.pdf")
+                # Rhythmic: Duple = orange, Triple = blue
+                # Map your rhythmic data order:
+                colors_rhythmic = [
+                    "#ff7f0e",     # Duple #ff7f0e
+                    "#1f77b4"      # Triple #1f77b4
+                ]
+            
+                ## beats
+                FOIs = [
+                    [30, 31],  # duple beat
+                    [30, 31],  # triple beat
+                ]
+            
+            
+                ## meters
+                # FOIs = [
+                #     [6, 7],    # triple meter
+                #     [12, 13],  # duple meter
+                #     [18, 19],  # triple 1st harmonic
+                # ]
                 
-                ## triple meter [6, 7], 1st horm [18, 19] and beat [30, 31]
-                FOI = [18, 19]
-                ROI = 2
-                out_name = "meter rate 2.22 Hz"
-                plot_AB_bar_with_points(random[:,ROI,:], triple[:,ROI,:],FOI,labels=("Random", "Triple"),
-                                        colors=("tab:grey", "#1f77b4"),ylabel="PSD at " + out_name,jitter=0.04,figsize=(5, 4),
-                                        save_path="/home/tzcheng/Desktop/Figure3_ROI_SSEP/BG_PSD_barplot_triple_harm.pdf")
+                nROI = 1 # 0,1,2
+                
+                plot_multiFreq_random_vs_rhythmic(
+                    psds_random,
+                    psds_rhythmic_list=[duple[:,nROI,:],triple[:,nROI,:]],
+                    FOIs=FOIs,
+                    freq_labels=["3.33 Hz","3.33 Hz"],
+                    rhythmic_labels=["Duple","Triple"],
+                    colors_random=color_random,
+                    colors_rhythmic=colors_rhythmic,
+                    ylabel="PSD at beat rate",
+                    save_path="/home/tzcheng/Desktop/ROI_SM_PSD_barplot_all_beat.pdf"
+                )              
                 
             elif n_folder == 'decoding/':
                 decoding_duple = np.load(root_path + n_folder + n_age + data_type +'decodingACC_duple.npy') 
@@ -551,7 +461,7 @@ for nn_age,n_age in enumerate(ages[:-1]):
 data_type = which_data_type[-1]
 n_analysis = analysis[0]
 n_folder = folders[0]
-n_meter = 'duple' # 'duple' or 'triple'
+n_meter = 'triple' # 'duple' or 'triple'
 p_threshold = 0.05 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 
 for n_age in ages:
@@ -597,9 +507,9 @@ for n_age in ages:
         stc_all_cluster_vis = summarize_clusters_stc(
             clu, p_thresh = p_threshold, vertices=src, subject="fsaverage"
         )
-        # stc_all_cluster_vis.plot(src=src,clim=dict(kind="percent",lims=[99.7,99.75,99.975])) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
+        stc_all_cluster_vis.plot(src=src,clim=dict(kind="percent",lims=[99.7,99.75,99.975])) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
         # stc_all_cluster_vis.plot(src=src) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
-        stc_all_cluster_vis.plot_3d(src=src)
+        # stc_all_cluster_vis.plot_3d(src=src)
         
     elif n_folder == 'decoding/':
         decoding_acc = np.load(root_path + n_folder + n_age + data_type + 'decodingACC_' + n_meter +'.npy') 
