@@ -461,7 +461,7 @@ for nn_age,n_age in enumerate(ages):
 data_type = which_data_type[-1]
 n_analysis = analysis[0]
 n_folder = folders[0]
-n_meter = 'triple' # 'duple' or 'triple'
+n_meter = 'duple' # 'duple' or 'triple'
 p_threshold = 0.05 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 
 for n_age in ages:
