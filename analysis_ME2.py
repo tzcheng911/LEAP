@@ -17,7 +17,7 @@ import numpy as np
 import random
 import mne
 from mne.decoding import cross_val_multiscore
-from mne_connectivity import spectral_connectivity_time
+from mne_connectivity import spectral_connectivity_time, read_connectivity
 import os
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
