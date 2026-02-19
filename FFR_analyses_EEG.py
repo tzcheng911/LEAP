@@ -677,7 +677,7 @@ fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
 file_type = 'EEG'
-ntrial = 'all'
+ntrial = '200'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
     
 #%%####################################### visualize the data to examine
@@ -1159,13 +1159,13 @@ signal = p10_eng.mean(0)
 signal = signal.astype(np.float32)
 signal = signal/np.max(np.abs(signal))
 
-nfft = 128
+nfft = fs
 S = librosa.stft(
     signal,
     n_fft = nfft,
-    hop_length = nfft//16,
-    win_length = nfft,
-    window = 'hann')
+    hop_length = int(nfft*(0.04-0.039)), # Python hop_length ≠ MATLAB overlap
+    win_length = int(nfft*0.04),
+    window = 'hamm')
 S_db = librosa.amplitude_to_db(np.abs(S),ref=np.max)
 
 ## Plot the spectrogram
@@ -1173,10 +1173,10 @@ fig, ax = plt.subplots(figsize=(10, 4))
 im = librosa.display.specshow(
     S_db,
     sr=fs,
-    hop_length=nfft//16,
+    hop_length=int(nfft*0.039),
     x_axis='time',
     y_axis='hz',
-    cmap='magma',
+    cmap='jet',
     ax=ax,
     vmin=-20,
     vmax=0   
