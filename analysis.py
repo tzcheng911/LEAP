@@ -3,7 +3,7 @@
 """
 Created on Thu Dec 12 09:54:23 2024
 
-Run statistical analysis on the output SSEP (sensor, ROI, whole brian), conn (ROI), and correlation
+Run statistical analysis on the SSEP (sensor, ROI, whole brian), conn (ROI), and correlation
 Input: .npy files in the "analyzed data" i.e. SSEP, ERSP, decoding, connectivity folders
 Output: some figures, statistic results (stats, p-value)
 
@@ -61,7 +61,7 @@ def stats_SSEP(X,freqs,nonparametric):
         print('t statistics: ' + str(t))
         print('p-value: ' + str(p))
 
-def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold,freqs):
+def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_folder,p_threshold):
     ## Compute non-parametric 2D cluster test (across freqs and vertex) on X (psd1 - psd2) and save the cluster results
     print("Computing adjacency.")
     src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
@@ -80,11 +80,11 @@ def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold
         buffer_size=None,
         verbose=True,
     )
-    filename = root_path + n_folder + n_age + '_SSEP_wholebrain_cluster_test_' + n_meter +'.pkl'
+    filename = root_path + n_folder + '7mo_SSEP_wholebrain_cluster_test_' + n_meter +'.pkl'
     with open(filename, 'wb') as f:
         pickle.dump(clu, f) # clu: clustering results of T_obs, clusters, cluster_p_values, H0
 
-def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,fmin,fmax,ymin,ymax):
+def stats_CONN(conn1,conn2,freqs,FOI,ROI1,ROI2,fmin,fmax,ymin,ymax):
     XX = conn1-conn2
     ## compare whole freq spectrum between conditions and ages 
     # non-parametric
@@ -125,42 +125,23 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,fmin,fma
         X = XX.mean(axis=3)
             
     t,p = stats.ttest_1samp(X,0)
-    labels = mne.read_labels_from_annot("sample", parc="aparc", subjects_dir=subjects_dir)
-    label_colors = [label.color for label in labels]
-      
-    node_order = list()
-    node_order.extend(label_names)  # reverse the order
-    node_angles = circular_layout(
-         label_names, node_order, start_pos=90, group_boundaries=[0, len(label_names) / 2])
-    
-def extract_CDI(MEGAge,CDIAge,CDIscore):
-    ages = ['7mo','11mo']
+
+def extract_CDI(CDIAge,CDIscore):
     subj_7mo = []
-    subj_11mo = []
-    subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
-            '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/']
-    for n_age,age in enumerate(ages):# only need the me2_7m and me2_11m
-        for file in os.listdir(subj_path[n_age]):
-            if file.endswith('7m'):
-                print('append ' + file)
-                subj_7mo.append(file[:-3]) 
-            elif file.endswith('11m'):
-                print('append ' + file)
-                subj_11mo.append(file[:-4])
+    subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'] 
+    for file in os.listdir(subj_path[0]):
+        if file.endswith('7m'):
+            print('append ' + file)
+            subj_7mo.append(file[:-3]) 
 
     ## Select subjects CDI score for those who have neural data
-    CDI_WG0 = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=0)
     CDI_WS0 = pd.read_excel(root_path + 'ME2_WG_WS_zoe.xlsx',sheet_name=2)
     CDI_WS_7mo = CDI_WS0[CDI_WS0['ParticipantId'].isin(subj_7mo)] # select the subjects who has neural data 
-    CDI_WS_11mo = CDI_WS0[CDI_WS0['ParticipantId'].isin(subj_11mo)] # select the subjects who has neural data 
     
     ## De-select subjects who has neural data but does not have CDI data: 7mo ('me2_203', 'me2_120', 'me2_117')
-    subj_noCDI = list(set(subj_7mo) - set(CDI_WS0['ParticipantId'])) # same result in list(set(subj_all) - set(CDI_WG0['ParticipantId']))   
-    subj_noCDI_ind = [2,8,25] # CAUTION hardcoded manual input here, check if this is the data storing order for 7mo in group_ME2.py (confirmed 2025/1/13 Zoe)
-    if MEGAge == '7mo':
-        CDI = CDI_WS_7mo[CDI_WS_7mo['CDIAge'] == CDIAge][CDIscore]
-    elif MEGAge == '11mo':
-        CDI = CDI_WS_11mo[CDI_WS_11mo['CDIAge'] == CDIAge][CDIscore]
+    subj_noCDI_ind = [2,8,25]
+    CDI = CDI_WS_7mo[CDI_WS_7mo['CDIAge'] == CDIAge][CDIscore]
+   
     return CDI, subj_noCDI_ind
     
 def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,ROI1,ROI2,SSEP_FOI,F1,F2):
@@ -205,6 +186,72 @@ def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,
         else:
             print("Freqs not exist.")
 
+def wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_value_threshold=0.05):
+    from scipy.ndimage import label
+    from scipy.sparse import csr_matrix
+    from scipy.sparse.csgraph import connected_components
+
+    # Step 1: Prep the data
+    np.random.seed(42)
+    n_subjects, n_sensors = np.shape(MEG)[0], np.shape(MEG)[1]
+    neural = MEG
+    behavior = CDI.to_numpy()
+
+    print("Computing adjacency.")
+    adjacency = mne.spatial_src_adjacency(src)
+    adjacency_sparse = csr_matrix(adjacency)
+
+    # Step 2: Compute observed correlations
+    r_vals = np.array([pearsonr(neural[:, i], behavior)[0] for i in range(n_sensors)])
+    t_vals = r_vals * np.sqrt((n_subjects - 2) / (1 - r_vals**2))
+
+    # Step 3: Threshold for cluster formation (e.g., |t| > critical t for p<0.05, df=n-2)
+    t_crit = t.ppf(1 - p_value_threshold / 2, df=n_subjects - 2)  # two-tailed
+    supra_thresh = np.abs(t_vals) > t_crit
+
+    # Step 4: Define clusters 
+    sub_adj = adjacency_sparse[supra_thresh][:, supra_thresh]
+    n_clusters, labels = connected_components(sub_adj, directed=False)
+    cluster_labels = np.zeros(n_sensors, dtype=int)
+    cluster_labels[supra_thresh] = labels + 1  # +1 to start cluster IDs at 1
+
+    # Step 5: Compute cluster statistics (sum of t-values within each cluster)
+    cluster_stats = np.array([np.sum(np.abs(t_vals)[cluster_labels == c + 1]) for c in range(n_clusters)])
+
+    # Step 6: Build null distribution with permutation
+    max_cluster_stats = np.zeros(n_permutations)
+    for p in range(n_permutations):
+        print("Iteration " + str(p))
+        y_perm = np.random.permutation(behavior)
+        r_perm = np.array([pearsonr(neural[:, i], y_perm)[0] for i in range(n_sensors)])
+        t_perm = r_perm * np.sqrt((n_subjects - 2) / (1 - r_perm**2))
+        supra_perm = np.abs(t_perm) > t_crit
+        sub_adj_perm = adjacency_sparse[supra_perm][:, supra_perm]
+        perm_n_clusters, perm_labels = connected_components(sub_adj_perm, directed=False)
+        cluster_labels_perm = np.zeros(n_sensors, dtype=int)
+        cluster_labels_perm[supra_perm] = perm_labels + 1  # +1 to start cluster IDs at 1
+        if perm_n_clusters > 0:
+            perm_stats = np.array([np.sum(np.abs(t_perm)[cluster_labels_perm == c + 1]) for c in range(perm_n_clusters)])
+            max_cluster_stats[p] = np.max(perm_stats)
+        else:
+            max_cluster_stats[p] = 0
+
+    # Step 7: Compare observed cluster stats to null (family-wise correction)
+    p_values = np.array([np.mean(max_cluster_stats >= s) for s in cluster_stats])
+
+    # Step 8: Print results
+    results = []
+    for i, (s, p) in enumerate(zip(cluster_stats, p_values)):
+        results.append(f"Cluster {i+1}: sum(|t|)={s:.2f}, p={p:.4f}")
+        print(f"Cluster {i+1}: sum(|t|)={s:.2f}, p={p:.4f}")
+    
+    print("Saving results.")
+    np.savez_compressed('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/correlation/' + filename, cluster_labels=cluster_labels,n_meter = meter, n_age = age, n_clusters= n_clusters,supra_thresh=supra_thresh,n_permutations=n_permutations,
+                            cluster_stats=cluster_stats,
+                            p_values=p_values,
+                            max_cluster_stats=max_cluster_stats)
+    return results, cluster_stats, p_values, cluster_labels, max_cluster_stats
+
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -239,7 +286,7 @@ stats_SSEP(psds_triple-psds_random,freqs,True)
 root_path = '/home/tzcheng/Desktop/ME2_upload_to_github/data/'
 n_folder = 'SSEP/'
 n_analysis = 'psds'
-data_type = which_data_type[2] # 1:_roi_ or 2:_roi_redo_
+data_type = '_roi_redo4_'
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(["Auditory", "SensoryMotor", "BG"])
@@ -268,15 +315,14 @@ random = random0[random0.files[0]]
 duple = duple0[duple0.files[0]]
 triple = triple0[triple0.files[0]]
 freqs = random0[random0.files[1]] 
-wholebrain_spatio_temporal_cluster_test(duple-random,'duple',n_age,n_folder,p_threshold,freqs)
-wholebrain_spatio_temporal_cluster_test(triple-random,'triple',n_age,n_folder,p_threshold,freqs)
+wholebrain_spatio_temporal_cluster_test(duple-random,'duple',n_folder,p_threshold)
+wholebrain_spatio_temporal_cluster_test(triple-random,'triple',n_folder,p_threshold)
 
 #%%####################################### Analysis on the ROI conn
-n_folder = folders[3] 
-n_analysis = analysis[1] # 1:'conn_plv', 2:'conn_coh', 3:'conn_pli'
-data_type = which_data_type[2] # 1:_roi_ or 2:_roi_redo5_
+n_folder = 'connectivity/'
+n_analysis = 'conn_plv'
+data_type = '_roi_redo4_'
 
-nlines = 10
 ROI1 = 1
 ROI2 = 0
 fmin = 5
@@ -291,72 +337,44 @@ random_conn = random.get_data(output='dense')
 duple_conn = duple.get_data(output='dense')
 triple_conn = triple.get_data(output='dense')
 print("-------------------Doing duple-------------------")
-stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis,ROI1,ROI2,fmin,fmax, 0.39,1)
+stats_CONN(duple_conn,random_conn,freqs,FOI,ROI1,ROI2,fmin,fmax, 0.39,1)
 print("-------------------Doing triple-------------------")
-stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis,ROI1,ROI2,fmin,fmax, 0.39,1)
+stats_CONN(triple_conn,random_conn,freqs,FOI,ROI1,ROI2,fmin,fmax, 0.39,1)
 
 #%%####################################### Correlation analysis initial setting
-meter = conditions[1]
-age = ages[0]
-data_type = which_data_type[2] # '_roi_redo4_' or other ROI files, or wholebrain data_type = '_morph_'
-
-## parameter for the wholebrain SSEP test
-peak_freq = '3.33Hz' 
-
-## parameters for the ROI conn test
-ROI1 = 2 # correspond to the label_names
-ROI2 = 1 # correspond to the label_names
-F1 = 5
-F2 = 10
-FOI = 'alpha_beta'
-
-if data_type == '_roi_':
-    label_names = np.asarray(mne.get_volume_labels_from_aseg(subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'))
-    nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
-elif data_type == '_roi_redo_':
-    label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
-elif data_type == '_roi_redo5_':
-    label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
-elif data_type == '_roi_redo4_':
-    label_names = np.asarray(["Auditory", "SensoryMotor", "BG", "IFG"])
-
-CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
-
 #%% run the loop
 meter = conditions[2]
-age = ages[0]
-data_type = which_data_type[3] # '_roi_redo4_' or other ROI files, or wholebrain data_type = '_morph_'
+data_type = '_roi_redo4_'
 
 ## parameter for the wholebrain SSEP test
-peak_freqs = ['1.11Hz','2.22Hz','3.33Hz']
-peak_freqs = ['1.67Hz','3.33Hz']
+if meter == 'duple':
+    peak_freqs = ['1.67Hz','3.33Hz']
+elif meter == 'triple':
+    peak_freqs = ['1.11Hz','2.22Hz','3.33Hz']
 
 ## parameters for the ROI conn test
+label_names = np.asarray(["Auditory", "SensoryMotor", "BG", "IFG"])
 ROI1 = 2 # correspond to the label_names
 ROI2 = 1 # correspond to the label_names
-F1 = 6
-F2 = 9
+F1 = 4
+F2 = 35
 FOI = 'alpha_beta'
+CDI,subj_noCDI_ind = extract_CDI('7mo',27,'VOCAB')
 
-CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
+#%% Correlation analysis between ROI conn and CDI 
 for peak_freq in peak_freqs:
-    MEG = extract_MEG(age,data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
-    MEG_rand = extract_MEG(age,data_type,'psds','_02',subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
-    MEG_diff = MEG - MEG_rand
-    
-    filename = age + meter + '_' + peak_freq + '_permutation_fix'
+    MEG = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)    
+    filename = '7mo' + meter + '_' + peak_freq + '_permutation_fix'
     print(filename)
     results, cluster_stats, p_values, cluster_labels, max_cluster_stats = wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_value_threshold=0.05)
 
 #%%####################################### Model relationship between SSEP and CDI   
-MEG = extract_MEG(age,data_type,'psds',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2)
-MEG_rand = extract_MEG(age,data_type,'psds','_02',subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2)
+MEG = extract_MEG('7mo',data_type,'psds',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2)
+MEG_rand = extract_MEG('7mo',data_type,'psds','_02',subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2)
 MEG_diff = MEG - MEG_rand
 
 #%% Correlation analysis between ROI SSEP and CDI 
 for n,ROI in enumerate(label_names):
-    # plt.figure()
-    # plt.scatter(MEG_diff[:,n],CDI)
     print(ROI)
     print(pearsonr(MEG[:,n], CDI))
 
@@ -369,24 +387,7 @@ for n in np.arange(0,len(MEG[0])):
     tmp_r,tmp_p = pearsonr(MEG_diff[:,n],CDI)
     r_all.append(tmp_r)
     p_all.append(tmp_p)
-sig = np.where(np.asarray(p_all)<=0.05)
-mask = np.where(np.asarray(p_all)>0.05)
 
-## print the min and max MNI coordinate for this cluster
-coord = [] 
-for i in np.arange(0,len(sig[0])):
-    coord.append(np.round(src[0]['rr'][src[0]['vertno'][sig[0][i]]]*1000))
-    np_coord = np.array(coord)
-print("min MNI coord:" + str(np.min(np_coord,axis=0)))
-print("max MNI coord:" + str(np.max(np_coord,axis=0)))
-            
-## get all the ROIs in this cluster (no repeat)
-ROIs = []
-for i in np.arange(0,len(sig[0])):
-    for nlabel in np.arange(0,len(label_names),1):
-        if sig[0][i] in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
-            ROIs.append(label_names[nlabel])
-print(ROIs)
             
 stc1.data = np.array([r_all,r_all]).transpose()
 stc1.subject = 'fsaverage'
@@ -394,20 +395,5 @@ stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
 stc1.plot_3d(src=src)
 
 #### Cluster-based permutation test correction for multiple comparison 
-filename = age + meter + '_' + peak_freq + '_diff_permutation'
+filename = '7mo' + meter + '_' + peak_freq + '_diff_permutation'
 results, cluster_stats, p_values, cluster_labels, max_cluster_stats = wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_value_threshold=0.05)
-npz = np.load('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/correlation/7mo_03_3.33Hz_permutation.npz')
-print(npz['results'])
-ind = np.where(npz['cluster_labels'] == 8) ## this is a manual process
-stc1.data[ind,:] = 10 ## mark the significant cluster in yellow
-stc1.plot(src=src)
-stc1.plot_3d(src=src)
-
-ROIs = []
-for nv in src[0]['vertno'][ind]:
-    v_ind = np.where(src[0]['vertno'] == nv)
-    for nlabel in np.arange(0,len(label_names),1):
-        if v_ind in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
-            ROIs.append(label_names[nlabel])
-            print("nv: " + str(nv), "idx: " + str(nlabel), "label: " + label_names[nlabel])
-        
