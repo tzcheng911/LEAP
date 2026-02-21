@@ -187,11 +187,10 @@ def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,
             print("Freqs not exist.")
 
 def wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_value_threshold=0.05):
-    from scipy.ndimage import label
     from scipy.sparse import csr_matrix
     from scipy.sparse.csgraph import connected_components
 
-    # Step 1: Prep the data
+    # Prep the data
     np.random.seed(42)
     n_subjects, n_sensors = np.shape(MEG)[0], np.shape(MEG)[1]
     neural = MEG
@@ -201,24 +200,24 @@ def wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_
     adjacency = mne.spatial_src_adjacency(src)
     adjacency_sparse = csr_matrix(adjacency)
 
-    # Step 2: Compute observed correlations
+    # Compute observed correlations
     r_vals = np.array([pearsonr(neural[:, i], behavior)[0] for i in range(n_sensors)])
     t_vals = r_vals * np.sqrt((n_subjects - 2) / (1 - r_vals**2))
 
-    # Step 3: Threshold for cluster formation (e.g., |t| > critical t for p<0.05, df=n-2)
+    # Threshold for cluster formation (e.g., |t| > critical t for p<0.05, df=n-2)
     t_crit = t.ppf(1 - p_value_threshold / 2, df=n_subjects - 2)  # two-tailed
     supra_thresh = np.abs(t_vals) > t_crit
 
-    # Step 4: Define clusters 
+    # Define clusters 
     sub_adj = adjacency_sparse[supra_thresh][:, supra_thresh]
     n_clusters, labels = connected_components(sub_adj, directed=False)
     cluster_labels = np.zeros(n_sensors, dtype=int)
     cluster_labels[supra_thresh] = labels + 1  # +1 to start cluster IDs at 1
 
-    # Step 5: Compute cluster statistics (sum of t-values within each cluster)
+    # Compute cluster statistics (sum of t-values within each cluster)
     cluster_stats = np.array([np.sum(np.abs(t_vals)[cluster_labels == c + 1]) for c in range(n_clusters)])
 
-    # Step 6: Build null distribution with permutation
+    # Build null distribution with permutation
     max_cluster_stats = np.zeros(n_permutations)
     for p in range(n_permutations):
         print("Iteration " + str(p))
@@ -236,20 +235,15 @@ def wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_
         else:
             max_cluster_stats[p] = 0
 
-    # Step 7: Compare observed cluster stats to null (family-wise correction)
+    # Compare observed cluster stats to null (family-wise correction)
     p_values = np.array([np.mean(max_cluster_stats >= s) for s in cluster_stats])
 
-    # Step 8: Print results
+    # Print results
     results = []
     for i, (s, p) in enumerate(zip(cluster_stats, p_values)):
         results.append(f"Cluster {i+1}: sum(|t|)={s:.2f}, p={p:.4f}")
         print(f"Cluster {i+1}: sum(|t|)={s:.2f}, p={p:.4f}")
     
-    print("Saving results.")
-    np.savez_compressed('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/correlation/' + filename, cluster_labels=cluster_labels,n_meter = meter, n_age = age, n_clusters= n_clusters,supra_thresh=supra_thresh,n_permutations=n_permutations,
-                            cluster_stats=cluster_stats,
-                            p_values=p_values,
-                            max_cluster_stats=max_cluster_stats)
     return results, cluster_stats, p_values, cluster_labels, max_cluster_stats
 
 #%%####################################### Set path
@@ -397,3 +391,14 @@ stc1.plot_3d(src=src)
 #### Cluster-based permutation test correction for multiple comparison 
 filename = '7mo' + meter + '_' + peak_freq + '_diff_permutation'
 results, cluster_stats, p_values, cluster_labels, max_cluster_stats = wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_value_threshold=0.05)
+
+#%%####################################### Model relationship between ROI conn and CDI   
+## sensorimotor, IFG-motor, and IFG-auditory showed the significance for 11 mo
+MEG = extract_MEG('7mo',data_type,'conn_plv',meter,subj_noCDI_ind,FOI,ROI1,ROI2,peak_freq,F1,F2) 
+plt.figure()
+plt.scatter(MEG,CDI)
+plt.ylim([50,710])
+plt.xlim([0.2,0.95])
+plt.title('Conn between ' + label_names[ROI1] + ' ' + label_names[ROI2])
+print('Conn between ' + label_names[ROI1] + ' ' + label_names[ROI2])
+print(pearsonr(MEG, CDI))
