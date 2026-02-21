@@ -374,9 +374,9 @@ for nn_age,n_age in enumerate(ages):
                 duple = duple0[duple0.files[0]]
                 triple = triple0[triple0.files[0]]
                 freqs = random0[random0.files[1]]          
-                # plot_SSEP(random[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_random')
-                # plot_SSEP(duple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_duple')
-                # plot_SSEP(triple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_triple')
+                plot_SSEP(random[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_random')
+                plot_SSEP(duple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_duple')
+                plot_SSEP(triple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_triple')
                 
                 # Doing ROI SSEP: Auditory
                 # -------------------Doing duple-------------------
