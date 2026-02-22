@@ -17,8 +17,8 @@ import numpy as np
 import scipy.stats as stats
 import mne
 from mne_connectivity import read_connectivity
-from mne.viz import circular_layout
 import matplotlib.pyplot as plt 
+from scipy.stats import pearsonr, t
 
 #%%####################################### Define functions
 def ff(input_arr,target): 
