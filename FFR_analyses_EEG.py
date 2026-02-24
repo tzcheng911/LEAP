@@ -263,6 +263,29 @@ def bandpass_filter(data, fs, fmin, fmax, order=4):
     )
     return filtfilt(b, a, data, axis=-1)
 
+def bandpower_hilbert(data, fs, f_min, f_max, order=4):
+
+    nyq = fs / 2
+    b, a = butter(order, [f_min/nyq, f_max/nyq], btype='band')
+
+    analytic_all = []
+    
+    for subj in range(data.shape[0]):
+        signal = data[subj].astype(np.float32)
+
+        # zero-phase filtering
+        filtered = filtfilt(b, a, signal)
+
+        # analytic signal
+        analytic = hilbert(filtered)
+
+        # amplitude envelope
+        amplitude = np.abs(analytic)
+
+        analytic_all.append(amplitude)
+
+    return np.array(analytic_all)
+
 def itpc_hilbert(
     data,
     fs,
@@ -454,8 +477,70 @@ def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level,lag_window_s=(-0.014, -0.007)
         }
     else:
         raise ValueError("level must be 'group' or 'individual'")
-    
-    
+
+def do_xcorr_sliding(audio, EEG, fs_audio, fs_eeg,
+                     ts, te,
+                     win_len_s,
+                     step_s,
+                     lag_window_s=(-0.014, -0.007)):
+
+    # --- Downsample audio to EEG sampling rate ---
+    num = int((len(audio) * fs_eeg) / fs_audio)
+    audio_rs = signal.resample(audio, num, axis=0)
+
+    times_audio = np.linspace(0, len(audio_rs)/fs_eeg, len(audio_rs))
+    times_eeg = np.linspace(-0.02, 0.2, EEG.shape[1])
+
+    tslice_audio = slice(ff(times_audio, ts), ff(times_audio, te))
+    tslice_EEG   = slice(ff(times_eeg, ts), ff(times_eeg, te))
+
+    stim = audio_rs[tslice_audio]
+    resp = EEG[:, tslice_EEG]
+
+    # --- Window parameters in samples ---
+    win_len = int(win_len_s * fs_eeg)
+    step = int(step_s * fs_eeg)
+
+    n_samples = len(stim)
+    n_windows = int((n_samples - win_len) / step) + 1
+
+    # --- Lag setup ---
+    lags = signal.correlation_lags(win_len, win_len)
+    lags_s = lags / fs_eeg
+
+    lag_min, lag_max = lag_window_s
+    lag_mask = (lags_s >= lag_min) & (lags_s <= lag_max)
+
+    # --- Storage ---
+    xcorr_max = np.zeros((resp.shape[0], n_windows))
+    xcorr_lag = np.zeros((resp.shape[0], n_windows))
+    window_times = []
+
+    # --- Sliding window loop ---
+    for w in range(n_windows):
+        start = w * step
+        end = start + win_len
+
+        stim_win = stim[start:end]
+        stim_z = zscore_and_normalize(stim_win)
+
+        window_times.append((start + end) / 2 / fs_eeg)
+
+        for i, subj_resp in enumerate(resp):
+            resp_win = subj_resp[start:end]
+            resp_z = zscore_and_normalize(resp_win)
+
+            xcorr = np.abs(signal.correlate(stim_z, resp_z, mode="full"))
+            xcorr_win = xcorr[lag_mask]
+            lag_win = lags_s[lag_mask]
+
+            idx = np.argmax(xcorr_win)
+
+            xcorr_max[i, w] = xcorr_win[idx]
+            xcorr_lag[i, w] = lag_win[idx]
+
+    return np.array(window_times), xcorr_max, xcorr_lag
+
 def do_autocorr_sliding(
     eeg,
     fs_eeg,
@@ -677,7 +762,7 @@ fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
 file_type = 'EEG'
-ntrial = '200'
+ntrial = 'all'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
     
 #%%####################################### visualize the data to examine
@@ -1151,11 +1236,11 @@ plt.title('Spectrum')
 plt.plot(freqs,psds)
 plt.xlim([60, 140])
 
-#%%####################################### Spectrogram analysis
+#%%####################################### Spectrogram analysis for group
 import librosa
 import librosa.display
 
-signal = p10_eng.mean(0)
+signal = n40_eng.mean(0)
 signal = signal.astype(np.float32)
 signal = signal/np.max(np.abs(signal))
 
@@ -1166,14 +1251,17 @@ S = librosa.stft(
     hop_length = int(nfft*(0.04-0.039)), # Python hop_length ≠ MATLAB overlap
     win_length = int(nfft*0.04),
     window = 'hamm')
+S_magnitude = np.abs(S)
 S_db = librosa.amplitude_to_db(np.abs(S),ref=np.max)
+freqs = librosa.fft_frequencies(sr=fs, n_fft=fs)
+times = librosa.times_like(S, sr=fs, hop_length=int(nfft*(0.04-0.039)))
 
 ## Plot the spectrogram
 fig, ax = plt.subplots(figsize=(10, 4))
 im = librosa.display.specshow(
     S_db,
     sr=fs,
-    hop_length=int(nfft*0.039),
+    hop_length=int(nfft*(0.04-0.039)),
     x_axis='time',
     y_axis='hz',
     cmap='jet',
@@ -1184,6 +1272,115 @@ im = librosa.display.specshow(
 ax.set_title('Spectrogram')
 ax.set_ylim([0,800])
 fig.colorbar(im, ax=ax, format="%+2.0f dB")
+plt.show()
+
+f_min, f_max = 90, 110
+freq_mask = (freqs >= f_min) & (freqs <= f_max)
+S_band = S_db[freq_mask, :]
+
+plt.figure()
+plt.plot(times,S_magnitude[freq_mask, :].mean(0))
+
+#%%####################################### Spectrogram analysis for individuals
+import numpy as np
+import librosa
+
+EEG = p10_eng
+
+nfft = fs
+wl = 0.02 # window length
+wo = 0.019 # window overlap
+hop = int(nfft * (wl - wo))
+win_len = int(nfft * wl)
+
+all_S_mag = []
+all_S_db = []
+
+for subj in range(EEG.shape[0]):
+
+    signal = EEG[subj].astype(np.float32)
+    signal = signal / np.max(np.abs(signal))
+
+    S = librosa.stft(
+        signal,
+        n_fft=nfft,
+        hop_length=hop,
+        win_length=win_len,
+        window='hamm'
+    )
+
+    S_mag = np.abs(S)
+    S_db  = librosa.amplitude_to_db(S_mag, ref=np.max)
+    
+    ## Plot the spectrogram for each individual
+    # fig, ax = plt.subplots(figsize=(10, 4))
+    # im = librosa.display.specshow(
+    #     S_db,
+    #     sr=fs,
+    #     hop_length=int(nfft*(0.04-0.039)),
+    #     x_axis='time',
+    #     y_axis='hz',
+    #     cmap='jet',
+    #     ax=ax,
+    #     vmin=-20,
+    #     vmax=0   
+    # )
+    # ax.set_title('Spectrogram')
+    # ax.set_ylim([0,800])
+    # fig.colorbar(im, ax=ax, format="%+2.0f dB")
+    # plt.show()
+    
+    all_S_mag.append(S_mag)
+    all_S_db.append(S_db)
+
+all_S_mag = np.array(all_S_mag)   # shape: (subjects, freqs, times)
+all_S_db  = np.array(all_S_db)
+
+freqs = librosa.fft_frequencies(sr=fs, n_fft=nfft)
+times = librosa.times_like(S, sr=fs, hop_length=hop)
+
+f_min, f_max = 60,120
+freq_mask = (freqs >= f_min) & (freqs <= f_max)
+
+band_power = all_S_mag[:, freq_mask, :].mean(axis=1)
+
+## Alternatively just use hilbert for narrow band power extraction
+f_min, f_max = 90,110
+band_power = bandpower_hilbert(EEG, fs, f_min, f_max)
+times = np.linspace(-0.02, 0.2, 1101)
+
+#%% visualization
+mean_band = band_power.mean(axis=0)
+sem_band  = band_power.std(axis=0) / np.sqrt(band_power.shape[0])
+
+plt.figure(figsize=(8,5))
+
+# --- Individual subjects ---
+for subj in range(band_power.shape[0]):
+    plt.plot(times, band_power[subj],
+             color='gray',
+             alpha=0.3,
+             linewidth=1)
+
+# --- Group mean (THICK line) ---
+plt.plot(times, mean_band,
+         color='red',
+         linewidth=3,
+         label='Group Mean')
+
+# --- Optional SEM shading ---
+plt.fill_between(times,
+                 mean_band - sem_band,
+                 mean_band + sem_band,
+                 color='red',
+                 alpha=0.2,
+                 label='±SEM')
+
+plt.xlabel("Time (s)")
+plt.ylabel("Magnitude")
+plt.title(f"{f_min}-{f_max} Hz Band Magnitude")
+plt.legend()
+plt.tight_layout()
 plt.show()
 
 #%%####################################### ITPC analysis
@@ -1245,12 +1442,38 @@ xcorr = do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level)
 
 print(np.mean(xcorr['xcorr_max']))
 print(np.mean(xcorr['xcorr_lag_ms']))
-
-#%%
 xcorr3 = xcorr['xcorr_max']
 lag3 = xcorr['xcorr_lag_ms']
 
 stats.ttest_rel(xcorr1,xcorr3)
+
+#%% sliding window xcorr
+audio = n40_audio
+EEG = n40_eng
+audio = stats.zscore(audio)
+EEG = stats.zscore(EEG,axis=-1)
+
+ts = 0 # this cannot be the negative
+te = 0.2
+win_len_s = 0.01
+step_s = 0.001
+window_times, xcorr_max, xcorr_lag = do_xcorr_sliding(audio,EEG,fs_audio,fs_eeg,ts,te,win_len_s,step_s)
+mean_xcorr = np.mean(xcorr_max, axis=0)
+sem_xcorr  = np.std(xcorr_max, axis=0) / np.sqrt(xcorr_max.shape[0])
+
+# plt.figure()
+plt.plot(window_times, mean_xcorr, linewidth=2)
+plt.fill_between(window_times,
+                 mean_xcorr - sem_xcorr,
+                 mean_xcorr + sem_xcorr,
+                 alpha=0.3)
+
+plt.xlabel("Time (s)")
+plt.ylabel("Max |xcorr|")
+plt.title("Sliding Cross-Correlation (mean ± SEM)")
+plt.axhline(0, linestyle="--")
+plt.tight_layout()
+plt.show()
 
 #%%
 # print(xcorr)
