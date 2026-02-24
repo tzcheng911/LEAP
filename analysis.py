@@ -10,7 +10,6 @@ Output: some figures, statistic results (stats, p-value)
 @author: tzcheng
 """
 #%%####################################### Import library  
-import os
 import pickle
 import pandas as pd
 import numpy as np
@@ -205,14 +204,14 @@ def wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_
 
 #%%####################################### Set path
 root_path = '/home/tzcheng/Desktop/ME2_upload_to_github/data/'
-subjects_dir = '/media/tzcheng/storage2/subjects/'
+subjects_dir = '/home/tzcheng/Desktop/ME2_upload_to_github/subjects/'
 
 #%%####################################### set up the template brain
-stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
-src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
-label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
-fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-labels_all = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
+stc1 = mne.read_source_estimate(subjects_dir + 'me2_101_7m_03_stc_mne_morph_mag6pT-vl.stc')
+src = mne.read_source_spaces(subjects_dir + 'fsaverage-vol-5-src.fif')
+label_v_ind = np.load(subjects_dir + 'ROI_lookup.npy', allow_pickle=True)
+fname_aseg = subjects_dir + 'aparc+aseg.mgz'
+labels_all = mne.get_volume_labels_from_aseg(fname_aseg)
 
 #%% Parameters
 conditions = ['_02','_03','_04'] # random, duple, triple
@@ -351,7 +350,6 @@ for peak_freq in peak_freqs:
         print(pearsonr(MEG[:,n], CDI))
     
 #%% Correlation analysis between wholebrain SSEP and CDI 
-MEG = extract_MEG('7mo','_morph_','psds', condition,subj_noCDI_ind,ROI1,ROI2,peak_freq,None,None) 
 r_all = []
 p_all = []
 for n in np.arange(0,len(MEG[0])):
@@ -365,5 +363,9 @@ stc1.subject = 'fsaverage'
 stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
 
 #### Cluster-based permutation test correction for multiple comparison 
-filename = '7mo' + meter + '_' + peak_freq + '_diff_permutation'
-results, cluster_stats, p_values, cluster_labels, max_cluster_stats = wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_value_threshold=0.05)
+## This code will take a few minutes to run. Alternatively load the presaved .npy files in /correlation
+for peak_freq in peak_freqs:
+    MEG = extract_MEG('7mo','_morph_','psds', condition,subj_noCDI_ind,ROI1,ROI2,peak_freq,None,None) 
+    filename = meter + '_' + peak_freq + '_permutation_fix'
+    print(filename)
+    results, cluster_stats, p_values, cluster_labels, max_cluster_stats = wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_value_threshold=0.05)
