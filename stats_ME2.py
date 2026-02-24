@@ -255,7 +255,7 @@ def extract_CDI(MEGAge,CDIAge,CDIscore):
         CDI = CDI_WS_7mo[CDI_WS_7mo['CDIAge'] == CDIAge][CDIscore]
     elif MEGAge == '11mo':
         CDI = CDI_WS_11mo[CDI_WS_11mo['CDIAge'] == CDIAge][CDIscore]
-    return CDI, subj_noCDI_ind
+    return CDI, subj_noCDI_ind,subj_7mo
     
 def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,ROI1,ROI2,SSEP_FOI,F1,F2):
     if n_analysis == 'conn_plv':
@@ -547,7 +547,7 @@ F1 = 6
 F2 = 9
 FOI = 'alpha_beta'
 
-CDI,subj_noCDI_ind = extract_CDI(age,27,'VOCAB')
+CDI,subj_noCDI_ind,subj = extract_CDI(age,27,'VOCAB')
 for peak_freq in peak_freqs:
     MEG = extract_MEG(age,data_type,'psds',meter,subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
     MEG_rand = extract_MEG(age,data_type,'psds','_02',subj_noCDI_ind,'theta',ROI1,ROI2,peak_freq,F1,F2)
