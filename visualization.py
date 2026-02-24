@@ -10,14 +10,10 @@ Input: .npy files in the /data e.g. SSEP, connectivity
 """
 #%%####################################### Import library  
 import numpy as np
-import scipy.stats as stats
-from scipy import stats,signal
 from scipy.io import wavfile
 import mne
-from mne import spatial_src_adjacency
-from mne.stats import spatio_temporal_cluster_1samp_test, summarize_clusters_stc
-from mne.time_frequency import tfr_morlet, tfr_multitaper, tfr_stockwell, AverageTFRArray
-from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time,read_connectivity
+from mne.stats import summarize_clusters_stc
+from mne_connectivity import read_connectivity
 from mne_connectivity.viz import plot_connectivity_circle
 from mne.viz import circular_layout
 import pickle
@@ -201,7 +197,15 @@ label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
 
-#%%####################################### Load the audio files
+#%% Parameters
+conditions = ['_02','_03','_04'] # random, duple, triple
+rhythms = ['random','duple','triple']
+folders = ['SSEP/','connectivity/'] 
+analysis = ['psds','conn_plv']
+which_data_type = ['_sensor_','_roi_redo4_','_morph_'] 
+label_names = np.asarray(["Auditory", "SensoryMotor", "BG"])
+
+#%%####################################### Visualize the audio files
 fs, audio = wavfile.read(root_path + 'Stimuli/Random/randomt15rr.wav') # Random, Duple300, Triple300
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 fs, audio = wavfile.read(root_path + 'Stimuli/Random/random15rr.wav') # Random, Duple300, Triple300
@@ -210,12 +214,6 @@ fs, audio = wavfile.read(root_path + 'Stimuli/Duple300rr.wav') # Random, Duple30
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 fs, audio = wavfile.read(root_path + 'Stimuli/Triple300rr.wav') # Random, Duple300, Triple300
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
-
-#%% Parameters
-ages = ['7mo'] 
-folders = ['SSEP/','decoding/','connectivity/'] # random, duple, triple
-analysis = ['psds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
-which_data_type = ['_sensor_','_roi_','_roi_redo4_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
 
 #%%####################################### Visualize the sensor level 
 n_folder = folders[0]
@@ -241,28 +239,7 @@ for n_age in ages:
     plot_SSEP(psds_duple,freqs,'MEG_duple_psds')
     plot_SSEP(psds_triple,freqs,'MEG_triple_psds')
     
-    ## plot bar plot for the significant freqs based on non-parametric test (stats_ME2.py)
-    # Doing age 7mo
-    # -------------------Doing duple-------------------
-    # The 1st significant cluster
-    # (array([12, 13]),)
-    # Significant freqs: [1.63636364 1.72727273]
-    # The 2st significant cluster
-    # (array([30, 31, 32]),)
-    # Significant freqs: [3.27272727 3.36363636 3.45454545]
-    # -------------------Doing triple-------------------
-    # The 1st significant cluster
-    # (array([6, 7]),)
-    # Significant freqs: [1.09090909 1.18181818]
-    # The 2st significant cluster
-    # (array([18, 19]),)
-    # Significant freqs: [2.18181818 2.27272727]
-    # The 3st significant cluster
-    # (array([30, 31]),)
-    # Significant freqs: [3.27272727 3.36363636]
-
-    ## take the significant freqs to plug in FOI for each condition from above 
-    ## duple meter [12, 13] and beat [30, 31, 32]
+    ## plot bar plot for the significant freqs based on non-parametric test (analysis.py)
     
     #### plotting the results
     # Random: always grey
