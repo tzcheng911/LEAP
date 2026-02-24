@@ -55,21 +55,6 @@ def plot_multiFreq_random_vs_rhythmic(
     figsize=(7, 4),
     save_path=None
 ):
-    """
-    One plot: Random vs frequency-specific rhythmic conditions.
-
-    Parameters
-    ----------
-    psds_random : ndarray (n_subjects, n_freqs)
-    psds_rhythmic_list : list of ndarrays
-        [psds_duple, psds_triple, psds_beat, ...]
-    FOIs : list of lists
-        Frequency indices per rhythmic condition
-    freq_labels : list
-        X-axis labels (e.g., meter rates)
-    rhythmic_labels : list
-        Labels for rhythmic conditions (for legend)
-    """
 
     n_freq = len(FOIs)
     x_base = np.arange(n_freq)
@@ -140,6 +125,8 @@ def plot_multiFreq_random_vs_rhythmic(
 def plot_audio(audio,fmin,fmax,fs):
     plt.figure()
     plt.plot(np.linspace(0,audio.size/fs,audio.size),audio)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Amplitude')
 
     psds, freqs = mne.time_frequency.psd_array_welch(
     audio,fs, 
@@ -151,6 +138,9 @@ def plot_audio(audio,fmin,fmax,fs):
     plt.figure()
     plt.plot(freqs,psds)
     plt.xlim([fmin,fmax])
+    plt.ylim([-0.01,2.5])
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('PSD')
     
 def plot_SSEP(psds,freqs,title):
     plt.figure()
@@ -212,7 +202,13 @@ fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
 
 #%%####################################### Load the audio files
+fs, audio = wavfile.read(root_path + 'Stimuli/Random/randomt15rr.wav') # Random, Duple300, Triple300
+plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 fs, audio = wavfile.read(root_path + 'Stimuli/Random/random15rr.wav') # Random, Duple300, Triple300
+plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
+fs, audio = wavfile.read(root_path + 'Stimuli/Duple300rr.wav') # Random, Duple300, Triple300
+plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
+fs, audio = wavfile.read(root_path + 'Stimuli/Triple300rr.wav') # Random, Duple300, Triple300
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 
 #%% Parameters
@@ -305,7 +301,6 @@ for n_age in ages:
         ylabel="PSD at meter rate",
         save_path="/home/tzcheng/Desktop/sensor_PSD_barplot_all_meter.pdf"
     )
-
 
 
 #%%####################################### Visualize on the source level: ROI 
@@ -516,5 +511,32 @@ for n_age in ages:
         stc1.data = np.array([decoding_acc,decoding_acc]).transpose()
         stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
         stc1.plot_3d(src=src)
+
+#%%#######################################  Visualize the ROI conn results 
+## ROI order should be (ROI1, ROI2) = (1,0) or (2,1) based on how conn structure is stored
+ymin = 0.39
+ymax = 1
+
+ROI1 = 1 # 1: SensoryMotor or 2: BG
+ROI2 = 0 # 0: Auditory or 1: SensoryMotor
+label_names = np.asarray(["Auditory", "SensoryMotor", "BG"])
+
+random = read_connectivity(root_path + 'connectivity/7mo_group_02_stc_rs_mne_mag6pT_roi_redo4_conn_plv') 
+duple = read_connectivity(root_path + 'connectivity/7mo_group_03_stc_rs_mne_mag6pT_roi_redo4_conn_plv') 
+triple = read_connectivity(root_path + 'connectivity/7mo_group_04_stc_rs_mne_mag6pT_roi_redo4_conn_plv') 
+freqs = np.array(random.freqs)
+random_conn = random.get_data(output='dense')
+duple_conn = duple.get_data(output='dense')
+triple_conn = triple.get_data(output='dense')
+
+plt.figure()
+plot_err(random_conn[:,ROI1,ROI2,:],'k',freqs)
+plot_err(duple_conn[:,ROI1,ROI2,:],'#ff7f0e',freqs)
+plot_err(triple_conn[:,ROI1,ROI2,:],'#1f77b4',freqs)
+
+plt.xlim([4,35])
+plt.ylim([ymin,ymax])
+fname = "PLV between " + label_names[ROI1] + " and " + label_names[ROI2]
+plt.title(fname)
 
 #%%####################################### The correlation results are visualized in stats_ME2.py
