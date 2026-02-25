@@ -7,6 +7,8 @@ Run statistical analysis on the SSEP (sensor, ROI, whole brian), conn (ROI), and
 Input: .npy files in the "analyzed data" i.e. SSEP, ERSP, decoding, connectivity folders
 Output: some figures, statistic results (stats, p-value)
 
+Change the ROI1 and ROI2 for different comparisons 0: Auditory 1: SensoryMotor 2: BG
+
 @author: tzcheng
 """
 #%%####################################### Import library  
@@ -63,7 +65,7 @@ def stats_SSEP(X,freqs,nonparametric):
 def wholebrain_spatio_temporal_cluster_test(X,n_meter,p_threshold):
     ## Compute non-parametric 2D cluster test (across freqs and vertex) on X (psd1 - psd2) and save the cluster results
     print("Computing adjacency.")
-    src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
+    src = mne.read_source_spaces(subjects_dir + 'fsaverage-vol-5-src.fif')
     adjacency = mne.spatial_src_adjacency(src)
     
     ## set the cluster settings 
@@ -318,7 +320,6 @@ print('Conn between ' + label_names[ROI1] + ' ' + label_names[ROI2])
 print(pearsonr(MEG, CDI))
 
 #%% Correlation analysis between ROI conn and CDI 
-
 data_type = '_roi_redo4_'
 
 ## parameters for the ROI conn 
@@ -349,7 +350,9 @@ for peak_freq in peak_freqs:
         print(ROI)
         print(pearsonr(MEG[:,n], CDI))
     
-#%% Correlation analysis between wholebrain SSEP and CDI 
+#%% Correlation analysis between wholebrain SSEP and CDI
+print("-------------------Doing Duple-------------------") 
+MEG = extract_MEG('7mo','_morph_','psds', '03',subj_noCDI_ind,ROI1,ROI2,peak_freq,None,None) 
 r_all = []
 p_all = []
 for n in np.arange(0,len(MEG[0])):
@@ -362,10 +365,32 @@ stc1.data = np.array([r_all,r_all]).transpose()
 stc1.subject = 'fsaverage'
 stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
 
-#### Cluster-based permutation test correction for multiple comparison 
+print("-------------------Doing Triple-------------------") 
+MEG = extract_MEG('7mo','_morph_','psds', '04',subj_noCDI_ind,ROI1,ROI2,peak_freq,None,None) 
+r_all = []
+p_all = []
+for n in np.arange(0,len(MEG[0])):
+    # print('Doing vertex ' + str(n))
+    tmp_r,tmp_p = pearsonr(MEG[:,n],CDI)
+    r_all.append(tmp_r)
+    p_all.append(tmp_p)
+
+stc1.data = np.array([r_all,r_all]).transpose()
+stc1.subject = 'fsaverage'
+stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
+
+#%% Cluster-based permutation test correction for multiple comparison 
 ## This code will take a few minutes to run. Alternatively load the presaved .npy files in /correlation
+print("-------------------Doing Duple-------------------") 
 for peak_freq in peak_freqs:
-    MEG = extract_MEG('7mo','_morph_','psds', condition,subj_noCDI_ind,ROI1,ROI2,peak_freq,None,None) 
-    filename = meter + '_' + peak_freq + '_permutation_fix'
+    MEG = extract_MEG('7mo','_morph_','psds', '03',subj_noCDI_ind,ROI1,ROI2,peak_freq,None,None) 
+    filename = meter + '_' + peak_freq + '_permutation_fix_replicate'
+    print(filename)
+    results, cluster_stats, p_values, cluster_labels, max_cluster_stats = wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_value_threshold=0.05)
+    
+print("-------------------Doing Triple-------------------") 
+for peak_freq in peak_freqs:
+    MEG = extract_MEG('7mo','_morph_','psds', '04',subj_noCDI_ind,ROI1,ROI2,peak_freq,None,None) 
+    filename = meter + '_' + peak_freq + '_permutation_fix_replicate'
     print(filename)
     results, cluster_stats, p_values, cluster_labels, max_cluster_stats = wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_value_threshold=0.05)
