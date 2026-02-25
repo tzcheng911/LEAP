@@ -187,15 +187,15 @@ def plot_CONN(conn,freqs,nlines,vmin,vmax,FOI,label_names,title):
     fig.tight_layout()
         
 #%%####################################### Set path
-root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
-subjects_dir = '/media/tzcheng/storage2/subjects/'
+root_path = '/home/tzcheng/Desktop/ME2_upload_to_github/'
+subjects_dir = '/home/tzcheng/Desktop/ME2_upload_to_github/subjects/'
 
 #%%####################################### set up the template brain
-stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
-src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
-label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
-fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
+stc1 = mne.read_source_estimate(subjects_dir + 'me2_101_7m_03_stc_mne_morph_mag6pT-vl.stc')
+src = mne.read_source_spaces(subjects_dir + 'fsaverage-vol-5-src.fif')
+label_v_ind = np.load(subjects_dir + 'ROI_lookup.npy', allow_pickle=True)
+fname_aseg = subjects_dir + 'aparc+aseg.mgz'
+labels_all = mne.get_volume_labels_from_aseg(fname_aseg)
 
 #%% Parameters
 conditions = ['_02','_03','_04'] # random, duple, triple
@@ -206,13 +206,13 @@ which_data_type = ['_sensor_','_roi_redo4_','_morph_']
 label_names = np.asarray(["Auditory", "SensoryMotor", "BG"])
 
 #%%####################################### Visualize the audio files
-fs, audio = wavfile.read(root_path + 'Stimuli/Random/randomt15rr.wav') # Random, Duple300, Triple300
+fs, audio = wavfile.read(root_path + 'stimuli/randomt15rr.wav') # Random, Duple300, Triple300
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
-fs, audio = wavfile.read(root_path + 'Stimuli/Random/random15rr.wav') # Random, Duple300, Triple300
+fs, audio = wavfile.read(root_path + 'stimuli/random15rr.wav') # Random, Duple300, Triple300
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
-fs, audio = wavfile.read(root_path + 'Stimuli/Duple300rr.wav') # Random, Duple300, Triple300
+fs, audio = wavfile.read(root_path + 'stimuli/Duple300rr.wav') # Random, Duple300, Triple300
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
-fs, audio = wavfile.read(root_path + 'Stimuli/Triple300rr.wav') # Random, Duple300, Triple300
+fs, audio = wavfile.read(root_path + 'stimuli/Triple300rr.wav') # Random, Duple300, Triple300
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 
 #%%####################################### Visualize the sensor level 
@@ -220,65 +220,50 @@ n_folder = folders[0]
 n_analysis = analysis[0]
 data_type = which_data_type[0]
 
-for n_age in ages:
-    print("Doing age " + n_age)
-    random = np.load(root_path + n_folder + n_age + '_group_02_rs_mag6pT' + data_type + n_analysis +'.npz') 
-    duple = np.load(root_path + n_folder + n_age + '_group_03_rs_mag6pT' + data_type + n_analysis + '.npz') 
-    triple = np.load(root_path + n_folder + n_age + '_group_04_rs_mag6pT' + data_type + n_analysis + '.npz') 
-    
-    analysis_type = random.files[0]
-    freqs = random[random.files[1]]
-    random = random[random.files[0]]
-    duple = duple[duple.files[0]]
-    triple = triple[triple.files[0]]
-    
-    psds_random = random.mean(axis = 1)
-    psds_duple = duple.mean(axis = 1)
-    psds_triple = triple.mean(axis = 1)
-    plot_SSEP(psds_random,freqs,'MEG_random_psds')
-    plot_SSEP(psds_duple,freqs,'MEG_duple_psds')
-    plot_SSEP(psds_triple,freqs,'MEG_triple_psds')
-    
-    ## plot bar plot for the significant freqs based on non-parametric test (analysis.py)
-    
-    #### plotting the results
-    # Random: always grey
-    color_random = "tab:grey"
-    
-    # Rhythmic: Duple = orange, Triple = blue
-    # Map your rhythmic data order:
-    colors_rhythmic = [
-        "#1f77b4",
-        "#ff7f0e",     # Duple #ff7f0e
-        "#1f77b4"      # Triple #1f77b4
-    ]
+random = np.load(root_path + 'data/SSEP/7mo_group_02_rs_mag6pT_sensor_psds.npz') 
+duple = np.load(root_path + 'data/SSEP/7mo_group_03_rs_mag6pT_sensor_psds.npz') 
+triple = np.load(root_path + 'data/SSEP/7mo_group_04_rs_mag6pT_sensor_psds.npz') 
+freqs = random[random.files[1]]
+random = random[random.files[0]]
+duple = duple[duple.files[0]]
+triple = triple[triple.files[0]]
+        
+psds_random = random.mean(axis = 1)
+psds_duple = duple.mean(axis = 1)
+psds_triple = triple.mean(axis = 1)
+plot_SSEP(psds_random,freqs,'MEG_random_psds')
+plot_SSEP(psds_duple,freqs,'MEG_duple_psds')
+plot_SSEP(psds_triple,freqs,'MEG_triple_psds')
+                
+## plot bar plot for the significant freqs based on non-parametric test (analysis.py)
+## plotting the results at the beat frequency
+# Random: always grey
+color_random = "tab:grey"
+colors_rhythmic = ["#1f77b4","#ff7f0e"]
 
-    ## beats
-    # FOIs = [
+## beats
+# FOIs = [
     #     [30, 31, 32],  # duple beat
     #     [30, 31],  # triple beat
     # ]
 
-
-    ## meters
-    FOIs = [
+## plotting the results at the meter frequency
+FOIs = [
         [6, 7],    # triple meter
         [12, 13],  # duple meter
         [18, 19],  # triple 1st harmonic
     ]
     
-    plot_multiFreq_random_vs_rhythmic(
-        psds_random,
-        psds_rhythmic_list=[psds_triple,psds_duple,psds_triple],
-        FOIs=FOIs,
-        freq_labels=["1.11 Hz","1.67 Hz","2.22 Hz"],
-        rhythmic_labels=["Duple","Triple"],
-        colors_random=color_random,
-        colors_rhythmic=colors_rhythmic,
-        ylabel="PSD at meter rate",
-        save_path="/home/tzcheng/Desktop/sensor_PSD_barplot_all_meter.pdf"
-    )
-
+plot_multiFreq_random_vs_rhythmic(
+    psds_random,
+    psds_rhythmic_list=[psds_triple,psds_duple,psds_triple],
+    FOIs=FOIs,
+    freq_labels=["1.11 Hz","1.67 Hz","2.22 Hz"],
+    rhythmic_labels=["Duple","Triple"],
+    colors_random=color_random,
+    colors_rhythmic=colors_rhythmic,
+    ylabel="PSD at meter rate",
+    save_path="/home/tzcheng/Desktop/sensor_PSD_barplot_all_meter.pdf")
 
 #%%####################################### Visualize on the source level: ROI 
 n_folder = folders[2]
@@ -350,41 +335,7 @@ for nn_age,n_age in enumerate(ages):
                 plot_SSEP(duple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_duple')
                 plot_SSEP(triple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_triple')
                 
-                # Doing ROI SSEP: Auditory
-                # -------------------Doing duple-------------------
-                # The 1st significant cluster
-                # (array([12, 13]),)
-                # Significant freqs: [1.63636364 1.72727273]
-                # The 2st significant cluster
-                # (array([29, 30, 31]),)
-                # Significant freqs: [3.18181818 3.27272727 3.36363636]
-                # The 3st significant cluster
-                # (array([48, 49]),)
-                # Significant freqs: [4.90909091 5.        ]
-                # -------------------Doing triple-------------------
-                # The 1st significant cluster
-                # (array([30, 31]),)
-                # Significant freqs: [3.27272727 3.36363636]
-                
-                # Doing ROI SSEP: SensoryMotor
-                # -------------------Doing duple-------------------
-                # The 1st significant cluster
-                # (array([29, 30, 31]),)
-                # Significant freqs: [3.18181818 3.27272727 3.36363636]
-                # -------------------Doing triple-------------------
-                # The 1st significant cluster
-                # (array([29, 30, 31]),)
-                # Significant freqs: [3.18181818 3.27272727 3.36363636]
-                
-                # Doing ROI SSEP: BG
-                # -------------------Doing duple-------------------
-                # The 1st significant cluster
-                # (array([30, 31]),)
-                # Significant freqs: [3.27272727 3.36363636]
-                # -------------------Doing triple-------------------
-                
-                ## take the significant freqs to plug in FOI for each condition from above 
-                ## duple meter [12, 13] and beat [30, 31, 32]
+               
                
                 color_random = "tab:grey"
                 
