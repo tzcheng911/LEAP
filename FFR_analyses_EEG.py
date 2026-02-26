@@ -207,29 +207,29 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     print("Decoding Accuracy %0.1f%%" % (100 * score))
     
     # # see the weights 
-    # from sklearn.model_selection import StratifiedKFold
-    # cv = StratifiedKFold(n_splits=ncv, shuffle=False)
+    from sklearn.model_selection import StratifiedKFold
+    cv = StratifiedKFold(n_splits=ncv, shuffle=False)
 
-    # weights = []
-    # scores = []
+    weights = []
+    scores = []
 
-    # for train_idx, test_idx in cv.split(X, y):
-    #     scaler = StandardScaler()
-    #     X_train = scaler.fit_transform(X[train_idx])
-    #     X_test  = scaler.transform(X[test_idx])
+    for train_idx, test_idx in cv.split(X, y):
+        scaler = StandardScaler()
+        X_train = scaler.fit_transform(X[train_idx])
+        X_test  = scaler.transform(X[test_idx])
         
-    #     clf = SVC(kernel='linear', C=1)
-    #     clf.fit(X_train, y[train_idx])
+        clf = SVC(kernel='linear', C=1)
+        clf.fit(X_train, y[train_idx])
 
-    #     scores.append(clf.score(X_test, y[test_idx]))
-    #     weights.append(clf.coef_.squeeze())
+        scores.append(clf.score(X_test, y[test_idx]))
+        weights.append(clf.coef_.squeeze())
 
-    # score = np.mean(scores, axis=0)
-    # print("Decoding Accuracy %0.1f%%" % (100 * score))
-    # weights = np.array(weights)   # shape: (n_folds, n_timepoints)
-    # plt.figure()
-    # plt.plot(times[tslice],np.mean(weights,axis=0))
-    # plt.title('SVM weights across time')
+    score = np.mean(scores, axis=0)
+    print("Decoding Accuracy %0.1f%%" % (100 * score))
+    weights = np.array(weights)   # shape: (n_folds, n_timepoints)
+    plt.figure()
+    plt.plot(times[tslice],np.mean(weights,axis=0))
+    plt.title('SVM weights across time')
     
     return scores
     
@@ -702,7 +702,7 @@ def plot_group_ffr(data1, data2, label1,label2,
     # Differential response
     plt.figure()
     plt.title('Differential response')
-    plt.plot(times, data1.mean(0) - data2.mean(0))
+    plot_err(data2-data1,'k',times)
     plt.xlim(np.min(times), np.max(times))
     plt.ylim(*ylim)
 
