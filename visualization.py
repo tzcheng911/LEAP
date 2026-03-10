@@ -320,13 +320,12 @@ for n in nROI:
 p_threshold = 0.05 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 
 for n_meter in rhythms[1:]:
-    
     with open(root_path + 'data/SSEP/7mo_SSEP_wholebrain_cluster_test_' + n_meter + '.pkl', 'rb') as f:
         clu = pickle.load(f)
     good_cluster_inds = np.where(clu[2] < p_threshold)[0]
     good_clusters = [clu[1][idx] for idx in good_cluster_inds]
     
-    ## visualize this cluster
+    ## Visualize this cluster
     stc_all_cluster_vis = summarize_clusters_stc(
         clu, p_thresh = p_threshold, vertices=src, subject="fsaverage"
     )
@@ -339,23 +338,33 @@ for n_meter in rhythms[1:]:
 ymin = 0.39
 ymax = 1
 
-ROI1 = 1 # 1: SensoryMotor or 2: BG
-ROI2 = 0 # 0: Auditory or 1: SensoryMotor
-label_names = np.asarray(["Auditory", "SensoryMotor", "BG"])
-
-random = read_connectivity(root_path + 'connectivity/7mo_group_02_stc_rs_mne_mag6pT_roi_redo4_conn_plv') 
-duple = read_connectivity(root_path + 'connectivity/7mo_group_03_stc_rs_mne_mag6pT_roi_redo4_conn_plv') 
-triple = read_connectivity(root_path + 'connectivity/7mo_group_04_stc_rs_mne_mag6pT_roi_redo4_conn_plv') 
+random = read_connectivity(root_path + 'data/connectivity/7mo_group_02_stc_rs_mne_mag6pT_roi_redo4_conn_plv') 
+duple = read_connectivity(root_path + 'data/connectivity/7mo_group_03_stc_rs_mne_mag6pT_roi_redo4_conn_plv') 
+triple = read_connectivity(root_path + 'data/connectivity/7mo_group_04_stc_rs_mne_mag6pT_roi_redo4_conn_plv') 
 freqs = np.array(random.freqs)
 random_conn = random.get_data(output='dense')
 duple_conn = duple.get_data(output='dense')
 triple_conn = triple.get_data(output='dense')
 
+## Line plot of SensoryMotor-BG PLV
+ROI1 = 2 # 1: SensoryMotor or 2: BG
+ROI2 = 1 # 0: Auditory or 1: SensoryMotor
 plt.figure()
 plot_err(random_conn[:,ROI1,ROI2,:],'k',freqs)
 plot_err(duple_conn[:,ROI1,ROI2,:],'#ff7f0e',freqs)
 plot_err(triple_conn[:,ROI1,ROI2,:],'#1f77b4',freqs)
+plt.xlim([4,35])
+plt.ylim([ymin,ymax])
+fname = "PLV between " + label_names[ROI1] + " and " + label_names[ROI2]
+plt.title(fname)
 
+## Line plot of SensoryMotor-Auditory PLV
+ROI1 = 1 # 1: SensoryMotor or 2: BG
+ROI2 = 0 # 0: Auditory or 1: SensoryMotor
+plt.figure()
+plot_err(random_conn[:,ROI1,ROI2,:],'k',freqs)
+plot_err(duple_conn[:,ROI1,ROI2,:],'#ff7f0e',freqs)
+plot_err(triple_conn[:,ROI1,ROI2,:],'#1f77b4',freqs)
 plt.xlim([4,35])
 plt.ylim([ymin,ymax])
 fname = "PLV between " + label_names[ROI1] + " and " + label_names[ROI2]
