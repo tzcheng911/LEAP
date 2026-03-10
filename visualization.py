@@ -60,8 +60,8 @@ def plot_multiFreq_random_vs_rhythmic(
     for i, (FOI, psds_rhythm) in enumerate(zip(FOIs, psds_rhythmic_list)):
 
         # ---- average over FOI ----
-        R = psds_random[:, FOI].mean(axis=1)
-        Y = psds_rhythm[:, FOI].mean(axis=1)
+        R = psds_random[:, FOI].mean(axis=-1)
+        Y = psds_rhythm[:, FOI].mean(axis=-1)
 
         means = [R.mean(), Y.mean()]
         ses = [
@@ -138,13 +138,6 @@ def plot_audio(audio,fmin,fmax,fs):
     plt.xlabel('Frequency (Hz)')
     plt.ylabel('PSD')
     
-def plot_SSEP(psds,freqs,title):
-    plt.figure()
-    plot_err(psds,'k',freqs)
-    plt.xlim([freqs[0],freqs[-1]])
-    plt.ylim([0,4.25e-25])
-    plt.title(title)
-
 def plot_CONN(conn,freqs,nlines,vmin,vmax,FOI,label_names,title):
     if FOI == "Theta": # 4-8 Hz
         X = conn[:,:,:,ff(freqs,4):ff(freqs,8)].mean(axis=3)
@@ -155,15 +148,7 @@ def plot_CONN(conn,freqs,nlines,vmin,vmax,FOI,label_names,title):
     else:  # broadband
         X = conn.mean(axis=3)
         
-    # if FOI == "Theta": # 4-8 Hz
-    #     X = conn[:,:,:,18:42].mean(axis=3)
-    # elif FOI == "Alpha": # 8-12 Hz
-    #     X = conn[:,:,:,42:65].mean(axis=3)
-    # elif FOI == "Beta":  # 15-30 Hz
-    #     X = conn[:,:,:,82:171].mean(axis=3)
-    # else:  # broadband
-    #     X = conn.mean(axis=3)
-    # circular plot
+
     ROI_names = label_names
     labels = mne.read_labels_from_annot("sample", parc="aparc", subjects_dir=subjects_dir)
     label_colors = [label.color for label in labels]
@@ -205,7 +190,7 @@ analysis = ['psds','conn_plv']
 which_data_type = ['_sensor_','_roi_redo4_','_morph_'] 
 label_names = np.asarray(["Auditory", "SensoryMotor", "BG"])
 
-#%%####################################### Visualize the audio files
+#%%####################################### Figure 1: Visualize the audio files
 fs, audio = wavfile.read(root_path + 'stimuli/randomt15rr.wav') # Random, Duple300, Triple300
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 fs, audio = wavfile.read(root_path + 'stimuli/random15rr.wav') # Random, Duple300, Triple300
@@ -215,7 +200,7 @@ plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 fs, audio = wavfile.read(root_path + 'stimuli/Triple300rr.wav') # Random, Duple300, Triple300
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 
-#%%####################################### Visualize the sensor level 
+#%%####################################### Figure 2: Visualize the sensor level 
 n_folder = folders[0]
 n_analysis = analysis[0]
 data_type = which_data_type[0]
@@ -231,29 +216,43 @@ triple = triple[triple.files[0]]
 psds_random = random.mean(axis = 1)
 psds_duple = duple.mean(axis = 1)
 psds_triple = triple.mean(axis = 1)
-plot_SSEP(psds_random,freqs,'MEG_random_psds')
-plot_SSEP(psds_duple,freqs,'MEG_duple_psds')
-plot_SSEP(psds_triple,freqs,'MEG_triple_psds')
-                
-## plot bar plot for the significant freqs based on non-parametric test (analysis.py)
-## plotting the results at the beat frequency
+
+## Line plot for steady-state evoked potential
+plt.figure()
+plot_err(psds_random,'k',freqs)
+plot_err(psds_duple,'#ff7f0e',freqs)
+plot_err(psds_triple,'#1f77b4',freqs)
+plt.xlim([freqs[0],freqs[-1]])
+plt.ylim([0,4.25e-25])
+plt.legend(["Radnom","","Duple","","Triple",""])
+
+## Bar plot for the significant freqs based on non-parametric test (analysis.py)
 # Random: always grey
 color_random = "tab:grey"
-colors_rhythmic = ["#1f77b4","#ff7f0e"]
 
-## beats
-# FOIs = [
-    #     [30, 31, 32],  # duple beat
-    #     [30, 31],  # triple beat
-    # ]
+## Beat frequency 3.33 Hz for duple (orange) and triple (blue)
+FOIs = [
+        [30, 31, 32],  # duple beat
+        [30, 31],  # triple beat
+    ]
+colors_rhythmic = ["#ff7f0e","#1f77b4"]
+plot_multiFreq_random_vs_rhythmic(
+    psds_random,
+    psds_rhythmic_list=[psds_duple,psds_triple],
+    FOIs=FOIs,
+    freq_labels=["3.33 Hz","3.33 Hz"],
+    rhythmic_labels=["Duple","Triple"],
+    colors_random=color_random,
+    colors_rhythmic=colors_rhythmic,
+    ylabel="PSD at beat rate")
 
-## plotting the results at the meter frequency
+## Meter frequency 1.1 Hz for triple meter (blue), 1.67 Hz for duple meter(orange), 2.22 Hz for triple 1st harmonic (blue)
 FOIs = [
         [6, 7],    # triple meter
         [12, 13],  # duple meter
         [18, 19],  # triple 1st harmonic
     ]
-    
+colors_rhythmic = ["#1f77b4","#ff7f0e","#1f77b4"]
 plot_multiFreq_random_vs_rhythmic(
     psds_random,
     psds_rhythmic_list=[psds_triple,psds_duple,psds_triple],
@@ -262,185 +261,80 @@ plot_multiFreq_random_vs_rhythmic(
     rhythmic_labels=["Duple","Triple"],
     colors_random=color_random,
     colors_rhythmic=colors_rhythmic,
-    ylabel="PSD at meter rate",
-    save_path="/home/tzcheng/Desktop/sensor_PSD_barplot_all_meter.pdf")
+    ylabel="PSD at meter rate")
 
-#%%####################################### Visualize on the source level: ROI 
-n_folder = folders[2]
-n_analysis = analysis[2]
-data_type = which_data_type[2]
+#%%####################################### Figure 3: Visualize on the source level -- ROI 
+nROI = np.arange(0,len(label_names),1)
 
-vmin = 0.5
-vmax = 1
-nlines = 2
-FOI = 'alpha'
+for n in nROI: 
+    print("---------------------------------------------------Doing ROI: " + label_names[n])
+    random0 = np.load(root_path + 'data/SSEP/7mo_group_02_stc_rs_mne_mag6pT_roi_redo4_psds.npz') 
+    duple0 = np.load(root_path + 'data/SSEP/7mo_group_03_stc_rs_mne_mag6pT_roi_redo4_psds.npz') 
+    triple0 = np.load(root_path + 'data/SSEP/7mo_group_04_stc_rs_mne_mag6pT_roi_redo4_psds.npz') 
+    random = random0[random0.files[0]]
+    duple = duple0[duple0.files[0]]
+    triple = triple0[triple0.files[0]]
+    freqs = random0[random0.files[1]]          
+                
+    ## Bar plot for the significant freqs based on non-parametric test (analysis.py)
+    # Random: always grey
+    color_random = "tab:grey"
+    
+    ## Beat frequency 3.33 Hz for duple (orange) and triple (blue)
+    colors_rhythmic = ["#ff7f0e","#1f77b4"]
+    ## beats
+    FOIs = [
+        [30, 31],  # duple beat
+        [30, 31],  # triple beat
+    ]
 
-fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-if data_type == '_roi_':
-    label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-    nROI = [72,108,66,102,64,100,59,95,7,8,26,27,60,61,62,96,97,98,50,86,71,107] 
-elif data_type == '_roi_redo_':
-    label_names = np.asarray(["AuditoryL", "AuditoryR", "MotorL", "MotorR", "SensoryL", "SensoryR", "BGL", "BGR", "IFGL", "IFGR"])
-elif data_type == '_roi_redo5_':
-    label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
-elif data_type == '_roi_redo4_':
-    label_names = np.asarray(["Auditory", "SensoryMotor", "BG", "IFG"])
-
-# Auditory (STG 72,108, HG 76,112), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
-# Basal ganglia group (7,8,9,16,26,27,28,31): out of all include caudate (7 26) and putamen (8 27) only based on Cannon & Patel 2020 TICS, putamen is most relevant 
-# Frontal IFG (60,61,62,96,97,98)
-# Posterior Parietal: inferior parietal (50 86),  superior parietal (71 107)
-# roi_redo pools ROIs to be 6 new_ROIs = {"Auditory": [72,108], "Motor": [66,102], "Sensory": [64,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98],  "Posterior": [50,86,71,107]}
-
-plt.figure()    
-color1 = ['m','r']
-color2 = ['c','b']
-ROI1 = 66
-ROI2 = 53
-for nn_age,n_age in enumerate(ages):
-    print("Doing age " + n_age)
-    if n_folder == 'connectivity/':
-        random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
-        duple = read_connectivity(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis) 
-        triple = read_connectivity(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis) 
-        freqs = np.array(random.freqs)
-        random_conn = random.get_data(output='dense')
-        duple_conn = duple.get_data(output='dense')
-        triple_conn = triple.get_data(output='dense')
+    plot_multiFreq_random_vs_rhythmic(
+        psds_random,
+        psds_rhythmic_list=[duple[:,n,:],triple[:,n,:]],
+        FOIs=FOIs,
+        freq_labels=["3.33 Hz","3.33 Hz"],
+        rhythmic_labels=["Duple","Triple"],
+        colors_random=color_random,
+        colors_rhythmic=colors_rhythmic,
+        ylabel="PSD at beat rate"
+    )   
         
-        plot_err(duple_conn[:,ROI1,ROI2,:]-random_conn[:,ROI1,ROI2,:],color1[nn_age],freqs)
-        plot_err(triple_conn[:,ROI1,ROI2,:]-random_conn[:,ROI1,ROI2,:],color2[nn_age],freqs)
-        
-        plt.figure()
-        plt.title(n_age)
-        plot_err(duple_conn[:,ROI1,ROI2,:],'r',freqs)
-        plot_err(triple_conn[:,ROI1,ROI2,:],'b',freqs)
-        plot_err(random_conn[:,ROI1,ROI2,:],'k',freqs)
-        plt.xlim([4,35])
-        plot_CONN(random_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_random_' + n_analysis)
-        plot_CONN(duple_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_duple_' + n_analysis)
-        plot_CONN(triple_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_triple_' + n_analysis)
-    else:
-        for n in nROI: 
-            print("---------------------------------------------------Doing ROI: " + label_names[n])
-            if n_folder == 'SSEP/':
-                random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
-                duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
-                triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
-                random = random0[random0.files[0]]
-                duple = duple0[duple0.files[0]]
-                triple = triple0[triple0.files[0]]
-                freqs = random0[random0.files[1]]          
-                plot_SSEP(random[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_random')
-                plot_SSEP(duple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_duple')
-                plot_SSEP(triple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_triple')
-                
-               
-               
-                color_random = "tab:grey"
-                
-                # Rhythmic: Duple = orange, Triple = blue
-                # Map your rhythmic data order:
-                colors_rhythmic = [
-                    "#ff7f0e",     # Duple #ff7f0e
-                    "#1f77b4"      # Triple #1f77b4
-                ]
-            
-                ## beats
-                FOIs = [
-                    [30, 31],  # duple beat
-                    [30, 31],  # triple beat
-                ]
-            
-            
-                ## meters
-                # FOIs = [
-                #     [6, 7],    # triple meter
-                #     [12, 13],  # duple meter
-                #     [18, 19],  # triple 1st harmonic
-                # ]
-                
-                nROI = 1 # 0,1,2
-                
-                plot_multiFreq_random_vs_rhythmic(
-                    psds_random,
-                    psds_rhythmic_list=[duple[:,nROI,:],triple[:,nROI,:]],
-                    FOIs=FOIs,
-                    freq_labels=["3.33 Hz","3.33 Hz"],
-                    rhythmic_labels=["Duple","Triple"],
-                    colors_random=color_random,
-                    colors_rhythmic=colors_rhythmic,
-                    ylabel="PSD at beat rate",
-                    save_path="/home/tzcheng/Desktop/ROI_SM_PSD_barplot_all_beat.pdf"
-                )              
-                
-            elif n_folder == 'decoding/':
-                decoding_duple = np.load(root_path + n_folder + n_age + data_type +'decodingACC_duple.npy') 
-                print(decoding_duple[n])
-                decoding_triple = np.load(root_path + n_folder + n_age + data_type +'decodingACC_triple.npy') 
-                print(decoding_triple[n])
+    ## Meter frequency 1.1 Hz for triple meter (blue), 1.67 Hz for duple meter(orange), 2.22 Hz for triple 1st harmonic (blue)
+    FOIs = [
+            [6, 7],    # triple meter
+            [12, 13],  # duple meter
+            [18, 19],  # triple 1st harmonic
+        ]
+    colors_rhythmic = ["#1f77b4","#ff7f0e","#1f77b4"] 
+    plot_multiFreq_random_vs_rhythmic(
+        psds_random,
+        psds_rhythmic_list=[triple[:,n,:],duple[:,n,:],triple[:,n,:]],
+        FOIs=FOIs,
+        freq_labels=["1.11 Hz","1.67 Hz","2.22 Hz"],
+        rhythmic_labels=["Duple","Triple"],
+        colors_random=color_random,
+        colors_rhythmic=colors_rhythmic,
+        ylabel="PSD at meter rate")
 
-#%%####################################### Visualize the source level: wholebrain 
-data_type = which_data_type[-1]
-n_analysis = analysis[0]
-n_folder = folders[0]
-n_meter = 'duple' # 'duple' or 'triple'
+#%%####################################### Figure 3: Visualize the source level -- wholebrain 
 p_threshold = 0.05 # set a cluster forming threshold based on a p-value for the cluster based permutation test
 
-for n_age in ages:
-    if n_folder == 'SSEP/':
-        with open(root_path + n_folder + n_age + '_SSEP_wholebrain_cluster_test_' + n_meter + '.pkl', 'rb') as f:
-            clu = pickle.load(f)
-        good_cluster_inds = np.where(clu[2] < p_threshold)[0]
-        good_clusters = [clu[1][idx] for idx in good_cluster_inds]
+for n_meter in rhythms[1:]:
+    
+    with open(root_path + 'data/SSEP/7mo_SSEP_wholebrain_cluster_test_' + n_meter + '.pkl', 'rb') as f:
+        clu = pickle.load(f)
+    good_cluster_inds = np.where(clu[2] < p_threshold)[0]
+    good_clusters = [clu[1][idx] for idx in good_cluster_inds]
+    
+    ## visualize this cluster
+    stc_all_cluster_vis = summarize_clusters_stc(
+        clu, p_thresh = p_threshold, vertices=src, subject="fsaverage"
+    )
+    stc_all_cluster_vis.plot(src=src,clim=dict(kind="percent",lims=[99.7,99.75,99.975])) 
+    # The first time point in this SourceEstimate object is the summation of all the clusters
+    # Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in this case) by the cluster
 
-        for c in good_clusters:
-            print(c[0])
-            
-            ## print the min and max and mean MNI coordinate for this cluster
-            coord = [] 
-            for i in np.arange(0,len(c[-1]),1):
-                coord.append(np.round(src[0]['rr'][src[0]['vertno'][c[-1][i]]]*1000))
-            np_coord = np.array(coord)
-            print("min MNI coord:" + str(np.min(np_coord,axis=0)))
-            print("max MNI coord:" + str(np.max(np_coord,axis=0)))
-            print("mean MNI coord (center of mass):" + str(np.mean(np_coord,axis=0)))
-            
-            ## get all the ROIs in this cluster (no repeat)
-            # ROIs = []
-            # for i in np.arange(0,len(c[-1]),1):
-            #     for nlabel in np.arange(0,len(label_names),1):
-            #         if c[-1][i] in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
-            #             ROIs.append(label_names[nlabel])
-            # print(ROIs)
-            
-            ## get all the ROIs in this cluster (with repeat)
-            ROIs = []
-            count_ROIs = []
-            for i in np.arange(0,len(c[-1]),1):
-                for nlabel in np.arange(0,len(label_names),1):
-                    if c[-1][i] in label_v_ind[nlabel][0]:
-                        ROIs.append(label_names[nlabel])
-            ROIs.sort()
-            for label in label_names:
-                count_ROIs.append(ROIs.count(label))
-                print(str(ROIs.count(label)) + " " + label)
-            
-        ## visualize this cluster
-        stc_all_cluster_vis = summarize_clusters_stc(
-            clu, p_thresh = p_threshold, vertices=src, subject="fsaverage"
-        )
-        stc_all_cluster_vis.plot(src=src,clim=dict(kind="percent",lims=[99.7,99.75,99.975])) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
-        # stc_all_cluster_vis.plot(src=src) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
-        # stc_all_cluster_vis.plot_3d(src=src)
-        
-    elif n_folder == 'decoding/':
-        decoding_acc = np.load(root_path + n_folder + n_age + data_type + 'decodingACC_' + n_meter +'.npy') 
-        stc1.data = np.array([decoding_acc,decoding_acc]).transpose()
-        stc1.plot(src=src,clim=dict(kind="percent",lims=[95,97.5,99.975]))
-        stc1.plot_3d(src=src)
-
-#%%#######################################  Visualize the ROI conn results 
+#%%####################################### Figure 4: Visualize the ROI conn results 
 ## ROI order should be (ROI1, ROI2) = (1,0) or (2,1) based on how conn structure is stored
 ymin = 0.39
 ymax = 1
@@ -467,4 +361,4 @@ plt.ylim([ymin,ymax])
 fname = "PLV between " + label_names[ROI1] + " and " + label_names[ROI2]
 plt.title(fname)
 
-#%%####################################### The correlation results are visualized in stats_ME2.py
+#%%####################################### Figure 5: The correlation results are visualized in analysis.py
