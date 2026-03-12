@@ -779,7 +779,7 @@ fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
 file_type = 'EEG'
-ntrial = '200'
+ntrial = 'all'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
     
 #%%####################################### visualize the data to examine
@@ -1847,7 +1847,7 @@ plt.axhline(0, linestyle="--")
 plt.tight_layout()
 plt.show()
 
-#%%
+#%% xcorr table
 # print(xcorr)
 print(np.mean(xcorr['xcorr_max']))
 print(np.mean(xcorr['xcorr_lag_ms']))
@@ -1908,6 +1908,69 @@ print(f"condition2 Mean: {np.mean(condition2):.2f}")
 print(f"Observed Difference: {result.statistic:.2f}")
 print(f"P-value: {result.pvalue}")
 
+#%% xcorr Verhulst model
+import scipy as sp
+
+ts = 0.02 # 0.02 for ba and pa, 0.06 for mba
+te = 0.13 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
+lag_window_s=(-0.012, -0.007)
+
+fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
+fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
+fs_audio, p40_audio = load_CBS_file('audio', 'p40', 'adults')
+p10_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-master/p10_FFR.mat')
+p40_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-master/p40_FFR.mat')
+n40_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-master/n40_FFR.mat')
+fs_eeg = 8820
+
+audio = p10_audio
+EEG = np.squeeze(p10_model_FFR["EFR"])
+audio = stats.zscore(audio)
+EEG = stats.zscore(EEG)
+# t_model = np.linspace(0,len(EEG)/fs_eeg,len(EEG))
+# plt.figure()
+# plt.plot(t_model,EEG)
+# plt.ylim([-3e-7, 5e-7])
+
+num = int((len(audio)*fs_eeg)/fs_audio)    
+audio_rs = signal.resample(audio, num, t=None, axis=0, window=None)
+t = np.linspace(0,len(audio_rs)/fs_eeg,len(audio_rs))
+
+## p10: noise burst from 0 ms (100th points) ts = 100 # 0.02s (i.e. 0.02s after noise burst) te = 500 # 0.1s
+## n40: noise burst from 40 ms (200th points) ts = 200 + 100 # 0.06s (i.e. 0.02s after noise burst) te = 650 # 0.13s
+## p40: noise burst from 0 ms (100th points) ts = 100 # 0.02s te = 650 # 0.13s
+tslice = slice(ff(t, ts), ff(t, te)) ## +1 hack to make sure slice in audio and eeg are the same length
+
+stim = audio_rs[tslice]
+resp = EEG[tslice]
+lags = signal.correlation_lags(len(stim),len(resp))
+lags_s = lags/fs_eeg
+
+lag_min, lag_max = np.array(lag_window_s)
+lag_mask = (lags_s >= lag_min) & (lags_s <= lag_max)
+
+stim_z = zscore_and_normalize(stim)
+resp_z = zscore_and_normalize(resp)
+xcorr = signal.correlate(stim_z,resp_z,mode='full')
+xcorr = abs(xcorr)
+
+xcorr_win = xcorr[lag_mask]
+lag_win = lags_s[lag_mask]
+max_idx = np.argmax(xcorr_win)
+
+## plot the signal
+fig, axes = plt.subplots(
+    3, 1)
+
+axes = axes.flatten()
+axes[0].plot(t[tslice], stim_z)
+axes[1].plot(t[tslice],resp_z)
+axes[2].plot(lags_s,xcorr)
+axes[2].axvline(lag_min, color="grey", linestyle="--")
+axes[2].axvline(lag_max, color="grey", linestyle="--")
+
+print("xcorr_max: " + str(xcorr_win[max_idx]))
+print("xcorr_lag_ms: " + str(lag_win[max_idx]))
 
 #%%####################################### autocorr analysis
 level = 'group'
