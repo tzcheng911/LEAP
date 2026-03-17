@@ -1856,7 +1856,7 @@ print(np.mean(xcorr['xcorr_lag_ms']))
 import pingouin as pg
 import pandas as pd
 
-df = pd.read_csv('/home/tzcheng/Downloads/FFR_xcorr_window2 - Brainstem - 200.csv')
+df = pd.read_csv('/home/tzcheng/Downloads/FFR_xcorr_window2 - Brainstem - 3000.csv')
 df = pd.read_csv('/home/tzcheng/Downloads/FFR_xcorr_window2 - CBS.csv')
 
 aov = pg.mixed_anova(
@@ -1872,8 +1872,8 @@ print(aov)
 df.groupby(['condition', 'group'])['xcorr_coef'].mean()
 df.groupby(['condition', 'group'])['xcorr_lags'].mean()*1000
 
-condition1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_lags'].values
-condition2 = df.loc[(df["condition"] == 'n40') & (df["group"]== 'eng')]['xcorr_lags'].values
+condition1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_coef'].values
+condition2 = df.loc[(df["condition"] == 'n40') & (df["group"]== 'eng')]['xcorr_coef'].values
 diff_eng = condition2-condition1
 stats.ttest_rel(condition1,condition2)
 condition1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'spa')]['xcorr_coef'].values
@@ -1908,10 +1908,14 @@ print(f"condition2 Mean: {np.mean(condition2):.2f}")
 print(f"Observed Difference: {result.statistic:.2f}")
 print(f"P-value: {result.pvalue}")
 
-#%% xcorr Verhulst model
+#%% Verhulst model
 import scipy as sp
 
-ts = 0.02 # 0.02 for ba and pa, 0.06 for mba
+## decoding
+
+
+## xcorr
+ts = 0.06 # 0.02 for ba and pa, 0.06 for mba
 te = 0.13 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
 lag_window_s=(-0.012, -0.007)
 
@@ -1923,14 +1927,14 @@ p40_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-mas
 n40_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-master/n40_FFR.mat')
 fs_eeg = 8820
 
-audio = p10_audio
-EEG = np.squeeze(p10_model_FFR["EFR"])
+audio = p40_audio
+EEG = np.squeeze(p40_model_FFR["EFR"])
 audio = stats.zscore(audio)
 EEG = stats.zscore(EEG)
-# t_model = np.linspace(0,len(EEG)/fs_eeg,len(EEG))
-# plt.figure()
-# plt.plot(t_model,EEG)
-# plt.ylim([-3e-7, 5e-7])
+t_model = np.linspace(0,len(EEG)/fs_eeg,len(EEG))
+plt.figure()
+plt.plot(t_model,EEG)
+plt.ylim([-3e-7, 5e-7])
 
 num = int((len(audio)*fs_eeg)/fs_audio)    
 audio_rs = signal.resample(audio, num, t=None, axis=0, window=None)
