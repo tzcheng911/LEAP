@@ -158,11 +158,16 @@ do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use th
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('brainstem_1'): # brainstem
+    if file.startswith('brainstem_2'): # brainstem
         subj.append(file)
 
+subj = subj[4:]
 # subj = ['brainstem_121','brainstem_123','brainstem_126','brainstem_129'] 
 # for these four subjects empty room is sampled at 1000 Hz so the notch filter cannot go up to 2000
+# run the erm files to get cov manually set to data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5)
+
+# brainstem_213 doesn't have EOG063 just run EOG projection on EOG061/EOG062
+# brainstem_223 empty room is sampled at 1000 Hz so the notch filter cannot go up to 2000
 # run the erm files to get cov manually set to data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5)
 
 #%%##### do the jobs for MEG
@@ -173,13 +178,13 @@ for s in subj:
     # do_sss(s,st_correlation,int_order)
     for condition in conditions:
         for run in runs:
-            # print ('Doing ECG/EOG projection...')
-            # [raw,raw_erm] = do_projection(s,condition,run)
-            # print ('Doing filtering...')
-            # raw_filt = do_filtering(raw,lp,hp,do_cabr)
-            # raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
-            # print ('calculate cov...')
-            # do_cov(s,raw_erm_filt, do_cabr,hp,lp)
+            print ('Doing ECG/EOG projection...')
+            [raw,raw_erm] = do_projection(s,condition,run)
+            print ('Doing filtering...')
+            raw_filt = do_filtering(raw,lp,hp,do_cabr)
+            raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
+            print ('calculate cov...')
+            do_cov(s,raw_erm_filt, do_cabr,hp,lp)
             print ('Doing epoch...')
             file_in=root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss_proj.fif'
             raw_file = mne.io.read_raw_fif(file_in,preload=True,allow_maxshield=True)
@@ -202,85 +207,85 @@ for s in subj:
 
 #%%##### save EEG from the MEG recording file
 ## brainstem_107,brainstem_113 EEG030, the rest 100x use EEG034
-for s in subj:
-    print(s)
-    for condition in conditions:
-        for run in runs:
-            file_in=root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss.fif'
-            raw_file = mne.io.read_raw_fif(file_in,preload=True,allow_maxshield=True)
-            eeg = find_eeg(raw_file,s,condition,run)
+# for s in subj:
+#     print(s)
+#     for condition in conditions:
+#         for run in runs:
+#             file_in=root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss.fif'
+#             raw_file = mne.io.read_raw_fif(file_in,preload=True,allow_maxshield=True)
+#             eeg = find_eeg(raw_file,s,condition,run)
             
 #%%##### do the jobs for EEG 
-n_trials = 200 ## 'all' or 200 or any number
+# n_trials = 200 ## 'all' or 200 or any number
 
-## These are the sbujects selected by their categorical perception that showed a clear categorization
-subjects_eng=['104','106','107','108','110','111','112','113','118','121','123','124','126','129','133']
-subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225','226'] ## 202 event code has some issues
+# ## These are the sbujects selected by their categorical perception that showed a clear categorization
+# subjects_eng=['104','106','107','108','110','111','112','113','118','121','123','124','126','129','133']
+# subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225','226'] ## 202 event code has some issues
 
-for s in subjects_eng:
-    print(s)
-    for condition in conditions:
-        for run in runs:
-            input_file = root_path + 'EEG/raw/brainstem_' + s + condition + run +'_raw.fif'
-            raw_file = mne.io.Raw(input_file,preload=True,allow_maxshield=True)
-            # raw_file.copy().pick(picks="stim").plot()
-            events = find_events(raw_file)
-            raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('eeg'))
-            raw_file.filter(l_freq=80,h_freq=2000,picks=('eeg'),method='iir',iir_params=dict(order=4,ftype='butter'))
-            [evoked,epochs] = do_epoch_cabr_eeg(raw_file, events, s, condition, run, n_trials)
+# for s in subjects_eng:
+#     print(s)
+#     for condition in conditions:
+#         for run in runs:
+#             input_file = root_path + 'EEG/raw/brainstem_' + s + condition + run +'_raw.fif'
+#             raw_file = mne.io.Raw(input_file,preload=True,allow_maxshield=True)
+#             # raw_file.copy().pick(picks="stim").plot()
+#             events = find_events(raw_file)
+#             raw_file.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5,picks=('eeg'))
+#             raw_file.filter(l_freq=80,h_freq=2000,picks=('eeg'),method='iir',iir_params=dict(order=4,ftype='butter'))
+#             [evoked,epochs] = do_epoch_cabr_eeg(raw_file, events, s, condition, run, n_trials)
             
 #%%####################################### Save the group npy file
-root_path='/media/tzcheng/storage/Brainstem/EEG/'
-t=np.linspace(-0.02,0.25,1001) ## need to double check the epoch tmin and tmax
+# root_path='/media/tzcheng/storage/Brainstem/EEG/'
+# t=np.linspace(-0.02,0.25,1001) ## need to double check the epoch tmin and tmax
 
-## only include the subjects that have both p10 and n40
-# subjects_eng=['104','106','107','108','110','112','113','118','121','123','124','126','129','133']
-# subjects_spa=['202','203','204','205','206','212','214','215','220','221','222','223','224','225','226']
+# ## only include the subjects that have both p10 and n40
+# # subjects_eng=['104','106','107','108','110','112','113','118','121','123','124','126','129','133']
+# # subjects_spa=['202','203','204','205','206','212','214','215','220','221','222','223','224','225','226']
 
-subjects_eng=['104','106','107','108','110','111','112','113','118','121','123','124','126','129','133']
-subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225','226'] ## 202 event code has some issues
+# subjects_eng=['104','106','107','108','110','111','112','113','118','121','123','124','126','129','133']
+# subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225','226'] ## 202 event code has some issues
 
-p10_eng = []
-n40_eng = []
-p10_spa = []
-n40_spa = []
+# p10_eng = []
+# n40_eng = []
+# p10_spa = []
+# n40_spa = []
 
-# for subj in subjects_eng:
-#     evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
-#     evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
-#     p10_eng.append(evoked_p10)
-#     n40_eng.append(evoked_n40)
+# # for subj in subjects_eng:
+# #     evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
+# #     evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
+# #     p10_eng.append(evoked_p10)
+# #     n40_eng.append(evoked_n40)
 
+# # for subj in subjects_spa:
+# #     evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
+# #     evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
+# #     p10_spa.append(evoked_p10)
+# #     n40_spa.append(evoked_n40)
+    
+# # for subj in subjects_eng:
+# #     evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
+# #     evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
+# #     p10_eng.append(evoked_p10)
+# #     n40_eng.append(evoked_n40)
+    
 # for subj in subjects_spa:
-#     evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
-#     evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
-#     p10_spa.append(evoked_p10)
-#     n40_spa.append(evoked_n40)
-    
+#     evoked_p10 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/spa/brainstem_' + str(subj)+'_p10_01_evoked_cabr_all.fif')
+#     evoked_n40 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/spa/brainstem_' + str(subj)+'_n40_01_evoked_cabr_all.fif')
+#     p10_spa.append(evoked_p10[0].data)
+#     n40_spa.append(evoked_n40[0].data)
+
 # for subj in subjects_eng:
-#     evoked_p10 = np.loadtxt(root_path + str(subj)+'_p10_evoked_avg.txt')
-#     evoked_n40 = np.loadtxt(root_path + str(subj)+'_n40_evoked_avg.txt')
-#     p10_eng.append(evoked_p10)
-#     n40_eng.append(evoked_n40)
-    
-for subj in subjects_spa:
-    evoked_p10 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/spa/brainstem_' + str(subj)+'_p10_01_evoked_cabr_all.fif')
-    evoked_n40 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/spa/brainstem_' + str(subj)+'_n40_01_evoked_cabr_all.fif')
-    p10_spa.append(evoked_p10[0].data)
-    n40_spa.append(evoked_n40[0].data)
+#     evoked_p10 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/eng/brainstem_' + str(subj)+'_p10_01_evoked_cabr_all.fif')
+#     evoked_n40 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/eng/brainstem_' + str(subj)+'_n40_01_evoked_cabr_all.fif')
+#     p10_eng.append(evoked_p10[0].data)
+#     n40_eng.append(evoked_n40[0].data)
 
-for subj in subjects_eng:
-    evoked_p10 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/eng/brainstem_' + str(subj)+'_p10_01_evoked_cabr_all.fif')
-    evoked_n40 = mne.read_evokeds(root_path + 'preprocessed/ntrial_all/eng/brainstem_' + str(subj)+'_n40_01_evoked_cabr_all.fif')
-    p10_eng.append(evoked_p10[0].data)
-    n40_eng.append(evoked_n40[0].data)
+# p10_eng = np.squeeze(np.asarray(p10_eng))
+# n40_eng = np.squeeze(np.asarray(n40_eng))
+# p10_spa = np.squeeze(np.asarray(p10_spa))
+# n40_spa = np.squeeze(np.asarray(n40_spa))
 
-p10_eng = np.squeeze(np.asarray(p10_eng))
-n40_eng = np.squeeze(np.asarray(n40_eng))
-p10_spa = np.squeeze(np.asarray(p10_spa))
-n40_spa = np.squeeze(np.asarray(n40_spa))
-
-np.save(root_path + 'p10_eng_eeg_ntrall_01.npy',p10_eng)
-np.save(root_path + 'n40_eng_eeg_ntrall_01.npy',n40_eng)
-np.save(root_path + 'p10_spa_eeg_ntrall_01.npy',p10_spa)
-np.save(root_path + 'n40_spa_eeg_ntrall_01.npy',n40_spa)
+# np.save(root_path + 'p10_eng_eeg_ntrall_01.npy',p10_eng)
+# np.save(root_path + 'n40_eng_eeg_ntrall_01.npy',n40_eng)
+# np.save(root_path + 'p10_spa_eeg_ntrall_01.npy',p10_spa)
+# np.save(root_path + 'n40_spa_eeg_ntrall_01.npy',n40_spa)
