@@ -152,7 +152,7 @@ conditions = ['_p10','_n40']
 runs = ['_01','_02'] 
 lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
 hp = 80
-n_trials = 200 ## 'all' or 200 or any number
+n_trials = 'all' ## 'all' or 200 or any number
 
 do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
@@ -160,14 +160,14 @@ subj = [] # A104 got some technical issue
 for file in os.listdir():
     if file.startswith('brainstem_2'): # brainstem
         subj.append(file)
-
-subj = subj[4:]
 # subj = ['brainstem_121','brainstem_123','brainstem_126','brainstem_129'] 
 # for these four subjects empty room is sampled at 1000 Hz so the notch filter cannot go up to 2000
 # run the erm files to get cov manually set to data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5)
 
 # brainstem_213 doesn't have EOG063 just run EOG projection on EOG061/EOG062
-# brainstem_223 empty room is sampled at 1000 Hz so the notch filter cannot go up to 2000
+# brainstem_202: No matching events found for 44 (event id 44)
+# subj = ['brainstem_205','brainstem_211','brainstem_212','brainstem_221','brainstem_222','brainstem_223']
+# for these six subjects empty room is sampled at 1000 Hz so the notch filter cannot go up to 2000
 # run the erm files to get cov manually set to data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5)
 
 #%%##### do the jobs for MEG
@@ -178,13 +178,13 @@ for s in subj:
     # do_sss(s,st_correlation,int_order)
     for condition in conditions:
         for run in runs:
-            print ('Doing ECG/EOG projection...')
-            [raw,raw_erm] = do_projection(s,condition,run)
-            print ('Doing filtering...')
-            raw_filt = do_filtering(raw,lp,hp,do_cabr)
-            raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
-            print ('calculate cov...')
-            do_cov(s,raw_erm_filt, do_cabr,hp,lp)
+            # print ('Doing ECG/EOG projection...')
+            # [raw,raw_erm] = do_projection(s,condition,run)
+            # print ('Doing filtering...')
+            # raw_filt = do_filtering(raw,lp,hp,do_cabr)
+            # raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
+            # print ('calculate cov...')
+            # do_cov(s,raw_erm_filt, do_cabr,hp,lp)
             print ('Doing epoch...')
             file_in=root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss_proj.fif'
             raw_file = mne.io.read_raw_fif(file_in,preload=True,allow_maxshield=True)
