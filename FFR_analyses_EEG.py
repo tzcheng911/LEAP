@@ -18,6 +18,7 @@ import mne
 import os
 import math
 import matplotlib.pyplot as plt
+import scipy as sp
 from scipy import stats, signal
 from scipy.signal import butter, filtfilt, hilbert
 from scipy.io import savemat
@@ -51,6 +52,12 @@ def ff(input_arr,target):
             idx = i
             delta = abs(input_arr[i]-target)
     return idx
+
+def zero_pad(signal, target_len):
+    pad_len = target_len - len(signal)
+    if pad_len <= 0:
+        return signal[:target_len]  # trim if too long
+    return np.pad(signal, (0, pad_len), mode='constant')
 
 def load_CBS_file(file_type, sound_type, subject_type):
     ## load and plot the time series of 'p10','n40','p40' for 'audio','misc', 'eeg', 'sensor', 'ROI', 'morph' in "infants" or "adults"
@@ -1805,8 +1812,8 @@ fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
 fs_audio, p40_audio = load_CBS_file('audio', 'p40', 'adults')
 fs_eeg, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
 
-audio = p40_audio
-EEG = dev2
+audio = p10_audio
+EEG = std
 audio = stats.zscore(audio)
 EEG = stats.zscore(EEG,axis=-1)
 
@@ -1817,7 +1824,7 @@ print(np.mean(xcorr['xcorr_lag_ms']))
 xcorr3 = xcorr['xcorr_max']
 lag3 = xcorr['xcorr_lag_ms']
 
-stats.ttest_rel(xcorr1,xcorr3)
+# stats.ttest_rel(xcorr1,xcorr3)
 
 #%% sliding window xcorr
 audio = n40_audio
@@ -1909,12 +1916,227 @@ print(f"Observed Difference: {result.statistic:.2f}")
 print(f"P-value: {result.pvalue}")
 
 #%% Verhulst model
-import scipy as sp
+p10_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-master/p10_FFR.mat')
+p40_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-master/p40_FFR.mat')
+n40_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-master/n40_FFR.mat')
+p10_model_FFR = np.squeeze(p10_model_FFR["EFR"])
+p40_model_FFR = np.squeeze(p40_model_FFR["EFR"])
+n40_model_FFR = np.squeeze(n40_model_FFR["EFR"])
+fs_eeg = 8820
+t_model = np.linspace(0,len(n40_model_FFR)/fs_eeg,len(n40_model_FFR))
 
-## decoding
+#### decoding
+def add_latency_jitter(signal, rng, max_jitter_samples=5):
+    shift = rng.integers(-max_jitter_samples, max_jitter_samples + 1)
+    return np.roll(signal, shift)
+def add_amplitude_jitter(signal, rng, scale_std=0.1):
+    scale = 1 + rng.normal(0, scale_std)
+    return signal * scale
+def pink_noise(n, rng):        
+    X = rng.standard_normal(n)
+    X = np.fft.rfft(X)
+    
+    freqs = np.fft.rfftfreq(n)
+    freqs[0] = 1  # avoid divide by zero
+    
+    X /= np.sqrt(freqs)  # 1/f
+    
+    return np.fft.irfft(X, n)
+def simulate_ffr_trial(EFR, rng, irregularities):
+    # latency jitter
+    trial = add_latency_jitter(EFR, max_jitter_samples=5, rng=rng)   
+    # amplitude jitter
+    trial = add_amplitude_jitter(trial, scale_std=0.1, rng=rng)
+    # correlated noise
+    noise = irregularities * np.std(EFR) * pink_noise(len(EFR), rng)
+    return trial + noise
 
+## prepare the 18 trials
+n_trials = 18
+trials_p10_EFR = np.zeros((n_trials, len(n40_model_FFR)))
+trials_p40_EFR = np.zeros((n_trials, len(n40_model_FFR)))
+trials_n40_EFR = np.zeros((n_trials, len(n40_model_FFR)))
 
-## xcorr
+rng = np.random.default_rng(42)
+irregularities = 0.9
+
+for i in range(n_trials):
+    temp_p10 = simulate_ffr_trial(p10_model_FFR,rng,irregularities)
+    trials_p10_EFR[i, :]  = zero_pad(temp_p10,len(n40_model_FFR)) # pad the p10 to be the same length as p40 and n40
+    trials_p40_EFR[i, :] = simulate_ffr_trial(p40_model_FFR,rng,irregularities)
+    trials_n40_EFR[i, :] = simulate_ffr_trial(n40_model_FFR,rng,irregularities)
+
+#%%
+# for i in range(n_trials):
+#     noise = irregularities * np.std(p10_model_FFR) * rng.standard_normal(size=p10_model_FFR.shape)
+#     temp_p10 = p10_model_FFR + noise
+#     trials_p10_EFR[i, :]  = zero_pad(temp_p10,len(n40_model_FFR)) # pad the p10 to be the same length as p40 and n40
+#     noise = irregularities * np.std(p40_model_FFR) * rng.standard_normal(size=p40_model_FFR.shape)
+#     trials_p40_EFR[i, :] = p40_model_FFR + noise
+#     noise = irregularities * np.std(n40_model_FFR) * rng.standard_normal(size=n40_model_FFR.shape)
+#     trials_n40_EFR[i, :] = n40_model_FFR + noise
+plt.figure()
+plt.plot(t_model,trials_p10_EFR.transpose())
+plt.plot(t_model,trials_p10_EFR.mean(0),linewidth = 2, color = 'k')
+plt.title('p10 modeled FFR')
+plt.figure()
+plt.plot(t_model,trials_p40_EFR.transpose())
+plt.plot(t_model,trials_p40_EFR.mean(0),linewidth = 2, color = 'k')
+plt.title('p40 modeled FFR')
+plt.figure()
+plt.plot(t_model,trials_n40_EFR.transpose())
+plt.plot(t_model,trials_n40_EFR.mean(0),linewidth = 2, color = 'k')
+plt.title('n40 modeled FFR')
+
+## start decoding!
+ts = 0
+te = 0.1
+shuffle = "full"
+niter = 1000 
+randseed = 2
+
+## simple decoding 
+decoding_acc_p10p40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_p40_EFR], t_model, ts, te, n_trials, shuffle, None)
+decoding_acc_p10n40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_n40_EFR], t_model, ts, te, n_trials, shuffle, None)
+ 
+## whole time decoding with random seed
+scores_p10p40 = []
+scores_p10n40 = []
+
+for n_iter in np.arange(0,niter,1):
+    print("iter " + str(n_iter))
+    decoding_acc_p10p40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_p40_EFR], t_model, ts, te, n_trials, shuffle, None)
+    decoding_acc_p10n40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_n40_EFR], t_model, ts, te, n_trials, shuffle, None)
+    scores_p10p40.append(np.mean(decoding_acc_p10p40, axis=0))
+    scores_p10n40.append(np.mean(decoding_acc_p10n40, axis=0))
+scores_p10p40 = np.array(scores_p10p40)
+scores_p10n40 = np.array(scores_p10n40)
+print(f"Accuracy: {np.mean(scores_p10p40):.3f}")
+print(f"Accuracy: {np.mean(scores_p10n40):.3f}")
+plot_decoding_histograms(scores_p10p40,scores_p10n40,bins=5,chance=0.5,labels=("p10/p40", "p10/n40"),xlim=(0, 1))
+
+## permuation test to compare p10/n40 vs. p10/p40 decoding
+decoding_acc_p10p40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_p40_EFR], t_model, ts, te, n_trials, shuffle, randseed)
+decoding_acc_p10n40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_n40_EFR], t_model, ts, te, n_trials, shuffle, randseed)
+diff_acc = np.mean(decoding_acc_p10n40, axis=0) - np.mean(decoding_acc_p10p40, axis=0)
+
+## permute between dev1 and dev2
+diff_scores_perm = []
+n40p40_all = np.vstack([trials_n40_EFR,trials_p40_EFR])
+n_total = len(n40p40_all)
+rng = np.random.default_rng(None)
+ 
+for n_iter in np.arange(0,niter,1):
+    print("iter " + str(n_iter))
+    perm_ind = rng.permutation(n_total)
+    group1_ind = perm_ind[:n_total//2]
+    group2_ind = perm_ind[n_total//2:]
+    dev1_perm = n40p40_all[group1_ind]
+    dev2_perm = n40p40_all[group2_ind]
+    
+    decoding_acc_group1_perm = do_subject_by_subject_decoding([trials_p10_EFR, dev1_perm], t_model, ts, te, n_trials, shuffle, randseed)
+    decoding_acc_group2_perm = do_subject_by_subject_decoding([trials_p10_EFR, dev2_perm], t_model, ts, te, n_trials, shuffle, randseed)
+
+    diff_scores_perm.append(np.mean(decoding_acc_group1_perm, axis=0) - np.mean(decoding_acc_group2_perm, axis=0))
+diff_scores_perm = np.array(diff_scores_perm)
+print(f"Accuracy: {np.mean(diff_scores_perm):.3f}")
+
+fig, ax = plt.subplots(1)
+ax.hist(diff_scores_perm, bins=7, alpha=0.6)
+ax.set_ylabel("Count", fontsize=20)
+ax.set_xlabel("Accuracy Difference", fontsize=20)
+# chance line
+ax.axvline(np.mean(diff_scores_perm), color="grey", linestyle="--", linewidth=2)
+# 95% line
+ax.axvline(np.percentile(diff_scores_perm,95),ymin=0,ymax=1000,color='grey',linewidth=2)
+# mean lines
+ax.axvline(diff_acc, color="red", linewidth=1)
+
+#%%# increment decoding
+window_step = 0.005   # 5 ms
+acc_eng_by_window = []
+acc_spa_by_window = []
+window_ends = np.arange(window_step, te + window_step, window_step)
+diff_scores_perm_95 = []
+diff_acc_real = []
+
+for t_end in window_ends:
+    ## calculate individual decoding curve
+    p10_eng_w = mask_with_fixed_noise(trials_p10_EFR, t_model, t_end, gen_noise(trials_p40_EFR,randseed)) ## ideally you want to keep the noise the same so it won't affect SVM decision between the two conditions
+    n40_eng_w = mask_with_fixed_noise(trials_n40_EFR, t_model, t_end, gen_noise(trials_p40_EFR,randseed))
+
+    p10_spa_w = mask_with_fixed_noise(trials_p10_EFR, t_model, t_end, gen_noise(trials_p40_EFR,randseed))
+    n40_spa_w = mask_with_fixed_noise(trials_p40_EFR, t_model, t_end, gen_noise(trials_p40_EFR,randseed))
+
+    decoding_acc_eng = do_subject_by_subject_decoding([p10_eng_w, n40_eng_w], t_model, ts, te, n_trials, shuffle, randseed)
+    decoding_acc_spa = do_subject_by_subject_decoding([p10_spa_w, n40_spa_w], t_model, ts, te, n_trials, shuffle, randseed)
+
+    acc_eng_by_window.append(np.mean(decoding_acc_eng))
+    acc_spa_by_window.append(np.mean(decoding_acc_spa))
+    
+    ## real difference
+    diff_acc = np.mean(decoding_acc_eng, axis=0) - np.mean(decoding_acc_spa, axis=0)
+    diff_acc_real = np.append(diff_acc_real,diff_acc)
+    
+    ## permute between dev1 and dev2
+    diff_scores_perm = []
+    n40p40_all = np.vstack([trials_n40_EFR,trials_p40_EFR])
+    n_total = len(n40p40_all)
+    rng = np.random.default_rng(None)
+     
+    for n_iter in np.arange(0,niter,1):
+        print("iter " + str(n_iter))
+        
+        perm_ind = rng.permutation(n_total)
+        group1_ind = perm_ind[:n_total//2]
+        group2_ind = perm_ind[n_total//2:]
+        dev1_perm = n40p40_all[group1_ind]
+        dev2_perm = n40p40_all[group2_ind]
+        
+        decoding_acc_group1_perm = do_subject_by_subject_decoding([trials_p10_EFR, dev1_perm], t_model, ts, te, ncv, shuffle, randseed)
+        decoding_acc_group2_perm = do_subject_by_subject_decoding([trials_p10_EFR, dev2_perm], t_model, ts, te, ncv, shuffle, randseed)
+ 
+        diff_scores_perm.append(np.mean(decoding_acc_group1_perm, axis=0) - np.mean(decoding_acc_group2_perm, axis=0))
+ 
+    
+    diff_scores_perm = np.array(diff_scores_perm)
+    diff_scores_perm_95 = np.append(diff_scores_perm_95,np.percentile(diff_scores_perm,95))
+    print(f"Accuracy: {np.mean(diff_scores_perm):.3f}")
+    
+window_sizes_ms = window_ends * 1000  # e.g., [5, 10, 15, ... 200]
+
+# Example arrays from your decoding loop
+acc_eng_by_window = np.array(acc_eng_by_window)
+acc_spa_by_window = np.array(acc_spa_by_window)
+
+plt.figure(figsize=(6,4))
+plt.plot(window_sizes_ms, acc_eng_by_window, label='p10/n40', color='blue', marker='o')
+plt.plot(window_sizes_ms, acc_spa_by_window, label='p10/p40', color='red', marker='o')
+# Add chance level line (assuming binary classification, chance = 0.5)
+plt.axhline(0.5, color='gray', linestyle='--', label='Chance')
+plt.xlabel('Window size (ms)')
+plt.ylabel('Decoding accuracy')
+plt.title('Decoding accuracy as a function of available signal')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(6,4))
+plt.plot(window_sizes_ms, diff_acc_real, label='Real difference', color='blue', marker='o')
+plt.plot(window_sizes_ms, diff_scores_perm_95, label='95% of perm difference', color='red', marker='o')
+# Add chance level line (assuming binary classification, chance = 0.5)
+plt.axhline(0, color='gray', linestyle='--', label='No difference')
+plt.xlabel('Window size (ms)')
+plt.ylabel('Decoding accuracy diff')
+plt.title('Decoding accuracy p10/n40 - p10/p40')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+#%%
+#### xcorr
 ts = 0.06 # 0.02 for ba and pa, 0.06 for mba
 te = 0.13 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
 lag_window_s=(-0.012, -0.007)
@@ -1922,10 +2144,6 @@ lag_window_s=(-0.012, -0.007)
 fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
 fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
 fs_audio, p40_audio = load_CBS_file('audio', 'p40', 'adults')
-p10_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-master/p10_FFR.mat')
-p40_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-master/p40_FFR.mat')
-n40_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-master/n40_FFR.mat')
-fs_eeg = 8820
 
 audio = p40_audio
 EEG = np.squeeze(p40_model_FFR["EFR"])
