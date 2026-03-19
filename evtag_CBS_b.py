@@ -291,8 +291,8 @@ for file in os.listdir():
         subj.append(file)
 
 ## do individual by individual(s), check the time t1, t2 or t3 too
-subj = ['sld_164'] 
-conditions = ['6']
+subj = ['sld_165'] 
+conditions = ['5']
 ###### do the jobs
 for n,s in enumerate(subj):
     condition = conditions[n]
