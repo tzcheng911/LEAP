@@ -3,18 +3,21 @@
 """
 Created on Tue Feb  3 14:11:28 2026
 
+Don't use this script if possible. 
+Be very very careful when using this script because it can delete all the files very quickly. 
+
 @author: tzcheng
 """
 
 import os
 
-root = "/media/tzcheng/storage2/CBS/"
-keywords = ["_test_"]
+root = "/media/tzcheng/storage/Brainstem/"
+keywords = ["morph"]
 
 file_to_del = []
 subj = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A'): 
+    if file.startswith('brainstem_'): 
         subj.append(file)
 for s in subj:
     print(s)
