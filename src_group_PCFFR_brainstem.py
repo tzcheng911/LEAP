@@ -118,7 +118,7 @@ print(subjects)
 
 ## preproc parameters
 n_top = 0 # 3 or 10 or 0: indicate no PCA was done
-n_trial = 'all'
+n_trial = 200
 lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
 hp = 80
 runs = ['_01'] # only run 01 for now, add the ['_01','_02'] for all runs, note that brainstem_107 only has run1 for p10
