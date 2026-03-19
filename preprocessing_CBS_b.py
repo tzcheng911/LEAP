@@ -210,7 +210,8 @@ def do_sss(subject,st_correlation,int_order,time):
     'sld_157': ['MEG1043', 'MEG1242'],
     'sld_161': ['MEG1043', 'MEG1242'],
     'sld_163': ['MEG1043', 'MEG1242'],
-    'sld_164': ['MEG1043', 'MEG1242']
+    'sld_164': ['MEG1043', 'MEG1242'],
+    'sld_165': ['MEG1043', 'MEG1242']
     }
     
     t3_prebad = {
@@ -415,7 +416,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('sld_136'): # cbs_b for the infants, sld for SLD infants
         subjects.append(file)
-subjects = ['sld_161','sld_164']
+subjects = ['sld_165']
 
 #%%###### do the jobs
 for s in subjects:
