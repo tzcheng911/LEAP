@@ -46,13 +46,13 @@ def do_projection(subject, condition, run):
 def do_filtering(data, lp, hp, do_cabr):
     ###### filtering
     if do_cabr == True:
-        data.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5)
-        # data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5) # for the erm files have lower sampling rates
+        # data.notch_filter(np.arange(60,2001,60),filter_length='auto',notch_widths=0.5)
+        data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5) # for some brainstem erm files have lower sampling rates = 1000 Hz
         data.filter(l_freq=hp,h_freq=lp,method='iir',iir_params=dict(order=4,ftype='butter'))
     else:
         data.filter(l_freq=0,h_freq=50,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
-
+    
 def do_cov(subject,data, do_cabr,hp,lp):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
@@ -158,8 +158,9 @@ do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use th
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('brainstem_2'): # brainstem
+    if file.startswith('brainstem_1'): # brainstem
         subj.append(file)
+subj = subj[3:]
 # subj = ['brainstem_121','brainstem_123','brainstem_126','brainstem_129'] 
 # for these four subjects empty room is sampled at 1000 Hz so the notch filter cannot go up to 2000
 # run the erm files to get cov manually set to data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5)
@@ -171,6 +172,7 @@ for file in os.listdir():
 # run the erm files to get cov manually set to data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5)
 
 #%%##### do the jobs for MEG
+os.chdir(root_path)
 print(subj)
 for s in subj:
     print(s)
@@ -178,19 +180,25 @@ for s in subj:
     # do_sss(s,st_correlation,int_order)
     for condition in conditions:
         for run in runs:
-            # print ('Doing ECG/EOG projection...')
-            # [raw,raw_erm] = do_projection(s,condition,run)
-            # print ('Doing filtering...')
-            # raw_filt = do_filtering(raw,lp,hp,do_cabr)
-            # raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
-            # print ('calculate cov...')
-            # do_cov(s,raw_erm_filt, do_cabr,hp,lp)
+            filename = root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss_proj.fif'
+
+            if os.path.exists(filename):
+                print ('ECG/EOG projection exists, loading...')
+                raw = mne.io.read_raw_fif(filename, allow_maxshield=True,preload=True)
+                raw_erm = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + run + '_erm_raw_sss_proj.fif', allow_maxshield=True,preload=True)
+            else:
+                print ('Doing ECG/EOG projection...')
+                [raw,raw_erm] = do_projection(s,condition,run)
+            print ('Doing filtering...')
+            raw_filt = do_filtering(raw,lp,hp,do_cabr)
+            raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
+            print ('calculate cov...')
+            do_cov(s,raw_erm_filt, do_cabr,hp,lp)
             print ('Doing epoch...')
-            file_in=root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss_proj.fif'
-            raw_file = mne.io.read_raw_fif(file_in,preload=True,allow_maxshield=True)
+            raw_file = mne.io.read_raw_fif(filename,preload=True,allow_maxshield=True)
             events = find_events(raw_file)
             if do_cabr == True: 
-                do_epoch_cabr_meg(raw_file, events, s, condition, run,n_trials,hp,lp)
+                do_epoch_cabr_meg(raw_filt, events, s, condition, run,n_trials,hp,lp)
             else:
                 print('Doing something else than cabr.')
 
