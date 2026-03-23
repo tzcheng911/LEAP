@@ -12,7 +12,7 @@ Be very very careful when using this script because it can delete all the files 
 import os
 
 root = "/media/tzcheng/storage/Brainstem/"
-keywords = ["morph"]
+keywords = ["cov"]
 
 file_to_del = []
 subj = [] 
