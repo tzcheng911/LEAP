@@ -794,8 +794,8 @@ fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
 subjects_eng=['104','106','107','108','110','111','112','113','118','121','123','124','126','129','133']
 subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225','226'] ## 202 event code has some issues
 
-subjects_eng_dict = dict(zip(subjects_eng, p10_eng))
-subjects_spa_dict = dict(zip(subjects_spa, p10_spa))
+subjects_eng_dict = dict(zip(subjects_eng, n40_eng))
+subjects_spa_dict = dict(zip(subjects_spa, n40_spa))
 n_cols = 3
 plot_individuals(subjects_eng_dict,n_cols,times)
 plot_individuals(subjects_spa_dict,n_cols,times)
