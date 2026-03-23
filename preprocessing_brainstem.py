@@ -24,8 +24,8 @@ def do_projection(subject, condition, run):
     file_out=file_in + '_proj'
     raw = mne.io.read_raw_fif(file_in + '.fif',allow_maxshield=True,preload=True)
     fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + '_erm_otp_raw_sss'
-    fname_erm_out = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_raw_sss_proj'
-    raw_erm = mne.io.read_raw_fif(fname_erm + '.fif',allow_maxshield=True,preload=True)
+    fname_erm_out = root_path + '/' + subject + '/sss_fif/' + subject + condition + run + '_erm_raw_sss_proj'
+    # raw_erm = mne.io.read_raw_fif(fname_erm + '.fif',allow_maxshield=True,preload=True)
         
     ecg_projs, ecg_events = mne.preprocessing.compute_proj_ecg(raw, ch_name='ECG064', n_grad=1, n_mag=1, n_jobs = 4, reject=None)
     ecg_epochs = mne.preprocessing.create_ecg_epochs(raw,ch_name='ECG064').average() # don't really need to assign the ch_name
@@ -36,12 +36,12 @@ def do_projection(subject, condition, run):
 
     raw.add_proj(ecg_projs)
     raw.add_proj(eog_projs)
-    raw_erm.add_proj(ecg_projs)
-    raw_erm.add_proj(eog_projs)
+    # raw_erm.add_proj(ecg_projs)
+    # raw_erm.add_proj(eog_projs)
 
     raw.save(file_out + '.fif',overwrite = True)
-    raw_erm.save(fname_erm_out + '.fif',overwrite = True)
-    return raw, raw_erm
+    # raw_erm.save(fname_erm_out + '.fif',overwrite = True)
+    return raw
 
 def do_filtering(data, lp, hp, do_cabr):
     ###### filtering
@@ -56,7 +56,7 @@ def do_filtering(data, lp, hp, do_cabr):
 def do_cov(subject,data, do_cabr,hp,lp):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
-    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_otp_raw_sss_proj_f'
+    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + condition + run + '_erm_otp_raw_sss_proj_f'
     if do_cabr == True:     
         fname_erm_out = fname_erm + str(hp) + str(lp) + '_ffr-cov'
     else: 
@@ -150,7 +150,7 @@ os.chdir(root_path)
 ## parameters 
 conditions = ['_p10','_n40']
 runs = ['_01','_02'] 
-lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
+lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
 n_trials = 'all' ## 'all' or 200 or any number
 
@@ -160,7 +160,10 @@ subj = [] # A104 got some technical issue
 for file in os.listdir():
     if file.startswith('brainstem_1'): # brainstem
         subj.append(file)
-subj = subj[3:]
+# subj = ['brainstem_113', 'brainstem_203', 'brainstem_214', 'brainstem_213', 'brainstem_124', 'brainstem_110', 'brainstem_118', 'brainstem_226', 'brainstem_215', 'brainstem_225', 'brainstem_224', 'brainstem_106', 'brainstem_204', 'brainstem_111', 'brainstem_112', 'brainstem_206', 'brainstem_133', 'brainstem_104', 'brainstem_220']
+print(subj)
+# brainstem_107 doesn't have p10_02
+# brainstem_108 has split file issue with the erm, use the prestimulus
 # subj = ['brainstem_121','brainstem_123','brainstem_126','brainstem_129'] 
 # for these four subjects empty room is sampled at 1000 Hz so the notch filter cannot go up to 2000
 # run the erm files to get cov manually set to data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5)
@@ -170,6 +173,41 @@ subj = subj[3:]
 # subj = ['brainstem_205','brainstem_211','brainstem_212','brainstem_221','brainstem_222','brainstem_223']
 # for these six subjects empty room is sampled at 1000 Hz so the notch filter cannot go up to 2000
 # run the erm files to get cov manually set to data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5)
+
+## get the recording date of the erm to see if could use other subjects erm for those who sampled at 1000 Hz
+# brainstem_212 and brainstem_224 recorded on the same day
+# brainstem_205 and brainstem_213 recorded on the same day
+
+# date = []
+# for s in subj:
+#     raw_erm = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + '_erm_otp_raw_sss.fif')
+#     date.append(raw_erm.info['meas_date'])
+
+#%%###### get the cov from the baseline for 10 subjects whose erm were sampled at a lower rate (i.e. 1000 Hz instead of 5000 Hz)
+subj = ['brainstem_108','brainstem_121','brainstem_123','brainstem_126','brainstem_129','brainstem_205','brainstem_211','brainstem_212','brainstem_221','brainstem_222','brainstem_223'] 
+subj = ['brainstem_108']
+print(subj)
+for s in subj:
+    for condition in conditions:
+        for run in runs:
+            filename = root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss_proj.fif'
+
+            if os.path.exists(filename):
+                print ('ECG/EOG projection exists, loading...')
+                raw = mne.io.read_raw_fif(filename, allow_maxshield=True,preload=True)
+            else:
+                print ('Doing ECG/EOG projection...')
+                raw = do_projection(s,condition,run)
+            
+            raw_filt = do_filtering(raw,lp,hp,do_cabr)
+            raw_file = mne.io.read_raw_fif(filename,preload=True,allow_maxshield=True)
+            events = find_events(raw_file)
+            raw_file = mne.io.read_raw_fif(filename,preload=True,allow_maxshield=True)
+            events = find_events(raw_file)
+            [evokeds,epochs] = do_epoch_cabr_meg(raw_filt, events, s, condition, run,n_trials,hp,lp)
+            noise_cov = mne.compute_covariance(epochs, tmin = None, tmax=0.0)
+            fname_erm_out = root_path + '/' + s + '/sss_fif/' + s + condition + run + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr-cov'
+            mne.write_cov(fname_erm_out + '.fif', noise_cov,overwrite=True)
 
 #%%##### do the jobs for MEG
 os.chdir(root_path)
@@ -185,7 +223,7 @@ for s in subj:
             if os.path.exists(filename):
                 print ('ECG/EOG projection exists, loading...')
                 raw = mne.io.read_raw_fif(filename, allow_maxshield=True,preload=True)
-                raw_erm = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + run + '_erm_raw_sss_proj.fif', allow_maxshield=True,preload=True)
+                raw_erm = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + condition + run + '_erm_raw_sss_proj.fif', allow_maxshield=True,preload=True)
             else:
                 print ('Doing ECG/EOG projection...')
                 [raw,raw_erm] = do_projection(s,condition,run)
@@ -201,17 +239,6 @@ for s in subj:
                 do_epoch_cabr_meg(raw_filt, events, s, condition, run,n_trials,hp,lp)
             else:
                 print('Doing something else than cabr.')
-
-            ## remove files with wrong filenames
-            # file_in_epoch = root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e' + condition + run + '.fif'
-            # file_in_evoked = root_path + '/' + s + '/sss_fif/' + s + condition + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_evoked_ffr' + condition + run + '.fif'
-            # epoch = mne.read_epochs(file_in_epoch)
-            # evoked = mne.read_evokeds(file_in_evoked)
-            # epoch.save(file_in_epoch[:-11] + '.fif',overwrite=True)
-            # evoked[0].save(file_in_evoked[:-11] + '.fif',overwrite=True)
-            # os.remove(file_in_epoch)
-            # os.remove(file_in_epoch[:-4] + '-1.fif')
-            # os.remove(file_in_evoked)
 
 #%%##### save EEG from the MEG recording file
 ## brainstem_107,brainstem_113 EEG030, the rest 100x use EEG034
