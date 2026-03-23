@@ -64,7 +64,7 @@ def do_inverse_FFR(s,evokeds_inv,condition,run,morph,n_trial,n_top,hp,lp):
 
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
-    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr-cov.fif')
+    cov = mne.read_cov(file_in + condition + run + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr-cov.fif')
     inverse_operator = mne.minimum_norm.make_inverse_operator(evokeds_inv.info, fwd, cov,loose=1,depth=0.8)
     evokeds_inv_stc = mne.minimum_norm.apply_inverse((evokeds_inv), inverse_operator, pick_ori = None)
 
@@ -112,7 +112,7 @@ os.chdir(root_path)
 
 subjects = [] 
 for file in os.listdir():
-    if file.startswith('brainstem_' + lang): ## it's easier to run 100s and 200s seperately so they can be saved into two npy fie
+    if file.startswith('brainstem_' + lang): ## it's easier to run 100s and 200s seperately so they can be saved into two npy files
         subjects.append(file)
 print(subjects)
 
