@@ -35,7 +35,7 @@ def select_PC(data,sfreq,fmin,fmax,lb,hb,n_top):
     explained_variance_ratio = pca.explained_variance_ratio_[ind_components]
     
     plt.figure()
-    plt.plot(freqs,psds)
+    plt.plot(freqs,psds.transpose())
     plt.plot(freqs,psds[ind_components,:].transpose(),color='red',linestyle='dashed')
     print('variance explained: ' + str(explained_variance_ratio))
     
@@ -103,7 +103,7 @@ def group_stc(subj,condition,run,n_trial,n_top,hp,lp):
     return stc_data,stc_roi_data
 
 #%%#######################################'
-do_PCA = False
+do_PCA = True
 morph = True
 lang = '1'
 
@@ -114,12 +114,13 @@ subjects = []
 for file in os.listdir():
     if file.startswith('brainstem_' + lang): ## it's easier to run 100s and 200s seperately so they can be saved into two npy files
         subjects.append(file)
+
 print(subjects)
 
 ## preproc parameters
-n_top = 0 # 3 or 10 or 0: indicate no PCA was done
-n_trial = 200
-lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
+n_top = 3 # 3 or 10 or 0: indicate no PCA was done
+n_trial = 'all' ## 'all' or 200 or any number
+lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
 runs = ['_01'] # only run 01 for now, add the ['_01','_02'] for all runs, note that brainstem_107 only has run1 for p10
 conditions = ['_p10','_n40']
