@@ -25,6 +25,7 @@ The correspondance between event tage and sound are
 11. sld_145_t1 only get through half of the trials raw_file = raw_file.copy().crop(tmax=455)
 12. sld_151_t1 only get through half of the trials raw_file = raw_file.copy().crop(tmax=624)
 13. cing_127 Ashley accidentally quit before the last 5 trials raw_file = raw_file.copy().crop(tmax=936)
+14. cing_170 ha # raw_file = raw_file.copy().crop(tmax=684)   
                         TTl                  event code
 standard                448                  1 and 2 (alt)
 dev1                    484                  3 and 5 (alt)
@@ -49,16 +50,16 @@ def find_events(raw_file,subj,block,time):
     events = np.concatenate((STI1,STI3,STI4),axis=0)
     events = events[events[:,0].argsort()] # sort by the latency
     # root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
-    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
-    # root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
+    # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
     file_name_raw=root_path + str(subj) + time + str(block) +'_events_raw-eve.fif'
     mne.write_events(file_name_raw,events,overwrite=True)  ###write out raw events for double checking
     
 def process_events(subj,block,time):
      #find events
     # root_path='/media/tzcheng/storage/CBS/'+str(subj)+'/events/'
-    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
-    # root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
+    # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
     file_name_raw=root_path + str(subj) + time + str(block) +'_events_raw-eve.fif'
     events=mne.read_events(file_name_raw)  ###write out raw events for double checking
     
@@ -137,8 +138,8 @@ def check_events(events,condition):  ## processed events
         elif event[2]==6 or event[2]==7:
             e2.append(3)
             
-    path='/media/tzcheng/storage2/SLD/MEG/'
-    # path='/media/tzcheng/storage/cing/'
+    # path='/media/tzcheng/storage2/SLD/MEG/'
+    path='/media/tzcheng/storage/cing/'
     # path='/media/tzcheng/storage2/CBS/'
     seq_file=path + 'seq'+ condition+'_200.npy'
     seq=np.load(seq_file)
@@ -193,8 +194,8 @@ def select_mmr_events(events,subj,block,time,direction): ## load the processed e
         
         mmr_event=np.concatenate((substd,dev1,dev2),axis=0)
         
-        root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
-        # root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
+        # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+        root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
         # root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
         file_name_new=root_path + str(subj) + time + block + '_events_mmr-eve.fif'
         mne.write_events(file_name_new,mmr_event,overwrite=True)
@@ -220,9 +221,9 @@ def select_mmr_events(events,subj,block,time,direction): ## load the processed e
         dev_sample = [dev[i] for i in sorted(random.sample(range(len(dev)), sample_size))]
         
         mmr_event=np.concatenate((std1,std2,dev_sample),axis=0)
-        root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+        # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
         # root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
-        # root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
+        root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
         file_name_new=root_path + str(subj) + time + block + '_events_mmr_reverse-eve.fif'
         mne.write_events(file_name_new,mmr_event,overwrite=True)
     else:
@@ -262,8 +263,8 @@ def select_cabr_events(events,subj,block,time): ## load the processed events
     substd2 = [std2[i] for i in sorted(random.sample(range(len(std2)), sample_size))]
     
     cabr_event=np.concatenate((substd1,substd2,dev1,dev2),axis=0)
-    root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
-    # root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
+    # root_path='/media/tzcheng/storage2/SLD/MEG/'+str(subj)+'/events/'
+    root_path='/media/tzcheng/storage/cing/'+str(subj)+'/events/'
     # root_path='/media/tzcheng/storage2/CBS/'+str(subj)+'/events/'
     file_name_new=root_path + str(subj) + time + block + '_events_cabr-eve.fif'
     mne.write_events(file_name_new, cabr_event,overwrite=True)
@@ -272,13 +273,13 @@ def select_cabr_events(events,subj,block,time): ## load the processed events
 #%% 
 ########################################
 # root_path='/media/tzcheng/storage2/CBS/'
-root_path='/media/tzcheng/storage2/SLD/MEG/'
-# root_path='/media/tzcheng/storage/cing/'
+# root_path='/media/tzcheng/storage2/SLD/MEG/'
+root_path='/media/tzcheng/storage/cing/'
 os.chdir(root_path)
 
 ## parameters 
 run = '_01' # ['_01','_02'] for adults and ['_01'] for infants
-time =  '_t2' # '_t1' first time (6 mo) or '_t2' second time (12 mo) or '_t3' third time coming back, or '' for cbs or cing
+time =  '' # '_t1' first time (6 mo) or '_t2' second time (12 mo) or '_t3' third time coming back, or '' for cbs or cing
 direction = "ba_to_pa"
 
 # https://uwnetid-my.sharepoint.com/:x:/r/personal/babyleap_uw_edu/_layouts/15/Doc.aspx?sourcedoc=%7B4CDEB132-CCF5-4641-AFEF-43E17E28C126%7D&file=SLD%20Tracking%20&%20Runsheets.xlsx=&nav=MTVfezAwMDAwMDAwLTAwMDEtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMH0&action=default&mobileredirect=true
@@ -287,11 +288,11 @@ direction = "ba_to_pa"
 subj = [] 
 check_all= []
 for file in os.listdir():
-    if file.startswith('sld'):
+    if file.startswith('cing'):
         subj.append(file)
 
 ## do individual by individual(s), check the time t1, t2 or t3 too
-subj = ['sld_165'] 
+subj = ['cing_170'] 
 conditions = ['5']
 ###### do the jobs
 for n,s in enumerate(subj):
@@ -302,8 +303,8 @@ for n,s in enumerate(subj):
         os.makedirs(root_path + s + '/events')
 
     # raw_file=mne.io.Raw('/media/tzcheng/storage/CBS/' + s + '/raw_fif/' + s + run +'_raw.fif',allow_maxshield=True,preload=True)
-    raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s + time + run +'_raw.fif',allow_maxshield=True,preload=True)
-    # raw_file=mne.io.Raw('/media/tzcheng/storage/cing/' + s + '/raw_fif/' + s + time + run +'_raw.fif',allow_maxshield=True,preload=True)
+    # raw_file=mne.io.Raw('/media/tzcheng/storage2/SLD/MEG/' + s + '/raw_fif/' + s + time + run +'_raw.fif',allow_maxshield=True,preload=True)
+    raw_file=mne.io.Raw('/media/tzcheng/storage/cing/' + s + '/raw_fif/' + s + time + run +'_raw.fif',allow_maxshield=True,preload=True)
     raw_file.copy().pick(picks="stim").plot()
     # raw_file = raw_file.copy().crop(tmax=836.6) # for sld_125_t1 
     # raw_file = raw_file.copy().crop(tmax=900.5) # for sld_143_t1
@@ -311,6 +312,7 @@ for n,s in enumerate(subj):
     # raw_file = raw_file.copy().crop(tmax=786) # for sld_129_t3
     # raw_file = raw_file.copy().crop(tmax=624) # for sld_151_t1
     # raw_file = raw_file.copy().crop(tmax=936) # for cing_127
+    # raw_file = raw_file.copy().crop(tmax=684) # for cing_170
     find_events(raw_file, s,run,time)
     events=process_events(s,run,time)
     check=check_events(events,condition)
