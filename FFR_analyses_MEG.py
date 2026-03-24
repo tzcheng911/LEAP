@@ -183,6 +183,7 @@ fs, p10_eng_all, n40_eng_all = load_brainstem_file(file_type, ntrial)
 #%%####################################### visualization
 evoked = mne.read_evokeds('/media/tzcheng/storage/Brainstem/brainstem_203/sss_fif/brainstem_203_n40_02_otp_raw_sss_proj_f802000_ntrial200_evoked_ffr.fif')
 
+
 #%%####################################### Subject-by-subject MEG decoding for each condition 
 #%%# permuation test to compare p10/n40 vs. p10/p40 decoding in CBS eng
 
