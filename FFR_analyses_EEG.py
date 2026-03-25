@@ -411,7 +411,7 @@ def run_sliding_time_decoding(
     ncv_spa,
     shuffle,
     randseed,
-    plot=True
+    plot
 ):
     """
     Sliding window decoding for English vs Spanish groups.
@@ -1068,8 +1068,8 @@ fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
 subjects_eng=['104','106','107','108','110','111','112','113','118','121','123','124','126','129','133']
 subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225','226'] ## 202 event code has some issues
 
-subjects_eng_dict = dict(zip(subjects_eng, n40_eng))
-subjects_spa_dict = dict(zip(subjects_spa, n40_spa))
+subjects_eng_dict = dict(zip(subjects_eng, p10_eng))
+subjects_spa_dict = dict(zip(subjects_spa, p10_spa))
 n_cols = 3
 plot_individuals(subjects_eng_dict,n_cols,times)
 plot_individuals(subjects_spa_dict,n_cols,times)
@@ -1125,8 +1125,8 @@ scores_mba_pa = do_subject_by_subject_decoding([dev1,dev2], times, ts, te, 18, '
 #%% Random-seed decoding
 ts = 0
 te = 0.20
-niter = 1000 
-shuffle = "full"
+niter = 500 
+shuffle = "keep pair"
 
 scores_p10 = []
 scores_n40 = []
@@ -1136,12 +1136,18 @@ p10_spa_match = random_select(p10_spa,len(p10_eng),1)
 n40_spa_match = random_select(n40_spa,len(p10_eng),1)
 
 condition_pairs = (
-    [p10_eng, p10_spa_match],
-    [n40_eng, n40_spa_match]
+    [p10_eng, n40_eng],
+    [p10_spa, n40_spa]
 )
 scores_all = run_random_seed_decoding(condition_pairs, times, ts, te, niter, shuffle, plot=True)
 
 #%% Differential decoding
+ts = 0
+te = 0.20
+niter = 500 
+shuffle = "keep pair"
+randseed = 2
+
 decode_fn = make_decode_fn(times, ts, te, ncv, shuffle, randseed)
 
 condition_pairs = (
