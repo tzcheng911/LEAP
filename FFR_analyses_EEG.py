@@ -32,17 +32,11 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 import random
+import librosa
+import librosa.display
 
 #%%####################################### Define functions
-def plot_err(group_stc,color,t):
-    group_avg=np.mean(group_stc,axis=0)
-   #plt.figure()
-    err=np.std(group_stc,axis=0)/np.sqrt(group_stc.shape[0])
-    up=group_avg+err
-    lw=group_avg-err
-    plt.plot(t,group_avg,color=color)
-    plt.fill_between(t,up,lw,color=color,alpha=0.5)
-
+## General supporting functions
 def ff(input_arr,target): 
     ## find the idx of the closest freqeuncy (time) in freqs (times)
     delta = 1000000000
@@ -59,6 +53,14 @@ def zero_pad(signal, target_len):
         return signal[:target_len]  # trim if too long
     return np.pad(signal, (0, pad_len), mode='constant')
 
+def random_select(data,num_select,randseed):
+    rng = np.random.default_rng(randseed)
+    perm = rng.permutation(len(data))
+    new_data = data[perm][:num_select]
+    return new_data
+
+perm = rng.permutation(len(p10_spa))
+## Loading functions
 def load_CBS_file(file_type, sound_type, subject_type):
     ## load and plot the time series of 'p10','n40','p40' for 'audio','misc', 'eeg', 'sensor', 'ROI', 'morph' in "infants" or "adults"
     root_path = '/media/tzcheng/storage2/CBS/'
@@ -92,8 +94,536 @@ def load_brainstem_file(file_type, ntrial):
         p10_spa = np.load(root_path + 'EEG/p10_spa_eeg_ntr' + ntrial + '_01.npy')
         n40_spa = np.load(root_path + 'EEG/n40_spa_eeg_ntr' + ntrial + '_01.npy')
     ## not yet implemented MEG load elif file_type in ('sensor', 'roi','morph'):
-    return fs, p10_eng, n40_eng, p10_spa, n40_spa
+    return fs, p10_eng, n40_eng, p10_spa, n40_spa 
+
+## Plotting functions
+def plot_err(group_stc,color,t):
+    group_avg=np.mean(group_stc,axis=0)
+    err=np.std(group_stc,axis=0)/np.sqrt(group_stc.shape[0])
+    up=group_avg+err
+    lw=group_avg-err
+    plt.plot(t,group_avg,color=color)
+    plt.fill_between(t,up,lw,color=color,alpha=0.5)
+
+def plot_individuals(data_dict,n_cols,t):
     
+    """
+    data_dict = {
+        'subj1': y1,
+        'subj2': y2,
+        ...
+    }
+    """
+    n_subj = len(data_dict)
+    n_rows = math.ceil(n_subj / n_cols)
+
+    fig, axes = plt.subplots(
+        n_rows, n_cols,
+        figsize=(4 * n_cols, 3 * n_rows),
+        sharex=True, sharey=True
+    )
+
+    axes = axes.flatten()
+
+    for ax, (subj, y) in zip(axes, data_dict.items()):
+        ax.plot(t,y)
+        ax.set_title(subj)
+
+    # remove empty subplots
+    for ax in axes[len(data_dict):]:
+        ax.axis('off')
+
+    plt.tight_layout()
+    plt.show()
+
+def plot_group_ffr(data1, data2, label1,label2,
+                   times,
+                   ylim=(-5e-7, 5e-7),
+                   n_times=1101):
+    """
+    Plot mean FFR responses and differential response for one group.
+    """
+    
+    # Mean responses
+    plt.figure(figsize=(8,5))
+    plt.plot(times, data1.mean(0), label=label1)
+    plt.plot(times, data2.mean(0), label=label2)
+    plt.xlim(np.min(times), np.max(times))
+    plt.ylim(*ylim)
+    plt.legend()
+
+    # Differential response
+    plt.figure()
+    plt.title('Differential response')
+    plot_err(data2-data1,'k',times)
+    plt.xlim(np.min(times), np.max(times))
+    plt.ylim(*ylim)
+
+def plot_audio_ffr(times, audio, fs_audio, ffr, te, ts = 0, fs_eeg = 5000, label1='audio',label2='ffr'):
+    """
+    Plot rescaled audio and FFR to observe the temporal relationship.
+    """
+    num = int((len(audio)*fs_eeg)/fs_audio)    
+    audio_rs = signal.resample(audio, num, t=None, axis=0, window=None)
+    audio_rs_norm = (audio_rs - np.mean(audio_rs)) / np.std(audio_rs)
+    ffr_norm = (ffr - np.mean(ffr, axis=1, keepdims=True)) / np.std(ffr, axis=1, keepdims=True)
+    times_audio = np.linspace(0,len(audio_rs)/fs_eeg,len(audio_rs))
+    tslice_audio = slice(ff(times_audio, ts), ff(times_audio, te))
+    tslice_EEG = slice(ff(times, ts), ff(times, te))
+    
+    plt.figure()
+    plt.plot(times_audio[tslice_audio],audio_rs_norm[tslice_audio],label=label1)
+    plt.plot(times[tslice_EEG],ffr_norm[:,tslice_EEG].mean(0),label=label2)
+    plt.legend()
+    
+def plot_decoding_histograms(scores_p10,
+    scores_n40,
+    bins=10,
+    chance=0.5,
+    labels=("p10", "n40"),
+    xlim=(0, 1)):
+    
+    fig, ax = plt.subplots(1)
+
+    ax.hist(scores_p10, bins=bins, alpha=0.6)
+    ax.hist(scores_n40, bins=bins, alpha=0.6)
+
+    ax.set_ylabel("Count", fontsize=20)
+    ax.set_xlabel("Accuracy", fontsize=20)
+    ax.set_xlim(*xlim)
+
+    ax.legend(labels)
+
+    # chance line
+    ax.axvline(chance, color="grey", linestyle="--")
+
+    # mean lines
+    ax.axvline(np.mean(scores_p10), color="skyblue", linewidth=2)
+    ax.axvline(np.mean(scores_n40), color="orange", linewidth=2)
+    return fig, ax
+
+## Decoding functions
+def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
+    """
+    X_list : list of ndarrays
+        One array per condition/category
+    """
+
+    tslice = slice(ff(times, ts), ff(times, te))
+    X = []
+    y = []
+    
+    ## shuffle the order across participants but keep the pair
+    if shuffle == "keep pair":
+        rng = np.random.default_rng(random_state)
+        perm = rng.permutation(len(X_list[0]))
+        for label, Xi in enumerate(X_list):
+            X.append(Xi[perm, tslice])
+            y.append(np.full(len(Xi), label))
+        X = np.concatenate(X, axis=0)
+        y = np.concatenate(y)
+    
+    ## shuffle the order across participants fully
+    elif shuffle == "full":
+        for label, Xi in enumerate(X_list):
+            X.append(Xi[:, tslice])
+            y.append(np.full(len(Xi), label))
+        X = np.concatenate(X, axis=0)
+        y = np.concatenate(y)
+        rng = np.random.default_rng(random_state)
+        perm = rng.permutation(len(y))
+        X = X[perm]
+        y = y[perm]
+   
+    ## classifier
+    clf = make_pipeline(
+        StandardScaler(),  # z-score normalization
+        # SVC(kernel='rbf',gamma='auto',C=0.1,class_weight='balanced')  
+        SVC(kernel='linear', C=1,class_weight='balanced')
+    )
+    scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
+    score = np.mean(scores, axis=0)
+    print("Decoding Accuracy %0.1f%%" % (100 * score))
+    
+    ## see the weights 
+    # from sklearn.model_selection import StratifiedKFold
+    # cv = StratifiedKFold(n_splits=ncv, shuffle=False)
+
+    # weights = []
+    # scores = []
+
+    # for train_idx, test_idx in cv.split(X, y):
+    #     scaler = StandardScaler()
+    #     X_train = scaler.fit_transform(X[train_idx])
+    #     X_test  = scaler.transform(X[test_idx])
+        
+    #     clf = SVC(kernel='linear', C=1)
+    #     clf.fit(X_train, y[train_idx])
+
+    #     scores.append(clf.score(X_test, y[test_idx]))
+    #     weights.append(clf.coef_.squeeze())
+
+    # score = np.mean(scores, axis=0)
+    # print("Decoding Accuracy %0.1f%%" % (100 * score))
+    # weights = np.array(weights)   # shape: (n_folds, n_timepoints)
+    # plt.figure()
+    # plt.plot(times[tslice],np.mean(weights,axis=0))
+    # plt.title('SVM weights across time')
+    
+    return scores
+    
+    ## using leave one out vs. leave one group out with stratified and matching subjects order give same results
+    # from sklearn.model_selection import LeaveOneGroupOut
+    # groups = np.concatenate((np.arange(0,18,1),np.arange(0,18,1)))
+    # logo = LeaveOneGroupOut()
+    # logo.get_n_splits(groups=groups)
+    # for i, (train_idx, test_idx) in enumerate(logo.split(X, y, groups)):
+    #     print(f"Fold {i}:")
+    #     print(f"  Train: index={train_idx}, group={groups[train_idx]}")
+    #     print(f"  Test:  index={test_idx}, group={groups[test_idx]}")
+    #     scaler = StandardScaler()
+    #     X_train = scaler.fit_transform(X[train_idx])
+    #     X_test  = scaler.transform(X[test_idx])
+        
+    #     clf = SVC(kernel='linear', C=1)
+    #     clf.fit(X_train, y[train_idx])
+
+    #     scores.append(clf.score(X_test, y[test_idx]))    
+    # score = np.mean(scores, axis=0)
+    # print("Decoding Accuracy %0.1f%%" % (100 * score))
+
+def run_random_seed_decoding(
+    condition_pairs,
+    times,
+    ts,
+    te,
+    niter=1000,
+    shuffle="full",
+    labels=None,
+    plot=True
+):
+
+    n_pairs = len(condition_pairs)
+    scores_all = [[] for _ in range(n_pairs)]
+
+    for n_iter in range(niter):
+        print(f"iter {n_iter}")
+
+        for i, ((cond1, cond2)) in enumerate(zip(condition_pairs)):
+
+            acc = do_subject_by_subject_decoding(
+                [cond1, cond2],
+                times,
+                ts,
+                te,
+                len(cond1),   # match CV to group size
+                shuffle,
+                None
+            )
+            scores_all[i].append(np.mean(acc, axis=0))
+
+    scores_all = [np.array(s) for s in scores_all]
+
+    # print mean accuracy
+    for i, scores in enumerate(scores_all):
+        label = labels[i] if labels else f"cond{i}"
+        print(f"Accuracy {label}: {np.mean(scores):.3f}")
+
+    if plot and n_pairs == 2:
+        plot_decoding_histograms(
+            scores_all[0], scores_all[1],
+            bins=5,
+            chance=0.5,
+            labels=labels if labels else ("cond0", "cond1"),
+            xlim=(0, 1)
+        )
+    return scores_all
+
+def make_decode_fn(times, ts, te, ncv, shuffle, randseed):
+    def decode_fn(group1, group2):
+        acc1 = do_subject_by_subject_decoding(
+            group1, times, ts, te, ncv, shuffle, randseed
+        )
+        acc2 = do_subject_by_subject_decoding(
+            group2, times, ts, te, ncv, shuffle, randseed
+        )
+        return np.mean(acc1, axis=0) - np.mean(acc2, axis=0)
+    return decode_fn
+
+def permutation_decoding_diff(
+    condition_pairs,
+    decode_fn,
+    niter=1000,
+    rng=None,
+    plot = True,
+    verbose=True
+):
+    """
+    condition_pairs: (group1, group2)
+        group1, group2 are lists of arrays
+        e.g. ([p10_eng, n40_eng], [p10_spa, n40_spa])
+    """
+    if rng is None:
+        rng = np.random.default_rng()
+
+    group1, group2 = condition_pairs
+
+    # real difference
+    real_diff = decode_fn(group1, group2)
+
+    # stack corresponding conditions
+    stacked = [np.vstack([g1, g2]) for g1, g2 in zip(group1, group2)]
+    n_total = stacked[0].shape[0]
+
+    diff_scores_perm = []
+
+    for i in range(niter):
+        if verbose:
+            print(f"iter {i}")
+
+        perm = rng.permutation(n_total)
+        idx1 = perm[:n_total // 2]
+        idx2 = perm[n_total // 2:]
+
+        perm_group1 = [s[idx1] for s in stacked]
+        perm_group2 = [s[idx2] for s in stacked]
+
+        diff_scores_perm.append(decode_fn(perm_group1, perm_group2))
+
+    if plot:
+        # ---- plotting ----
+        fig, ax = plt.subplots(1)
+        ax.hist(diff_scores_perm, bins=bins, alpha=0.6)
+
+        ax.set_ylabel("Count", fontsize=20)
+        ax.set_xlabel("Accuracy Difference", fontsize=20)
+
+        ax.axvline(np.mean(diff_scores_perm), color="grey", linestyle="--", linewidth=2)
+        ax.axvline(np.percentile(diff_scores_perm, 95), color="grey", linestyle="--", linewidth=2)
+        ax.axvline(real_diff, color="red", linewidth=2)
+    return real_diff, np.array(diff_scores_perm), fig, ax
+
+def run_sliding_time_decoding(
+    p10_eng,
+    n40_eng,
+    p10_spa,
+    n40_spa,
+    times,
+    ts_global,
+    te_global,
+    window_length,
+    window_step,
+    ncv_eng,
+    ncv_spa,
+    shuffle,
+    randseed,
+    plot=True
+):
+    """
+    Sliding window decoding for English vs Spanish groups.
+    """
+
+    acc_eng_by_window = []
+    acc_spa_by_window = []
+
+    window_starts = np.arange(
+        ts_global,
+        te_global - window_length,
+        window_step
+    )
+
+    for t_start in window_starts:
+        t_end = t_start + window_length
+
+        decoding_acc_eng = do_subject_by_subject_decoding(
+            [p10_eng, n40_eng],
+            times,
+            t_start,
+            t_end,
+            ncv_eng,
+            shuffle,
+            randseed
+        )
+
+        decoding_acc_spa = do_subject_by_subject_decoding(
+            [p10_spa, n40_spa],
+            times,
+            t_start,
+            t_end,
+            ncv_spa,
+            shuffle,
+            randseed
+        )
+
+        acc_eng_by_window.append(np.mean(decoding_acc_eng))
+        acc_spa_by_window.append(np.mean(decoding_acc_spa))
+
+    # Convert to arrays
+    acc_eng_by_window = np.array(acc_eng_by_window)
+    acc_spa_by_window = np.array(acc_spa_by_window)
+
+    # Window centers (ms)
+    window_centers_ms = (window_starts + window_length / 2) * 1000
+
+    # Optional plotting
+    if plot:
+        plt.figure(figsize=(6, 4))
+
+        plt.plot(window_centers_ms, acc_eng_by_window,
+                 label='English')
+        plt.plot(window_centers_ms, acc_spa_by_window,
+                 label='Spanish')
+
+        plt.axhline(0.5, linestyle='--', label='Chance')
+
+        plt.xlabel('Time (ms)')
+        plt.ylabel('Decoding accuracy')
+        plt.title('Sliding window decoding accuracy')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+
+    return {
+        "times_ms": window_centers_ms,
+        "acc_eng": acc_eng_by_window,
+        "acc_spa": acc_spa_by_window
+    }
+
+def run_increment_decoding(
+    cond1_a, cond1_b,          # e.g., p10_eng, n40_eng
+    cond2_a, cond2_b,          # e.g., p10_spa, n40_spa
+    times,
+    ts=0,
+    te=0.2,
+    window_step=0.005,
+    ncv1=15,
+    ncv2=16,
+    shuffle="keep pair",
+    randseed=2,
+    do_permutation=True,
+    niter=500,
+    labels=("Cond1", "Cond2"),
+    plot=True
+):
+    """
+    General increment decoding function.
+    Works for:
+    - Eng vs Spa
+    - p10/n40 vs p10/p40
+    """
+
+    window_ends = np.arange(window_step, te + window_step, window_step)
+
+    acc1_all = []
+    acc2_all = []
+    diff_real = []
+    diff_perm_95 = []
+
+    # --- fixed noise (important for your design) ---
+    noise1 = gen_noise(cond1_a, randseed)
+    noise2 = gen_noise(cond2_a, randseed)
+
+    for t_end in window_ends:
+
+        # Apply masking
+        c1a_w = mask_with_fixed_noise(cond1_a, times, t_end, noise1)
+        c1b_w = mask_with_fixed_noise(cond1_b, times, t_end, noise1)
+
+        c2a_w = mask_with_fixed_noise(cond2_a, times, t_end, noise2)
+        c2b_w = mask_with_fixed_noise(cond2_b, times, t_end, noise2)
+
+        # Decode
+        acc1 = do_subject_by_subject_decoding(
+            [c1a_w, c1b_w], times, ts, te, ncv1, shuffle, randseed
+        )
+        acc2 = do_subject_by_subject_decoding(
+            [c2a_w, c2b_w], times, ts, te, ncv2, shuffle, randseed
+        )
+
+        acc1_mean = np.mean(acc1)
+        acc2_mean = np.mean(acc2)
+
+        acc1_all.append(acc1_mean)
+        acc2_all.append(acc2_mean)
+
+        # Real difference
+        diff = acc1_mean - acc2_mean
+        diff_real.append(diff)
+
+        # --- Permutation test ---
+        if do_permutation:
+            diff_scores = []
+
+            data_a = np.vstack([cond1_a, cond2_a])
+            data_b = np.vstack([cond1_b, cond2_b])
+            n_total = data_a.shape[0]
+
+            rng = np.random.default_rng(None)
+
+            for _ in range(niter):
+                perm = rng.permutation(n_total)
+                g1 = perm[:n_total // 2]
+                g2 = perm[n_total // 2:]
+
+                acc_g1 = do_subject_by_subject_decoding(
+                    [data_a[g1], data_b[g1]],
+                    times, ts, te, ncv1, shuffle, randseed
+                )
+                acc_g2 = do_subject_by_subject_decoding(
+                    [data_a[g2], data_b[g2]],
+                    times, ts, te, ncv1, shuffle, randseed
+                )
+
+                diff_scores.append(np.mean(acc_g1) - np.mean(acc_g2))
+
+            diff_perm_95.append(np.percentile(diff_scores, 95))
+
+    # Convert to arrays
+    acc1_all = np.array(acc1_all)
+    acc2_all = np.array(acc2_all)
+    diff_real = np.array(diff_real)
+    diff_perm_95 = np.array(diff_perm_95) if do_permutation else None
+
+    window_sizes_ms = window_ends * 1000
+
+    # --- Plotting ---
+    if plot:
+        plt.figure(figsize=(6, 4))
+        plt.plot(window_sizes_ms, acc1_all, label=labels[0], marker='o')
+        plt.plot(window_sizes_ms, acc2_all, label=labels[1], marker='o')
+        plt.axhline(0.5, linestyle='--', label='Chance')
+
+        plt.xlabel('Window size (ms)')
+        plt.ylabel('Decoding accuracy')
+        plt.title('Decoding vs available signal')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+
+        if do_permutation:
+            plt.figure(figsize=(6, 4))
+            plt.plot(window_sizes_ms, diff_real, label='Real difference', marker='o')
+            plt.plot(window_sizes_ms, diff_perm_95, label='95% perm', marker='o')
+            plt.axhline(0, linestyle='--', label='No difference')
+
+            plt.xlabel('Window size (ms)')
+            plt.ylabel('Accuracy difference')
+            plt.title(f'{labels[0]} - {labels[1]}')
+            plt.legend()
+            plt.grid(True)
+            plt.tight_layout()
+            plt.show()
+
+    return {
+        "window_ms": window_sizes_ms,
+        "acc1": acc1_all,
+        "acc2": acc2_all,
+        "diff_real": diff_real,
+        "diff_perm_95": diff_perm_95
+    }
+
 def do_CBS_trial_by_trial_decoding(root_path,n_trials):
     all_score_svm = []
     subj = [] # A104 got some technical issue
@@ -171,95 +701,50 @@ def do_brainstem_trial_by_trial_decoding(root_path,n_trials='ntrial_all'):
         print("Trial-by-trial decoding accuracy: %0.1f%%" % (100 * score,))
         all_score_svm.append(score)
         return all_score_svm
-    
-def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
+
+## Signal processing functions
+def replace_onset_with_baseline_noise(
+        ffr,
+        times,
+        onset_start,
+        onset_end,
+        baseline_start=-0.02,
+        baseline_end=0.0,
+        plot_new = False):
     """
-    X_list : list of ndarrays
-        One array per condition/category
+    Replace onset period with prestimulus noise for the mask-peak decoding
+
+    Parameters
+    ----------
+    ffr : array (subjects, time)
+    times : time vector (seconds)
     """
-    ## classifier
-    clf = make_pipeline(
-        StandardScaler(),  # z-score normalization
-        # SVC(kernel='rbf',gamma='auto',C=0.1,class_weight='balanced')  
-        SVC(kernel='linear', C=1,class_weight='balanced')
-    )
-    tslice = slice(ff(times, ts), ff(times, te))
-    X = []
-    y = []
-    
-    ## shuffle the order across participants but keep the pair
-    if shuffle == "keep pair":
-        rng = np.random.default_rng(random_state)
-        perm = rng.permutation(len(X_list[0]))
-        for label, Xi in enumerate(X_list):
-            X.append(Xi[perm, tslice])
-            y.append(np.full(len(Xi), label))
-        X = np.concatenate(X, axis=0)
-        y = np.concatenate(y)
-    
-    ## shuffle the order across participants fully
-    elif shuffle == "full":
-        for label, Xi in enumerate(X_list):
-            X.append(Xi[:, tslice])
-            y.append(np.full(len(Xi), label))
-        X = np.concatenate(X, axis=0)
-        y = np.concatenate(y)
-        rng = np.random.default_rng(random_state)
-        perm = rng.permutation(len(y))
-        X = X[perm]
-        y = y[perm]
-   
-    scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
-    score = np.mean(scores, axis=0)
-    print("Decoding Accuracy %0.1f%%" % (100 * score))
-    
-    # # # see the weights 
-    # from sklearn.model_selection import StratifiedKFold
-    # cv = StratifiedKFold(n_splits=ncv, shuffle=False)
 
-    # weights = []
-    # scores = []
+    ffr_new = ffr.copy()
 
-    # for train_idx, test_idx in cv.split(X, y):
-    #     scaler = StandardScaler()
-    #     X_train = scaler.fit_transform(X[train_idx])
-    #     X_test  = scaler.transform(X[test_idx])
-        
-    #     clf = SVC(kernel='linear', C=1)
-    #     clf.fit(X_train, y[train_idx])
+    onset_mask = (times >= onset_start) & (times <= onset_end)
+    baseline_mask = (times >= baseline_start) & (times < baseline_end)
 
-    #     scores.append(clf.score(X_test, y[test_idx]))
-    #     weights.append(clf.coef_.squeeze())
+    onset_idx = np.where(onset_mask)[0]
+    baseline_idx = np.where(baseline_mask)[0]
 
-    # score = np.mean(scores, axis=0)
-    # print("Decoding Accuracy %0.1f%%" % (100 * score))
-    # weights = np.array(weights)   # shape: (n_folds, n_timepoints)
-    # plt.figure()
-    # plt.plot(times[tslice],np.mean(weights,axis=0))
-    # plt.title('SVM weights across time')
-    
-    return scores
-    
-    ## using leave one out vs. leave one group out with stratified and matching subjects order give same results
-    # from sklearn.model_selection import LeaveOneGroupOut
-    # groups = np.concatenate((np.arange(0,18,1),np.arange(0,18,1)))
-    # logo = LeaveOneGroupOut()
-    # logo.get_n_splits(groups=groups)
-    # for i, (train_idx, test_idx) in enumerate(logo.split(X, y, groups)):
-    #     print(f"Fold {i}:")
-    #     print(f"  Train: index={train_idx}, group={groups[train_idx]}")
-    #     print(f"  Test:  index={test_idx}, group={groups[test_idx]}")
-    #     scaler = StandardScaler()
-    #     X_train = scaler.fit_transform(X[train_idx])
-    #     X_test  = scaler.transform(X[test_idx])
-        
-    #     clf = SVC(kernel='linear', C=1)
-    #     clf.fit(X_train, y[train_idx])
+    n_sub = ffr.shape[0]
 
-    #     scores.append(clf.score(X_test, y[test_idx]))    
-    # score = np.mean(scores, axis=0)
-    # print("Decoding Accuracy %0.1f%%" % (100 * score))
+    for sub in range(n_sub):
 
+        baseline_noise = np.tile(ffr[sub, baseline_idx],10)
+
+        # sample baseline noise (with replacement)
+        replacement = baseline_noise[:len(onset_idx)]
+        ffr_new[sub, onset_idx] = replacement
+
+    if plot_new:
+        ## plot average FFRs between p10 vs. n40 to check
+        plt.figure()
+        plt.plot(times,ffr)
+        plt.plot(times,ffr_new)
+
+    return ffr_new
 
 def bandpass_filter(data, fs, fmin, fmax, order=4):
     nyq = fs / 2
@@ -412,8 +897,9 @@ def do_SNR(data,times,ts,te,fmin, fmax, level):
     return SNR_t, SNR_s
 
 def zscore_and_normalize(x):
-    x = (x - np.mean(x)) / np.std(x)
-    return x / np.linalg.norm(x)
+    x = (x - np.mean(x)) / np.std(x) 
+    xx = x / np.linalg.norm(x)
+    return xx
 
 def do_xcorr(audio,EEG,fs_audio,fs_eeg,ts,te,level,lag_window_s=(-0.014, -0.007)):
     # Downsample
@@ -548,214 +1034,6 @@ def do_xcorr_sliding(audio, EEG, fs_audio, fs_eeg,
 
     return np.array(window_times), xcorr_max, xcorr_lag
 
-def do_autocorr_sliding(
-    eeg,
-    fs_eeg,
-    times_eeg,
-    ts,
-    te,
-    level,
-    lag_window_ms=(-0.05, 0.05),
-    win_ms=0.04,
-    step_ms=0.02,
-):
-    """
-    Sliding-window EEG autocorrelation.
-
-    Parameters
-    ----------
-    eeg : ndarray (n_subjects, n_times)
-    fs_eeg : float
-    times_eeg : ndarray
-    ts, te : float
-        Time window (in seconds) to analyze
-    level : {'group', 'individual'}
-    lag_window_ms : tuple
-        Lag window in ms (e.g., (-50, 50))
-    win_ms : float
-        Sliding window length in ms
-    step_ms : float
-        Step size in ms
-    """
-
-    # --------------------
-    # Time slice
-    # --------------------
-    tslice = slice(ff(times_eeg, ts), ff(times_eeg, te))
-    resp = eeg[:, tslice]  # (subjects × time)
-    n_subjects, n_times = resp.shape
-
-    # --------------------
-    # Convert window params to samples
-    # --------------------
-    win_samp = int(win_ms / 1000 * fs_eeg)
-    step_samp = int(step_ms / 1000 * fs_eeg)
-
-    if win_samp >= n_times:
-        raise ValueError("Sliding window longer than data segment")
-
-    # --------------------
-    # Lags (defined by window length)
-    # --------------------
-    lags = signal.correlation_lags(win_samp, win_samp)
-    lags_s = lags / fs_eeg
-
-    lag_min, lag_max = np.array(lag_window_ms) / 1000
-    lag_mask = (lags_s >= lag_min) & (lags_s <= lag_max)
-
-    lags_ms = lags_s[lag_mask] * 1000
-
-    # --------------------
-    # Sliding windows
-    # --------------------
-    win_starts = np.arange(0, n_times - win_samp + 1, step_samp)
-    win_centers = times_eeg[tslice][win_starts + win_samp // 2]
-
-    # --------------------
-    # Group-level
-    # --------------------
-    if level == "group":
-        resp_mean = resp.mean(axis=0)
-
-        acorr_windows = []
-
-        for ws in win_starts:
-            seg = resp_mean[ws : ws + win_samp]
-            seg_z = zscore_and_normalize(seg)
-
-            acorr = signal.correlate(seg_z, seg_z, mode="full")
-            acorr_windows.append(np.abs(acorr)[lag_mask])
-
-        return {
-            "autocorr": np.array(acorr_windows),  # (windows × lags)
-            "lags_ms": lags_ms,
-            "times": win_centers,
-        }
-
-    # --------------------
-    # Individual-level
-    # --------------------
-    elif level == "individual":
-        acorr_all = []
-
-        for subj_resp in resp:
-            subj_windows = []
-
-            for ws in win_starts:
-                seg = subj_resp[ws : ws + win_samp]
-                seg_z = zscore_and_normalize(seg)
-
-                acorr = signal.correlate(seg_z, seg_z, mode="full")
-                subj_windows.append(np.abs(acorr)[lag_mask])
-
-            acorr_all.append(subj_windows)
-
-        return {
-            "autocorr": np.array(acorr_all),  # (subjects × windows × lags)
-            "lags_ms": lags_ms,
-            "times": win_centers,
-        }
-
-    else:
-        raise ValueError("level must be 'group' or 'individual'")
-
-def plot_individuals(data_dict,n_cols,t):
-    
-    """
-    data_dict = {
-        'subj1': y1,
-        'subj2': y2,
-        ...
-    }
-    """
-    n_subj = len(data_dict)
-    n_rows = math.ceil(n_subj / n_cols)
-
-    fig, axes = plt.subplots(
-        n_rows, n_cols,
-        figsize=(4 * n_cols, 3 * n_rows),
-        sharex=True, sharey=True
-    )
-
-    axes = axes.flatten()
-
-    for ax, (subj, y) in zip(axes, data_dict.items()):
-        ax.plot(t,y)
-        ax.set_title(subj)
-
-    # remove empty subplots
-    for ax in axes[len(data_dict):]:
-        ax.axis('off')
-
-    plt.tight_layout()
-    plt.show()
-
-def plot_group_ffr(data1, data2, label1,label2,
-                   times,
-                   ylim=(-5e-7, 5e-7),
-                   n_times=1101):
-    """
-    Plot mean FFR responses and differential response for one group.
-    """
-    
-    # Mean responses
-    plt.figure(figsize=(8,5))
-    plt.plot(times, data1.mean(0), label=label1)
-    plt.plot(times, data2.mean(0), label=label2)
-    plt.xlim(np.min(times), np.max(times))
-    plt.ylim(*ylim)
-    plt.legend()
-
-    # Differential response
-    plt.figure()
-    plt.title('Differential response')
-    plot_err(data2-data1,'k',times)
-    plt.xlim(np.min(times), np.max(times))
-    plt.ylim(*ylim)
-
-def plot_audio_ffr(times, audio, fs_audio, ffr, te, ts = 0, fs_eeg = 5000, label1='audio',label2='ffr'):
-    """
-    Plot rescaled audio and FFR to observe the temporal relationship.
-    """
-    num = int((len(audio)*fs_eeg)/fs_audio)    
-    audio_rs = signal.resample(audio, num, t=None, axis=0, window=None)
-    audio_rs_norm = (audio_rs - np.mean(audio_rs)) / np.std(audio_rs)
-    ffr_norm = (ffr - np.mean(ffr, axis=1, keepdims=True)) / np.std(ffr, axis=1, keepdims=True)
-    times_audio = np.linspace(0,len(audio_rs)/fs_eeg,len(audio_rs))
-    tslice_audio = slice(ff(times_audio, ts), ff(times_audio, te))
-    tslice_EEG = slice(ff(times, ts), ff(times, te))
-    
-    plt.figure()
-    plt.plot(times_audio[tslice_audio],audio_rs_norm[tslice_audio],label=label1)
-    plt.plot(times[tslice_EEG],ffr_norm[:,tslice_EEG].mean(0),label=label2)
-    plt.legend()
-    
-def plot_decoding_histograms(scores_p10,
-    scores_n40,
-    bins=10,
-    chance=0.5,
-    labels=("p10", "n40"),
-    xlim=(0, 1)):
-    
-    fig, ax = plt.subplots(1)
-
-    ax.hist(scores_p10, bins=bins, alpha=0.6)
-    ax.hist(scores_n40, bins=bins, alpha=0.6)
-
-    ax.set_ylabel("Count", fontsize=20)
-    ax.set_xlabel("Accuracy", fontsize=20)
-    ax.set_xlim(*xlim)
-
-    ax.legend(labels)
-
-    # chance line
-    ax.axvline(chance, color="grey", linestyle="--")
-
-    # mean lines
-    ax.axvline(np.mean(scores_p10), color="skyblue", linewidth=2)
-    ax.axvline(np.mean(scores_n40), color="orange", linewidth=2)
-    return fig, ax
-
 def mask_with_fixed_noise(data, times, t_end, fixed_noise):
     data_out = data.copy()
     mask = times > t_end
@@ -778,6 +1056,7 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 times = np.linspace(-0.02, 0.2, 1101)
 
 #%%####################################### load the data
+## CBS
 file_type = 'EEG'
 subject_type = 'adults'
 fs,std = load_CBS_file(file_type, 'p10', subject_type)
@@ -790,7 +1069,7 @@ ntrial = 'all'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
     
 #%%####################################### visualize the data to examine
-## plot individual FFRs
+## plot individual FFRs: this is the order of how eeg subjects are saved. Refer to preprocessing_brainstem.py
 subjects_eng=['104','106','107','108','110','111','112','113','118','121','123','124','126','129','133']
 subjects_spa=['203','204','205','206','211','212','213','214','215','220','221','222','223','224','225','226'] ## 202 event code has some issues
 
@@ -805,6 +1084,7 @@ plot_group_ffr(p10_eng, n40_eng, 'p10','n40', times)
 plot_group_ffr(p10_spa, n40_spa, 'p10','n40', times)
 
 ## plot average FFRs between spa and eng
+# will give error if two groups have different sample size
 plot_group_ffr(p10_eng, p10_spa, 'eng','spa', times)
 plot_group_ffr(n40_eng, n40_spa, 'eng','spa', times)
 
@@ -823,676 +1103,121 @@ comparison = 'Eng/Spa' ## 'Eng/Spa' or 'p10/n40'
 trial_by_trial_decoding_acc = do_brainstem_trial_by_trial_decoding(root_path)
 
 #%%####################################### Subject-by-subject EEG decoding brainstem dataset
-## Run with one random seed 2
-ts = 0
-te = 0.2
+#%% One-shot decoding
 ## modify ts, te to do C and V section decoding [0, 40] ba C section
 ## for ba, 10 ms + 90 ms = 100 ms; for mba, 40 ms + 90 ms = 130 ms
 ## epoch length -20 to 200 ms with sampling rate at 5000 Hz
+## Run with one random seed 2
+ts = 0
+te = 0.2
 ncv = 15
 randseed = 2
 
+## brainstem
 decoding_acc = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, len(p10_eng), 'keep pair', randseed)
 decoding_acc = do_subject_by_subject_decoding([p10_spa, n40_spa], times, ts, te, len(p10_spa), 'keep pair', randseed)
 decoding_acc = do_subject_by_subject_decoding([p10_eng, p10_spa], times, ts, te, len(p10_eng), 'full', randseed)
 decoding_acc = do_subject_by_subject_decoding([n40_eng, n40_spa], times, ts, te, len(p10_eng), 'full', randseed)
 
-#%%# Match the correlation degree to see the decoding accuracy
-import numpy as np
+## CBS
+# 3-way decoding: ba vs. pa vs. mba
+scores_ba_mba_pa = do_subject_by_subject_decoding([std,dev1,dev2], times, ts, te, 18, 'keep pair', randseed)
+# 2-way decoding: ba vs. pa, ba vs. mba, pa vs. mba
+scores_ba_mba = do_subject_by_subject_decoding([std,dev1], times, ts, te, 18, 'keep pair', randseed)
+score_ba_mba = np.mean(scores_ba_mba, axis=0)
+print("Decoding Accuracy between ba vs. mba: %0.1f%%" % (100 * score_ba_mba,))
 
-def simulate_correlated_subject_time(real_data, rho=0.9):
-    """
-    Generate two matrices (subjects × time)
-    with tunable cross-correlation per subject.
+scores_ba_pa = do_subject_by_subject_decoding([std,dev2], times, ts, te, 18, 'keep pair', randseed)
+score_ba_pa = np.mean(scores_ba_mba, axis=0)
+print("Decoding Accuracy between ba vs. pa: %0.1f%%" % (100 * score_ba_pa,))
 
-    Parameters
-    ----------
-    real_data : ndarray (subjects, time)
-        Used only for shape reference
-    rho : float
-        Desired correlation (0–1)
+scores_mba_pa = do_subject_by_subject_decoding([dev1,dev2], times, ts, te, 18, 'keep pair', randseed)
+score_mba_pa = np.mean(scores_mba_pa, axis=0)
+print("Decoding Accuracy between mba vs. pa: %0.1f%%" % (100 * score_mba_pa,))
 
-    Returns
-    -------
-    X, Y : ndarray
-        Synthetic matrices with same shape
-    """
-
-    n_subjects, n_time = real_data.shape
-
-    # Base signal per subject
-    S = np.random.randn(n_subjects, n_time)
-
-    # Independent noise
-    N_noise = np.random.randn(n_subjects, n_time)
-
-    # Normalize per subject (row-wise)
-    S = (S - S.mean(axis=1, keepdims=True)) / S.std(axis=1, keepdims=True)
-    N_noise = (N_noise - N_noise.mean(axis=1, keepdims=True)) / N_noise.std(axis=1, keepdims=True)
-
-    X = S
-    Y = rho * S + np.sqrt(1 - rho**2) * N_noise
-
-    return X, Y
-
-def normalized_xcorr(x, y):
-    x = (x - np.mean(x)) / np.std(x)
-    y = (y - np.mean(y)) / np.std(y)
-    
-    corr = signal.correlate(x, y, mode='full')
-    corr /= len(x)  # scale by N
-    
-    return corr
-
-#%%
-rho = 0.8
-X_sim, Y_sim = simulate_correlated_subject_time(p10_eng, rho=rho)
-
-lag_window_s=(-0.014, -0.007)
-    
-xcorr_max = []
-xcorr_lag = []
-
-lags = signal.correlation_lags(X_sim.shape[1],Y_sim.shape[1])
-
-for n_X_sim,n_Y_sim in zip(X_sim,Y_sim):
-    X = zscore_and_normalize(n_X_sim)
-    Y = zscore_and_normalize(n_Y_sim)
-    xcorr = np.abs(signal.correlate(n_X_sim, Y, mode="full"))
-    xcorr = normalized_xcorr(X,Y)
-    idx = np.argmax(xcorr)
-    xcorr_max.append(xcorr[idx])
-    xcorr_lag.append(lags[idx])
-
-print(xcorr_max)
-decoding_acc = do_subject_by_subject_decoding([X_sim, Y_sim], times, 0, 0.13, len(X_sim), 'keep pair', randseed)
-
-#%%# Shift-peak decoding: change the position of the peak and see if it impact the decoding of the same sound across two language groups
-peak_start = 0.005   
-peak_end   = 0.04
-
-peak_mask = (times >= peak_start) & (times <= peak_end)
-
-def shift_peak(data, peak_mask, shift_samples):
-    
-    shifted = data.copy()
-    peak_segment = data[:, peak_mask]
-    
-    # Create zero container for shifted peak
-    shifted_peak = np.zeros_like(peak_segment)
-    
-    if shift_samples > 0:
-        shifted_peak[:, shift_samples:] = peak_segment[:, :-shift_samples]
-    elif shift_samples < 0:
-        shifted_peak[:, :shift_samples] = peak_segment[:, -shift_samples:]
-    else:
-        shifted_peak = peak_segment.copy()
-    
-    # Remove original peak
-    shifted[:, peak_mask] = 0
-    
-    # Put shifted peak back
-    shifted[:, peak_mask] = shifted_peak
-    
-    return shifted
-
-shift_ms = 10
-shift_samples = int(shift_ms * fs / 1000)
-
-shifted_data = shift_peak(p10_eng, peak_mask, shift_samples)
-
-#%%# Peak-Mask decoding: mask onset peaks of the signal to see decoding change
-import numpy as np
-
-def replace_onset_with_baseline_noise(
-        ffr,
-        times,
-        onset_start,
-        onset_end,
-        baseline_start=-0.02,
-        baseline_end=0.0):
-    """
-    Replace onset period with prestimulus noise.
-
-    Parameters
-    ----------
-    ffr : array (subjects, time)
-    times : time vector (seconds)
-    """
-
-    ffr_new = ffr.copy()
-
-    onset_mask = (times >= onset_start) & (times <= onset_end)
-    baseline_mask = (times >= baseline_start) & (times < baseline_end)
-
-    onset_idx = np.where(onset_mask)[0]
-    baseline_idx = np.where(baseline_mask)[0]
-
-    n_sub = ffr.shape[0]
-
-    for sub in range(n_sub):
-
-        baseline_noise = np.tile(ffr[sub, baseline_idx],10)
-
-        # sample baseline noise (with replacement)
-        replacement = baseline_noise[:len(onset_idx)]
-        ffr_new[sub, onset_idx] = replacement
-
-    return ffr_new
-
-## brainstem
-file_type = 'EEG'
-ntrial = '200'
-fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
-
-p10_eng_new = replace_onset_with_baseline_noise(
-    p10_eng,
-    times,
-    onset_start=0.005,
-    onset_end=0.04
-)
-
-p10_spa_new = replace_onset_with_baseline_noise(
-    p10_spa,
-    times,
-    onset_start=0.005,
-    onset_end=0.04
-)
-
-## plot average FFRs between p10 vs. n40
-# plot_group_ffr(p10_eng, n40_eng, 'p10','n40', times)
-# plot_group_ffr(p10_eng_new, n40_eng, 'p10','n40', times)
-
-decoding_acc = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, len(p10_eng), 'keep pair', randseed)
-decoding_acc = do_subject_by_subject_decoding([p10_eng_new, n40_eng], times, ts, te, len(p10_eng), 'keep pair', randseed)
-
-decoding_acc = do_subject_by_subject_decoding([p10_spa, n40_spa], times, ts, te, len(p10_eng), 'keep pair', randseed)
-decoding_acc = do_subject_by_subject_decoding([p10_spa_new, n40_spa], times, ts, te, len(p10_eng), 'keep pair', randseed)
-
-p10_eng = p10_eng_new
-p10_spa = p10_spa_new
-
-#%%# Run with iterative random seeds to test spa vs. eng
+#%% Random-seed decoding
 ts = 0
 te = 0.20
 niter = 1000 # see how the random seed affects accuracy
-ncv = 15
 shuffle = "full"
 
 scores_p10 = []
 scores_n40 = []
 
-## randomize the spanish speakers to use
-rng = np.random.default_rng(1)
-perm = rng.permutation(len(p10_spa))
+# randomly select the same number of spanish speakers to match english speakers
+p10_spa_match = random_select(p10_spa,len(p10_eng),1)
+n40_spa_match = random_select(n40_spa,len(p10_eng),1)
 
-for n_iter in np.arange(0,niter,1):
-    print("iter " + str(n_iter))
-    ## decode eng vs. spa speakers: keep both n = 15 vs. n1 = 15, n2 = 16 gave very higher than chance results
-    decoding_acc_p10 = do_subject_by_subject_decoding([p10_eng, p10_spa[perm,:][:-1,:]], times, ts, 0.04, ncv, shuffle, None)
-    scores_p10.append(np.mean(decoding_acc_p10, axis=0))
-    decoding_acc_n40 = do_subject_by_subject_decoding([n40_eng, n40_spa[perm,:][:-1,:]], times, ts, 0.07, ncv, shuffle, None)
-    scores_n40.append(np.mean(decoding_acc_n40, axis=0))
-scores_p10 = np.array(scores_p10)
-scores_n40 = np.array(scores_n40)
-print(f"Accuracy: {np.mean(scores_p10):.3f}")
-print(f"Accuracy: {np.mean(scores_n40):.3f}")
-plot_decoding_histograms(scores_p10,scores_n40,bins=5,chance=0.5,labels=("p10", "n40"),xlim=(0, 1))
+condition_pairs = [
+    (p10_eng, p10_spa_match),
+    (n40_eng, n40_spa_match)
+]
+scores_all = run_random_seed_decoding(condition_pairs, times, ts, te, niter, shuffle, plot=True)
 
-#%%# decoding at each time point
+#%% Differential decoding
+decode_fn = make_decode_fn(times, ts, te, ncv, shuffle, randseed)
+
+condition_pairs = (
+    [std, dev1],
+    [std, dev2]
+)
+real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter=1000, rng=None, plot = True, verbose=True)
+
+#%% Peak-Mask decoding
+# mask onset peaks of the signal to see decoding change
+p10_eng_new = replace_onset_with_baseline_noise(p10_eng,times,onset_start=0.005,onset_end=0.04)
+p10_spa_new = replace_onset_with_baseline_noise(p10_spa,times,onset_start=0.005,onset_end=0.04)
+
+decoding_acc = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, len(p10_eng), 'keep pair', randseed)
+decoding_acc = do_subject_by_subject_decoding([p10_eng_new, n40_eng], times, ts, te, len(p10_eng), 'keep pair', randseed)
+decoding_acc = do_subject_by_subject_decoding([p10_spa, n40_spa], times, ts, te, len(p10_eng), 'keep pair', randseed)
+decoding_acc = do_subject_by_subject_decoding([p10_spa_new, n40_spa], times, ts, te, len(p10_eng), 'keep pair', randseed)
+
+#%% Sliding-time decoding
+## if making the window very short then it become the point-by-point decoding
 ts_global = 0
 te_global = 0.2
-
 window_length = 0.0002      # window
 window_step = 0.0002         # ms step
 shuffle = "keep pair"
 randseed = 2
+ncv_eng = 15
+ncv_spa = 16
 
-acc_eng_by_window = []
-acc_spa_by_window = []
-
-window_starts = np.arange(ts_global,
-                          te_global - window_length,
-                          window_step)
-
-for t_start in window_starts:
-    
-    t_end = t_start + window_length
-
-    # Decode ONLY within this time window
-    decoding_acc_eng = do_subject_by_subject_decoding(
-        [p10_eng, n40_eng],
-        times,
-        t_start,
-        t_end,
-        15,
-        shuffle,
-        randseed
-    )
-
-    decoding_acc_spa = do_subject_by_subject_decoding(
-        [p10_spa, n40_spa],
-        times,
-        t_start,
-        t_end,
-        16,
-        shuffle,
-        randseed
-    )
-
-    acc_eng_by_window.append(np.mean(decoding_acc_eng))
-    acc_spa_by_window.append(np.mean(decoding_acc_spa))
-
-
-# Convert to arrays
-acc_eng_by_window = np.array(acc_eng_by_window)
-acc_spa_by_window = np.array(acc_spa_by_window)
-
-# Use window centers for plotting
-window_centers_ms = (window_starts + window_length / 2) * 1000
-
-# Plot
-plt.figure(figsize=(6,4))
-
-plt.plot(window_centers_ms, acc_eng_by_window,
-         label='English', color='blue')
-plt.plot(window_centers_ms, acc_spa_by_window,
-         label='Spanish', color='red')
-
-plt.axhline(0.5, color='gray', linestyle='--', label='Chance')
-
-plt.xlabel('Time (ms)')
-plt.ylabel('Decoding accuracy')
-plt.title('Sliding window decoding accuracy')
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
+run_sliding_time_decoding(p10_eng,n40_eng,p10_spa,n40_spa,times,ts_global,te_global,window_length,window_step,ncv_eng,ncv_spa,shuffle,randseed,plot=True)
 
 #%%# Run increment window (in 5 ms) to test if the decoding accuracy jump or linear increase
-# generate fixed noise
-ts = 0
-te = 0.2
-niter = 1000 # see how the random seed affects accuracy
-shuffle = "keep pair"
-randseed = 2
-window_step = 0.005   # 5 ms
-acc_eng_by_window = []
-acc_spa_by_window = []
-window_ends = np.arange(window_step, te + window_step, window_step)
+window_step = 0.005
 
-for t_end in window_ends:
-
-    p10_eng_w = mask_with_fixed_noise(p10_eng, times, t_end, gen_noise(p10_eng,randseed)) ## ideally you want to keep the noise the same so it won't affect SVM decision between the two conditions
-    n40_eng_w = mask_with_fixed_noise(n40_eng, times, t_end, gen_noise(p10_eng,randseed))
-
-    p10_spa_w = mask_with_fixed_noise(p10_spa, times, t_end, gen_noise(p10_spa,randseed))
-    n40_spa_w = mask_with_fixed_noise(n40_spa, times, t_end, gen_noise(p10_spa,randseed))
-
-    decoding_acc_eng = do_subject_by_subject_decoding([p10_eng_w, n40_eng_w], times, ts, te, 15, shuffle, randseed)
-    decoding_acc_spa = do_subject_by_subject_decoding([p10_spa_w, n40_spa_w], times, ts, te, 16, shuffle, randseed)
-
-    acc_eng_by_window.append(np.mean(decoding_acc_eng))
-    acc_spa_by_window.append(np.mean(decoding_acc_spa))
-    
-window_sizes_ms = window_ends * 1000  # e.g., [5, 10, 15, ... 200]
-
-# Example arrays from your decoding loop
-acc_eng_by_window = np.array(acc_eng_by_window)
-acc_spa_by_window = np.array(acc_spa_by_window)
-
-plt.figure(figsize=(6,4))
-
-plt.plot(window_sizes_ms, acc_eng_by_window, label='English', color='blue', marker='o')
-plt.plot(window_sizes_ms, acc_spa_by_window, label='Spanish', color='red', marker='o')
-
-# Add chance level line (assuming binary classification, chance = 0.5)
-plt.axhline(0.5, color='gray', linestyle='--', label='Chance')
-
-plt.xlabel('Window size (ms)')
-plt.ylabel('Decoding accuracy')
-plt.title('Decoding accuracy as a function of available signal')
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
-
-#%%# Run increment window (in 5 ms) to test if the decoding accuracy differs between English and Spanish speakers
-# generate fixed noise
-ts = 0
-te = 0.2
-niter = 100 # see how the random seed affects accuracy
-shuffle = "keep pair"
-randseed = 2
-window_step = 0.005   # 5 ms
-acc_eng_by_window = []
-acc_spa_by_window = []
-window_ends = np.arange(window_step, te + window_step, window_step)
-diff_scores_perm_95 = []
-diff_acc_real = []
-
-for t_end in window_ends:
-    ## calculate individual decoding curve
-    p10_eng_w = mask_with_fixed_noise(p10_eng, times, t_end, gen_noise(p10_eng,randseed)) ## ideally you want to keep the noise the same so it won't affect SVM decision between the two conditions
-    n40_eng_w = mask_with_fixed_noise(n40_eng, times, t_end, gen_noise(p10_eng,randseed))
-
-    p10_spa_w = mask_with_fixed_noise(p10_spa, times, t_end, gen_noise(p10_spa,randseed))
-    n40_spa_w = mask_with_fixed_noise(n40_spa, times, t_end, gen_noise(p10_spa,randseed))
-
-    decoding_acc_eng = do_subject_by_subject_decoding([p10_eng_w, n40_eng_w], times, ts, te, 15, shuffle, randseed)
-    decoding_acc_spa = do_subject_by_subject_decoding([p10_spa_w, n40_spa_w], times, ts, te, 16, shuffle, randseed)
-
-    acc_eng_by_window.append(np.mean(decoding_acc_eng))
-    acc_spa_by_window.append(np.mean(decoding_acc_spa))
-    
-    ## calculate the diff and perm at each increment 
-    ## real difference between eng and spa decoding accuracy of p10 vs. n40 sounds
-    diff_acc = np.mean(decoding_acc_eng, axis=0) - np.mean(decoding_acc_spa, axis=0)
-    diff_acc_real = np.append(diff_acc_real,diff_acc)
-    
-    ## permute between 2 language groups
-    diff_scores_perm = []
-    p10_all = np.vstack([p10_eng,p10_spa[:-1,:]])
-    n40_all = np.vstack([n40_eng,n40_spa[:-1,:]])
-    n_total = p10_all.shape[0]
-    rng = np.random.default_rng(None)
-
-    n_sub = p10_eng.shape[0]  # 15
-    ## random assign spanish and english speakers to each group (not balanced)
-    for n_iter in np.arange(0,niter,1):
-        print("iter " + str(n_iter))
-        perm_ind = rng.permutation(n_total)
-        group1_ind = perm_ind[:n_total//2]
-        group2_ind = perm_ind[n_total//2:]
-        p10_group1 = p10_all[group1_ind]
-        p10_group2 = p10_all[group2_ind]
-        n40_group1 = n40_all[group1_ind]
-        n40_group2 = n40_all[group2_ind]
-
-        decoding_acc_group1_perm = do_subject_by_subject_decoding([p10_group1, n40_group1], times, ts, te, 15, shuffle, randseed)
-        decoding_acc_group2_perm = do_subject_by_subject_decoding([p10_group2, n40_group2], times, ts, te, 15, shuffle, randseed)
-
-        diff_scores_perm.append(np.mean(decoding_acc_group1_perm, axis=0) - np.mean(decoding_acc_group2_perm, axis=0))
-  
-    diff_scores_perm = np.array(diff_scores_perm)
-    diff_scores_perm_95 = np.append(diff_scores_perm_95,np.percentile(diff_scores_perm,95))
-    print(f"Accuracy: {np.mean(diff_scores_perm):.3f}")
-    
-window_sizes_ms = window_ends * 1000  # e.g., [5, 10, 15, ... 200]
-
-# Example arrays from your decoding loop
-acc_eng_by_window = np.array(acc_eng_by_window)
-acc_spa_by_window = np.array(acc_spa_by_window)
-
-plt.figure(figsize=(6,4))
-plt.plot(window_sizes_ms, acc_eng_by_window, label='English', color='blue', marker='o')
-plt.plot(window_sizes_ms, acc_spa_by_window, label='Spanish', color='red', marker='o')
-# Add chance level line (assuming binary classification, chance = 0.5)
-plt.axhline(0.5, color='gray', linestyle='--', label='Chance')
-plt.xlabel('Window size (ms)')
-plt.ylabel('Decoding accuracy')
-plt.title('Decoding accuracy as a function of available signal')
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
-
-plt.figure(figsize=(6,4))
-plt.plot(window_sizes_ms, diff_acc_real, label='Real difference', color='blue', marker='o')
-plt.plot(window_sizes_ms, diff_scores_perm_95, label='95% of perm difference', color='red', marker='o')
-# Add chance level line (assuming binary classification, chance = 0.5)
-plt.axhline(0, color='gray', linestyle='--', label='No difference')
-plt.xlabel('Window size (ms)')
-plt.ylabel('Decoding accuracy diff')
-plt.title('Decoding accuracy Eng - Spa')
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
+run_increment_decoding(
+    p10_eng, n40_eng,
+    p10_spa, n40_spa,
+    times,
+    window_step=window_step,
+    ncv1=15,
+    ncv2=16,
+    shuffle="keep pair",
+    randseed=2,
+    do_permutation=True,
+    niter=500,
+    labels=("English", "Spanish"),
+    plot = True
+)
 
 #%%# Run increment window (in 5 ms) to test if the decoding accuracy differs between p10n40 and p10p40
-# generate fixed noise
-ts = 0
-te = 0.2
-niter = 100 # see how the random seed affects accuracy
-shuffle = "keep pair"
-randseed = 2
-window_step = 0.005   # 5 ms
-acc_eng_by_window = []
-acc_spa_by_window = []
-window_ends = np.arange(window_step, te + window_step, window_step)
-diff_scores_perm_95 = []
-diff_acc_real = []
-
-for t_end in window_ends:
-    ## calculate individual decoding curve
-    p10_eng_w = mask_with_fixed_noise(std, times, t_end, gen_noise(std,randseed)) ## ideally you want to keep the noise the same so it won't affect SVM decision between the two conditions
-    n40_eng_w = mask_with_fixed_noise(dev1, times, t_end, gen_noise(std,randseed))
-
-    p10_spa_w = mask_with_fixed_noise(std, times, t_end, gen_noise(std,randseed))
-    n40_spa_w = mask_with_fixed_noise(dev2, times, t_end, gen_noise(std,randseed))
-
-    decoding_acc_eng = do_subject_by_subject_decoding([p10_eng_w, n40_eng_w], times, ts, te, 18, shuffle, randseed)
-    decoding_acc_spa = do_subject_by_subject_decoding([p10_spa_w, n40_spa_w], times, ts, te, 18, shuffle, randseed)
-
-    acc_eng_by_window.append(np.mean(decoding_acc_eng))
-    acc_spa_by_window.append(np.mean(decoding_acc_spa))
-    
-    ## real difference
-    diff_acc = np.mean(decoding_acc_eng, axis=0) - np.mean(decoding_acc_spa, axis=0)
-    diff_acc_real = np.append(diff_acc_real,diff_acc)
-    
-    ## permute between dev1 and dev2
-    diff_scores_perm = []
-    n40p40_all = np.vstack([dev1,dev2])
-    n_total = len(n40p40_all)
-    rng = np.random.default_rng(None)
-     
-    for n_iter in np.arange(0,niter,1):
-        print("iter " + str(n_iter))
-        
-        perm_ind = rng.permutation(n_total)
-        group1_ind = perm_ind[:n_total//2]
-        group2_ind = perm_ind[n_total//2:]
-        dev1_perm = n40p40_all[group1_ind]
-        dev2_perm = n40p40_all[group2_ind]
-        
-        decoding_acc_group1_perm = do_subject_by_subject_decoding([std, dev1_perm], times, ts, te, ncv, shuffle, randseed)
-        decoding_acc_group2_perm = do_subject_by_subject_decoding([std, dev2_perm], times, ts, te, ncv, shuffle, randseed)
- 
-        diff_scores_perm.append(np.mean(decoding_acc_group1_perm, axis=0) - np.mean(decoding_acc_group2_perm, axis=0))
- 
-    
-    diff_scores_perm = np.array(diff_scores_perm)
-    diff_scores_perm_95 = np.append(diff_scores_perm_95,np.percentile(diff_scores_perm,95))
-    print(f"Accuracy: {np.mean(diff_scores_perm):.3f}")
-    
-window_sizes_ms = window_ends * 1000  # e.g., [5, 10, 15, ... 200]
-
-# Example arrays from your decoding loop
-acc_eng_by_window = np.array(acc_eng_by_window)
-acc_spa_by_window = np.array(acc_spa_by_window)
-
-plt.figure(figsize=(6,4))
-plt.plot(window_sizes_ms, acc_eng_by_window, label='p10/n40', color='blue', marker='o')
-plt.plot(window_sizes_ms, acc_spa_by_window, label='p10/p40', color='red', marker='o')
-# Add chance level line (assuming binary classification, chance = 0.5)
-plt.axhline(0.5, color='gray', linestyle='--', label='Chance')
-plt.xlabel('Window size (ms)')
-plt.ylabel('Decoding accuracy')
-plt.title('Decoding accuracy as a function of available signal')
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
-
-plt.figure(figsize=(6,4))
-plt.plot(window_sizes_ms, diff_acc_real, label='Real difference', color='blue', marker='o')
-plt.plot(window_sizes_ms, diff_scores_perm_95, label='95% of perm difference', color='red', marker='o')
-# Add chance level line (assuming binary classification, chance = 0.5)
-plt.axhline(0, color='gray', linestyle='--', label='No difference')
-plt.xlabel('Window size (ms)')
-plt.ylabel('Decoding accuracy diff')
-plt.title('Decoding accuracy p10/n40 - p10/p40')
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
-
-
-#%%# permuation test to compare p10/n40 vs. p10/p40 decoding in eng
-ts = 0
-te = 0.2
-niter = 1000 # see how the random seed affects accuracy
-shuffle = "keep pair"
-randseed = 2
-ncv = len(std)
-
-## Use sub section to decode EEG: [caution] need to reload the std, dev1, dev2 to ensure the full length
-# std = std[:,slice(ff(times, ts), ff(times, te))]
-# dev1 = dev1[:,slice(ff(times, ts), ff(times, te))]
-# dev2 = dev2[:,slice(ff(times, ts), ff(times, te))]
-
-## real difference between eng and spa decoding accuracy of p10 vs. n40 sounds
-decoding_acc_p10n40 = do_subject_by_subject_decoding([std, dev1], times, ts, te, ncv, shuffle, randseed)
-decoding_acc_p10p40 = do_subject_by_subject_decoding([std, dev2], times, ts, te, ncv, shuffle, randseed)
-diff_acc = np.mean(decoding_acc_p10n40, axis=0) - np.mean(decoding_acc_p10p40, axis=0)
-
-## permute between dev1 and dev2
-diff_scores_perm = []
-n40p40_all = np.vstack([dev1,dev2])
-n_total = len(n40p40_all)
-rng = np.random.default_rng(None)
- 
-for n_iter in np.arange(0,niter,1):
-    print("iter " + str(n_iter))
-    
-    perm_ind = rng.permutation(n_total)
-    group1_ind = perm_ind[:n_total//2]
-    group2_ind = perm_ind[n_total//2:]
-    dev1_perm = n40p40_all[group1_ind]
-    dev2_perm = n40p40_all[group2_ind]
-    
-    decoding_acc_group1_perm = do_subject_by_subject_decoding([std, dev1_perm], times, ts, te, ncv, shuffle, randseed)
-    decoding_acc_group2_perm = do_subject_by_subject_decoding([std, dev2_perm], times, ts, te, ncv, shuffle, randseed)
-
-    diff_scores_perm.append(np.mean(decoding_acc_group1_perm, axis=0) - np.mean(decoding_acc_group2_perm, axis=0))
-diff_scores_perm = np.array(diff_scores_perm)
-print(f"Accuracy: {np.mean(diff_scores_perm):.3f}")
-
-fig, ax = plt.subplots(1)
-ax.hist(diff_scores_perm, bins=7, alpha=0.6)
-ax.set_ylabel("Count", fontsize=20)
-ax.set_xlabel("Accuracy Difference", fontsize=20)
-
-# chance line
-ax.axvline(np.mean(diff_scores_perm), color="grey", linestyle="--", linewidth=2)
-# 95% line
-ax.axvline(np.percentile(diff_scores_perm,95),ymin=0,ymax=1000,color='grey',linewidth=2)
-# mean lines
-ax.axvline(diff_acc, color="red", linewidth=1)
-
-#%%# permuation test to compare Eng p10/n40 acc and Spa p10/n40 acc
-ts = 0.06
-te = 0.12
-niter = 1000 # see how the random seed affects accuracy
-shuffle = "keep pair"
-randseed = 2
-ncv = 15
-
-## random select 15 spa subjects to match the 15 eng subjects
-rng0 = np.random.default_rng(0)
-perm = rng0.permutation(len(p10_spa))
-p10_spa_15 = p10_spa[perm,:][:-1,:]
-n40_spa_15 = n40_spa[perm,:][:-1,:]
-
-## real difference between eng and spa decoding accuracy of p10 vs. n40 sounds
-decoding_acc_eng = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, ncv, shuffle, randseed)
-decoding_acc_spa = do_subject_by_subject_decoding([p10_spa_15, n40_spa_15], times, ts, te, ncv, shuffle, randseed)
-diff_acc = np.mean(decoding_acc_eng, axis=0) - np.mean(decoding_acc_spa, axis=0)
-
-## permute between 2 language groups
-diff_scores_perm = []
-p10_all = np.vstack([p10_eng,p10_spa_15])
-n40_all = np.vstack([n40_eng,n40_spa_15])
-n_total = p10_all.shape[0]
-rng = np.random.default_rng(None)
-
-n_sub = p10_eng.shape[0]  # 15
-
-## ensure each group has balanced spanish and english speakers
-# for n_iter in range(niter):
-
-#     flip = rng.choice([0, 1], size=n_sub)  # 0 = keep, 1 = swap
-
-#     p10_group1 = np.where(flip[:, None], p10_spa_15, p10_eng)
-#     p10_group2 = np.where(flip[:, None], p10_eng, p10_spa_15)
-
-#     n40_group1 = np.where(flip[:, None], n40_spa_15, n40_eng)
-#     n40_group2 = np.where(flip[:, None], n40_eng, n40_spa_15)
-
-## random assign spanish and english speakers to each group (not balanced)
-for n_iter in np.arange(0,niter,1):
-    print("iter " + str(n_iter))
-    perm_ind = rng.permutation(n_total)
-    group1_ind = perm_ind[:n_total//2]
-    group2_ind = perm_ind[n_total//2:]
-    p10_group1 = p10_all[group1_ind]
-    p10_group2 = p10_all[group2_ind]
-    n40_group1 = n40_all[group1_ind]
-    n40_group2 = n40_all[group2_ind]
-
-    decoding_acc_group1_perm = do_subject_by_subject_decoding([p10_group1, n40_group1], times, ts, te, ncv, shuffle, randseed)
-    decoding_acc_group2_perm = do_subject_by_subject_decoding([p10_group2, n40_group2], times, ts, te, ncv, shuffle, randseed)
-
-    diff_scores_perm.append(np.mean(decoding_acc_group1_perm, axis=0) - np.mean(decoding_acc_group2_perm, axis=0))
-diff_scores_perm = np.array(diff_scores_perm)
-print(f"Accuracy: {np.mean(diff_scores_perm):.3f}")
-
-fig, ax = plt.subplots(1)
-ax.hist(diff_scores_perm, bins=7, alpha=0.6)
-ax.set_ylabel("Count", fontsize=20)
-ax.set_xlabel("Accuracy Difference", fontsize=20)
-
-# chance line
-ax.axvline(np.mean(diff_scores_perm), color="grey", linestyle="--", linewidth=2)
-# 95% line
-ax.axvline(np.percentile(diff_scores_perm,95),ymin=0,ymax=1000,color='grey', linestyle="--", linewidth=2)
-# mean lines
-ax.axvline(diff_acc, color="red", linewidth=1)
-
-#%%####################################### Subject-by-subject EEG or misc decoding CBS dataset
-## change ts and te for C and V section decoding: for ba, 10 ms + 90 ms = 100 ms; for mba and pa, 40 ms + 90 ms = 130 ms
-## epoch length -20 to 200 ms with sampling rate at 5000 Hz
-
-## Use V section to decode EEG
-# ts = 0.02, te = 0.13; ts = 0.06, te = 0.17
-std_v = std[:,slice(ff(times, 0.06), ff(times, 0.2))]
-dev1_v = dev1[:,slice(ff(times, 0.06), ff(times, 0.2))]
-dev2_v = dev2[:,slice(ff(times, 0.06), ff(times, 0.2))]
-
-scores_ba_mba_pa = do_subject_by_subject_decoding([std_v,dev1_v,dev2_v], times, -1000, 1000, 18, 'keep pair', None)
-scores_ba_mba = do_subject_by_subject_decoding([std_v,dev1_v], times, -1000, 1000, 18, 'keep pair', None)
-scores_ba_pa = do_subject_by_subject_decoding([std_v,dev2_v], times, -1000, 1000, 18, 'keep pair', None)
-scores_mba_pa = do_subject_by_subject_decoding([dev1_v,dev2_v], times, -1000, 1000, 18, 'keep pair', None)
-
-## Use C section to decode
-ncv = len(std)
-####################################### 3-way decoding: ba vs. pa vs. mba
-scores_ba_mba_pa = do_subject_by_subject_decoding([std,dev1,dev2], times, ts, te, ncv, shuffle, randseed)
-
-####################################### 2-way decoding: ba vs. pa, ba vs. mba, pa vs. mba
-scores_ba_mba = do_subject_by_subject_decoding([std,dev1], times, ts, te, ncv, shuffle, randseed)
-score_ba_mba = np.mean(scores_ba_mba, axis=0)
-print("Decoding Accuracy between ba vs. mba: %0.1f%%" % (100 * score_ba_mba,))
-
-scores_ba_pa = do_subject_by_subject_decoding([std,dev2], times, ts, te, ncv, shuffle, randseed)
-score_ba_pa = np.mean(scores_ba_mba, axis=0)
-print("Decoding Accuracy between ba vs. pa: %0.1f%%" % (100 * score_ba_pa,))
-
-scores_mba_pa = do_subject_by_subject_decoding([dev1,dev2], times, ts, te, ncv, shuffle, randseed)
-score_mba_pa = np.mean(scores_mba_pa, axis=0)
-print("Decoding Accuracy between mba vs. pa: %0.1f%%" % (100 * score_mba_pa,))
+run_increment_decoding(
+    std, dev1,
+    std, dev2,
+    times,
+    ncv1=18,
+    ncv2=18,
+    shuffle="keep pair",
+    randseed=2,
+    do_permutation=True,
+    niter=500,
+    labels=("p10/n40", "p10/p40"),
+    plot = True
+)
 
 #%%####################################### Spectrum analysis
 fmin = 50
@@ -1512,9 +1237,6 @@ plt.plot(freqs,psds)
 plt.xlim([60, 140])
 
 #%%####################################### Spectrogram analysis for group
-import librosa
-import librosa.display
-
 signal = p10_eng.mean(0)
 signal = signal.astype(np.float32)
 signal = signal/np.max(np.abs(signal))
@@ -1557,9 +1279,6 @@ plt.figure()
 plt.plot(times,S_magnitude[freq_mask, :].mean(0))
 
 #%%####################################### Spectrogram analysis for individuals
-import numpy as np
-import librosa
-
 EEG = p10_eng
 
 nfft = fs
@@ -2193,7 +1912,3 @@ axes[2].axvline(lag_max, color="grey", linestyle="--")
 
 print("xcorr_max: " + str(xcorr_win[max_idx]))
 print("xcorr_lag_ms: " + str(lag_win[max_idx]))
-
-#%%####################################### autocorr analysis
-level = 'group'
-autocorr = do_autocorr_sliding(std, fs_eeg, times, ts, te, level)
