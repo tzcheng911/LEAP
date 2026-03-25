@@ -182,14 +182,17 @@ fs,dev1_all = load_CBS_file(file_type, 'n40', subject_type)
 fs,dev2_all = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
-file_type = 'roi'
-ntrial = '200'
-# fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
-fs, p10_eng_all, n40_eng_all = load_brainstem_file(file_type, ntrial)
+file_type = 'sensor'
+nfilter = '802000'
+ntrial = 'all'
+ntop = '0'
+fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
 #%%####################################### visualization
+sensor_data = p10_eng.mean(0)
 evoked = mne.read_evokeds('/media/tzcheng/storage/Brainstem/brainstem_203/sss_fif/brainstem_203_n40_02_otp_raw_sss_proj_f802000_ntrial200_evoked_ffr.fif')
-
+evoked[0].data = sensor_data
+evoked[0].plot_topo()
 
 #%%####################################### Subject-by-subject MEG decoding for each condition 
 #%%# permuation test to compare p10/n40 vs. p10/p40 decoding in CBS eng
