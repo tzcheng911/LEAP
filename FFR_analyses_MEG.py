@@ -79,19 +79,26 @@ def load_CBS_file(file_type, sound_type, subject_type):
             signal = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/ntrial_200/group_' + name + '_pcffr80200_3_200_' + file_type + '.npy')
     return fs, signal
 
-def load_brainstem_file(file_type, ntrial):
+def load_brainstem_file(file_type, nfilter, ntrial, ntop):
+    """
+    file_type: 'sensor', 'roi','morph'
+    nfilter: '80200' or '802000'
+    ntrial: '200' or 'all'
+    ntop = '0' or '3' '0': no PCA was performed
+    """
     root_path = '/media/tzcheng/storage/Brainstem/'
     fs = 5000
-    if file_type == 'EEG':
+    if file_type == 'EEG': ## for the EEG
         p10_eng = np.load(root_path + 'EEG/p10_eng_eeg_ntr' + ntrial + '_01.npy')
         n40_eng = np.load(root_path + 'EEG/n40_eng_eeg_ntr' + ntrial + '_01.npy')
         p10_spa = np.load(root_path + 'EEG/p10_spa_eeg_ntr' + ntrial + '_01.npy')
-        n40_spa = np.load(root_path + 'EEG/n40_spa_eeg_ntr' + ntrial + '_01.npy')
-        return fs, p10_eng, n40_eng, p10_spa, n40_spa
+        n40_spa = np.load(root_path + 'EEG/n40_spa_eeg_ntr' + ntrial + '_01.npy')    
     elif file_type in ('sensor', 'roi','morph'): ## for the MEG
-        p10_eng = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_p10_01_' + file_type + '.npy')
-        n40_eng = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_n40_01_' + file_type + '.npy')
-        return fs, p10_eng, n40_eng
+        p10_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
+        n40_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_' + file_type + '.npy')
+        p10_spa = np.load(root_path + 'MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
+        n40_spa = np.load(root_path + 'MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_' + file_type + '.npy')
+    return fs, p10_eng, n40_eng, p10_spa, n40_spa
     
 def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     """
