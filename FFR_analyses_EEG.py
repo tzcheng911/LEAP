@@ -2,13 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Feb 28 16:49:00 2024
-FFR analysis still under development
 
-Analysis
-1. Decoding
-2. X-corr
-3. PCA
-4. spectrum
+Run analysis: SVM decoding, spectral, temporal analysis
+
 
 @author: tzcheng
 """
@@ -24,7 +20,6 @@ from scipy.signal import butter, filtfilt, hilbert
 from scipy.io import savemat
 import numpy as np
 from scipy.io import wavfile
-import time
 from mne.decoding import (
     cross_val_multiscore,
 )
