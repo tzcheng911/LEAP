@@ -59,7 +59,6 @@ def random_select(data,num_select,randseed):
     new_data = data[perm][:num_select]
     return new_data
 
-perm = rng.permutation(len(p10_spa))
 ## Loading functions
 def load_CBS_file(file_type, sound_type, subject_type):
     ## load and plot the time series of 'p10','n40','p40' for 'audio','misc', 'eeg', 'sensor', 'ROI', 'morph' in "infants" or "adults"
@@ -309,7 +308,7 @@ def run_random_seed_decoding(
     for n_iter in range(niter):
         print(f"iter {n_iter}")
 
-        for i, ((cond1, cond2)) in enumerate(zip(condition_pairs)):
+        for i, ((cond1, cond2)) in enumerate(condition_pairs):
 
             acc = do_subject_by_subject_decoding(
                 [cond1, cond2],
@@ -393,7 +392,7 @@ def permutation_decoding_diff(
     if plot:
         # ---- plotting ----
         fig, ax = plt.subplots(1)
-        ax.hist(diff_scores_perm, bins=bins, alpha=0.6)
+        ax.hist(diff_scores_perm, bins=5, alpha=0.6)
 
         ax.set_ylabel("Count", fontsize=20)
         ax.set_xlabel("Accuracy Difference", fontsize=20)
@@ -562,6 +561,7 @@ def run_increment_decoding(
             rng = np.random.default_rng(None)
 
             for _ in range(niter):
+                print(f"iter {_}")
                 perm = rng.permutation(n_total)
                 g1 = perm[:n_total // 2]
                 g2 = perm[n_total // 2:]
@@ -1065,7 +1065,7 @@ fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
 file_type = 'EEG'
-ntrial = 'all'
+ntrial = '200'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
     
 #%%####################################### visualize the data to examine
@@ -1124,21 +1124,13 @@ decoding_acc = do_subject_by_subject_decoding([n40_eng, n40_spa], times, ts, te,
 scores_ba_mba_pa = do_subject_by_subject_decoding([std,dev1,dev2], times, ts, te, 18, 'keep pair', randseed)
 # 2-way decoding: ba vs. pa, ba vs. mba, pa vs. mba
 scores_ba_mba = do_subject_by_subject_decoding([std,dev1], times, ts, te, 18, 'keep pair', randseed)
-score_ba_mba = np.mean(scores_ba_mba, axis=0)
-print("Decoding Accuracy between ba vs. mba: %0.1f%%" % (100 * score_ba_mba,))
-
 scores_ba_pa = do_subject_by_subject_decoding([std,dev2], times, ts, te, 18, 'keep pair', randseed)
-score_ba_pa = np.mean(scores_ba_mba, axis=0)
-print("Decoding Accuracy between ba vs. pa: %0.1f%%" % (100 * score_ba_pa,))
-
 scores_mba_pa = do_subject_by_subject_decoding([dev1,dev2], times, ts, te, 18, 'keep pair', randseed)
-score_mba_pa = np.mean(scores_mba_pa, axis=0)
-print("Decoding Accuracy between mba vs. pa: %0.1f%%" % (100 * score_mba_pa,))
 
 #%% Random-seed decoding
 ts = 0
 te = 0.20
-niter = 1000 # see how the random seed affects accuracy
+niter = 1000 
 shuffle = "full"
 
 scores_p10 = []
@@ -1148,10 +1140,10 @@ scores_n40 = []
 p10_spa_match = random_select(p10_spa,len(p10_eng),1)
 n40_spa_match = random_select(n40_spa,len(p10_eng),1)
 
-condition_pairs = [
-    (p10_eng, p10_spa_match),
-    (n40_eng, n40_spa_match)
-]
+condition_pairs = (
+    [p10_eng, p10_spa_match],
+    [n40_eng, n40_spa_match]
+)
 scores_all = run_random_seed_decoding(condition_pairs, times, ts, te, niter, shuffle, plot=True)
 
 #%% Differential decoding
@@ -1161,7 +1153,13 @@ condition_pairs = (
     [std, dev1],
     [std, dev2]
 )
-real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter=1000, rng=None, plot = True, verbose=True)
+
+condition_pairs = (
+    [p10_eng, n40_eng],
+    [p10_spa, n40_spa]
+)
+
+real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot = True, verbose=True)
 
 #%% Peak-Mask decoding
 # mask onset peaks of the signal to see decoding change
