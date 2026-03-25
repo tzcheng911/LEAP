@@ -2102,12 +2102,12 @@ fs,dev2_all = load_CBS_file(file_type, 'p40', subject_type)
 file_type = 'sensor'
 nfilter = '802000'
 ntrial = 'all'
-ntop = '0'
+ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
 #%%####################################### visualization
 ## average sensor data
-sensor_data = p10_eng.mean(0)
+sensor_data = n40_spa.mean(0)
 evoked = mne.read_evokeds('/media/tzcheng/storage/Brainstem/brainstem_203/sss_fif/brainstem_203_n40_02_otp_raw_sss_proj_f802000_ntrial200_evoked_ffr.fif')
 evoked[0].data = sensor_data
 evoked[0].plot_topo()
