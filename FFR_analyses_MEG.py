@@ -151,7 +151,7 @@ def plot_individuals(data_dict,n_cols,t):
 
 def plot_group_ffr(data1, data2, label1,label2,
                    times,
-                   ylim=(-5e-7, 5e-7),
+                   ylim=(-5e-15, 5e-15),
                    n_times=1101):
     """
     Plot mean FFR responses and differential response for one group.
@@ -2128,8 +2128,8 @@ plot_individuals(subjects_eng_dict,n_cols,times)
 plot_individuals(subjects_spa_dict,n_cols,times)
 
 ## plot average FFRs between p10 vs. n40
-plot_group_ffr(p10_eng, n40_eng, 'p10','n40', times)
-plot_group_ffr(p10_spa, n40_spa, 'p10','n40', times)
+plot_group_ffr(p10_eng.mean(1), n40_eng.mean(1), 'p10','n40', times)
+plot_group_ffr(p10_spa.mean(1), n40_spa.mean(1), 'p10','n40', times)
 
 ## plot average FFRs between spa and eng
 # will give error if two groups have different sample size
