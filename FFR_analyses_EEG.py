@@ -333,13 +333,13 @@ def run_random_seed_decoding(
         )
     return scores_all
 
-def make_decode_fn(times, ts, te, ncv, shuffle, randseed):
+def make_decode_fn(times, ts, te, ncv1, ncv2, shuffle, randseed):
     def decode_fn(group1, group2):
         acc1 = do_subject_by_subject_decoding(
-            group1, times, ts, te, ncv, shuffle, randseed
+            group1, times, ts, te, ncv1, shuffle, randseed
         )
         acc2 = do_subject_by_subject_decoding(
-            group2, times, ts, te, ncv, shuffle, randseed
+            group2, times, ts, te, ncv2, shuffle, randseed
         )
         return np.mean(acc1, axis=0) - np.mean(acc2, axis=0)
     return decode_fn
@@ -1123,13 +1123,11 @@ scores_ba_pa = do_subject_by_subject_decoding([std,dev2], times, ts, te, 18, 'ke
 scores_mba_pa = do_subject_by_subject_decoding([dev1,dev2], times, ts, te, 18, 'keep pair', randseed)
 
 #%% Random-seed decoding
+# only work when the shuffle is set to "full", "keep pair" always generate the same decoding accuracy
 ts = 0
 te = 0.20
 niter = 500 
 shuffle = "keep pair"
-
-scores_p10 = []
-scores_n40 = []
 
 # randomly select the same number of spanish speakers to match english speakers
 p10_spa_match = random_select(p10_spa,len(p10_eng),1)
@@ -1147,8 +1145,8 @@ te = 0.20
 niter = 500 
 shuffle = "keep pair"
 randseed = 2
-
-decode_fn = make_decode_fn(times, ts, te, ncv, shuffle, randseed)
+ncv1 = 15
+ncv2 = 16
 
 condition_pairs = (
     [std, dev1],
@@ -1160,17 +1158,8 @@ condition_pairs = (
     [p10_spa, n40_spa]
 )
 
-real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot = True, verbose=True)
-
-#%% Peak-Mask decoding
-# mask onset peaks of the signal to see decoding change
-p10_eng_new = replace_onset_with_baseline_noise(p10_eng,times,onset_start=0.005,onset_end=0.04)
-p10_spa_new = replace_onset_with_baseline_noise(p10_spa,times,onset_start=0.005,onset_end=0.04)
-
-decoding_acc = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, len(p10_eng), 'keep pair', randseed)
-decoding_acc = do_subject_by_subject_decoding([p10_eng_new, n40_eng], times, ts, te, len(p10_eng), 'keep pair', randseed)
-decoding_acc = do_subject_by_subject_decoding([p10_spa, n40_spa], times, ts, te, len(p10_eng), 'keep pair', randseed)
-decoding_acc = do_subject_by_subject_decoding([p10_spa_new, n40_spa], times, ts, te, len(p10_eng), 'keep pair', randseed)
+decode_fn = make_decode_fn(times, ts, te, ncv1, ncv2, shuffle, randseed)
+real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
 
 #%% Sliding-time decoding
 ## if making the window very short then it become the point-by-point decoding
@@ -1185,7 +1174,17 @@ ncv_spa = 16
 
 run_sliding_time_decoding(p10_eng,n40_eng,p10_spa,n40_spa,times,ts_global,te_global,window_length,window_step,ncv_eng,ncv_spa,shuffle,randseed,plot=True)
 
-#%%# Run increment window (in 5 ms) to test if the decoding accuracy jump or linear increase
+#%% Mask-peak decoding
+# mask onset peaks of the signal to see decoding change
+p10_eng_new = replace_onset_with_baseline_noise(p10_eng,times,onset_start=0.005,onset_end=0.04)
+p10_spa_new = replace_onset_with_baseline_noise(p10_spa,times,onset_start=0.005,onset_end=0.04)
+
+decoding_acc = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, len(p10_eng), 'keep pair', randseed)
+decoding_acc = do_subject_by_subject_decoding([p10_eng_new, n40_eng], times, ts, te, len(p10_eng), 'keep pair', randseed)
+decoding_acc = do_subject_by_subject_decoding([p10_spa, n40_spa], times, ts, te, len(p10_eng), 'keep pair', randseed)
+decoding_acc = do_subject_by_subject_decoding([p10_spa_new, n40_spa], times, ts, te, len(p10_eng), 'keep pair', randseed)
+
+#%%# Increment decoding (increment in 5 ms) to test if the decoding accuracy jump or linear increase in eng vs. spa
 window_step = 0.005
 
 run_increment_decoding(
@@ -1197,13 +1196,13 @@ run_increment_decoding(
     ncv2=16,
     shuffle="keep pair",
     randseed=2,
-    do_permutation=True,
+    do_permutation=None,
     niter=500,
     labels=("English", "Spanish"),
     plot = True
 )
 
-#%%# Run increment window (in 5 ms) to test if the decoding accuracy differs between p10n40 and p10p40
+#%%# Increment decoding (increment in 5 ms) to test if the decoding accuracy jump or linear increase in p10n40 and p10p40
 run_increment_decoding(
     std, dev1,
     std, dev2,
@@ -1212,7 +1211,7 @@ run_increment_decoding(
     ncv2=18,
     shuffle="keep pair",
     randseed=2,
-    do_permutation=True,
+    do_permutation=None,
     niter=500,
     labels=("p10/n40", "p10/p40"),
     plot = True
@@ -1372,7 +1371,7 @@ times = np.linspace(-0.02, 0.2, 1101)
 # Remove padding
 band_power = band_power_full[:, pad:-pad]
 
-#%% visualization
+#%% Visualization
 mean_band = band_power.mean(axis=0)
 sem_band  = band_power.std(axis=0) / np.sqrt(band_power.shape[0])
 
@@ -1410,75 +1409,27 @@ plt.show()
 f_min, f_max = 60,150
 ts = 0
 te = 0.075
-times = np.linspace(-0.02, 0.2, 1101)
+niter = 500 
+shuffle = "keep pair"
+randseed = 2
 
 band_power_p10_eng = bandpower_hilbert(p10_eng, fs, f_min, f_max)
 band_power_n40_eng = bandpower_hilbert(n40_eng, fs, f_min, f_max)
-
 band_power_p10_spa = bandpower_hilbert(p10_spa, fs, f_min, f_max)
 band_power_n40_spa = bandpower_hilbert(n40_spa, fs, f_min, f_max)
 
 decoding_acc_eng = do_subject_by_subject_decoding([band_power_p10_eng, band_power_n40_eng], times, ts, te, 15, "keep pair", None)
 decoding_acc_spa = do_subject_by_subject_decoding([band_power_p10_spa, band_power_n40_spa], times, ts, te, 16, "keep pair", None)
-
 decoding_acc_p10 = do_subject_by_subject_decoding([band_power_p10_eng, band_power_p10_spa], times, ts, te, 15, "full", None)
 decoding_acc_n40 = do_subject_by_subject_decoding([band_power_n40_eng, band_power_n40_spa], times, ts, te, 15, "full", None)
 
-## for between language groups
-n_iter = 500   # or 1000 / 10000 depending on runtime
+condition_pairs = (
+    [band_power_p10_eng, band_power_n40_eng],
+    [band_power_p10_spa, band_power_n40_spa]
+)
 
-acc_dist_p10 = []
-acc_dist_n40 = []
-
-for i in range(n_iter):
-    print("Iteration " + str(i))
-    # Change seed each iteration to vary CV splits / shuffling
-    decoding_acc_p10 = do_subject_by_subject_decoding(
-        [band_power_p10_eng, band_power_p10_spa],
-        times, ts, te,
-        15,
-        "full",
-        None
-    )
-
-    decoding_acc_n40 = do_subject_by_subject_decoding(
-        [band_power_n40_eng, band_power_n40_spa],
-        times, ts, te,
-        15,
-        "full",
-        None
-    )
-
-    acc_dist_p10.append(np.mean(decoding_acc_p10))
-    acc_dist_n40.append(np.mean(decoding_acc_n40))
-
-
-acc_dist_p10 = np.array(acc_dist_p10)
-acc_dist_n40 = np.array(acc_dist_n40)
-
-plt.figure(figsize=(6,4))
-
-plt.hist(acc_dist_p10, bins=5, alpha=0.6, color='blue',
-         edgecolor='black', label='p10')
-
-plt.hist(acc_dist_n40, bins=5, alpha=0.6, color='red',
-         edgecolor='black', label='n40')
-
-mean_p10 = np.mean(acc_dist_p10)
-mean_n40 = np.mean(acc_dist_n40)
-
-# Thick mean lines
-plt.axvline(mean_p10, color='blue', linewidth=4)
-plt.axvline(mean_n40, color='red', linewidth=4)
-
-plt.axvline(0.5, color='gray', linestyle='--', linewidth=2, label='Chance')
-
-plt.xlabel('Decoding accuracy')
-plt.ylabel('Count')
-plt.title('F0 Decoding accuracy distribution')
-plt.legend()
-plt.tight_layout()
-plt.show()
+decode_fn = make_decode_fn(times, ts, te, ncv1, ncv2, shuffle, randseed)
+real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
 
 #%%####################################### ITPC analysis
 data = p10_spa
@@ -1544,35 +1495,7 @@ lag3 = xcorr['xcorr_lag_ms']
 
 # stats.ttest_rel(xcorr1,xcorr3)
 
-#%% sliding window xcorr
-audio = n40_audio
-EEG = n40_eng
-audio = stats.zscore(audio)
-EEG = stats.zscore(EEG,axis=-1)
-
-ts = 0 # this cannot be the negative
-te = 0.2
-win_len_s = 0.01
-step_s = 0.001
-window_times, xcorr_max, xcorr_lag = do_xcorr_sliding(audio,EEG,fs_audio,fs_eeg,ts,te,win_len_s,step_s)
-mean_xcorr = np.mean(xcorr_max, axis=0)
-sem_xcorr  = np.std(xcorr_max, axis=0) / np.sqrt(xcorr_max.shape[0])
-
-# plt.figure()
-plt.plot(window_times, mean_xcorr, linewidth=2)
-plt.fill_between(window_times,
-                 mean_xcorr - sem_xcorr,
-                 mean_xcorr + sem_xcorr,
-                 alpha=0.3)
-
-plt.xlabel("Time (s)")
-plt.ylabel("Max |xcorr|")
-plt.title("Sliding Cross-Correlation (mean ± SEM)")
-plt.axhline(0, linestyle="--")
-plt.tight_layout()
-plt.show()
-
-#%% xcorr table
+## xcorr table
 # print(xcorr)
 print(np.mean(xcorr['xcorr_max']))
 print(np.mean(xcorr['xcorr_lag_ms']))
@@ -1607,7 +1530,6 @@ diff_spa = condition2-condition1
 
 stats.ttest_rel(condition1,condition2)
 
-
 group1 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'eng')]['xcorr_lags'].values
 group2 = df.loc[(df["condition"] == 'p10') & (df["group"]== 'spa')]['xcorr_lags'].values
 stats.ttest_ind(group1,group2)
@@ -1633,7 +1555,7 @@ print(f"condition2 Mean: {np.mean(condition2):.2f}")
 print(f"Observed Difference: {result.statistic:.2f}")
 print(f"P-value: {result.pvalue}")
 
-#%% Verhulst model
+#%% Verhulst modeled FFR analysis
 p10_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-master/p10_FFR.mat')
 p40_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-master/p40_FFR.mat')
 n40_model_FFR = sp.io.loadmat('/home/tzcheng/Downloads/Verhulstetal2018Model-master/n40_FFR.mat')
@@ -1643,7 +1565,7 @@ n40_model_FFR = np.squeeze(n40_model_FFR["EFR"])
 fs_eeg = 8820
 t_model = np.linspace(0,len(n40_model_FFR)/fs_eeg,len(n40_model_FFR))
 
-#### decoding
+#### SVM decoding augmented data
 def add_latency_jitter(signal, rng, max_jitter_samples=5):
     shift = rng.integers(-max_jitter_samples, max_jitter_samples + 1)
     return np.roll(signal, shift)
@@ -1675,24 +1597,16 @@ trials_p10_EFR = np.zeros((n_trials, len(n40_model_FFR)))
 trials_p40_EFR = np.zeros((n_trials, len(n40_model_FFR)))
 trials_n40_EFR = np.zeros((n_trials, len(n40_model_FFR)))
 
-rng = np.random.default_rng(42)
+rng = np.random.default_rng(2)
 irregularities = 0.9
 
 for i in range(n_trials):
     temp_p10 = simulate_ffr_trial(p10_model_FFR,rng,irregularities)
-    trials_p10_EFR[i, :]  = zero_pad(temp_p10,len(n40_model_FFR)) # pad the p10 to be the same length as p40 and n40
+    trials_p10_EFR[i, :] = zero_pad(temp_p10,len(n40_model_FFR)) # pad the p10 to be the same length as p40 and n40
     trials_p40_EFR[i, :] = simulate_ffr_trial(p40_model_FFR,rng,irregularities)
     trials_n40_EFR[i, :] = simulate_ffr_trial(n40_model_FFR,rng,irregularities)
 
-#%%
-# for i in range(n_trials):
-#     noise = irregularities * np.std(p10_model_FFR) * rng.standard_normal(size=p10_model_FFR.shape)
-#     temp_p10 = p10_model_FFR + noise
-#     trials_p10_EFR[i, :]  = zero_pad(temp_p10,len(n40_model_FFR)) # pad the p10 to be the same length as p40 and n40
-#     noise = irregularities * np.std(p40_model_FFR) * rng.standard_normal(size=p40_model_FFR.shape)
-#     trials_p40_EFR[i, :] = p40_model_FFR + noise
-#     noise = irregularities * np.std(n40_model_FFR) * rng.standard_normal(size=n40_model_FFR.shape)
-#     trials_n40_EFR[i, :] = n40_model_FFR + noise
+## visualize the trials
 plt.figure()
 plt.plot(t_model,trials_p10_EFR.transpose())
 plt.plot(t_model,trials_p10_EFR.mean(0),linewidth = 2, color = 'k')
@@ -1706,158 +1620,63 @@ plt.plot(t_model,trials_n40_EFR.transpose())
 plt.plot(t_model,trials_n40_EFR.mean(0),linewidth = 2, color = 'k')
 plt.title('n40 modeled FFR')
 
-## start decoding!
+#%% Verhulst modeled FFR SVM decoding
 ts = 0
 te = 0.1
+
+## One-shot decoding
+decoding_acc_p10n40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_n40_EFR], t_model, ts, te, n_trials, shuffle, None)
+decoding_acc_p10p40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_p40_EFR], t_model, ts, te, n_trials, shuffle, None)
+ 
+## Random-seed decoding
 shuffle = "full"
-niter = 1000 
+niter = 500 
+randseed = 2
+p10_spa_match = random_select(p10_spa,len(p10_eng),1)
+n40_spa_match = random_select(n40_spa,len(p10_eng),1)
+
+condition_pairs = (
+    [p10_eng, n40_eng],
+    [p10_spa, n40_spa]
+)
+scores_all = run_random_seed_decoding(condition_pairs, times, ts, te, niter, shuffle, plot=True)
+
+## Differential decoding
+ts = 0
+te = 0.1
+niter = 500
+shuffle = "keep pair"
 randseed = 2
 
-## simple decoding 
-decoding_acc_p10p40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_p40_EFR], t_model, ts, te, n_trials, shuffle, None)
-decoding_acc_p10n40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_n40_EFR], t_model, ts, te, n_trials, shuffle, None)
- 
-## whole time decoding with random seed
-scores_p10p40 = []
-scores_p10n40 = []
+condition_pairs = (
+    [trials_p10_EFR, trials_n40_EFR],
+    [trials_p10_EFR, trials_p40_EFR]
+)
 
-for n_iter in np.arange(0,niter,1):
-    print("iter " + str(n_iter))
-    decoding_acc_p10p40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_p40_EFR], t_model, ts, te, n_trials, shuffle, None)
-    decoding_acc_p10n40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_n40_EFR], t_model, ts, te, n_trials, shuffle, None)
-    scores_p10p40.append(np.mean(decoding_acc_p10p40, axis=0))
-    scores_p10n40.append(np.mean(decoding_acc_p10n40, axis=0))
-scores_p10p40 = np.array(scores_p10p40)
-scores_p10n40 = np.array(scores_p10n40)
-print(f"Accuracy: {np.mean(scores_p10p40):.3f}")
-print(f"Accuracy: {np.mean(scores_p10n40):.3f}")
-plot_decoding_histograms(scores_p10p40,scores_p10n40,bins=5,chance=0.5,labels=("p10/p40", "p10/n40"),xlim=(0, 1))
+decode_fn = make_decode_fn(t_model, ts, te, n_trials,n_trials, shuffle, randseed)
+real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
 
-## permuation test to compare p10/n40 vs. p10/p40 decoding
-decoding_acc_p10p40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_p40_EFR], t_model, ts, te, n_trials, shuffle, randseed)
-decoding_acc_p10n40 = do_subject_by_subject_decoding([trials_p10_EFR, trials_n40_EFR], t_model, ts, te, n_trials, shuffle, randseed)
-diff_acc = np.mean(decoding_acc_p10n40, axis=0) - np.mean(decoding_acc_p10p40, axis=0)
+## Increment decoding
+window_step = 0.005
 
-## permute between dev1 and dev2
-diff_scores_perm = []
-n40p40_all = np.vstack([trials_n40_EFR,trials_p40_EFR])
-n_total = len(n40p40_all)
-rng = np.random.default_rng(None)
- 
-for n_iter in np.arange(0,niter,1):
-    print("iter " + str(n_iter))
-    perm_ind = rng.permutation(n_total)
-    group1_ind = perm_ind[:n_total//2]
-    group2_ind = perm_ind[n_total//2:]
-    dev1_perm = n40p40_all[group1_ind]
-    dev2_perm = n40p40_all[group2_ind]
-    
-    decoding_acc_group1_perm = do_subject_by_subject_decoding([trials_p10_EFR, dev1_perm], t_model, ts, te, n_trials, shuffle, randseed)
-    decoding_acc_group2_perm = do_subject_by_subject_decoding([trials_p10_EFR, dev2_perm], t_model, ts, te, n_trials, shuffle, randseed)
+run_increment_decoding(
+    trials_p10_EFR, trials_n40_EFR,
+    trials_p10_EFR, trials_p40_EFR,
+    t_model,
+    ncv1=18,
+    ncv2=18,
+    shuffle="keep pair",
+    randseed=2,
+    do_permutation=True,
+    niter=500,
+    labels=("p10/n40", "p10/p40"),
+    plot = True
+)
 
-    diff_scores_perm.append(np.mean(decoding_acc_group1_perm, axis=0) - np.mean(decoding_acc_group2_perm, axis=0))
-diff_scores_perm = np.array(diff_scores_perm)
-print(f"Accuracy: {np.mean(diff_scores_perm):.3f}")
-
-fig, ax = plt.subplots(1)
-ax.hist(diff_scores_perm, bins=7, alpha=0.6)
-ax.set_ylabel("Count", fontsize=20)
-ax.set_xlabel("Accuracy Difference", fontsize=20)
-# chance line
-ax.axvline(np.mean(diff_scores_perm), color="grey", linestyle="--", linewidth=2)
-# 95% line
-ax.axvline(np.percentile(diff_scores_perm,95),ymin=0,ymax=1000,color='grey',linewidth=2)
-# mean lines
-ax.axvline(diff_acc, color="red", linewidth=1)
-
-#%%# increment decoding
-window_step = 0.005   # 5 ms
-acc_eng_by_window = []
-acc_spa_by_window = []
-window_ends = np.arange(window_step, te + window_step, window_step)
-diff_scores_perm_95 = []
-diff_acc_real = []
-
-for t_end in window_ends:
-    ## calculate individual decoding curve
-    p10_eng_w = mask_with_fixed_noise(trials_p10_EFR, t_model, t_end, gen_noise(trials_p40_EFR,randseed)) ## ideally you want to keep the noise the same so it won't affect SVM decision between the two conditions
-    n40_eng_w = mask_with_fixed_noise(trials_n40_EFR, t_model, t_end, gen_noise(trials_p40_EFR,randseed))
-
-    p10_spa_w = mask_with_fixed_noise(trials_p10_EFR, t_model, t_end, gen_noise(trials_p40_EFR,randseed))
-    n40_spa_w = mask_with_fixed_noise(trials_p40_EFR, t_model, t_end, gen_noise(trials_p40_EFR,randseed))
-
-    decoding_acc_eng = do_subject_by_subject_decoding([p10_eng_w, n40_eng_w], t_model, ts, te, n_trials, shuffle, randseed)
-    decoding_acc_spa = do_subject_by_subject_decoding([p10_spa_w, n40_spa_w], t_model, ts, te, n_trials, shuffle, randseed)
-
-    acc_eng_by_window.append(np.mean(decoding_acc_eng))
-    acc_spa_by_window.append(np.mean(decoding_acc_spa))
-    
-    ## real difference
-    diff_acc = np.mean(decoding_acc_eng, axis=0) - np.mean(decoding_acc_spa, axis=0)
-    diff_acc_real = np.append(diff_acc_real,diff_acc)
-    
-    ## permute between dev1 and dev2
-    diff_scores_perm = []
-    n40p40_all = np.vstack([trials_n40_EFR,trials_p40_EFR])
-    n_total = len(n40p40_all)
-    rng = np.random.default_rng(None)
-     
-    for n_iter in np.arange(0,niter,1):
-        print("iter " + str(n_iter))
-        
-        perm_ind = rng.permutation(n_total)
-        group1_ind = perm_ind[:n_total//2]
-        group2_ind = perm_ind[n_total//2:]
-        dev1_perm = n40p40_all[group1_ind]
-        dev2_perm = n40p40_all[group2_ind]
-        
-        decoding_acc_group1_perm = do_subject_by_subject_decoding([trials_p10_EFR, dev1_perm], t_model, ts, te, ncv, shuffle, randseed)
-        decoding_acc_group2_perm = do_subject_by_subject_decoding([trials_p10_EFR, dev2_perm], t_model, ts, te, ncv, shuffle, randseed)
- 
-        diff_scores_perm.append(np.mean(decoding_acc_group1_perm, axis=0) - np.mean(decoding_acc_group2_perm, axis=0))
- 
-    
-    diff_scores_perm = np.array(diff_scores_perm)
-    diff_scores_perm_95 = np.append(diff_scores_perm_95,np.percentile(diff_scores_perm,95))
-    print(f"Accuracy: {np.mean(diff_scores_perm):.3f}")
-    
-window_sizes_ms = window_ends * 1000  # e.g., [5, 10, 15, ... 200]
-
-# Example arrays from your decoding loop
-acc_eng_by_window = np.array(acc_eng_by_window)
-acc_spa_by_window = np.array(acc_spa_by_window)
-
-plt.figure(figsize=(6,4))
-plt.plot(window_sizes_ms, acc_eng_by_window, label='p10/n40', color='blue', marker='o')
-plt.plot(window_sizes_ms, acc_spa_by_window, label='p10/p40', color='red', marker='o')
-# Add chance level line (assuming binary classification, chance = 0.5)
-plt.axhline(0.5, color='gray', linestyle='--', label='Chance')
-plt.xlabel('Window size (ms)')
-plt.ylabel('Decoding accuracy')
-plt.title('Decoding accuracy as a function of available signal')
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
-
-plt.figure(figsize=(6,4))
-plt.plot(window_sizes_ms, diff_acc_real, label='Real difference', color='blue', marker='o')
-plt.plot(window_sizes_ms, diff_scores_perm_95, label='95% of perm difference', color='red', marker='o')
-# Add chance level line (assuming binary classification, chance = 0.5)
-plt.axhline(0, color='gray', linestyle='--', label='No difference')
-plt.xlabel('Window size (ms)')
-plt.ylabel('Decoding accuracy diff')
-plt.title('Decoding accuracy p10/n40 - p10/p40')
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
-
-#%%
-#### xcorr
+#%% Verhulst modeled FFR xcorr
 ts = 0.06 # 0.02 for ba and pa, 0.06 for mba
 te = 0.13 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
-lag_window_s=(-0.012, -0.007)
+lag_window_s=(-0.012, -0.007) # make it even shorter than the real FFR xcorr (-0.014, -0.007)
 
 fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
 fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
@@ -1867,7 +1686,7 @@ audio = p40_audio
 EEG = np.squeeze(p40_model_FFR["EFR"])
 audio = stats.zscore(audio)
 EEG = stats.zscore(EEG)
-t_model = np.linspace(0,len(EEG)/fs_eeg,len(EEG))
+
 plt.figure()
 plt.plot(t_model,EEG)
 plt.ylim([-3e-7, 5e-7])
