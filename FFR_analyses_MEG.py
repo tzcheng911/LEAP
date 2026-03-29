@@ -30,8 +30,16 @@ from scipy.io import savemat
 import numpy as np
 from scipy.io import wavfile
 from mne.decoding import (
+    SlidingEstimator,
+    GeneralizingEstimator,
+    Scaler,
     cross_val_multiscore,
+    LinearModel,
+    get_coef,
+    Vectorizer,
+    CSP,
 )
+from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
@@ -1081,9 +1089,9 @@ fs,dev2_all = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
 file_type = 'morph'
-nfilter = '80200'
+nfilter = '802000'
 ntrial = 'all'
-ntop = '0'
+ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
 ## remove the rim subjects for now
@@ -1094,166 +1102,168 @@ n40_spa = np.delete(n40_spa,[1,7,14],axis=0)
 
 #%%####################################### visualization
 ## average sensor data
-sensor_data = n40_eng.mean(0)
-evoked = mne.read_evokeds('/media/tzcheng/storage/Brainstem/brainstem_203/sss_fif/brainstem_203_n40_02_otp_raw_sss_proj_f802000_ntrial200_evoked_ffr.fif')
-evoked[0].data = sensor_data
-evoked[0].plot_topo()
+# sensor_data = n40_eng.mean(0)
+# evoked = mne.read_evokeds('/media/tzcheng/storage/Brainstem/brainstem_203/sss_fif/brainstem_203_n40_02_otp_raw_sss_proj_f802000_ntrial200_evoked_ffr.fif')
+# evoked[0].data = sensor_data
+# evoked[0].plot_topo()
 
-## pca data 
-npc = 0
-plot_group_ffr(p10_eng[:,npc,:], n40_eng[:,npc,:], 'eng','spa', times)
-plot_group_ffr(p10_spa[:,npc,:], n40_spa[:,npc,:], 'eng','spa', times)
+# ## pca data 
+# npc = 0
+# plot_group_ffr(p10_eng[:,npc,:], n40_eng[:,npc,:], 'eng','spa', times)
+# plot_group_ffr(p10_spa[:,npc,:], n40_spa[:,npc,:], 'eng','spa', times)
 
-## source data
-source_data = p10_eng.mean(0)
-stc1.data = source_data 
-stc1.plot(src=src)
+# ## source data
+# source_data = p10_eng.mean(0)
+# stc1.data = source_data 
+# stc1.plot(src=src)
 
-for s in np.arange(0,len(p10_spa),1):
-    stc1.data = p10_spa[s]
-    stc1.plot(src=src)
+# for s in np.arange(0,len(p10_spa),1):
+#     stc1.data = p10_spa[s]
+#     stc1.plot(src=src)
 
-## plot individual FFRs: this is the order of how eeg subjects are saved. Refer to preprocessing_brainstem.py
-subjects_eng=['113','124','107','110','121','118','126','129','108','106','111','112','133','104','123']
-subjects_spa=['203','214','213','223','226','222','212','215','225','224','204','221','206','211','220','205'] ## 202 event code has some issues
+# ## plot individual FFRs: this is the order of how eeg subjects are saved. Refer to preprocessing_brainstem.py
+# subjects_eng=['113','124','107','110','121','118','126','129','108','106','111','112','133','104','123']
+# subjects_spa=['203','214','213','223','226','222','212','215','225','224','204','221','206','211','220','205'] ## 202 event code has some issues
 
-subjects_eng_dict = dict(zip(subjects_eng, n40_eng))
-subjects_spa_dict = dict(zip(subjects_spa, n40_spa))
-n_cols = 3
-plot_individuals(subjects_eng_dict,n_cols,times)
-plot_individuals(subjects_spa_dict,n_cols,times)
+# subjects_eng_dict = dict(zip(subjects_eng, n40_eng))
+# subjects_spa_dict = dict(zip(subjects_spa, n40_spa))
+# n_cols = 3
+# plot_individuals(subjects_eng_dict,n_cols,times)
+# plot_individuals(subjects_spa_dict,n_cols,times)
 
-## plot average FFRs between p10 vs. n40
-plot_group_ffr(p10_eng[:,12,:], n40_eng[:,12,:], 'p10','n40', times)
-plot_group_ffr(p10_spa[:,12,:], n40_spa[:,12,:], 'p10','n40', times)
+# ## plot average FFRs between p10 vs. n40
+# plot_group_ffr(p10_eng[:,12,:], n40_eng[:,12,:], 'p10','n40', times)
+# plot_group_ffr(p10_spa[:,12,:], n40_spa[:,12,:], 'p10','n40', times)
 
-## plot average FFRs between spa and eng
-# will give error if two groups have different sample size
-plot_group_ffr(p10_eng, p10_spa, 'eng','spa', times)
-plot_group_ffr(n40_eng, n40_spa, 'eng','spa', times)
+# ## plot average FFRs between spa and eng
+# # will give error if two groups have different sample size
+# plot_group_ffr(p10_eng, p10_spa, 'eng','spa', times)
+# plot_group_ffr(n40_eng, n40_spa, 'eng','spa', times)
 
-## plot the FFRs and audio on top of each other
-fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
-fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
-plot_audio_ffr(times,p10_audio,fs_audio,p10_spa,0.1)
-plot_audio_ffr(times,n40_audio,fs_audio,n40_spa,0.13)
+# ## plot the FFRs and audio on top of each other
+# fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
+# fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
+# plot_audio_ffr(times,p10_audio,fs_audio,p10_spa,0.1)
+# plot_audio_ffr(times,n40_audio,fs_audio,n40_spa,0.13)
 
-#%%####################################### Subject-by-subject MEG decoding for each condition 
-ts = 0
-te = 0.2
-shuffle = 'keep pair'
-randseed = 2
+# #%%####################################### Subject-by-subject MEG decoding for each condition 
+# ts = 0
+# te = 0.2
+# shuffle = 'keep pair'
+# randseed = 2
 
-## One-shot decoding
-acc_all_eng = []
-acc_all_spa = []
+# ## One-shot decoding
+# acc_all_eng = []
+# acc_all_spa = []
 
-for n in np.arange(0,np.shape(p10_eng)[1],1):
-    acc_eng = do_subject_by_subject_decoding([p10_eng[:,n,:], n40_eng[:,n,:]], times, ts, te, len(p10_eng), 'keep pair', randseed)
-    acc_spa = do_subject_by_subject_decoding([p10_spa[:,n,:], n40_spa[:,n,:]], times, ts, te, len(p10_spa), 'keep pair', randseed)
-    acc_all_eng.append(acc_eng.mean(0))
-    acc_all_spa.append(acc_spa.mean(0))
-acc_all_eng = np.array(acc_all_eng)
-acc_all_spa = np.array(acc_all_spa)
-# np.save('eng_svmacc_p10n40_pcffr80200_ntrialall_0_morph.npy',acc_all_eng)
-# np.save('spa_svmacc_p10n40_pcffr80200_ntrialall_0_morph.npy',acc_all_spa)
+# for n in np.arange(0,np.shape(p10_eng)[1],1):
+#     acc_eng = do_subject_by_subject_decoding([p10_eng[:,n,:], n40_eng[:,n,:]], times, ts, te, len(p10_eng), 'keep pair', randseed)
+#     acc_spa = do_subject_by_subject_decoding([p10_spa[:,n,:], n40_spa[:,n,:]], times, ts, te, len(p10_spa), 'keep pair', randseed)
+#     acc_all_eng.append(acc_eng.mean(0))
+#     acc_all_spa.append(acc_spa.mean(0))
+# acc_all_eng = np.array(acc_all_eng)
+# acc_all_spa = np.array(acc_all_spa)
+# # np.save('eng_svmacc_p10n40_pcffr80200_ntrialall_0_morph.npy',acc_all_eng)
+# # np.save('spa_svmacc_p10n40_pcffr80200_ntrialall_0_morph.npy',acc_all_spa)
 
-diff_acc_all = acc_all_eng-acc_all_spa
+# diff_acc_all = acc_all_eng-acc_all_spa
 
-## plot overall acc between the two language groups
-plt.figure()
-plt.bar(['Eng','Spa'], [acc_all_eng.mean(),acc_all_spa.mean()], yerr=[acc_all_eng.std(),acc_all_spa.std()], capsize=5, color='skyblue', ecolor='black')
-plt.title('mean SVM decoding ACC p10n40 across all sensors')
-plt.ylim([0,1])
-plt.xlabel('Language groups')
-plt.ylabel('Accuracy')
+# ## plot overall acc between the two language groups
+# plt.figure()
+# plt.bar(['Eng','Spa'], [acc_all_eng.mean(),acc_all_spa.mean()], yerr=[acc_all_eng.std(),acc_all_spa.std()], capsize=5, color='skyblue', ecolor='black')
+# plt.title('mean SVM decoding ACC p10n40 across all sensors')
+# plt.ylim([0,1])
+# plt.xlabel('Language groups')
+# plt.ylabel('Accuracy')
 
-## sensor
-idx_eng = np.argsort(acc_all_eng)[-30:]
-print(np.sort(acc_all_eng)[-30:])
-ch_names = np.array(evoked[0].info['ch_names'])
-print(ch_names[idx_eng])
-evoked[0].info['bads'] = ch_names[idx_eng].tolist()
-evoked[0].plot_sensors(ch_type = 'all')
+# ## sensor
+# idx_eng = np.argsort(acc_all_eng)[-30:]
+# print(np.sort(acc_all_eng)[-30:])
+# ch_names = np.array(evoked[0].info['ch_names'])
+# print(ch_names[idx_eng])
+# evoked[0].info['bads'] = ch_names[idx_eng].tolist()
+# evoked[0].plot_sensors(ch_type = 'all')
 
-idx_spa = np.argsort(acc_all_spa)[-30:]
-print(np.sort(acc_all_spa)[-30:])
-print(ch_names[idx_spa])
-evoked[0].info['bads'] = ch_names[idx_spa].tolist()
-evoked[0].plot_sensors(ch_type = 'all')
+# idx_spa = np.argsort(acc_all_spa)[-30:]
+# print(np.sort(acc_all_spa)[-30:])
+# print(ch_names[idx_spa])
+# evoked[0].info['bads'] = ch_names[idx_spa].tolist()
+# evoked[0].plot_sensors(ch_type = 'all')
 
-idx_overlap = np.intersect1d(idx_eng, idx_spa)
-print(ch_names[idx_overlap])
-evoked[0].info['bads'] = ch_names[idx_overlap].tolist()
-evoked[0].plot_sensors(ch_type = 'all')
+# idx_overlap = np.intersect1d(idx_eng, idx_spa)
+# print(ch_names[idx_overlap])
+# evoked[0].info['bads'] = ch_names[idx_overlap].tolist()
+# evoked[0].plot_sensors(ch_type = 'all')
 
-## svm acc english > spanish 
-idx_diff = np.argsort(diff_acc_all)[-30:] ## 50 for the 200 reps, 20 for the 3000 reps
-print(np.sort(diff_acc_all)[-30:])
-idx_diff = idx_diff[acc_all_spa[idx_diff] > 0.5] # ensure that acc_all_spa is higher than chance level 
+# ## svm acc english > spanish 
+# idx_diff = np.argsort(diff_acc_all)[-30:] ## 50 for the 200 reps, 20 for the 3000 reps
+# print(np.sort(diff_acc_all)[-30:])
+# idx_diff = idx_diff[acc_all_spa[idx_diff] > 0.5] # ensure that acc_all_spa is higher than chance level 
 
-## svm acc english < spanish 
-idx_diff = np.argsort(diff_acc_all)[:20]
-print(np.sort(diff_acc_all)[:20])
-idx_diff = idx_diff[acc_all_eng[idx_diff] > 0.5] # ensure that acc_all_spa is higher than chance level 
+# ## svm acc english < spanish 
+# idx_diff = np.argsort(diff_acc_all)[:20]
+# print(np.sort(diff_acc_all)[:20])
+# idx_diff = idx_diff[acc_all_eng[idx_diff] > 0.5] # ensure that acc_all_spa is higher than chance level 
 
-print(diff_acc_all[idx_diff])
-print(ch_names[idx_diff])
-evoked[0].info['bads'] = ch_names[idx_diff].tolist()
-evoked[0].plot_sensors(ch_type = 'all')
+# print(diff_acc_all[idx_diff])
+# print(ch_names[idx_diff])
+# evoked[0].info['bads'] = ch_names[idx_diff].tolist()
+# evoked[0].plot_sensors(ch_type = 'all')
 
-for n in idx_diff:
-    plot_group_ffr(p10_eng[:,n,:], n40_eng[:,n,:], 'p10','n40', times)
-    plt.title(ch_names[n])
-    plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
-    plt.title(ch_names[n])
+# for n in idx_diff:
+#     plot_group_ffr(p10_eng[:,n,:], n40_eng[:,n,:], 'p10','n40', times)
+#     plt.title(ch_names[n])
+#     plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
+#     plt.title(ch_names[n])
 
-## morph
-stc1.data = np.array([acc_all_eng,acc_all_eng]).transpose()
-stc1.plot_3d(src=src,subject = 'fsaverage')
-stc1.data = np.array([acc_all_spa,acc_all_spa]).transpose()
-stc1.plot_3d(src=src,subject = 'fsaverage')
+# ## morph
+# stc1.data = np.array([acc_all_eng,acc_all_eng]).transpose()
+# stc1.plot_3d(src=src,subject = 'fsaverage')
+# stc1.data = np.array([acc_all_spa,acc_all_spa]).transpose()
+# stc1.plot_3d(src=src,subject = 'fsaverage')
 
-## MEG2022 (idx 226), MEG2033 (idx 229) showed high decoding acc
-nch = 226
+# ## MEG2022 (idx 226), MEG2033 (idx 229) showed high decoding acc
+# nch = 226
 
-ts = 0
-te = 0.2
-niter = 500 
-shuffle = "keep pair"
-randseed = 2
+# ts = 0
+# te = 0.2
+# niter = 500 
+# shuffle = "keep pair"
+# randseed = 2
 
-for nch in idx_diff:
+# for nch in idx_diff:
 
-    condition_pairs = (
-        [p10_eng[:,nch,:], n40_eng[:,nch,:]],
-        [p10_spa[:,nch,:], n40_spa[:,nch,:]]
-    )
-    ## Differential decoding
-    decode_fn = make_decode_fn(times, ts, te, 15, 16, shuffle, randseed)
-    real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
-    plt.title(ch_names[nch] + ' (' + str(nch) + ')' )
+#     condition_pairs = (
+#         [p10_eng[:,nch,:], n40_eng[:,nch,:]],
+#         [p10_spa[:,nch,:], n40_spa[:,nch,:]]
+#     )
+#     ## Differential decoding
+#     decode_fn = make_decode_fn(times, ts, te, 15, 16, shuffle, randseed)
+#     real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
+#     plt.title(ch_names[nch] + ' (' + str(nch) + ')' )
 
-    ## Increment decoding
-    window_step = 0.005
+#     ## Increment decoding
+#     window_step = 0.005
     
-    run_increment_decoding(
-        p10_eng[:,nch,:], n40_eng[:,nch,:],
-        p10_spa[:,nch,:], n40_spa[:,nch,:],
-        times,
-        window_step=window_step,
-        ncv1=15,
-        ncv2=16,
-        shuffle="keep pair",
-        randseed=2,
-        do_permutation=True,
-        niter=100,
-        labels=("English", "Spanish"),
-        plot = True
-    )
+#     run_increment_decoding(
+#         p10_eng[:,nch,:], n40_eng[:,nch,:],
+#         p10_spa[:,nch,:], n40_spa[:,nch,:],
+#         times,
+#         window_step=window_step,
+#         ncv1=15,
+#         ncv2=16,
+#         shuffle="keep pair",
+#         randseed=2,
+#         do_permutation=True,
+#         niter=100,
+#         labels=("English", "Spanish"),
+#         plot = True
+#     )
 
 #%%####################################### Sliding estimator 
 tic = time.time()
+k_feature = 'all'
+
 X = np.concatenate((p10_eng,n40_eng),axis=0)
 y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(n40_eng)))) 
 
@@ -1273,7 +1283,7 @@ score = np.mean(scores_observed, axis=0)
 TOI = np.linspace(-20,200,num=1101)
 fig, ax = plt.subplots(1)
 ax.plot(TOI, scores_observed.mean(0), label="score")
-ax.axhline(1/3, color="k", linestyle="--", label="chance")
+ax.axhline(1/2, color="k", linestyle="--", label="chance")
 ax.axvline(0, color="k")
 plt.legend()
 
@@ -1285,754 +1295,754 @@ patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
 
 toc = time.time()
 
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '.npy',scores_observed)
-np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '.npy',patterns)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_norim.npy',scores_observed)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_norim.npy',patterns)
 
 #%%#######################################
 
 
-#%% reduce dimension
-# get the mean
-std = std_all.mean(axis=1)
-dev1 = dev1_all.mean(axis=1)
-dev2 = dev2_all.mean(axis=1)
-p10_eng = p10_eng_all.mean(axis=1)
-n40_eng = n40_eng_all.mean(axis=1)
+# #%% reduce dimension
+# # get the mean
+# std = std_all.mean(axis=1)
+# dev1 = dev1_all.mean(axis=1)
+# dev2 = dev2_all.mean(axis=1)
+# p10_eng = p10_eng_all.mean(axis=1)
+# n40_eng = n40_eng_all.mean(axis=1)
 
-# get the mag mean because it is more sensitive to the deep source
-epochs = mne.read_epochs(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_cABR_e.fif')
-indices_by_type = mne.channel_indices_by_type(epochs.info)
-std = std[:,indices_by_type['mag'],:]
-dev1 = dev1[:,indices_by_type['mag'],:]
-dev2 = dev2[:,indices_by_type['mag'],:]
+# # get the mag mean because it is more sensitive to the deep source
+# epochs = mne.read_epochs(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_cABR_e.fif')
+# indices_by_type = mne.channel_indices_by_type(epochs.info)
+# std = std[:,indices_by_type['mag'],:]
+# dev1 = dev1[:,indices_by_type['mag'],:]
+# dev2 = dev2[:,indices_by_type['mag'],:]
 
-# ROI
-lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
-rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
-nROI = 2
-std = std_all[:,rh_ROI_label[nROI],:] 
-dev1 = dev1_all[:,rh_ROI_label[nROI],:] 
-dev2 = dev2_all[:,rh_ROI_label[nROI],:]
-p10_eng = p10_eng_all[:,rh_ROI_label[nROI],:] 
-n40_eng = n40_eng_all[:,rh_ROI_label[nROI],:] 
+# # ROI
+# lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+# rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+# nROI = 2
+# std = std_all[:,rh_ROI_label[nROI],:] 
+# dev1 = dev1_all[:,rh_ROI_label[nROI],:] 
+# dev2 = dev2_all[:,rh_ROI_label[nROI],:]
+# p10_eng = p10_eng_all[:,rh_ROI_label[nROI],:] 
+# n40_eng = n40_eng_all[:,rh_ROI_label[nROI],:] 
 
-#%%####################################### Sliding estimator decoding brainstem eng speakers
-root_path='/media/tzcheng/storage/Brainstem/'
-subjects_dir = '/media/tzcheng/storage2/subjects/'
-os.chdir(root_path)
-stc1 = mne.read_source_estimate(root_path + 'brainstem_113/sss_fif/brainstem_113_pcffr80200_3_n40_01_morph-vl.stc')
-times = stc1.times
-
-## parameter
-ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
-k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
-
-fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
-rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
-
-if ROI_wholebrain == 'ROI':
-    ffr_ba = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_p10_01_roi.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_n40_01_roi.npy',allow_pickle=True)
-elif ROI_wholebrain == 'wholebrain':
-    ffr_ba = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_p10_01_morph.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_n40_01_morph.npy',allow_pickle=True)
-else:
-    print("Need to decide whether to use ROI or whole brain as feature.")
-
-X = np.concatenate((ffr_ba,ffr_mba),axis=0)
-# X = X[:,:,ts:te] 
-y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_ba)))) #0 is for mmr1 and 1 is for mmr2
-
-# prepare a series of classifier applied at each time sample
-clf = make_pipeline(
-    StandardScaler(),  # z-score normalization
-    SelectKBest(f_classif, k=k_feature),  # select features for speed
-    LinearModel(),
-    )
-time_decod = SlidingEstimator(clf)
-
-# Run cross-validated decoding analyses
-scores_observed = cross_val_multiscore(time_decod, X, y, cv=5, n_jobs=None) # leave one out
-score = np.mean(scores_observed, axis=0)
-
-#Plot average decoding scores of 5 splits
-TOI = np.linspace(-20,200,num=1101)
-fig, ax = plt.subplots(1)
-ax.plot(TOI, scores_observed.mean(0), label="score")
-ax.axhline(1/3, color="k", linestyle="--", label="chance")
-ax.axvline(0, color="k")
-plt.legend()
-
-# The fitting needs not be cross validated because the weights are based on
-# the training sets
-time_decod.fit(X, y) # not changed after shuffling the initial
-# Retrieve patterns after inversing the z-score normalization step:
-patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
-
-#%%####################################### Sliding estimator decoding CBS
-tic = time.time()
-root_path='/media/tzcheng/storage2/CBS/'
-subjects_dir = '/media/tzcheng/storage2/subjects/'
-os.chdir(root_path)
-stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
-times = stc1.times
-n_top = '3' # could number of IC: 3 or 10, or dss: dss_f80450, dss
-n_trial = '200' # 'ntrial_200/' or 'ntrial_all/' or ''
-
-## parameter
-ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
-k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
-
-filename = 'pcffr80200'
-filename_ffr_ba = 'group_ba_pcffr80200_'
-filename_ffr_mba = 'group_mba_pcffr80200_'
-filename_ffr_pa = 'group_pa_pcffr80200_'
-
-fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
-rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
-
-if ROI_wholebrain == 'ROI':
-    ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_ba + str(n_top) + '_' + str(n_trial) + '_roi.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_mba + str(n_top) + '_' + str(n_trial) + '_roi.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_roi.npy',allow_pickle=True)
-elif ROI_wholebrain == 'wholebrain':
-    ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_ba + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_mba + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
-else:
-    print("Need to decide whether to use ROI or whole brain as feature.")
-X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0)
-# X = X[:,:,ts:te] 
-y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_ba)),np.repeat(2,len(ffr_ba)))) #0 is for mmr1 and 1 is for mmr2
-
-# prepare a series of classifier applied at each time sample
-clf = make_pipeline(
-    StandardScaler(),  # z-score normalization
-    SelectKBest(f_classif, k=k_feature),  # select features for speed
-    LinearModel(),
-    )
-time_decod = SlidingEstimator(clf)
-
-# Run cross-validated decoding analyses
-scores_observed = cross_val_multiscore(time_decod, X, y, cv=5, n_jobs=None) # leave one out
-score = np.mean(scores_observed, axis=0)
-
-#Plot average decoding scores of 5 splits
-TOI = np.linspace(-20,200,num=1101)
-fig, ax = plt.subplots(1)
-ax.plot(TOI, scores_observed.mean(0), label="score")
-ax.axhline(1/3, color="k", linestyle="--", label="chance")
-ax.axvline(0, color="k")
-plt.legend()
-
-# The fitting needs not be cross validated because the weights are based on
-# the training sets
-time_decod.fit(X, y) # not changed after shuffling the initial
-# Retrieve patterns after inversing the z-score normalization step:
-patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
-
-toc = time.time()
-
-np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_kall_' + filename + '.npy',scores_observed)
-np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_' + filename + '.npy',patterns)
-
-#%%####################################### MEG decoding CBS across time
-root_path='/media/tzcheng/storage2/CBS/'
-subjects_dir = '/media/tzcheng/storage2/subjects/'
-os.chdir(root_path)
-
-n_top = '3' # could number of IC: 3 or 10, or dss: dss_f80450, dss
-n_trial = '200' # 'ntrial_200/' or 'ntrial_all/' or ''
-stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
+# #%%####################################### Sliding estimator decoding brainstem eng speakers
+# root_path='/media/tzcheng/storage/Brainstem/'
+# subjects_dir = '/media/tzcheng/storage2/subjects/'
+# os.chdir(root_path)
+# stc1 = mne.read_source_estimate(root_path + 'brainstem_113/sss_fif/brainstem_113_pcffr80200_3_n40_01_morph-vl.stc')
 # times = stc1.times
-did_pca = '_pcffr80200_'  # '_': without or with pca "_pcffr80450_" the filter between 80 and 450 Hz is applied
-filename_ffr_ba = 'group_ba' + did_pca
-filename_ffr_mba = 'group_mba' + did_pca
-filename_ffr_pa = 'group_pa' + did_pca
 
-fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+# ## parameter
+# ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
+# k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
-## FFR relevant ROIs
-lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
-rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+# fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+# label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+# lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+# rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
-input_data = 'ROI' # ROI or wholebrain or sensor or pcffr
-k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
+# if ROI_wholebrain == 'ROI':
+#     ffr_ba = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_p10_01_roi.npy',allow_pickle=True)
+#     ffr_mba = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_n40_01_roi.npy',allow_pickle=True)
+# elif ROI_wholebrain == 'wholebrain':
+#     ffr_ba = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_p10_01_morph.npy',allow_pickle=True)
+#     ffr_mba = np.load(root_path + 'MEG/FFR/group_pcffr80200_3_n40_01_morph.npy',allow_pickle=True)
+# else:
+#     print("Need to decide whether to use ROI or whole brain as feature.")
 
-if input_data == 'sensor':
-    ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + 'ntrial_' + str(n_trial)+ '/' + filename_ffr_ba + str(n_top) + '_' + str(n_trial) +'_sensor.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + baby_or_adult + '/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_mba + str(n_top) + '_' + str(n_trial) + '_sensor.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + baby_or_adult + '/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_sensor.npy',allow_pickle=True)
-elif input_data == 'ROI':
-    ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_ba + str(n_top) + '_' + str(n_trial) +'_morph_roi.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_mba + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',allow_pickle=True)
-elif input_data == 'wholebrain':
-    ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + 'ntrial_' + str(n_trial) + '/'  + filename_ffr_ba + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + 'ntrial_' + str(n_trial) + '/'  + filename_ffr_mba + str(n_top) + '_' + str(n_trial) +'_morph.npy',allow_pickle=True)
-    ffr_pa = np.load(root_path + baby_or_adult + '/MEG/FFR/' + 'ntrial_' + str(n_trial) + '/'  + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
-else:
-    print("Need to decide whether to use ROI or whole brain as feature.")
+# X = np.concatenate((ffr_ba,ffr_mba),axis=0)
+# # X = X[:,:,ts:te] 
+# y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_ba)))) #0 is for mmr1 and 1 is for mmr2
 
-####################################### 3-way decoding: ba vs. pa vs. mba
-all_score = []
-## Three way classification using ovr
-X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0)
-# X = np.concatenate((ffr_ba[:,:,ff(times,40):ff(times,130)],ffr_mba[:,:,ff(times,40):ff(times,130)],ffr_pa[:,:,ff(times,40):ff(times,130)]),axis=0) # use just the V section
-y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba)),np.repeat(2,len(ffr_pa))))
+# # prepare a series of classifier applied at each time sample
+# clf = make_pipeline(
+#     StandardScaler(),  # z-score normalization
+#     SelectKBest(f_classif, k=k_feature),  # select features for speed
+#     LinearModel(),
+#     )
+# time_decod = SlidingEstimator(clf)
 
-rand_ind = np.arange(0,len(X))
-random.Random(15).shuffle(rand_ind)
-X = X[rand_ind,:,:]
+# # Run cross-validated decoding analyses
+# scores_observed = cross_val_multiscore(time_decod, X, y, cv=5, n_jobs=None) # leave one out
+# score = np.mean(scores_observed, axis=0)
 
-## 1st vs. 2nd half decoding
+# #Plot average decoding scores of 5 splits
+# TOI = np.linspace(-20,200,num=1101)
+# fig, ax = plt.subplots(1)
+# ax.plot(TOI, scores_observed.mean(0), label="score")
+# ax.axhline(1/3, color="k", linestyle="--", label="chance")
+# ax.axvline(0, color="k")
+# plt.legend()
+
+# # The fitting needs not be cross validated because the weights are based on
+# # the training sets
+# time_decod.fit(X, y) # not changed after shuffling the initial
+# # Retrieve patterns after inversing the z-score normalization step:
+# patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
+
+# #%%####################################### Sliding estimator decoding CBS
+# tic = time.time()
+# root_path='/media/tzcheng/storage2/CBS/'
+# subjects_dir = '/media/tzcheng/storage2/subjects/'
+# os.chdir(root_path)
+# stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
+# times = stc1.times
+# n_top = '3' # could number of IC: 3 or 10, or dss: dss_f80450, dss
+# n_trial = '200' # 'ntrial_200/' or 'ntrial_all/' or ''
+
+# ## parameter
+# ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
+# k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
+
+# filename = 'pcffr80200'
+# filename_ffr_ba = 'group_ba_pcffr80200_'
+# filename_ffr_mba = 'group_mba_pcffr80200_'
+# filename_ffr_pa = 'group_pa_pcffr80200_'
+
+# fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+# label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+# lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+# rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+
+# if ROI_wholebrain == 'ROI':
+#     ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_ba + str(n_top) + '_' + str(n_trial) + '_roi.npy',allow_pickle=True)
+#     ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_mba + str(n_top) + '_' + str(n_trial) + '_roi.npy',allow_pickle=True)
+#     ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_roi.npy',allow_pickle=True)
+# elif ROI_wholebrain == 'wholebrain':
+#     ffr_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_ba + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
+#     ffr_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_mba + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
+#     ffr_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_' + str(n_trial)+ '/' + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
+# else:
+#     print("Need to decide whether to use ROI or whole brain as feature.")
+# X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0)
+# # X = X[:,:,ts:te] 
+# y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_ba)),np.repeat(2,len(ffr_ba)))) #0 is for mmr1 and 1 is for mmr2
+
+# # prepare a series of classifier applied at each time sample
+# clf = make_pipeline(
+#     StandardScaler(),  # z-score normalization
+#     SelectKBest(f_classif, k=k_feature),  # select features for speed
+#     LinearModel(),
+#     )
+# time_decod = SlidingEstimator(clf)
+
+# # Run cross-validated decoding analyses
+# scores_observed = cross_val_multiscore(time_decod, X, y, cv=5, n_jobs=None) # leave one out
+# score = np.mean(scores_observed, axis=0)
+
+# #Plot average decoding scores of 5 splits
+# TOI = np.linspace(-20,200,num=1101)
+# fig, ax = plt.subplots(1)
+# ax.plot(TOI, scores_observed.mean(0), label="score")
+# ax.axhline(1/3, color="k", linestyle="--", label="chance")
+# ax.axvline(0, color="k")
+# plt.legend()
+
+# # The fitting needs not be cross validated because the weights are based on
+# # the training sets
+# time_decod.fit(X, y) # not changed after shuffling the initial
+# # Retrieve patterns after inversing the z-score normalization step:
+# patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
+
+# toc = time.time()
+
+# np.save(root_path + 'cbsA_meeg_analysis/decoding/roc_auc_kall_' + filename + '.npy',scores_observed)
+# np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_' + filename + '.npy',patterns)
+
+# #%%####################################### MEG decoding CBS across time
+# root_path='/media/tzcheng/storage2/CBS/'
+# subjects_dir = '/media/tzcheng/storage2/subjects/'
+# os.chdir(root_path)
+
+# n_top = '3' # could number of IC: 3 or 10, or dss: dss_f80450, dss
+# n_trial = '200' # 'ntrial_200/' or 'ntrial_all/' or ''
+# stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
+# # times = stc1.times
+# did_pca = '_pcffr80200_'  # '_': without or with pca "_pcffr80450_" the filter between 80 and 450 Hz is applied
+# filename_ffr_ba = 'group_ba' + did_pca
+# filename_ffr_mba = 'group_mba' + did_pca
+# filename_ffr_pa = 'group_pa' + did_pca
+
+# fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+# label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+
+# ## FFR relevant ROIs
+# lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+# rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+
+# baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
+# input_data = 'ROI' # ROI or wholebrain or sensor or pcffr
+# k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
+
+# if input_data == 'sensor':
+#     ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + 'ntrial_' + str(n_trial)+ '/' + filename_ffr_ba + str(n_top) + '_' + str(n_trial) +'_sensor.npy',allow_pickle=True)
+#     ffr_mba = np.load(root_path + baby_or_adult + '/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_mba + str(n_top) + '_' + str(n_trial) + '_sensor.npy',allow_pickle=True)
+#     ffr_pa = np.load(root_path + baby_or_adult + '/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_sensor.npy',allow_pickle=True)
+# elif input_data == 'ROI':
+#     ffr_ba = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_ba + str(n_top) + '_' + str(n_trial) +'_morph_roi.npy',allow_pickle=True)
+#     ffr_mba = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_mba + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',allow_pickle=True)
+#     ffr_pa = np.load(root_path + baby_or_adult +'/MEG/FFR/'+ 'ntrial_' + str(n_trial) + '/'  + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',allow_pickle=True)
+# elif input_data == 'wholebrain':
+#     ffr_ba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + 'ntrial_' + str(n_trial) + '/'  + filename_ffr_ba + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
+#     ffr_mba = np.load(root_path + baby_or_adult + '/MEG/FFR/' + 'ntrial_' + str(n_trial) + '/'  + filename_ffr_mba + str(n_top) + '_' + str(n_trial) +'_morph.npy',allow_pickle=True)
+#     ffr_pa = np.load(root_path + baby_or_adult + '/MEG/FFR/' + 'ntrial_' + str(n_trial) + '/'  + filename_ffr_pa + str(n_top) + '_' + str(n_trial) + '_morph.npy',allow_pickle=True)
+# else:
+#     print("Need to decide whether to use ROI or whole brain as feature.")
+
+# ####################################### 3-way decoding: ba vs. pa vs. mba
+# all_score = []
+# ## Three way classification using ovr
+# X = np.concatenate((ffr_ba,ffr_mba,ffr_pa),axis=0)
+# # X = np.concatenate((ffr_ba[:,:,ff(times,40):ff(times,130)],ffr_mba[:,:,ff(times,40):ff(times,130)],ffr_pa[:,:,ff(times,40):ff(times,130)]),axis=0) # use just the V section
+# y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba)),np.repeat(2,len(ffr_pa))))
+
+# rand_ind = np.arange(0,len(X))
+# random.Random(15).shuffle(rand_ind)
+# X = X[rand_ind,:,:]
+
+# ## 1st vs. 2nd half decoding
+# # X1 = X[rand_ind,:,:np.shape(X)[-1]//2]
+# # X2 = X[rand_ind,:,np.shape(X)[-1]//2:]
+
+# y = y[rand_ind]
+
+# clf = make_pipeline(
+#     StandardScaler(),  # z-score normalization
+#     LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
+# )    
+# for n in np.arange(0,np.shape(X)[1],1):
+#         scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
+#         score = np.mean(scores, axis=0)
+#         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
+#         all_score.append(score)
+# # np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_3way_decoding_accuracy_V_section_' + input_data +'_r15.npy',all_score)
+# np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_3way_decoding_accuracy_' + input_data +'_r15.npy',all_score)
+
+# ####################################### 2-way decoding: ba vs. pa, ba vs. mba, pa vs. mba
+# clf = make_pipeline(
+#     StandardScaler(),  # z-score normalization
+#     LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
+# )  
+
+# all_score_ba_mba = []
+# X = np.concatenate((ffr_ba,ffr_mba),axis=0)
+# # X = np.concatenate((ffr_ba[:,:,ff(times,10):ff(times,100)],ffr_mba[:,:,ff(times,40):ff(times,130)]),axis=0)
+
+# y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba))))
+
+# rand_ind = np.arange(0,len(X))
+# random.Random(15).shuffle(rand_ind)
+
+# X = X[rand_ind,:,:]
+# y = y[rand_ind]
+# for n in np.arange(0,np.shape(X)[1],1):
+#         scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
+#         score = np.mean(scores, axis=0)
+#         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
+#         all_score_ba_mba.append(score)
+# np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_ba_mba_decoding_accuracy_' + input_data +'_r15.npy',all_score_ba_mba)
+
+# all_score_ba_pa = []
+# X = []
+# y = []
+# X = np.concatenate((ffr_ba,ffr_pa),axis=0)
+# y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_pa))))
+# # X = np.concatenate((ffr_ba[:,:,ff(times,10):ff(times,100)],ffr_pa[:,:,ff(times,40):ff(times,130)]),axis=0)
+
+# X = X[rand_ind,:,:]
+# y = y[rand_ind]
+# for n in np.arange(0,np.shape(X)[1],1):
+#         scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
+#         score = np.mean(scores, axis=0)
+#         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
+#         all_score_ba_pa.append(score)
+# np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_ba_pa_decoding_accuracy_' + input_data +'_r15.npy',all_score_ba_pa)
+
+# all_score_mba_pa = []
+# X = []
+# y = []
+# X = np.concatenate((ffr_mba,ffr_pa),axis=0)
+# y = np.concatenate((np.repeat(0,len(ffr_mba)),np.repeat(1,len(ffr_pa))))
+# X = np.concatenate((ffr_mba[:,:,ff(times,40):ff(times,130)],ffr_pa[:,:,ff(times,40):ff(times,130)]),axis=0)
+
+
+# X = X[rand_ind,:,:]
+# y = y[rand_ind]
+# for n in np.arange(0,np.shape(X)[1],1):
+#         scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
+#         score = np.mean(scores, axis=0)
+#         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
+#         all_score_mba_pa.append(score)
+# np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_mba_pa_decoding_accuracy_' + input_data +'_r15.npy',all_score_mba_pa)
+
+# ## C and V section decoding: for ba, 10 ms + 90 ms = 100 ms; for mba and pa, 40 ms + 90 ms = 130 ms
 # X1 = X[rand_ind,:,:np.shape(X)[-1]//2]
 # X2 = X[rand_ind,:,np.shape(X)[-1]//2:]
 
-y = y[rand_ind]
+# #%%####################################### check acc for each sensor, ROI or vertice
+# acc_ind = np.where(np.array(all_score) >= 1/3)
 
-clf = make_pipeline(
-    StandardScaler(),  # z-score normalization
-    LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
-)    
-for n in np.arange(0,np.shape(X)[1],1):
-        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
-        score = np.mean(scores, axis=0)
-        print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
-        all_score.append(score)
-# np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_3way_decoding_accuracy_V_section_' + input_data +'_r15.npy',all_score)
-np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_3way_decoding_accuracy_' + input_data +'_r15.npy',all_score)
+# ## visualize sensor
+# evoked = mne.read_evokeds(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+# ch_name = np.array(evoked.ch_names)
+# evoked.info['bads'] = ch_name[acc_ind[0]].tolist() # hack the evoked.info['bads'] to visualize the high decoding accuracy sensor
+# evoked.plot_sensors(ch_type='all',kind ='3d')
 
-####################################### 2-way decoding: ba vs. pa, ba vs. mba, pa vs. mba
-clf = make_pipeline(
-    StandardScaler(),  # z-score normalization
-    LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
-)  
+# ## visualize ROI
+# label_names[acc_ind] # ctx-rh-bankssts reached 0.46363636 decoding accuracy for adults, ctx-rh-middletemporal reached 0.48214286 for infants
+# np.sort(all_score) 
+# np.argsort(all_score)
 
-all_score_ba_mba = []
-X = np.concatenate((ffr_ba,ffr_mba),axis=0)
-# X = np.concatenate((ffr_ba[:,:,ff(times,10):ff(times,100)],ffr_mba[:,:,ff(times,40):ff(times,130)]),axis=0)
+# ## visualize vertice
+# stc1.data = np.array([all_score,all_score]).transpose()
+# stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
 
-y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba))))
+# ## list the hot spots
+# label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
+# high_acc = np.where(np.array(all_score) > 0.5)
+# label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
+# high_acc = np.array(high_acc[0])
+# ROIs = []
+# for i in np.arange(0,len(high_acc),1):
+#     for nlabel in np.arange(0,len(label_names),1):
+#         if high_acc[i] in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
+#             ROIs.append(label_names[nlabel])
+# print(ROIs)
 
-rand_ind = np.arange(0,len(X))
-random.Random(15).shuffle(rand_ind)
+# #%%####################################### MEG decoding brainstem dataset across time
+# root_path='/media/tzcheng/storage/Brainstem/' # brainstem files
+# subjects_dir = '/media/tzcheng/storage2/subjects/'
+# os.chdir(root_path)
 
-X = X[rand_ind,:,:]
-y = y[rand_ind]
-for n in np.arange(0,np.shape(X)[1],1):
-        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
-        score = np.mean(scores, axis=0)
-        print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
-        all_score_ba_mba.append(score)
-np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_ba_mba_decoding_accuracy_' + input_data +'_r15.npy',all_score_ba_mba)
+# n_top = '3' # could number of IC: 3 or 10, or dss: dss_f80450, dss
+# stc1 = mne.read_source_estimate(root_path + 'brainstem_133/sss_fif/brainstem_133_pcffr80200_3_p10_01_morph-vl.stc')
+# # times = stc1.times
+# did_pca = '_pcffr80200_'  # '_': without or with pca "_pcffr80450_" the filter between 80 and 450 Hz is applied
 
-all_score_ba_pa = []
-X = []
-y = []
-X = np.concatenate((ffr_ba,ffr_pa),axis=0)
-y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_pa))))
-# X = np.concatenate((ffr_ba[:,:,ff(times,10):ff(times,100)],ffr_pa[:,:,ff(times,40):ff(times,130)]),axis=0)
+# fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+# label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 
-X = X[rand_ind,:,:]
-y = y[rand_ind]
-for n in np.arange(0,np.shape(X)[1],1):
-        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
-        score = np.mean(scores, axis=0)
-        print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
-        all_score_ba_pa.append(score)
-np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_ba_pa_decoding_accuracy_' + input_data +'_r15.npy',all_score_ba_pa)
+# ## FFR relevant ROIs
+# lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+# rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-all_score_mba_pa = []
-X = []
-y = []
-X = np.concatenate((ffr_mba,ffr_pa),axis=0)
-y = np.concatenate((np.repeat(0,len(ffr_mba)),np.repeat(1,len(ffr_pa))))
-X = np.concatenate((ffr_mba[:,:,ff(times,40):ff(times,130)],ffr_pa[:,:,ff(times,40):ff(times,130)]),axis=0)
+# input_data = 'ROI' # ROI or wholebrain or sensor or pcffr
+# k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
 
+# if input_data == 'sensor':
+#     ffr_ba = np.load(root_path + '/MEG/FFR/group_f80200_p10_01_sensor.npy',allow_pickle=True)
+#     ffr_mba = np.load(root_path + '/MEG/FFR/group_f80200_n40_01_sensor.npy',allow_pickle=True)
+# elif input_data == 'ROI':
+#     ffr_ba = np.load(root_path + '/MEG/FFR/group_f80200_p10_01_roi.npy',allow_pickle=True)
+#     ffr_mba = np.load(root_path + '/MEG/FFR/group_f80200_n40_01_roi.npy',allow_pickle=True)
+# elif input_data == 'wholebrain':
+#     ffr_ba = np.load(root_path + '/MEG/FFR/group_f80200_p10_01_morph.npy',allow_pickle=True)
+#     ffr_mba = np.load(root_path + '/MEG/FFR/group_f80200_n40_01_morph.npy',allow_pickle=True)
+# else:
+#     print("Need to decide whether to use ROI or whole brain as feature.")
 
-X = X[rand_ind,:,:]
-y = y[rand_ind]
-for n in np.arange(0,np.shape(X)[1],1):
-        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
-        score = np.mean(scores, axis=0)
-        print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
-        all_score_mba_pa.append(score)
-np.save(root_path + baby_or_adult +'/decoding/'+ str(n_top) + '_ntrial_' + str(n_trial) + '_mba_pa_decoding_accuracy_' + input_data +'_r15.npy',all_score_mba_pa)
+# all_score = []
+# X = np.concatenate((ffr_ba,ffr_mba),axis=0)
+# # X = np.concatenate((ffr_ba[:,:,ff(times,40):ff(times,130)],ffr_mba[:,:,ff(times,40):ff(times,130)]),axis=0) # use just the V section
+# y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba))))
 
-## C and V section decoding: for ba, 10 ms + 90 ms = 100 ms; for mba and pa, 40 ms + 90 ms = 130 ms
-X1 = X[rand_ind,:,:np.shape(X)[-1]//2]
-X2 = X[rand_ind,:,np.shape(X)[-1]//2:]
+# rand_ind = np.arange(0,len(X))
+# random.Random(15).shuffle(rand_ind)
+# X = X[rand_ind,:,:]
 
-#%%####################################### check acc for each sensor, ROI or vertice
-acc_ind = np.where(np.array(all_score) >= 1/3)
+# ## 1st vs. 2nd half decoding
+# # X1 = X[rand_ind,:,:np.shape(X)[-1]//2]
+# # X2 = X[rand_ind,:,np.shape(X)[-1]//2:]
 
-## visualize sensor
-evoked = mne.read_evokeds(root_path + 'cbs_A123/sss_fif/cbs_A123_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
-ch_name = np.array(evoked.ch_names)
-evoked.info['bads'] = ch_name[acc_ind[0]].tolist() # hack the evoked.info['bads'] to visualize the high decoding accuracy sensor
-evoked.plot_sensors(ch_type='all',kind ='3d')
+# y = y[rand_ind]
 
-## visualize ROI
-label_names[acc_ind] # ctx-rh-bankssts reached 0.46363636 decoding accuracy for adults, ctx-rh-middletemporal reached 0.48214286 for infants
-np.sort(all_score) 
-np.argsort(all_score)
+# clf = make_pipeline(
+#     StandardScaler(),  # z-score normalization
+#     LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
+# )    
+# for n in np.arange(0,np.shape(X)[1],1):
+#         scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
+#         score = np.mean(scores, axis=0)
+#         print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
+#         all_score.append(score)
 
-## visualize vertice
-stc1.data = np.array([all_score,all_score]).transpose()
-stc1.plot(src, clim=dict(kind="percent",pos_lims=[90,95,99]), subject='fsaverage', subjects_dir=subjects_dir)
+# # np.save(root_path +'/MEG/FFR/'+ str(n_top) + '_3way_decoding_accuracy_V_section_' + input_data +'_r15.npy',all_score)
+# np.save(root_path +'/MEG/FFR/'+ str(n_top) + '_decoding_accuracy_' + input_data +'_r15.npy',all_score)
 
-## list the hot spots
-label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
-high_acc = np.where(np.array(all_score) > 0.5)
-label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
-high_acc = np.array(high_acc[0])
-ROIs = []
-for i in np.arange(0,len(high_acc),1):
-    for nlabel in np.arange(0,len(label_names),1):
-        if high_acc[i] in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
-            ROIs.append(label_names[nlabel])
-print(ROIs)
-
-#%%####################################### MEG decoding brainstem dataset across time
-root_path='/media/tzcheng/storage/Brainstem/' # brainstem files
-subjects_dir = '/media/tzcheng/storage2/subjects/'
-os.chdir(root_path)
-
-n_top = '3' # could number of IC: 3 or 10, or dss: dss_f80450, dss
-stc1 = mne.read_source_estimate(root_path + 'brainstem_133/sss_fif/brainstem_133_pcffr80200_3_p10_01_morph-vl.stc')
+# #%%####################################### Cross-correlation audio and MEG sensor and source
+# root_path='/media/tzcheng/storage2/CBS/'
+# subjects_dir = '/media/tzcheng/storage2/subjects/'
+# os.chdir(root_path)
+# stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
 # times = stc1.times
-did_pca = '_pcffr80200_'  # '_': without or with pca "_pcffr80450_" the filter between 80 and 450 Hz is applied
 
-fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+# ## parameter
+# ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
+# ts = 100
+# te = 1100
 
-## FFR relevant ROIs
-lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
-rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+# filename = 'ffr'
+# filename_ffr_ba = 'group_ba_ffr_morph'
+# filename_ffr_mba = 'group_mba_ffr_morph'
+# filename_ffr_pa = 'group_pa_ffr_morph'
 
-input_data = 'ROI' # ROI or wholebrain or sensor or pcffr
-k_feature = 'all' # ROI: 'all' features; whole brain: 500 features
+# fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+# label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 
-if input_data == 'sensor':
-    ffr_ba = np.load(root_path + '/MEG/FFR/group_f80200_p10_01_sensor.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + '/MEG/FFR/group_f80200_n40_01_sensor.npy',allow_pickle=True)
-elif input_data == 'ROI':
-    ffr_ba = np.load(root_path + '/MEG/FFR/group_f80200_p10_01_roi.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + '/MEG/FFR/group_f80200_n40_01_roi.npy',allow_pickle=True)
-elif input_data == 'wholebrain':
-    ffr_ba = np.load(root_path + '/MEG/FFR/group_f80200_p10_01_morph.npy',allow_pickle=True)
-    ffr_mba = np.load(root_path + '/MEG/FFR/group_f80200_n40_01_morph.npy',allow_pickle=True)
-else:
-    print("Need to decide whether to use ROI or whole brain as feature.")
+# ## FFR relevant ROIs
+# lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+# rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
 
-all_score = []
-X = np.concatenate((ffr_ba,ffr_mba),axis=0)
-# X = np.concatenate((ffr_ba[:,:,ff(times,40):ff(times,130)],ffr_mba[:,:,ff(times,40):ff(times,130)]),axis=0) # use just the V section
-y = np.concatenate((np.repeat(0,len(ffr_ba)),np.repeat(1,len(ffr_mba))))
+# if ROI_wholebrain == 'sensor':
+#     FFR_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_ba + '_sensor.npy',allow_pickle=True)
+#     FFR_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_mba + '_sensor.npy',allow_pickle=True)
+#     FFR_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_pa + '_sensor.npy',allow_pickle=True)
+# elif ROI_wholebrain == 'ROI':
+#     FFR_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_ba + '_morph_roi.npy',allow_pickle=True)
+#     FFR_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_mba + '_morph_roi.npy',allow_pickle=True)
+#     FFR_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_pa + '_morph_roi.npy',allow_pickle=True)
+# elif ROI_wholebrain == 'wholebrain':
+#     FFR_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_ba + '_morph.npy',allow_pickle=True)
+#     FFR_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_mba + '_morph.npy',allow_pickle=True)
+#     FFR_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_pa + '_morph.npy',allow_pickle=True)
+# else:
+#     print("Need to decide whether to use ROI or whole brain as feature.")
 
-rand_ind = np.arange(0,len(X))
-random.Random(15).shuffle(rand_ind)
-X = X[rand_ind,:,:]
+# ## Only need to calculate audio once 
+# # a_ba = (audio_ba - np.mean(audio_ba))/np.std(audio_ba)
+# # a_ba = a_ba / np.linalg.norm(a_ba)
+# # a_mba = (audio_mba - np.mean(audio_mba))/np.std(audio_mba)
+# # a_mba = a_mba / np.linalg.norm(a_mba)
+# # a_pa = (audio_pa - np.mean(audio_pa))/np.std(audio_pa)
+# # a_pa = a_pa / np.linalg.norm(a_pa)
 
-## 1st vs. 2nd half decoding
-# X1 = X[rand_ind,:,:np.shape(X)[-1]//2]
-# X2 = X[rand_ind,:,np.shape(X)[-1]//2:]
+# ## Get the EEG
+# mean_EEG_ba_FFR = EEG_ba_FFR.mean(axis=0)
+# mean_EEG_mba_FFR = EEG_mba_FFR.mean(axis=0)
+# mean_EEG_pa_FFR = EEG_pa_FFR.mean(axis=0)
 
-y = y[rand_ind]
-
-clf = make_pipeline(
-    StandardScaler(),  # z-score normalization
-    LogisticRegression(solver="liblinear")  # liblinear is faster than lbfgs
-)    
-for n in np.arange(0,np.shape(X)[1],1):
-        scores = cross_val_multiscore(clf, X[:,n,:], y, cv=5, n_jobs=4) # takes about 10 mins to run
-        score = np.mean(scores, axis=0)
-        print("Data " + str(n+1) + " Accuracy: %0.1f%%" % (100 * score,))
-        all_score.append(score)
-
-# np.save(root_path +'/MEG/FFR/'+ str(n_top) + '_3way_decoding_accuracy_V_section_' + input_data +'_r15.npy',all_score)
-np.save(root_path +'/MEG/FFR/'+ str(n_top) + '_decoding_accuracy_' + input_data +'_r15.npy',all_score)
-
-#%%####################################### Cross-correlation audio and MEG sensor and source
-root_path='/media/tzcheng/storage2/CBS/'
-subjects_dir = '/media/tzcheng/storage2/subjects/'
-os.chdir(root_path)
-stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_ba_cabr_morph-vl.stc')
-times = stc1.times
-
-## parameter
-ROI_wholebrain = 'wholebrain' # ROI or wholebrain or sensor
-ts = 100
-te = 1100
-
-filename = 'ffr'
-filename_ffr_ba = 'group_ba_ffr_morph'
-filename_ffr_mba = 'group_mba_ffr_morph'
-filename_ffr_pa = 'group_pa_ffr_morph'
-
-fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
-label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
-
-## FFR relevant ROIs
-lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
-rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
-
-if ROI_wholebrain == 'sensor':
-    FFR_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_ba + '_sensor.npy',allow_pickle=True)
-    FFR_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_mba + '_sensor.npy',allow_pickle=True)
-    FFR_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_pa + '_sensor.npy',allow_pickle=True)
-elif ROI_wholebrain == 'ROI':
-    FFR_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_ba + '_morph_roi.npy',allow_pickle=True)
-    FFR_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_mba + '_morph_roi.npy',allow_pickle=True)
-    FFR_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_pa + '_morph_roi.npy',allow_pickle=True)
-elif ROI_wholebrain == 'wholebrain':
-    FFR_ba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_ba + '_morph.npy',allow_pickle=True)
-    FFR_mba = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_mba + '_morph.npy',allow_pickle=True)
-    FFR_pa = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/' + filename_ffr_pa + '_morph.npy',allow_pickle=True)
-else:
-    print("Need to decide whether to use ROI or whole brain as feature.")
-
-## Only need to calculate audio once 
-# a_ba = (audio_ba - np.mean(audio_ba))/np.std(audio_ba)
+# a_ba = (mean_EEG_ba_FFR - np.mean(mean_EEG_ba_FFR))/np.std(mean_EEG_ba_FFR)
+# EEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_ffr_eeg_200.npy')
+# EEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_ffr_eeg_200.npy')
+# EEG_pa_FFR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_ffr_eeg_200.npy')
 # a_ba = a_ba / np.linalg.norm(a_ba)
-# a_mba = (audio_mba - np.mean(audio_mba))/np.std(audio_mba)
+# a_mba = (mean_EEG_mba_FFR - np.mean(mean_EEG_mba_FFR))/np.std(mean_EEG_mba_FFR)
 # a_mba = a_mba / np.linalg.norm(a_mba)
-# a_pa = (audio_pa - np.mean(audio_pa))/np.std(audio_pa)
+# a_pa = (mean_EEG_pa_FFR - np.mean(mean_EEG_pa_FFR))/np.std(mean_EEG_pa_FFR)
 # a_pa = a_pa / np.linalg.norm(a_pa)
 
-## Get the EEG
-mean_EEG_ba_FFR = EEG_ba_FFR.mean(axis=0)
-mean_EEG_mba_FFR = EEG_mba_FFR.mean(axis=0)
-mean_EEG_pa_FFR = EEG_pa_FFR.mean(axis=0)
+# ## Xcorr between audio and each vertice in MEG for averaged across subjects
+# lags = signal.correlation_lags(len(a_ba),len(FFR_ba[0,0,ts:te]))
+# lags_time = lags/5000
+# xcorr_all_v = []
 
-a_ba = (mean_EEG_ba_FFR - np.mean(mean_EEG_ba_FFR))/np.std(mean_EEG_ba_FFR)
-EEG_ba_FFR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_std_ffr_eeg_200.npy')
-EEG_mba_FFR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev1_ffr_eeg_200.npy')
-EEG_pa_FFR = np.load(root_path + 'cbsA_meeg_analysis/EEG/' + 'group_dev2_ffr_eeg_200.npy')
-a_ba = a_ba / np.linalg.norm(a_ba)
-a_mba = (mean_EEG_mba_FFR - np.mean(mean_EEG_mba_FFR))/np.std(mean_EEG_mba_FFR)
-a_mba = a_mba / np.linalg.norm(a_mba)
-a_pa = (mean_EEG_pa_FFR - np.mean(mean_EEG_pa_FFR))/np.std(mean_EEG_pa_FFR)
-a_pa = a_pa / np.linalg.norm(a_pa)
+# mean_FFR_ba = FFR_ba.mean(axis=0)
+# mean_FFR_mba = FFR_mba.mean(axis=0)
+# mean_FFR_pa = FFR_pa.mean(axis=0)
 
-## Xcorr between audio and each vertice in MEG for averaged across subjects
-lags = signal.correlation_lags(len(a_ba),len(FFR_ba[0,0,ts:te]))
-lags_time = lags/5000
-xcorr_all_v = []
-
-mean_FFR_ba = FFR_ba.mean(axis=0)
-mean_FFR_mba = FFR_mba.mean(axis=0)
-mean_FFR_pa = FFR_pa.mean(axis=0)
-
-for v in np.arange(0,np.shape(FFR_ba)[1],1):
-    b_ba = (mean_FFR_ba[v,ts:te] - np.mean(mean_FFR_ba[v,ts:te]))/np.std(mean_FFR_ba[v,ts:te])     
-    b_ba = b_ba / np.linalg.norm(b_ba)
-    b_mba = (mean_FFR_mba[v,ts:te] - np.mean(mean_FFR_mba[v,ts:te]))/np.std(mean_FFR_mba[v,ts:te])     
-    b_mba = b_mba / np.linalg.norm(b_mba)
-    b_pa = (mean_FFR_pa[v,ts:te] - np.mean(mean_FFR_pa[v,ts:te]))/np.std(mean_FFR_pa[v,ts:te])     
-    b_pa = b_pa / np.linalg.norm(b_pa)
+# for v in np.arange(0,np.shape(FFR_ba)[1],1):
+#     b_ba = (mean_FFR_ba[v,ts:te] - np.mean(mean_FFR_ba[v,ts:te]))/np.std(mean_FFR_ba[v,ts:te])     
+#     b_ba = b_ba / np.linalg.norm(b_ba)
+#     b_mba = (mean_FFR_mba[v,ts:te] - np.mean(mean_FFR_mba[v,ts:te]))/np.std(mean_FFR_mba[v,ts:te])     
+#     b_mba = b_mba / np.linalg.norm(b_mba)
+#     b_pa = (mean_FFR_pa[v,ts:te] - np.mean(mean_FFR_pa[v,ts:te]))/np.std(mean_FFR_pa[v,ts:te])     
+#     b_pa = b_pa / np.linalg.norm(b_pa)
     
-    xcorr_ba = signal.correlate(a_ba,b_ba)
-    xcorr_mba = signal.correlate(a_mba,b_mba)
-    xcorr_pa = signal.correlate(a_pa,b_pa)
+#     xcorr_ba = signal.correlate(a_ba,b_ba)
+#     xcorr_mba = signal.correlate(a_mba,b_mba)
+#     xcorr_pa = signal.correlate(a_pa,b_pa)
     
-    xcorr_all_v.append([v,max(abs(xcorr_ba)),lags_time[np.argmax(abs(xcorr_ba))],max(abs(xcorr_mba)),
-                        lags_time[np.argmax(abs(xcorr_mba))], max(abs(xcorr_pa)),lags_time[np.argmax(abs(xcorr_pa))]])
-df_v = pd.DataFrame(columns = ["Vertno", "abs XCorr MEG & ba", "max Lag MEG & ba", 
-                               "abs XCorr MEG & mba", "max Lag MEG & mba", 
-                               "abs XCorr MEG & pa", "max Lag MEG & pa"], data = xcorr_all_v)
-if ROI_wholebrain == 'ROI':
-    df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_roi.pkl')
-elif ROI_wholebrain == 'wholebrain': 
-    df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_v.pkl')
-elif ROI_wholebrain == 'sensor':
-    df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_sensor.pkl')
+#     xcorr_all_v.append([v,max(abs(xcorr_ba)),lags_time[np.argmax(abs(xcorr_ba))],max(abs(xcorr_mba)),
+#                         lags_time[np.argmax(abs(xcorr_mba))], max(abs(xcorr_pa)),lags_time[np.argmax(abs(xcorr_pa))]])
+# df_v = pd.DataFrame(columns = ["Vertno", "abs XCorr MEG & ba", "max Lag MEG & ba", 
+#                                "abs XCorr MEG & mba", "max Lag MEG & mba", 
+#                                "abs XCorr MEG & pa", "max Lag MEG & pa"], data = xcorr_all_v)
+# if ROI_wholebrain == 'ROI':
+#     df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_roi.pkl')
+# elif ROI_wholebrain == 'wholebrain': 
+#     df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_v.pkl')
+# elif ROI_wholebrain == 'sensor':
+#     df_v.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_sensor.pkl')
 
 
-## Xcorr between audio and each vertice in MEG for each individual
-xcorr_all_v_s = []
-lag_all_v_s = []
+# ## Xcorr between audio and each vertice in MEG for each individual
+# xcorr_all_v_s = []
+# lag_all_v_s = []
 
-for s in np.arange(0,len(FFR_ba),1):
-    print('Now starting sub' + str(s))
-    for v in np.arange(0,np.shape(FFR_ba)[1],1):
-        b_ba = (FFR_ba[s,v,ts:te] - np.mean(FFR_ba[s,v,ts:te]))/np.std(FFR_ba[s,v,ts:te])     
-        b_ba = b_ba / np.linalg.norm(b_ba)
-        b_mba = (FFR_mba[s,v,ts:te] - np.mean(FFR_mba[s,v,ts:te]))/np.std(FFR_mba[s,v,ts:te])     
-        b_mba = b_mba / np.linalg.norm(b_mba)
-        b_pa = (FFR_pa[s,v,ts:te] - np.mean(FFR_pa[s,v,ts:te]))/np.std(FFR_pa[s,v,ts:te])     
-        b_pa = b_pa / np.linalg.norm(b_pa)
+# for s in np.arange(0,len(FFR_ba),1):
+#     print('Now starting sub' + str(s))
+#     for v in np.arange(0,np.shape(FFR_ba)[1],1):
+#         b_ba = (FFR_ba[s,v,ts:te] - np.mean(FFR_ba[s,v,ts:te]))/np.std(FFR_ba[s,v,ts:te])     
+#         b_ba = b_ba / np.linalg.norm(b_ba)
+#         b_mba = (FFR_mba[s,v,ts:te] - np.mean(FFR_mba[s,v,ts:te]))/np.std(FFR_mba[s,v,ts:te])     
+#         b_mba = b_mba / np.linalg.norm(b_mba)
+#         b_pa = (FFR_pa[s,v,ts:te] - np.mean(FFR_pa[s,v,ts:te]))/np.std(FFR_pa[s,v,ts:te])     
+#         b_pa = b_pa / np.linalg.norm(b_pa)
 
-        xcorr_ba = signal.correlate(a_ba,b_ba)
-        xcorr_mba = signal.correlate(a_mba,b_mba)
-        xcorr_pa = signal.correlate(a_pa,b_pa)
+#         xcorr_ba = signal.correlate(a_ba,b_ba)
+#         xcorr_mba = signal.correlate(a_mba,b_mba)
+#         xcorr_pa = signal.correlate(a_pa,b_pa)
         
-        xcorr_all_v_s.append([s,v,max(abs(xcorr_ba)),lags_time[np.argmax(abs(xcorr_ba))],max(abs(xcorr_mba)),
-                            lags_time[np.argmax(abs(xcorr_mba))], max(abs(xcorr_pa)),lags_time[np.argmax(abs(xcorr_pa))]])
-df_v_s = pd.DataFrame(columns = ["Subject","Vertno", "abs XCorr MEG & ba", "max Lag MEG & ba", 
-                                   "abs XCorr MEG & mba", "max Lag MEG & mba", 
-                                   "abs XCorr MEG & pa", "max Lag MEG & pa"], data = xcorr_all_v_s)
-if ROI_wholebrain == 'ROI':
-    df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_roi_s.pkl')
-elif ROI_wholebrain == 'wholebrain': 
-    df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_v_s.pkl')
-elif ROI_wholebrain == 'sensor':
-    df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_sensor_s.pkl')
+#         xcorr_all_v_s.append([s,v,max(abs(xcorr_ba)),lags_time[np.argmax(abs(xcorr_ba))],max(abs(xcorr_mba)),
+#                             lags_time[np.argmax(abs(xcorr_mba))], max(abs(xcorr_pa)),lags_time[np.argmax(abs(xcorr_pa))]])
+# df_v_s = pd.DataFrame(columns = ["Subject","Vertno", "abs XCorr MEG & ba", "max Lag MEG & ba", 
+#                                    "abs XCorr MEG & mba", "max Lag MEG & mba", 
+#                                    "abs XCorr MEG & pa", "max Lag MEG & pa"], data = xcorr_all_v_s)
+# if ROI_wholebrain == 'ROI':
+#     df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_roi_s.pkl')
+# elif ROI_wholebrain == 'wholebrain': 
+#     df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_v_s.pkl')
+# elif ROI_wholebrain == 'sensor':
+#     df_v_s.to_pickle(root_path + 'cbsA_meeg_analysis/' + filename + '_df_xcorr_MEGEEG_sensor_s.pkl')
 
-#%%####################################### quick pca test between the two methods
-X = MEG_pa_FFR
-X0 = np.reshape(X[0,:,:],[1,306,1101])
-pca_m1 = UnsupervisedSpatialFilter(PCA(60))
-pca_data_m1 = pca_m1.fit_transform(X0)
-pca_data_m1 = np.squeeze(pca_data_m1)
+# #%%####################################### quick pca test between the two methods
+# X = MEG_pa_FFR
+# X0 = np.reshape(X[0,:,:],[1,306,1101])
+# pca_m1 = UnsupervisedSpatialFilter(PCA(60))
+# pca_data_m1 = pca_m1.fit_transform(X0)
+# pca_data_m1 = np.squeeze(pca_data_m1)
 
-pca_m2 = PCA(60)
-pca_data_m2 = pca_m2.fit_transform(X[0,:,:].transpose()) # combine the fit and transform functions
+# pca_m2 = PCA(60)
+# pca_data_m2 = pca_m2.fit_transform(X[0,:,:].transpose()) # combine the fit and transform functions
 
-#%%####################################### apply dimension reduction on the sensor, source level
-## UnsupervisedSpatialFilter
-X = MEG_pa_FFR
-pca = UnsupervisedSpatialFilter(PCA(60))
-pca_data = pca.fit_transform(X)
-ica = UnsupervisedSpatialFilter(FastICA(30, whiten="unit-variance"), average=False)
-ica_data = ica.fit_transform(X)
+# #%%####################################### apply dimension reduction on the sensor, source level
+# ## UnsupervisedSpatialFilter
+# X = MEG_pa_FFR
+# pca = UnsupervisedSpatialFilter(PCA(60))
+# pca_data = pca.fit_transform(X)
+# ica = UnsupervisedSpatialFilter(FastICA(30, whiten="unit-variance"), average=False)
+# ica_data = ica.fit_transform(X)
 
-## PCA direct function
-# Transpose first sample x feature
-X = MEG_pa_FFR.mean(0).transpose()
-pca = PCA(60)
-pca.fit(X) # combine the fit and transform functions
-pca_data = pca.fit_transform(X) # combine the fit and transform functions
+# ## PCA direct function
+# # Transpose first sample x feature
+# X = MEG_pa_FFR.mean(0).transpose()
+# pca = PCA(60)
+# pca.fit(X) # combine the fit and transform functions
+# pca_data = pca.fit_transform(X) # combine the fit and transform functions
 
-## Inverse transform with selected PCs
-# 1. zero out the unwanted PCs then use inverse_transform function
-X_pcainv = pca.inverse_transform(pca_data)
-# 2. perform by in-house script to select the wanted PCs
-ind_components = [0,6,12]
-Xhat = np.dot(pca.transform(X)[:,ind_components], pca.components_[ind_components,:])
-Xhat += np.mean(X.mean(0), axis=0)        
+# ## Inverse transform with selected PCs
+# # 1. zero out the unwanted PCs then use inverse_transform function
+# X_pcainv = pca.inverse_transform(pca_data)
+# # 2. perform by in-house script to select the wanted PCs
+# ind_components = [0,6,12]
+# Xhat = np.dot(pca.transform(X)[:,ind_components], pca.components_[ind_components,:])
+# Xhat += np.mean(X.mean(0), axis=0)        
 
-## prove that Xhat and X_pcainv are the same
-plt.figure()
-plt.plot(X.mean(0)[0,:])
-plt.plot(X_pcainv[0,:])
-plt.plot(Xhat[0,:])
+# ## prove that Xhat and X_pcainv are the same
+# plt.figure()
+# plt.plot(X.mean(0)[0,:])
+# plt.plot(X_pcainv[0,:])
+# plt.plot(Xhat[0,:])
 
-pca.explained_variance_ratio_.cumsum() # should be close to 1
-plt.figure()
-plt.plot(pca.explained_variance_ratio_)
+# pca.explained_variance_ratio_.cumsum() # should be close to 1
+# plt.figure()
+# plt.plot(pca.explained_variance_ratio_)
 
-plt.figure()
-plt.subplot(211)
-plot_err(EEG_ba_FFR,'k',stc1.times)
-plt.title('ba')
-plt.xlim([-0.02,0.2])
-plt.subplot(212)
-plot_err(pca_data[:,0,:],'k',stc1.times)
-plt.xlim([-0.02,0.2])
+# plt.figure()
+# plt.subplot(211)
+# plot_err(EEG_ba_FFR,'k',stc1.times)
+# plt.title('ba')
+# plt.xlim([-0.02,0.2])
+# plt.subplot(212)
+# plot_err(pca_data[:,0,:],'k',stc1.times)
+# plt.xlim([-0.02,0.2])
 
-plt.figure()
-plt.subplot(211)
-plot_err(EEG_ba_FFR,'k',stc1.times)
-plt.title('ba')
-plt.xlim([-0.02,0.2])
-plt.subplot(212)
-plot_err(ica_data[:,0,:],'k',stc1.times)
-plt.xlim([-0.02,0.2])
+# plt.figure()
+# plt.subplot(211)
+# plot_err(EEG_ba_FFR,'k',stc1.times)
+# plt.title('ba')
+# plt.xlim([-0.02,0.2])
+# plt.subplot(212)
+# plot_err(ica_data[:,0,:],'k',stc1.times)
+# plt.xlim([-0.02,0.2])
 
-#%%####################################### Spectrum analysis
-tmin = 0
-tmax = 0.13
-fmin = 50
-fmax = 150
+# #%%####################################### Spectrum analysis
+# tmin = 0
+# tmax = 0.13
+# fmin = 50
+# fmax = 150
 
-subject = 'fsaverage'
-src = mne.read_source_spaces(subjects_dir + subject + '/bem/fsaverage-vol-5-src.fif')
-fname_aseg = subjects_dir + subject + '/mri/aparc+aseg.mgz'
-label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+# subject = 'fsaverage'
+# src = mne.read_source_spaces(subjects_dir + subject + '/bem/fsaverage-vol-5-src.fif')
+# fname_aseg = subjects_dir + subject + '/mri/aparc+aseg.mgz'
+# label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 
-## For audio
-audio = pa_audio
-psds, freqs = mne.time_frequency.psd_array_welch(
-    audio,fs, # could replace with label time series
-    n_fft=len(audio),
-    n_overlap=0,
-    n_per_seg=None,
-    fmin=fmin,
-    fmax=fmax,)
-plt.figure()
-plt.title('pa audio spectrum')
-plt.plot(freqs,psds)
-plt.xlim([60, 140])
+# ## For audio
+# audio = pa_audio
+# psds, freqs = mne.time_frequency.psd_array_welch(
+#     audio,fs, # could replace with label time series
+#     n_fft=len(audio),
+#     n_overlap=0,
+#     n_per_seg=None,
+#     fmin=fmin,
+#     fmax=fmax,)
+# plt.figure()
+# plt.title('pa audio spectrum')
+# plt.plot(freqs,psds)
+# plt.xlim([60, 140])
 
-## For each individual
-# MEG
-epochs = mne.read_epochs(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_cABR_e.fif')
-evoked = mne.read_evokeds(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
-sfreq = epochs.info["sfreq"]
+# ## For each individual
+# # MEG
+# epochs = mne.read_epochs(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_cABR_e.fif')
+# evoked = mne.read_evokeds(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+# sfreq = epochs.info["sfreq"]
 
-evoked.compute_psd("welch",
-   n_fft=int(sfreq * (tmax - tmin)),
-   n_overlap=0,
-   n_per_seg=None,
-   tmin=tmin,
-   tmax=tmax,
-   fmin=fmin,
-   fmax=fmax,
-   window="boxcar",
-   verbose=False,).plot(average=False,picks="data", exclude="bads")
+# evoked.compute_psd("welch",
+#    n_fft=int(sfreq * (tmax - tmin)),
+#    n_overlap=0,
+#    n_per_seg=None,
+#    tmin=tmin,
+#    tmax=tmax,
+#    fmin=fmin,
+#    fmax=fmax,
+#    window="boxcar",
+#    verbose=False,).plot(average=False,picks="data", exclude="bads")
 
-# EEG
-EEG = EEG_pa_FFR
-psds, freqs = mne.time_frequency.psd_array_welch(
-    EEG,sfreq, # could replace with label time series
-    n_fft=len(EEG[1,:]),
-    n_overlap=0,
-    n_per_seg=None,
-    fmin=fmin,
-    fmax=fmax,)
-plt.figure()
-plt.title('ba spectrum')
-plot_err(psds,'k',freqs)
-plt.xlim([60, 140])
+# # EEG
+# EEG = EEG_pa_FFR
+# psds, freqs = mne.time_frequency.psd_array_welch(
+#     EEG,sfreq, # could replace with label time series
+#     n_fft=len(EEG[1,:]),
+#     n_overlap=0,
+#     n_per_seg=None,
+#     fmin=fmin,
+#     fmax=fmax,)
+# plt.figure()
+# plt.title('ba spectrum')
+# plot_err(psds,'k',freqs)
+# plt.xlim([60, 140])
 
-## For group results
-# EEG
-psds, freqs = mne.time_frequency.psd_array_welch(
-    EEG_ba_FFR.mean(0),sfreq, # could replace with label time series
-    n_fft=int(sfreq * (tmax - tmin)),
-    n_overlap=0,
-    n_per_seg=None,
-    fmin=fmin,
-    fmax=fmax,)
-plt.figure()
-plt.plot(freqs,psds)
+# ## For group results
+# # EEG
+# psds, freqs = mne.time_frequency.psd_array_welch(
+#     EEG_ba_FFR.mean(0),sfreq, # could replace with label time series
+#     n_fft=int(sfreq * (tmax - tmin)),
+#     n_overlap=0,
+#     n_per_seg=None,
+#     fmin=fmin,
+#     fmax=fmax,)
+# plt.figure()
+# plt.plot(freqs,psds)
 
-# MEG sensor
-psds, freqs = mne.time_frequency.psd_array_welch(
-    MEG_ba_FFR.mean(0),sfreq, # could replace with label time series
-    n_fft=int(sfreq * (tmax - tmin)),
-    n_overlap=0,
-    n_per_seg=None,
-    fmin=fmin,
-    fmax=fmax,)
-evoked.data = MEG_ba_FFR.mean(0)
-evk_spectrum = evoked.compute_psd("welch",
-   n_fft=int(sfreq * (tmax - tmin)),
-   n_overlap=0,
-   n_per_seg=None,
-   tmin=tmin,
-   tmax=tmax,
-   fmin=fmin,
-   fmax=fmax,
-   window="boxcar",
-   verbose=False,)
+# # MEG sensor
+# psds, freqs = mne.time_frequency.psd_array_welch(
+#     MEG_ba_FFR.mean(0),sfreq, # could replace with label time series
+#     n_fft=int(sfreq * (tmax - tmin)),
+#     n_overlap=0,
+#     n_per_seg=None,
+#     fmin=fmin,
+#     fmax=fmax,)
+# evoked.data = MEG_ba_FFR.mean(0)
+# evk_spectrum = evoked.compute_psd("welch",
+#    n_fft=int(sfreq * (tmax - tmin)),
+#    n_overlap=0,
+#    n_per_seg=None,
+#    tmin=tmin,
+#    tmax=tmax,
+#    fmin=fmin,
+#    fmax=fmax,
+#    window="boxcar",
+#    verbose=False,)
 
-evk_spectrum.plot_topo(color="k", fig_facecolor="w", axis_facecolor="w")
+# evk_spectrum.plot_topo(color="k", fig_facecolor="w", axis_facecolor="w")
 
-# MEG sensor PCA
-psds, freqs = mne.time_frequency.psd_array_welch(
-    pca_data.transpose(),sfreq, # could replace with label time series
-    n_fft=int(sfreq * (tmax - tmin)),
-    n_overlap=0,
-    n_per_seg=None,
-    fmin=fmin,
-    fmax=fmax,)
+# # MEG sensor PCA
+# psds, freqs = mne.time_frequency.psd_array_welch(
+#     pca_data.transpose(),sfreq, # could replace with label time series
+#     n_fft=int(sfreq * (tmax - tmin)),
+#     n_overlap=0,
+#     n_per_seg=None,
+#     fmin=fmin,
+#     fmax=fmax,)
 
-# MEG source
-psds, freqs = mne.time_frequency.psd_array_welch(
-    MEG_pa_FFR.mean(0)[43],sfreq, # could replace with label time series
-    n_fft=np.shape(MEG_pa_FFR)[2],
-    n_overlap=0,
-    n_per_seg=None,
-    fmin=fmin,
-    fmax=fmax,)
+# # MEG source
+# psds, freqs = mne.time_frequency.psd_array_welch(
+#     MEG_pa_FFR.mean(0)[43],sfreq, # could replace with label time series
+#     n_fft=np.shape(MEG_pa_FFR)[2],
+#     n_overlap=0,
+#     n_per_seg=None,
+#     fmin=fmin,
+#     fmax=fmax,)
         
-plt.figure()
-plt.plot(freqs,psds.transpose())
+# plt.figure()
+# plt.plot(freqs,psds.transpose())
 
-#%%####################################### save the mat files of MEG sensor data for dss
-random.seed(15)
-root_path='/media/tzcheng/storage2/CBS/'
-os.chdir(root_path)
-n_trials = 200
-all_score_lr = []
-all_score_svm = []
-subj = [] # A104 got some technical issue
-for file in os.listdir():
-    if file.startswith('cbs_A108'): # cbs_A for the adults and cbs_b for the infants
-        subj.append(file)
-for s in subj:
-    file_in = root_path + '/' + s + '/sss_fif/' + s   # load meg files
-    epochs = mne.read_epochs(file_in +'_01_otp_raw_sss_proj_f80450_ffr_e_all.fif')  # load meg files
+# #%%####################################### save the mat files of MEG sensor data for dss
+# random.seed(15)
+# root_path='/media/tzcheng/storage2/CBS/'
+# os.chdir(root_path)
+# n_trials = 200
+# all_score_lr = []
+# all_score_svm = []
+# subj = [] # A104 got some technical issue
+# for file in os.listdir():
+#     if file.startswith('cbs_A108'): # cbs_A for the adults and cbs_b for the infants
+#         subj.append(file)
+# for s in subj:
+#     file_in = root_path + '/' + s + '/sss_fif/' + s   # load meg files
+#     epochs = mne.read_epochs(file_in +'_01_otp_raw_sss_proj_f80450_ffr_e_all.fif')  # load meg files
     
-    # file_in = root_path + '/' + s + '/eeg/' + s # load eeg files
-    # epochs = mne.read_epochs(file_in +'_01_cABR_e_all.fif')   # load eeg files
-    if n_trials == 'all':
-        epochs = epochs
-    elif n_trials == 200:
-        ##%% extract the FFR time series
-        # 01_otp_raw_sss_proj_f80450_ffr_e: filter between 80-450; 01_otp_raw_sss_proj_f_ffr_e: filter between 80-2000 
-        rand_ind = random.sample(range(min(len(epochs['Standardp'].events),len(epochs['Standardn'].events))),n_trials//2) 
-        std_e = mne.concatenate_epochs([epochs['Standardp'][rand_ind],epochs['Standardn'][rand_ind]])
-        std_e = mne.epochs.combine_event_ids(std_e, ['Standardp', 'Standardn'], {'Standard': 8})
-        rand_ind = random.sample(range(min(len(epochs['Deviant1p'].events),len(epochs['Deviant1n'].events))),n_trials//2) 
-        dev1_e = mne.concatenate_epochs([epochs['Deviant1p'][rand_ind],epochs['Deviant1n'][rand_ind]])
-        dev1_e = mne.epochs.combine_event_ids(dev1_e, ['Deviant1p', 'Deviant1n'], {'Deviant1': 9})
-        rand_ind = random.sample(range(min(len(epochs['Deviant2p'].events),len(epochs['Deviant2n'].events))),n_trials//2) 
-        dev2_e = mne.concatenate_epochs([epochs['Deviant2p'][rand_ind],epochs['Deviant2n'][rand_ind]])
-        dev2_e = mne.epochs.combine_event_ids(dev2_e, ['Deviant2p', 'Deviant2n'], {'Deviant2': 10})
-        epochs = mne.concatenate_epochs([std_e,dev1_e,dev2_e])
+#     # file_in = root_path + '/' + s + '/eeg/' + s # load eeg files
+#     # epochs = mne.read_epochs(file_in +'_01_cABR_e_all.fif')   # load eeg files
+#     if n_trials == 'all':
+#         epochs = epochs
+#     elif n_trials == 200:
+#         ##%% extract the FFR time series
+#         # 01_otp_raw_sss_proj_f80450_ffr_e: filter between 80-450; 01_otp_raw_sss_proj_f_ffr_e: filter between 80-2000 
+#         rand_ind = random.sample(range(min(len(epochs['Standardp'].events),len(epochs['Standardn'].events))),n_trials//2) 
+#         std_e = mne.concatenate_epochs([epochs['Standardp'][rand_ind],epochs['Standardn'][rand_ind]])
+#         std_e = mne.epochs.combine_event_ids(std_e, ['Standardp', 'Standardn'], {'Standard': 8})
+#         rand_ind = random.sample(range(min(len(epochs['Deviant1p'].events),len(epochs['Deviant1n'].events))),n_trials//2) 
+#         dev1_e = mne.concatenate_epochs([epochs['Deviant1p'][rand_ind],epochs['Deviant1n'][rand_ind]])
+#         dev1_e = mne.epochs.combine_event_ids(dev1_e, ['Deviant1p', 'Deviant1n'], {'Deviant1': 9})
+#         rand_ind = random.sample(range(min(len(epochs['Deviant2p'].events),len(epochs['Deviant2n'].events))),n_trials//2) 
+#         dev2_e = mne.concatenate_epochs([epochs['Deviant2p'][rand_ind],epochs['Deviant2n'][rand_ind]])
+#         dev2_e = mne.epochs.combine_event_ids(dev2_e, ['Deviant2p', 'Deviant2n'], {'Deviant2': 10})
+#         epochs = mne.concatenate_epochs([std_e,dev1_e,dev2_e])
     
-    X = np.squeeze(epochs.get_data(picks='mag'))  ## only use the 102 mag sensors because catching deeper sources
-    y = epochs.events[:, 2]  # target: standard, deviant1 and 2
+#     X = np.squeeze(epochs.get_data(picks='mag'))  ## only use the 102 mag sensors because catching deeper sources
+#     y = epochs.events[:, 2]  # target: standard, deviant1 and 2
     
-    mdic = {"condition":y,"data":X}
-    fname = root_path + 'mat/MEG_f80450/ntrial_200/dss_input/' + s +'_MEG_epoch_f80450_' + str(n_trials)
-    savemat(fname + '.mat', mdic)
-    del mdic, epochs
+#     mdic = {"condition":y,"data":X}
+#     fname = root_path + 'mat/MEG_f80450/ntrial_200/dss_input/' + s +'_MEG_epoch_f80450_' + str(n_trials)
+#     savemat(fname + '.mat', mdic)
+#     del mdic, epochs
 
-#%%####################################### analyze dss files
-root_path='/media/tzcheng/storage2/CBS/'
-os.chdir(root_path)
-n_trials = 200
-nch = 75
+# #%%####################################### analyze dss files
+# root_path='/media/tzcheng/storage2/CBS/'
+# os.chdir(root_path)
+# n_trials = 200
+# nch = 75
 
-epochs = mne.read_epochs(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_cABR_e.fif')
-evoked1 = mne.read_evokeds(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
-evoked2 = mne.read_evokeds(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
-epochs = epochs.pick_types('mag')
-evoked1 = evoked1.pick_types('mag')
-evoked2 = evoked2.pick_types('mag')
+# epochs = mne.read_epochs(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_cABR_e.fif')
+# evoked1 = mne.read_evokeds(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+# evoked2 = mne.read_evokeds(root_path + 'cbs_A101/sss_fif/cbs_A101_01_otp_raw_sss_proj_f_evoked_substd_cabr.fif')[0]
+# epochs = epochs.pick_types('mag')
+# evoked1 = evoked1.pick_types('mag')
+# evoked2 = evoked2.pick_types('mag')
 
-subj = [] 
-for file in os.listdir():
-    if file.startswith('cbs_A108'): # cbs_A for the adults and cbs_b for the infants
-        subj.append(file)
-for s in subj:
-    meg = loadmat(root_path + 'mat/MEG_f80450/ntrial_200/dss_input/' + s +'_MEG_epoch_f80450_200.mat')
-    meg = meg['data']
-    dss_clean_meg = loadmat(root_path + 'mat/MEG_f80450/ntrial_200/dss_output/ba/clean_ba_' + s +'_MEG_epoch_f80450_200.mat')
-    dss_clean_meg = dss_clean_meg['megclean2']
+# subj = [] 
+# for file in os.listdir():
+#     if file.startswith('cbs_A108'): # cbs_A for the adults and cbs_b for the infants
+#         subj.append(file)
+# for s in subj:
+#     meg = loadmat(root_path + 'mat/MEG_f80450/ntrial_200/dss_input/' + s +'_MEG_epoch_f80450_200.mat')
+#     meg = meg['data']
+#     dss_clean_meg = loadmat(root_path + 'mat/MEG_f80450/ntrial_200/dss_output/ba/clean_ba_' + s +'_MEG_epoch_f80450_200.mat')
+#     dss_clean_meg = dss_clean_meg['megclean2']
     
-    evoked1.data = meg[:200,:,:].mean(0)
-    evoked2.data = dss_clean_meg[:200,:,:].mean(0)
-    evoked1.plot_topo()
-    evoked2.plot_topo()
+#     evoked1.data = meg[:200,:,:].mean(0)
+#     evoked2.data = dss_clean_meg[:200,:,:].mean(0)
+#     evoked1.plot_topo()
+#     evoked2.plot_topo()
     
-    fig, ax = plt.subplots(1,1)
-    im = plt.imshow(meg[:200,:,:].mean(axis=1),aspect = 'auto', origin='lower', cmap='jet')
-    plt.colorbar()
-    im.set_clim(-2e-14,2e-14)
+#     fig, ax = plt.subplots(1,1)
+#     im = plt.imshow(meg[:200,:,:].mean(axis=1),aspect = 'auto', origin='lower', cmap='jet')
+#     plt.colorbar()
+#     im.set_clim(-2e-14,2e-14)
     
-    fig, ax = plt.subplots(1,1)
-    im = plt.imshow(dss_clean_meg[:,:,:].mean(axis=1),aspect = 'auto', origin='lower', cmap='jet')
-    plt.colorbar()
-    im.set_clim(-2e-22,2e-22)
+#     fig, ax = plt.subplots(1,1)
+#     im = plt.imshow(dss_clean_meg[:,:,:].mean(axis=1),aspect = 'auto', origin='lower', cmap='jet')
+#     plt.colorbar()
+#     im.set_clim(-2e-22,2e-22)
