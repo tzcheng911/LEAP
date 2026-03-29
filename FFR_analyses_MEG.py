@@ -102,7 +102,7 @@ def load_brainstem_file(file_type, nfilter, ntrial, ntop):
         n40_eng = np.load(root_path + 'EEG/n40_eng_eeg_ntr' + ntrial + '_01.npy')
         p10_spa = np.load(root_path + 'EEG/p10_spa_eeg_ntr' + ntrial + '_01.npy')
         n40_spa = np.load(root_path + 'EEG/n40_spa_eeg_ntr' + ntrial + '_01.npy')
-    elif file_type in ('sensor', 'roi','morph'): ## for the MEG
+    elif file_type in ('sensor', 'pc_data', 'roi','morph'): ## for the MEG
         p10_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
         n40_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_' + file_type + '.npy')
         p10_spa = np.load(root_path + 'MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
@@ -1072,18 +1072,24 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 times = np.linspace(-0.02, 0.2, 1101)
 
 #%%####################################### load the data
-file_type = 'morph_roi'
+file_type = 'sensor'
 subject_type = 'adults'
 fs,std_all = load_CBS_file(file_type, 'p10', subject_type)
 fs,dev1_all = load_CBS_file(file_type, 'n40', subject_type)
 fs,dev2_all = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
-file_type = 'sensor'
-nfilter = '802000'
+file_type = 'morph'
+nfilter = '80200'
 ntrial = 'all'
-ntop = '3'
+ntop = '0'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
+
+## remove the rim subjects for now
+p10_eng = np.delete(p10_eng,10,axis=0)
+n40_eng = np.delete(n40_eng,10,axis=0)
+p10_spa = np.delete(p10_spa,[1,7,14],axis=0)
+n40_spa = np.delete(n40_spa,[1,7,14],axis=0)
 
 #%%####################################### visualization
 ## average sensor data
@@ -1091,6 +1097,11 @@ sensor_data = n40_eng.mean(0)
 evoked = mne.read_evokeds('/media/tzcheng/storage/Brainstem/brainstem_203/sss_fif/brainstem_203_n40_02_otp_raw_sss_proj_f802000_ntrial200_evoked_ffr.fif')
 evoked[0].data = sensor_data
 evoked[0].plot_topo()
+
+## pca data 
+npc = 0
+plot_group_ffr(p10_eng[:,npc,:], n40_eng[:,npc,:], 'eng','spa', times)
+plot_group_ffr(p10_spa[:,npc,:], n40_spa[:,npc,:], 'eng','spa', times)
 
 ## source data
 source_data = p10_eng.mean(0)
@@ -1143,6 +1154,9 @@ for n in np.arange(0,np.shape(p10_eng)[1],1):
     acc_all_spa.append(acc_spa.mean(0))
 acc_all_eng = np.array(acc_all_eng)
 acc_all_spa = np.array(acc_all_spa)
+np.save('eng_svmacc_p10n40_pcffr80200_ntrialall_0_morph.npy',acc_all_eng)
+np.save('spa_svmacc_p10n40_pcffr80200_ntrialall_0_morph.npy',acc_all_spa)
+
 diff_acc_all = acc_all_eng-acc_all_spa
 
 ## plot overall acc between the two language groups
@@ -1153,6 +1167,7 @@ plt.ylim([0,1])
 plt.xlabel('Language groups')
 plt.ylabel('Accuracy')
 
+## sensor
 idx_eng = np.argsort(acc_all_eng)[-30:]
 print(np.sort(acc_all_eng)[-30:])
 ch_names = np.array(evoked[0].info['ch_names'])
@@ -1172,8 +1187,8 @@ evoked[0].info['bads'] = ch_names[idx_overlap].tolist()
 evoked[0].plot_sensors(ch_type = 'all')
 
 ## svm acc english > spanish 
-idx_diff = np.argsort(diff_acc_all)[-20:]
-print(np.sort(diff_acc_all)[-20:])
+idx_diff = np.argsort(diff_acc_all)[-30:] ## 50 for the 200 reps, 20 for the 3000 reps
+print(np.sort(diff_acc_all)[-30:])
 idx_diff = idx_diff[acc_all_spa[idx_diff] > 0.5] # ensure that acc_all_spa is higher than chance level 
 
 ## svm acc english < spanish 
@@ -1192,6 +1207,12 @@ for n in idx_diff:
     plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
     plt.title(ch_names[n])
 
+## morph
+stc1.data = np.array([acc_all_eng,acc_all_eng]).transpose()
+stc1.plot_3d(src=src,subject = 'fsaverage')
+stc1.data = np.array([acc_all_spa,acc_all_spa]).transpose()
+stc1.plot_3d(src=src,subject = 'fsaverage')
+
 ## MEG2022 (idx 226), MEG2033 (idx 229) showed high decoding acc
 nch = 226
 
@@ -1208,9 +1229,9 @@ for nch in idx_diff:
         [p10_spa[:,nch,:], n40_spa[:,nch,:]]
     )
     ## Differential decoding
-    # decode_fn = make_decode_fn(times, ts, te, 15, 16, shuffle, randseed)
-    # real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
-    # plt.title(ch_names[nch] + ' (' + str(nch) + ')' )
+    decode_fn = make_decode_fn(times, ts, te, 15, 16, shuffle, randseed)
+    real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
+    plt.title(ch_names[nch] + ' (' + str(nch) + ')' )
 
     ## Increment decoding
     window_step = 0.005
