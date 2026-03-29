@@ -36,6 +36,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 import random
+import time
 import librosa
 import librosa.display
 
@@ -1154,8 +1155,8 @@ for n in np.arange(0,np.shape(p10_eng)[1],1):
     acc_all_spa.append(acc_spa.mean(0))
 acc_all_eng = np.array(acc_all_eng)
 acc_all_spa = np.array(acc_all_spa)
-np.save('eng_svmacc_p10n40_pcffr80200_ntrialall_0_morph.npy',acc_all_eng)
-np.save('spa_svmacc_p10n40_pcffr80200_ntrialall_0_morph.npy',acc_all_spa)
+# np.save('eng_svmacc_p10n40_pcffr80200_ntrialall_0_morph.npy',acc_all_eng)
+# np.save('spa_svmacc_p10n40_pcffr80200_ntrialall_0_morph.npy',acc_all_spa)
 
 diff_acc_all = acc_all_eng-acc_all_spa
 
@@ -1251,6 +1252,45 @@ for nch in idx_diff:
         plot = True
     )
 
+#%%####################################### Sliding estimator 
+tic = time.time()
+X = np.concatenate((p10_eng,n40_eng),axis=0)
+y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(n40_eng)))) 
+
+# prepare a series of classifier applied at each time sample
+clf = make_pipeline(
+    StandardScaler(),  # z-score normalization
+    SelectKBest(f_classif, k=k_feature),  # select features for speed
+    LinearModel(),
+    )
+time_decod = SlidingEstimator(clf)
+
+# Run cross-validated decoding analyses
+scores_observed = cross_val_multiscore(time_decod, X, y, cv=5, n_jobs=None) # leave one out
+score = np.mean(scores_observed, axis=0)
+
+#Plot average decoding scores of 5 splits
+TOI = np.linspace(-20,200,num=1101)
+fig, ax = plt.subplots(1)
+ax.plot(TOI, scores_observed.mean(0), label="score")
+ax.axhline(1/3, color="k", linestyle="--", label="chance")
+ax.axvline(0, color="k")
+plt.legend()
+
+# The fitting needs not be cross validated because the weights are based on
+# the training sets
+time_decod.fit(X, y) # not changed after shuffling the initial
+# Retrieve patterns after inversing the z-score normalization step:
+patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
+
+toc = time.time()
+
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '.npy',scores_observed)
+np.save(root_path + 'cbsA_meeg_analysis/decoding/patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '.npy',patterns)
+
+#%%#######################################
+
+
 #%% reduce dimension
 # get the mean
 std = std_all.mean(axis=1)
@@ -1275,55 +1315,6 @@ dev1 = dev1_all[:,rh_ROI_label[nROI],:]
 dev2 = dev2_all[:,rh_ROI_label[nROI],:]
 p10_eng = p10_eng_all[:,rh_ROI_label[nROI],:] 
 n40_eng = n40_eng_all[:,rh_ROI_label[nROI],:] 
-
-## run decoding
-ts = 0
-te = 0.2
-niter = 1000 # see how the random seed affects accuracy
-shuffle = "keep pair"
-randseed = 2
-ncv = len(std)
-
-## real difference between eng and spa decoding accuracy of p10 vs. n40 sounds
-decoding_acc_p10n40 = do_subject_by_subject_decoding([p10_eng, n40_eng], times, ts, te, 14, shuffle, randseed)
-
-decoding_acc_p10n40 = do_subject_by_subject_decoding([std, dev1], times, ts, te, ncv, shuffle, randseed)
-decoding_acc_p10p40 = do_subject_by_subject_decoding([std, dev2], times, ts, te, ncv, shuffle, randseed)
-diff_acc = np.mean(decoding_acc_p10n40, axis=0) - np.mean(decoding_acc_p10p40, axis=0)
-
-## permute between dev1 and dev2
-diff_scores_perm = []
-n40p40_all = np.vstack([dev1,dev2])
-n_total = len(n40p40_all)
-rng = np.random.default_rng(None)
- 
-for n_iter in np.arange(0,niter,1):
-    print("iter " + str(n_iter))
-    
-    perm_ind = rng.permutation(n_total)
-    group1_ind = perm_ind[:n_total//2]
-    group2_ind = perm_ind[n_total//2:]
-    dev1_perm = n40p40_all[group1_ind]
-    dev2_perm = n40p40_all[group2_ind]
-    
-    decoding_acc_group1_perm = do_subject_by_subject_decoding([std, dev1_perm], times, ts, te, ncv, shuffle, randseed)
-    decoding_acc_group2_perm = do_subject_by_subject_decoding([std, dev2_perm], times, ts, te, ncv, shuffle, randseed)
-
-    diff_scores_perm.append(np.mean(decoding_acc_group1_perm, axis=0) - np.mean(decoding_acc_group2_perm, axis=0))
-diff_scores_perm = np.array(diff_scores_perm)
-print(f"Accuracy: {np.mean(diff_scores_perm):.3f}")
-
-fig, ax = plt.subplots(1)
-ax.hist(diff_scores_perm, bins=7, alpha=0.6)
-ax.set_ylabel("Count", fontsize=20)
-ax.set_xlabel("Accuracy Difference", fontsize=20)
-
-# chance line
-ax.axvline(np.mean(diff_scores_perm), color="grey", linestyle="--")
-# 95% line
-ax.axvline(np.percentile(diff_scores_perm,95),ymin=0,ymax=1000,color='grey',linewidth=2)
-# mean lines
-ax.axvline(diff_acc, color="red", linewidth=2)
 
 #%%####################################### Sliding estimator decoding brainstem eng speakers
 root_path='/media/tzcheng/storage/Brainstem/'
