@@ -367,7 +367,7 @@ runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 # runs = ['_unplug'] # for stimuli leakage test
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
-lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
+lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ, Coffey paper
 hp = 80
 do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
@@ -396,8 +396,8 @@ for s in subj:
             raw = mne.io.read_raw_fif(filename, allow_maxshield=True,preload=True)
             raw_erm = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + run + '_erm_raw_sss_proj.fif', allow_maxshield=True,preload=True)
         else:
-            # print ('Doing ECG/EOG projection...')
-            # [raw,raw_erm] = do_projection(s,run)
+            print ('Doing ECG/EOG projection...')
+            [raw,raw_erm] = do_projection(s,run)
             print ('No ECG/EOG projection files to use')
         print ('Doing filtering...')
         raw_filt = do_filtering(raw,lp,hp,do_cabr)
