@@ -11,13 +11,13 @@ Be very very careful when using this script because it can delete all the files 
 
 import os
 
-root = "/media/tzcheng/storage/Brainstem/"
-keywords = ["cov"]
+root = "/media/tzcheng/storage2/CBS/"
+keywords = ["test_morph-vl.stc"]
 
 file_to_del = []
 subj = [] 
 for file in os.listdir():
-    if file.startswith('brainstem_'): 
+    if file.startswith('cbs_A'): 
         subj.append(file)
 for s in subj:
     print(s)
