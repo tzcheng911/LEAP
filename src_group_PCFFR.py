@@ -62,7 +62,7 @@ def select_PC(data,sfreq,fmin,fmax,lb,hb,n_top):
     Xhat = Xhat.transpose()    
     return pca_data.transpose(),ind_components,explained_variance_ratio,Xhat
 
-def do_inverse_FFR(s,evokeds_inv,run,nspeech,morph,n_top,n_trial,hp,lp):
+def do_inverse_FFR(s,evokeds_inv,run,condition,morph,n_top,n_trial,hp,lp):
     root_path='/media/tzcheng/storage2/CBS/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
@@ -86,59 +86,35 @@ def do_inverse_FFR(s,evokeds_inv,run,nspeech,morph,n_top,n_trial,hp,lp):
             src_to=src_fs,
             verbose=True)
         evokeds_inv_stc_fsaverage = morph.apply(evokeds_inv_stc)
-        evokeds_inv_stc_fsaverage.save(file_in + '_' + nspeech +'_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + str(n_trial) + '_morph', overwrite=True)
+        evokeds_inv_stc_fsaverage.save(file_in + '_pcffr' + str(hp) + str(lp) + '_ntrial' + str(n_trial)  + '_' + str(n_top) + condition + run + '_morph', overwrite=True)
 
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
-        evokeds_inv_stc.save(file_in + '_' + nspeech + '_pcffr' + str(hp) + str(lp) + '_' + str(n_top), overwrite=True)
+        evokeds_inv_stc.save(file_in + '_pcffr' + str(hp) + str(lp) + '_ntrial' + str(n_trial)  + '_' + str(n_top) + condition + run + '_test_morph', overwrite=True)
 
-def group_stc(subj,baby_or_adult,n_top, n_trial,hp,lp):
-    group_std = []
-    group_dev1 = []
-    group_dev2 = []
-    group_std_roi = []
-    group_dev1_roi = []
-    group_dev2_roi = []
+def group_stc(subj,condition,n_trial,n_top,hp,lp):
     root_path='/media/tzcheng/storage2/CBS/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
     src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif') # for morphing data
     fname_aseg = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
 
-    for s in subj:
-        print('Extracting ' + s + ' data')
-        file_in = root_path + s + '/sss_fif/' + s
-        
-        stc_std=mne.read_source_estimate(file_in+'_substd_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + str(n_trial) + '_morph-vl.stc')
-        stc_dev1=mne.read_source_estimate(file_in+'_dev1_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + str(n_trial) + '_morph-vl.stc')
-        stc_dev2=mne.read_source_estimate(file_in+'_dev2_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + str(n_trial) + '_morph-vl.stc')
-        group_std.append(stc_std.data)
-        group_dev1.append(stc_dev1.data)
-        group_dev2.append(stc_dev2.data)
-            
-        std_roi=mne.extract_label_time_course(stc_std,fname_aseg,src,mode='mean',allow_empty=True)
-        dev1_roi=mne.extract_label_time_course(stc_dev1,fname_aseg,src,mode='mean',allow_empty=True)
-        dev2_roi=mne.extract_label_time_course(stc_dev2,fname_aseg,src,mode='mean',allow_empty=True)
-        group_std_roi.append(std_roi)
-        group_dev1_roi.append(dev1_roi)
-        group_dev2_roi.append(dev2_roi)
-  
-    group_std = np.asarray(group_std)
-    group_dev1 = np.asarray(group_dev1)
-    group_dev2 = np.asarray(group_dev2)
-    group_std_roi = np.asarray(group_std_roi)
-    group_dev1_roi = np.asarray(group_dev1_roi)
-    group_dev2_roi = np.asarray(group_dev2_roi)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) +'_morph.npy',group_std)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) + '_morph.npy',group_dev1)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) + '_morph.npy',group_dev2)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_std_roi)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_dev1_roi)
-    np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) + '_morph_roi.npy',group_dev2_roi)
+    print('Extracting ' + s + ' data')
+    file_in = root_path + s + '/sss_fif/' + s
+    stc=mne.read_source_estimate(file_in + '_' + condition + '_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_test_morph-vl.stc') # for testing with non-morph data
+
+    # stc=mne.read_source_estimate(file_in + '_pcffr' + str(hp) + str(lp) + '_ntrial' + str(n_trial)  + '_' + str(n_top) + condition + '_morph-vl.stc')
+    stc_roi=mne.extract_label_time_course(stc,fname_aseg,src,mode='mean',allow_empty=True)
+    stc_data = stc.data
+    stc_roi_data = stc_roi.data
+    return stc_data,stc_roi_data
 
 #%%#######################################'
 root_path='/media/tzcheng/storage2/CBS/'
 os.chdir(root_path)
 ## Parameters
+do_PCA = True ## if True, assign n_top cuz it cannot be 0
+morph = False
+
 fmin = 50
 fmax = 150
 sfreq = 5000
@@ -146,23 +122,23 @@ lb = 90
 hb = 100
 n_top = 3 # change to 10
 n_trial = 200
-lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper)
+lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 zc and coffey paper
 hp = 80
 runs = ['_01','_02']
 cond = ['substd','dev1','dev2']
-baby_or_adult = 'cbsb_meg_analysis' # baby or adult
-
+baby_or_adult = 'cbsA_meeg_analysis' # baby or adult
 run = runs[0]
-morph = True
 
 subjects = [] 
 for file in os.listdir():
-    if file.startswith('cbs_b'):
+    if file.startswith('cbs_A'):
         subjects.append(file)
-
-group_sensor = np.empty([len(subjects),3,306,1101])
-group_pca = np.empty([len(subjects),3,306,1101])
-group_pc_info = np.empty([len(subjects),3,n_top,2]) # Last dim: first is the ind, 2nd is the explained var ratio of the corresponding PC
+print(subjects)
+group_morph = np.empty([len(subjects),len(cond),14629,1101])
+group_roi = np.empty([len(subjects),len(cond),114,1101])
+group_sensor = np.empty([len(subjects),len(cond),306,1101])
+group_pca = np.empty([len(subjects),len(cond),306,1101])
+group_pc_info = np.empty([len(subjects),len(cond),n_top,2]) # Last dim: first is the ind, 2nd is the explained var ratio of the corresponding PC
 
 for ns,s in enumerate(subjects):
     print(s)
@@ -170,17 +146,25 @@ for ns,s in enumerate(subjects):
         file_in = root_path + s + '/sss_fif/' + s
         evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_evoked_' + speech + '_ffr_' + str(n_trial) +'.fif')[0]
         data = evokeds.get_data()
-        pca_data,ind_components,explained_variance_ratio,data_topPC = select_PC(data,sfreq,fmin,fmax,lb,hb,n_top)
-        evokeds.data = data_topPC
-        group_sensor[ns,nspeech,:,:] = data_topPC
-        group_pca[ns,nspeech,:,:] = pca_data
-        group_pc_info[ns,nspeech,:,0] = ind_components
-        group_pc_info[ns,nspeech,:,1] = explained_variance_ratio
+        if do_PCA:
+            print('Run src on PCA-reduced signals')
+            pca_data,ind_components,explained_variance_ratio,data_topPC = select_PC(data,sfreq,fmin,fmax,lb,hb,n_top)
+            evokeds.data = data_topPC
+            group_sensor[ns,nspeech,:len(data_topPC),:] = data_topPC
+            group_pca[ns,nspeech,:,:] = pca_data
+            group_pc_info[ns,nspeech,:,0] = ind_components
+            group_pc_info[ns,nspeech,:,1] = explained_variance_ratio
+        else:
+            print('Run src on non-PCA signals')
+            group_sensor[ns,nspeech,:len(data),:] = data
         do_inverse_FFR(s,evokeds,run,speech,morph,n_top,n_trial,hp,lp)
-group_stc(subjects,baby_or_adult,n_top,n_trial,hp,lp)
-np.save(root_path + baby_or_adult + '/MEG/FFR/group_ba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) + '_sensor.npy',group_sensor[:,0,:,:])
-np.save(root_path + baby_or_adult + '/MEG/FFR/group_mba_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) +'_sensor.npy',group_sensor[:,1,:,:])
-np.save(root_path + baby_or_adult + '/MEG/FFR/group_pa_pcffr' + str(hp) + str(lp) + '_' + str(n_top) + '_' + str(n_trial) +'_sensor.npy',group_sensor[:,2,:,:])
+        group_morph[ns,nspeech,:,:],group_roi[ns,nspeech,:,:] = group_stc(s,speech,n_trial,n_top,hp,lp)
 
-np.save(root_path + baby_or_adult + '/MEG/FFR/group_f' + str(hp) + str(lp) + '_top_' + str(n_top) + '_' + str(n_trial) +'pc_data.npy',group_pca)
-np.save(root_path + baby_or_adult + '/MEG/FFR/group_f' + str(hp) + str(lp) + '_top_' + str(n_top) + '_' + str(n_trial) +'pc_info.npy',group_pc_info)
+for ncondition,condition in enumerate(cond):
+    head = root_path + baby_or_adult + '/MEG/FFR/ntrial_200/group_pcffr' + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition
+    np.save(head + '_sensor.npy',group_sensor[:,ncondition,:,:])        
+    np.save(head + '_morph.npy',group_morph[:,ncondition,:,:])
+    np.save(head + '_roi.npy',group_roi[:,ncondition,:,:])
+    if do_PCA:
+        np.save(head + '_top_' + str(n_top) + 'pc_data.npy',group_pca[:,ncondition,:,:])
+        np.save(head + '_top_' + str(n_top) + 'pc_info.npy',group_pc_info[:,ncondition,:,:])
