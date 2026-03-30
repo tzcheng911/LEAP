@@ -1074,7 +1074,7 @@ def gen_noise(data,randseed):
 #%%####################################### Set path   
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
-stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_pa_cabr_morph-vl.stc')
+stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_substd_pcffr80200_3200_morph-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
@@ -1089,16 +1089,16 @@ fs,dev2_all = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
 file_type = 'morph'
-nfilter = '802000'
+nfilter = '80200'
 ntrial = 'all'
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
 ## remove the rim subjects for now
-p10_eng = np.delete(p10_eng,10,axis=0)
-n40_eng = np.delete(n40_eng,10,axis=0)
-p10_spa = np.delete(p10_spa,[1,7,14],axis=0)
-n40_spa = np.delete(n40_spa,[1,7,14],axis=0)
+# p10_eng = np.delete(p10_eng,10,axis=0)
+# n40_eng = np.delete(n40_eng,10,axis=0)
+# p10_spa = np.delete(p10_spa,[1,7,14],axis=0)
+# n40_spa = np.delete(n40_spa,[1,7,14],axis=0)
 
 #%%####################################### visualization
 ## average sensor data
@@ -1216,11 +1216,11 @@ n40_spa = np.delete(n40_spa,[1,7,14],axis=0)
 #     plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
 #     plt.title(ch_names[n])
 
-# ## morph
+## morph
 # stc1.data = np.array([acc_all_eng,acc_all_eng]).transpose()
-# stc1.plot_3d(src=src,subject = 'fsaverage')
+# stc1.plot(src=src,subject = 'fsaverage')
 # stc1.data = np.array([acc_all_spa,acc_all_spa]).transpose()
-# stc1.plot_3d(src=src,subject = 'fsaverage')
+# stc1.plot(src=src,subject = 'fsaverage')
 
 # ## MEG2022 (idx 226), MEG2033 (idx 229) showed high decoding acc
 # nch = 226
@@ -1291,12 +1291,13 @@ plt.legend()
 # the training sets
 time_decod.fit(X, y) # not changed after shuffling the initial
 # Retrieve patterns after inversing the z-score normalization step:
-patterns = get_coef(time_decod, "patterns_", inverse_transform=True)
+patterns = get_coef(time_decod, "patterns_",
+                    inverse_transform=True)
 
 toc = time.time()
 
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_norim.npy',scores_observed)
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_norim.npy',patterns)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all.npy',scores_observed)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all.npy',patterns)
 
 #%%#######################################
 
