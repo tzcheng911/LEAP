@@ -510,6 +510,7 @@ def run_sliding_time_decoding(
     }
 
 def run_increment_decoding(
+    title,
     cond1_a, cond1_b,          # e.g., p10_eng, n40_eng
     cond2_a, cond2_b,          # e.g., p10_spa, n40_spa
     times,
@@ -616,7 +617,7 @@ def run_increment_decoding(
 
         plt.xlabel('Window size (ms)')
         plt.ylabel('Decoding accuracy')
-        plt.title('Decoding vs available signal')
+        plt.ylim([0,1])
         plt.legend()
         plt.grid(True)
         plt.tight_layout()
@@ -1088,7 +1089,7 @@ fs,dev1_all = load_CBS_file(file_type, 'n40', subject_type)
 fs,dev2_all = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
-file_type = 'morph'
+file_type = 'sensor'
 nfilter = '80200'
 ntrial = 'all'
 ntop = '3'
@@ -1101,164 +1102,180 @@ fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter,
 # n40_spa = np.delete(n40_spa,[1,7,14],axis=0)
 
 #%%####################################### visualization
-## average sensor data
-# sensor_data = n40_eng.mean(0)
-# evoked = mne.read_evokeds('/media/tzcheng/storage/Brainstem/brainstem_203/sss_fif/brainstem_203_n40_02_otp_raw_sss_proj_f802000_ntrial200_evoked_ffr.fif')
-# evoked[0].data = sensor_data
-# evoked[0].plot_topo()
+# average sensor data
+sensor_data = n40_eng.mean(0)
+evoked = mne.read_evokeds('/media/tzcheng/storage/Brainstem/brainstem_203/sss_fif/brainstem_203_n40_02_otp_raw_sss_proj_f802000_ntrial200_evoked_ffr.fif')
+evoked[0].data = sensor_data
+evoked[0].plot_topo()
 
-# ## pca data 
-# npc = 0
-# plot_group_ffr(p10_eng[:,npc,:], n40_eng[:,npc,:], 'eng','spa', times)
-# plot_group_ffr(p10_spa[:,npc,:], n40_spa[:,npc,:], 'eng','spa', times)
+## pca data 
+npc = 0
+plot_group_ffr(p10_eng[:,npc,:], n40_eng[:,npc,:], 'eng','spa', times)
+plot_group_ffr(p10_spa[:,npc,:], n40_spa[:,npc,:], 'eng','spa', times)
 
-# ## source data
-# source_data = p10_eng.mean(0)
-# stc1.data = source_data 
-# stc1.plot(src=src)
+## source ROI data
+lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+rh_ROI_label = [12, 108,112,110] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
+ROI_label = [12, 72,76, 108,112]
+nROI = 3
+plot_group_ffr(p10_eng[:,ROI_label[nROI],:], n40_eng[:,ROI_label[nROI],:], 'eng','spa', times)
+plot_group_ffr(p10_spa[:,ROI_label[nROI],:], n40_spa[:,ROI_label[nROI],:], 'eng','spa', times)
 
-# for s in np.arange(0,len(p10_spa),1):
-#     stc1.data = p10_spa[s]
-#     stc1.plot(src=src)
+## source morph data
+source_data = p10_eng.mean(0)
+stc1.data = source_data 
+stc1.plot(src=src)
 
-# ## plot individual FFRs: this is the order of how eeg subjects are saved. Refer to preprocessing_brainstem.py
-# subjects_eng=['113','124','107','110','121','118','126','129','108','106','111','112','133','104','123']
-# subjects_spa=['203','214','213','223','226','222','212','215','225','224','204','221','206','211','220','205'] ## 202 event code has some issues
+for s in np.arange(0,len(p10_spa),1):
+    stc1.data = p10_spa[s]
+    stc1.plot(src=src)
 
-# subjects_eng_dict = dict(zip(subjects_eng, n40_eng))
-# subjects_spa_dict = dict(zip(subjects_spa, n40_spa))
-# n_cols = 3
-# plot_individuals(subjects_eng_dict,n_cols,times)
-# plot_individuals(subjects_spa_dict,n_cols,times)
+## plot individual FFRs: this is the order of how eeg subjects are saved. Refer to preprocessing_brainstem.py
+subjects_eng=['113','124','107','110','121','118','126','129','108','106','111','112','133','104','123']
+subjects_spa=['203','214','213','223','226','222','212','215','225','224','204','221','206','211','220','205'] ## 202 event code has some issues
 
-# ## plot average FFRs between p10 vs. n40
-# plot_group_ffr(p10_eng[:,12,:], n40_eng[:,12,:], 'p10','n40', times)
-# plot_group_ffr(p10_spa[:,12,:], n40_spa[:,12,:], 'p10','n40', times)
+subjects_eng_dict = dict(zip(subjects_eng, n40_eng))
+subjects_spa_dict = dict(zip(subjects_spa, n40_spa))
+n_cols = 3
+plot_individuals(subjects_eng_dict,n_cols,times)
+plot_individuals(subjects_spa_dict,n_cols,times)
 
-# ## plot average FFRs between spa and eng
-# # will give error if two groups have different sample size
-# plot_group_ffr(p10_eng, p10_spa, 'eng','spa', times)
-# plot_group_ffr(n40_eng, n40_spa, 'eng','spa', times)
+## plot average FFRs between p10 vs. n40
+plot_group_ffr(p10_eng[:,12,:], n40_eng[:,12,:], 'p10','n40', times)
+plot_group_ffr(p10_spa[:,12,:], n40_spa[:,12,:], 'p10','n40', times)
 
-# ## plot the FFRs and audio on top of each other
-# fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
-# fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
-# plot_audio_ffr(times,p10_audio,fs_audio,p10_spa,0.1)
-# plot_audio_ffr(times,n40_audio,fs_audio,n40_spa,0.13)
+## plot average FFRs between spa and eng
+# will give error if two groups have different sample size
+plot_group_ffr(p10_eng, p10_spa, 'eng','spa', times)
+plot_group_ffr(n40_eng, n40_spa, 'eng','spa', times)
 
-# #%%####################################### Subject-by-subject MEG decoding for each condition 
-# ts = 0
-# te = 0.2
-# shuffle = 'keep pair'
-# randseed = 2
+## plot the FFRs and audio on top of each other
+fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
+fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
+plot_audio_ffr(times,p10_audio,fs_audio,p10_spa,0.1)
+plot_audio_ffr(times,n40_audio,fs_audio,n40_spa,0.13)
 
-# ## One-shot decoding
-# acc_all_eng = []
-# acc_all_spa = []
+#%%####################################### Subject-by-subject MEG decoding for each condition 
+ts = 0
+te = 0.2
+shuffle = 'keep pair'
+randseed = 2
 
-# for n in np.arange(0,np.shape(p10_eng)[1],1):
-#     acc_eng = do_subject_by_subject_decoding([p10_eng[:,n,:], n40_eng[:,n,:]], times, ts, te, len(p10_eng), 'keep pair', randseed)
-#     acc_spa = do_subject_by_subject_decoding([p10_spa[:,n,:], n40_spa[:,n,:]], times, ts, te, len(p10_spa), 'keep pair', randseed)
-#     acc_all_eng.append(acc_eng.mean(0))
-#     acc_all_spa.append(acc_spa.mean(0))
-# acc_all_eng = np.array(acc_all_eng)
-# acc_all_spa = np.array(acc_all_spa)
-# # np.save('eng_svmacc_p10n40_pcffr80200_ntrialall_0_morph.npy',acc_all_eng)
-# # np.save('spa_svmacc_p10n40_pcffr80200_ntrialall_0_morph.npy',acc_all_spa)
+## One-shot decoding
+acc_all_eng = []
+acc_all_spa = []
 
-# diff_acc_all = acc_all_eng-acc_all_spa
+for n in np.arange(0,np.shape(p10_eng)[1],1):
+    acc_eng = do_subject_by_subject_decoding([p10_eng[:,n,:], n40_eng[:,n,:]], times, ts, te, len(p10_eng), 'keep pair', randseed)
+    acc_spa = do_subject_by_subject_decoding([p10_spa[:,n,:], n40_spa[:,n,:]], times, ts, te, len(p10_spa), 'keep pair', randseed)
+    acc_all_eng.append(acc_eng.mean(0))
+    acc_all_spa.append(acc_spa.mean(0))
+acc_all_eng = np.array(acc_all_eng)
+acc_all_spa = np.array(acc_all_spa)
+np.save('eng_svmacc_p10n40_pcffr802000_ntrialall_0_roi.npy',acc_all_eng)
+np.save('spa_svmacc_p10n40_pcffr802000_ntrialall_0_roi.npy',acc_all_spa)
 
-# ## plot overall acc between the two language groups
-# plt.figure()
-# plt.bar(['Eng','Spa'], [acc_all_eng.mean(),acc_all_spa.mean()], yerr=[acc_all_eng.std(),acc_all_spa.std()], capsize=5, color='skyblue', ecolor='black')
-# plt.title('mean SVM decoding ACC p10n40 across all sensors')
-# plt.ylim([0,1])
-# plt.xlabel('Language groups')
-# plt.ylabel('Accuracy')
+diff_acc_all = acc_all_eng-acc_all_spa
 
-# ## sensor
-# idx_eng = np.argsort(acc_all_eng)[-30:]
-# print(np.sort(acc_all_eng)[-30:])
-# ch_names = np.array(evoked[0].info['ch_names'])
-# print(ch_names[idx_eng])
-# evoked[0].info['bads'] = ch_names[idx_eng].tolist()
-# evoked[0].plot_sensors(ch_type = 'all')
+## plot overall acc between the two language groups
+plt.figure()
+plt.bar(['Eng','Spa'], [acc_all_eng.mean(),acc_all_spa.mean()], yerr=[acc_all_eng.std(),acc_all_spa.std()], capsize=5, color='skyblue', ecolor='black')
+plt.title('mean SVM decoding ACC p10n40 across all sensors')
+plt.ylim([0,1])
+plt.xlabel('Language groups')
+plt.ylabel('Accuracy')
 
-# idx_spa = np.argsort(acc_all_spa)[-30:]
-# print(np.sort(acc_all_spa)[-30:])
-# print(ch_names[idx_spa])
-# evoked[0].info['bads'] = ch_names[idx_spa].tolist()
-# evoked[0].plot_sensors(ch_type = 'all')
+#### sensor
+idx_eng = np.argsort(acc_all_eng)[-30:]
+print(np.sort(acc_all_eng)[-30:])
+ch_names = np.array(evoked[0].info['ch_names'])
+print(ch_names[idx_eng])
+evoked[0].info['bads'] = ch_names[idx_eng].tolist()
+evoked[0].plot_sensors(ch_type = 'all')
 
-# idx_overlap = np.intersect1d(idx_eng, idx_spa)
-# print(ch_names[idx_overlap])
-# evoked[0].info['bads'] = ch_names[idx_overlap].tolist()
-# evoked[0].plot_sensors(ch_type = 'all')
+idx_spa = np.argsort(acc_all_spa)[-30:]
+print(np.sort(acc_all_spa)[-30:])
+print(ch_names[idx_spa])
+evoked[0].info['bads'] = ch_names[idx_spa].tolist()
+evoked[0].plot_sensors(ch_type = 'all')
 
-# ## svm acc english > spanish 
-# idx_diff = np.argsort(diff_acc_all)[-30:] ## 50 for the 200 reps, 20 for the 3000 reps
-# print(np.sort(diff_acc_all)[-30:])
-# idx_diff = idx_diff[acc_all_spa[idx_diff] > 0.5] # ensure that acc_all_spa is higher than chance level 
+idx_overlap = np.intersect1d(idx_eng, idx_spa)
+print(ch_names[idx_overlap])
+evoked[0].info['bads'] = ch_names[idx_overlap].tolist()
+evoked[0].plot_sensors(ch_type = 'all')
 
-# ## svm acc english < spanish 
-# idx_diff = np.argsort(diff_acc_all)[:20]
-# print(np.sort(diff_acc_all)[:20])
-# idx_diff = idx_diff[acc_all_eng[idx_diff] > 0.5] # ensure that acc_all_spa is higher than chance level 
+## svm acc english > spanish 
+idx_diff = np.argsort(diff_acc_all)[-30:] ## 50 for the 200 reps, 20 for the 3000 reps
+print(np.sort(diff_acc_all)[-30:])
+idx_diff = idx_diff[acc_all_spa[idx_diff] > 0.5] # ensure that acc_all_spa is higher than chance level 
 
-# print(diff_acc_all[idx_diff])
-# print(ch_names[idx_diff])
-# evoked[0].info['bads'] = ch_names[idx_diff].tolist()
-# evoked[0].plot_sensors(ch_type = 'all')
+# MEG2022 (idx 226), MEG2033 (idx 229) showed high decoding acc
+nch = 226
 
-# for n in idx_diff:
-#     plot_group_ffr(p10_eng[:,n,:], n40_eng[:,n,:], 'p10','n40', times)
-#     plt.title(ch_names[n])
-#     plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
-#     plt.title(ch_names[n])
+## svm acc english < spanish 
+idx_diff = np.argsort(diff_acc_all)[:20]
+print(np.sort(diff_acc_all)[:20])
+idx_diff = idx_diff[acc_all_eng[idx_diff] > 0.5] # ensure that acc_all_spa is higher than chance level 
 
-## morph
-# stc1.data = np.array([acc_all_eng,acc_all_eng]).transpose()
-# stc1.plot(src=src,subject = 'fsaverage')
-# stc1.data = np.array([acc_all_spa,acc_all_spa]).transpose()
-# stc1.plot(src=src,subject = 'fsaverage')
+print(diff_acc_all[idx_diff])
+print(ch_names[idx_diff])
+evoked[0].info['bads'] = ch_names[idx_diff].tolist()
+evoked[0].plot_sensors(ch_type = 'all')
 
-# ## MEG2022 (idx 226), MEG2033 (idx 229) showed high decoding acc
-# nch = 226
+for n in idx_diff:
+    plot_group_ffr(p10_eng[:,n,:], n40_eng[:,n,:], 'p10','n40', times)
+    plt.title(ch_names[n])
+    plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
+    plt.title(ch_names[n])
 
-# ts = 0
-# te = 0.2
-# niter = 500 
-# shuffle = "keep pair"
-# randseed = 2
+#### source morph
+stc1.data = np.array([acc_all_eng,acc_all_eng]).transpose()
+stc1.plot(src=src,subject = 'fsaverage')
+stc1.data = np.array([acc_all_spa,acc_all_spa]).transpose()
+stc1.plot(src=src,subject = 'fsaverage')
 
-# for nch in idx_diff:
+#### source roi
+print(acc_all_eng[ROI_label])
+print(acc_all_spa[ROI_label])
 
-#     condition_pairs = (
-#         [p10_eng[:,nch,:], n40_eng[:,nch,:]],
-#         [p10_spa[:,nch,:], n40_spa[:,nch,:]]
-#     )
-#     ## Differential decoding
-#     decode_fn = make_decode_fn(times, ts, te, 15, 16, shuffle, randseed)
-#     real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
-#     plt.title(ch_names[nch] + ' (' + str(nch) + ')' )
+#### SVM decoding
+ts = 0
+te = 0.2
+niter = 500 
+shuffle = "keep pair"
+randseed = 2
 
-#     ## Increment decoding
-#     window_step = 0.005
+# for nch in idx_diff: # for sensor
+for nch in ROI_label: # for roi
+    condition_pairs = (
+        [p10_eng[:,nch,:], n40_eng[:,nch,:]],
+        [p10_spa[:,nch,:], n40_spa[:,nch,:]]
+    )
+    ## Differential decoding
+    # decode_fn = make_decode_fn(times, ts, te, 15, 16, shuffle, randseed)
+    # real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
+    # # plt.title(ch_names[nch] + ' (' + str(nch) + ')' ) # for sensor
+    # plt.title(label_names[nch] + ' (' + str(nch) + ')' ) # for roi
+
+    ## Increment decoding
+    title = label_names[nch] + ' (' + str(nch) + ')'
+    window_step = 0.005
     
-#     run_increment_decoding(
-#         p10_eng[:,nch,:], n40_eng[:,nch,:],
-#         p10_spa[:,nch,:], n40_spa[:,nch,:],
-#         times,
-#         window_step=window_step,
-#         ncv1=15,
-#         ncv2=16,
-#         shuffle="keep pair",
-#         randseed=2,
-#         do_permutation=True,
-#         niter=100,
-#         labels=("English", "Spanish"),
-#         plot = True
-#     )
+    run_increment_decoding(
+        title,
+        p10_eng[:,nch,:], n40_eng[:,nch,:],
+        p10_spa[:,nch,:], n40_spa[:,nch,:],
+        times,
+        window_step=window_step,
+        ncv1=15,
+        ncv2=16,
+        shuffle="keep pair",
+        randseed=2,
+        do_permutation=True,
+        niter=100,
+        labels=("English", "Spanish"),
+        plot=True)
+    # plt.title(title)
 
 #%%####################################### Sliding estimator 
 tic = time.time()
