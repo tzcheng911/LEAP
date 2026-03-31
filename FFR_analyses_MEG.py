@@ -1166,6 +1166,7 @@ acc_all_eng = []
 acc_all_spa = []
 
 for n in np.arange(0,np.shape(p10_eng)[1],1):
+    print("Doing v " + str(n))
     acc_eng = do_subject_by_subject_decoding([p10_eng[:,n,:], n40_eng[:,n,:]], times, ts, te, len(p10_eng), 'keep pair', randseed)
     acc_spa = do_subject_by_subject_decoding([p10_spa[:,n,:], n40_spa[:,n,:]], times, ts, te, len(p10_spa), 'keep pair', randseed)
     acc_all_eng.append(acc_eng.mean(0))
@@ -1176,8 +1177,8 @@ print(acc_all_eng.mean())
 print(acc_all_eng.std())
 print(acc_all_spa.mean())
 print(acc_all_spa.std())
-np.save('eng_svmacc_p10n40_pcffr80200_ntrialall_3_morph_40-200ms.npy',acc_all_eng)
-np.save('spa_svmacc_p10n40_pcffr80200_ntrialall_3_morph_40-200ms.npy',acc_all_spa)
+np.save('eng_svmacc_p10n40_pcffr802000_ntrialall_3_morph_40-200ms_norim.npy',acc_all_eng)
+np.save('spa_svmacc_p10n40_pcffr802000_ntrialall_3_morph_40-200ms_norim.npy',acc_all_spa)
 
 diff_acc_all = acc_all_eng-acc_all_spa
 
@@ -1237,6 +1238,9 @@ stc1.data = np.array([acc_all_eng,acc_all_eng]).transpose()
 stc1.plot(src=src,subject = 'fsaverage')
 stc1.data = np.array([acc_all_spa,acc_all_spa]).transpose()
 stc1.plot(src=src,subject = 'fsaverage')
+diff_acc_all = acc_all_eng-acc_all_spa
+stc1.data = np.array([diff_acc_all,diff_acc_all]).transpose()
+stc1.plot(src=src,subject = 'fsaverage')
 
 #### source roi
 print(acc_all_eng[ROI_label])
@@ -1249,8 +1253,34 @@ niter = 500
 shuffle = "keep pair"
 randseed = 2
 
+## sliding time window decoding 
+ts_global = 0
+te_global = 0.2
+window_length = 0.025      # window
+window_step = 0.005         # ms step
+shuffle = "keep pair"
+randseed = 2
+ncv_eng = 14
+ncv_spa = 13
+window_starts = np.arange(ts_global,te_global - window_length,window_step)
+   
+acc_all_eng = np.empty((len(window_starts),np.shape(p10_eng)[1]))
+acc_all_spa = np.empty((len(window_starts),np.shape(p10_eng)[1]))
+
+for n in np.arange(0,np.shape(p10_eng)[1],1):
+    print("Doing v " + str(n))
+    output = run_sliding_time_decoding(p10_eng[:,n,:],n40_eng[:,n,:],p10_spa[:,n,:],n40_spa[:,n,:],times,ts_global,te_global,window_length,window_step,ncv_eng,ncv_spa,shuffle,randseed,plot=False)
+    acc_all_eng[:,n] = output['acc_eng']
+    acc_all_spa[:,n] = output['acc_spa']
+
+acc_incre_eng = np.empty((np.shape(p10_eng)[1],40)) ## sorry but hardcoding for now
+acc_incre_spa = np.empty((np.shape(p10_eng)[1],40))
+
+
 # for nch in idx_diff: # for sensor
-for nch in ROI_label: # for roi
+# for nch in ROI_label: # for roi
+for nch in np.arange(0,np.shape(p10_eng)[1],1): # for morph whole brain
+    print("Doing v " + str(nch))
     condition_pairs = (
         [p10_eng[:,nch,:], n40_eng[:,nch,:]],
         [p10_spa[:,nch,:], n40_spa[:,nch,:]]
@@ -1265,7 +1295,7 @@ for nch in ROI_label: # for roi
     title = label_names[nch] + ' (' + str(nch) + ')'
     window_step = 0.005
     
-    run_increment_decoding(
+    output = run_increment_decoding(
         title,
         p10_eng[:,nch,:], n40_eng[:,nch,:],
         p10_spa[:,nch,:], n40_spa[:,nch,:],
@@ -1275,11 +1305,20 @@ for nch in ROI_label: # for roi
         ncv2=16,
         shuffle="keep pair",
         randseed=2,
-        do_permutation=True,
+        do_permutation=None,
         niter=100,
         labels=("English", "Spanish"),
-        plot=True)
+        plot=False)
     # plt.title(title)
+    acc_incre_eng[nch,:] = output['acc1']
+    acc_incre_spa[nch,:] = output['acc2']
+np.save('eng_increment_svmacc_p10n40_pcffr80200_ntrialall_3_morph.npy',acc_incre_eng)
+np.save('spa_increment_svmacc_p10n40_pcffr80200_ntrialall_3_morph.npy',acc_incre_spa)
+
+stc1.tmin = output["window_ms"][0]
+stc1.tstep = 5
+stc1.plot(src=src,subject = 'fsaverage')
+stc1.plot_3d(src=src,subject = 'fsaverage')
 
 #%%####################################### Sliding estimator 
 tic = time.time()
