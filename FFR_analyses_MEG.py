@@ -262,7 +262,7 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     )
     scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
     score = np.mean(scores, axis=0)
-    print("Decoding Accuracy %0.1f%%" % (100 * score))
+    # print("Decoding Accuracy %0.1f%%" % (100 * score)) # stop printing for the speed
     
     ## see the weights 
     # from sklearn.model_selection import StratifiedKFold
@@ -510,7 +510,6 @@ def run_sliding_time_decoding(
     }
 
 def run_increment_decoding(
-    title,
     cond1_a, cond1_b,          # e.g., p10_eng, n40_eng
     cond2_a, cond2_b,          # e.g., p10_spa, n40_spa
     times,
@@ -631,7 +630,6 @@ def run_increment_decoding(
 
             plt.xlabel('Window size (ms)')
             plt.ylabel('Accuracy difference')
-            plt.title(f'{labels[0]} - {labels[1]}')
             plt.legend()
             plt.grid(True)
             plt.tight_layout()
@@ -1276,7 +1274,6 @@ for n in np.arange(0,np.shape(p10_eng)[1],1):
 acc_incre_eng = np.empty((np.shape(p10_eng)[1],40)) ## sorry but hardcoding for now
 acc_incre_spa = np.empty((np.shape(p10_eng)[1],40))
 
-
 # for nch in idx_diff: # for sensor
 # for nch in ROI_label: # for roi
 for nch in np.arange(0,np.shape(p10_eng)[1],1): # for morph whole brain
@@ -1292,11 +1289,10 @@ for nch in np.arange(0,np.shape(p10_eng)[1],1): # for morph whole brain
     # plt.title(label_names[nch] + ' (' + str(nch) + ')' ) # for roi
 
     ## Increment decoding
-    title = label_names[nch] + ' (' + str(nch) + ')'
+    
     window_step = 0.005
     
     output = run_increment_decoding(
-        title,
         p10_eng[:,nch,:], n40_eng[:,nch,:],
         p10_spa[:,nch,:], n40_spa[:,nch,:],
         times,
@@ -1309,6 +1305,7 @@ for nch in np.arange(0,np.shape(p10_eng)[1],1): # for morph whole brain
         niter=100,
         labels=("English", "Spanish"),
         plot=False)
+    # title = label_names[nch] + ' (' + str(nch) + ')'
     # plt.title(title)
     acc_incre_eng[nch,:] = output['acc1']
     acc_incre_spa[nch,:] = output['acc2']
