@@ -1084,14 +1084,14 @@ times = np.linspace(-0.02, 0.2, 1101)
 #%%####################################### load the data
 file_type = 'sensor'
 subject_type = 'adults'
-fs,std_all = load_CBS_file(file_type, 'p10', subject_type)
-fs,dev1_all = load_CBS_file(file_type, 'n40', subject_type)
-fs,dev2_all = load_CBS_file(file_type, 'p40', subject_type)
+# fs,std_all = load_CBS_file(file_type, 'p10', subject_type)
+# fs,dev1_all = load_CBS_file(file_type, 'n40', subject_type)
+# fs,dev2_all = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
 file_type = 'sensor'
 nfilter = '80200'
-ntrial = 'all'
+ntrial = '200'
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1172,6 +1172,10 @@ for n in np.arange(0,np.shape(p10_eng)[1],1):
     acc_all_spa.append(acc_spa.mean(0))
 acc_all_eng = np.array(acc_all_eng)
 acc_all_spa = np.array(acc_all_spa)
+print(acc_all_eng.mean())
+print(acc_all_eng.std())
+print(acc_all_spa.mean())
+print(acc_all_spa.std())
 np.save('eng_svmacc_p10n40_pcffr802000_ntrialall_0_roi.npy',acc_all_eng)
 np.save('spa_svmacc_p10n40_pcffr802000_ntrialall_0_roi.npy',acc_all_spa)
 
