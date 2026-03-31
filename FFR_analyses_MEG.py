@@ -1089,9 +1089,9 @@ subject_type = 'adults'
 # fs,dev2_all = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
-file_type = 'sensor'
+file_type = 'morph'
 nfilter = '80200'
-ntrial = '200'
+ntrial = 'all'
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1156,7 +1156,7 @@ plot_audio_ffr(times,p10_audio,fs_audio,p10_spa,0.1)
 plot_audio_ffr(times,n40_audio,fs_audio,n40_spa,0.13)
 
 #%%####################################### Subject-by-subject MEG decoding for each condition 
-ts = 0
+ts = 0.04
 te = 0.2
 shuffle = 'keep pair'
 randseed = 2
@@ -1176,8 +1176,8 @@ print(acc_all_eng.mean())
 print(acc_all_eng.std())
 print(acc_all_spa.mean())
 print(acc_all_spa.std())
-np.save('eng_svmacc_p10n40_pcffr802000_ntrialall_0_roi.npy',acc_all_eng)
-np.save('spa_svmacc_p10n40_pcffr802000_ntrialall_0_roi.npy',acc_all_spa)
+np.save('eng_svmacc_p10n40_pcffr80200_ntrialall_3_morph_40-200ms.npy',acc_all_eng)
+np.save('spa_svmacc_p10n40_pcffr80200_ntrialall_3_morph_40-200ms.npy',acc_all_spa)
 
 diff_acc_all = acc_all_eng-acc_all_spa
 
