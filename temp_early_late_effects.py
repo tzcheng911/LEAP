@@ -250,7 +250,7 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     )
     scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
     score = np.mean(scores, axis=0)
-    print("Decoding Accuracy %0.1f%%" % (100 * score))
+    # print("Decoding Accuracy %0.1f%%" % (100 * score))
     
     ## see the weights 
     # from sklearn.model_selection import StratifiedKFold
@@ -1078,8 +1078,8 @@ subject_type = 'adults'
     
 ## brainstem
 file_type = 'morph'
-nfilter = '80200'
-ntrial = 'all'
+nfilter = '802000'
+ntrial = '200'
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1090,8 +1090,8 @@ fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter,
 # n40_spa = np.delete(n40_spa,[1,7,14],axis=0)
 
 #%%####################################### Subject-by-subject MEG decoding for each condition 
-ts = 0.05
-te = 0.075
+ts = 0
+te = 0.2
 shuffle = 'keep pair'
 randseed = 2
 
@@ -1099,6 +1099,9 @@ randseed = 2
 acc_all_eng = []
 acc_all_spa = []
 
+print(nfilter)
+print(ntrial)
+print(ntop)
 for n in np.arange(0,np.shape(p10_eng)[1],1):
     print("Doing v " + str(n))
     acc_eng = do_subject_by_subject_decoding([p10_eng[:,n,:], n40_eng[:,n,:]], times, ts, te, len(p10_eng), 'keep pair', randseed)
@@ -1111,5 +1114,5 @@ print(acc_all_eng.mean())
 print(acc_all_eng.std())
 print(acc_all_spa.mean())
 print(acc_all_spa.std())
-np.save('eng_svmacc_p10n40_pcffr802000_ntrialall_3_morph_50-75ms.npy',acc_all_eng)
-np.save('spa_svmacc_p10n40_pcffr802000_ntrialall_3_morph_50-75ms.npy',acc_all_spa)
+np.save('eng_svmacc_p10n40_pcffr802000_ntrial200_3_morph.npy',acc_all_eng)
+np.save('spa_svmacc_p10n40_pcffr802000_ntrial200_3_morph.npy',acc_all_spa)
