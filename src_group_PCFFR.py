@@ -68,8 +68,8 @@ def do_inverse_FFR(s,evokeds_inv,run,condition,morph,n_top,n_trial,hp,lp):
 
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
-    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr-cov.fif')
-    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e_' + str(n_trial) + '.fif')
+    cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_replicate-cov.fif')
+    epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e_' + str(n_trial) + '_replicate.fif')
     inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, cov,loose=1,depth=0.8)
     evokeds_inv_stc = mne.minimum_norm.apply_inverse((evokeds_inv), inverse_operator, pick_ori = None)
 
@@ -86,7 +86,7 @@ def do_inverse_FFR(s,evokeds_inv,run,condition,morph,n_top,n_trial,hp,lp):
             src_to=src_fs,
             verbose=True)
         evokeds_inv_stc_fsaverage = morph.apply(evokeds_inv_stc)
-        evokeds_inv_stc_fsaverage.save(file_in + '_pcffr' + str(hp) + str(lp) + '_ntrial' + str(n_trial)  + '_' + str(n_top) + '_' +  condition + run + '_morph', overwrite=True)
+        evokeds_inv_stc_fsaverage.save(file_in + '_pcffr' + str(hp) + str(lp) + '_ntrial' + str(n_trial)  + '_' + str(n_top) + '_' +  condition + run + '_morph_replicate', overwrite=True)
 
     else: 
         print('No morphing has been performed. The individual results may not be good to average.')
@@ -100,7 +100,7 @@ def group_stc(subj,condition,n_trial,n_top,hp,lp):
 
     print('Extracting ' + s + ' data')
     file_in = root_path + s + '/sss_fif/' + s
-    stc=mne.read_source_estimate(file_in + '_pcffr' + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + '_' + condition + run + '_morph-vl.stc') 
+    stc=mne.read_source_estimate(file_in + '_pcffr' + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + '_' + condition + run + '_morph_replicate-vl.stc') 
     stc_roi=mne.extract_label_time_course(stc,fname_aseg,src,mode='mean',allow_empty=True)
     stc_data = stc.data
     stc_roi_data = stc_roi.data
@@ -120,7 +120,7 @@ lb = 90
 hb = 100
 n_top = 3 # change to 10
 n_trial = 200
-lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 zc and coffey paper
+lp = 450 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 zc and coffey paper
 hp = 80
 runs = ['_01','_02']
 cond = ['substd','dev1','dev2']
@@ -142,7 +142,7 @@ for ns,s in enumerate(subjects):
     print(s)
     for nspeech, speech in enumerate(cond):
         file_in = root_path + s + '/sss_fif/' + s
-        evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_evoked_' + speech + '_ffr_' + str(n_trial) +'.fif')[0]
+        evokeds = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_evoked_' + speech + '_ffr_' + str(n_trial) +'_replicate.fif')[0]
         data = evokeds.get_data()
         if do_PCA:
             print('Run src on PCA-reduced signals')
@@ -160,9 +160,9 @@ for ns,s in enumerate(subjects):
 
 for ncondition,condition in enumerate(cond):
     head = root_path + baby_or_adult + '/MEG/FFR/ntrial_200/group_pcffr' + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + '_' + condition
-    # np.save(head + '_sensor.npy',group_sensor[:,ncondition,:,:])        
-    # np.save(head + '_morph.npy',group_morph[:,ncondition,:,:])
-    # np.save(head + '_roi.npy',group_roi[:,ncondition,:,:])
+    np.save(head + '_sensor_replicate.npy',group_sensor[:,ncondition,:,:])        
+    np.save(head + '_morph_replicate.npy',group_morph[:,ncondition,:,:])
+    np.save(head + '_roi_replicate.npy',group_roi[:,ncondition,:,:])
     if do_PCA:
-        np.save(head + '_top_' + str(n_top) + '_pc_data.npy',group_pca[:,ncondition,:,:])
-        np.save(head + '_top_' + str(n_top) + '_pc_info.npy',group_pc_info[:,ncondition,:,:])
+        np.save(head + '_top_' + str(n_top) + '_pc_data_replicate.npy',group_pca[:,ncondition,:,:])
+        np.save(head + '_top_' + str(n_top) + '_pc_info_replicate.npy',group_pc_info[:,ncondition,:,:])
