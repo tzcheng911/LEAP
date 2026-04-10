@@ -66,23 +66,17 @@ def load_CBS_file(file_type, sound_type, subject_type):
     root_path = '/media/tzcheng/storage2/CBS/'
     fs = 5000
     # map sound names when needed
-    sound_map = {
-        'p10': 'ba',
-        'p40': 'pa',
-        'n40': 'mba'
-    }
     if file_type == 'audio':
         fs, signal = wavfile.read(root_path + '/stimuli/' + sound_type + '.wav')
     elif file_type == 'misc':
         signal = np.load(root_path + 'cbsA_meeg_analysis/misc/adult_group_' + sound_type + '_misc_200.npy')
     elif file_type == 'EEG':
         signal = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_' + sound_type + '_ffr_eeg_200.npy')
-    elif file_type in ('sensor', 'morph_roi','morph'): ## for the MEG
-        name = sound_map.get(sound_type, sound_type)
+    elif file_type in ('sensor', 'roi','morph'): ## for the MEG
         if subject_type == 'adults':
-            signal = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_' + name + '_pcffr80200_3_200_' + file_type + '.npy')
+            signal = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_pcffr80200_ntrial200_top_3_' + sound_type + '_01_' + file_type + '.npy')
         elif subject_type == 'infants':   
-            signal = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/ntrial_200/group_' + name + '_pcffr80200_3_200_' + file_type + '.npy')
+            signal = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/ntrial_200/group_pcffr80200_ntrial200_top_3_' + sound_type + '_' + file_type + '.npy')
     return fs, signal
 
 def load_brainstem_file(file_type, nfilter, ntrial, ntop):
@@ -250,7 +244,7 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     )
     scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
     score = np.mean(scores, axis=0)
-    # print("Decoding Accuracy %0.1f%%" % (100 * score))
+    # print("Decoding Accuracy %0.1f%%" % (100 * score)) # stop printing for the speed
     
     ## see the weights 
     # from sklearn.model_selection import StratifiedKFold
@@ -498,7 +492,6 @@ def run_sliding_time_decoding(
     }
 
 def run_increment_decoding(
-    title,
     cond1_a, cond1_b,          # e.g., p10_eng, n40_eng
     cond2_a, cond2_b,          # e.g., p10_spa, n40_spa
     times,
@@ -527,6 +520,7 @@ def run_increment_decoding(
     acc2_all = []
     diff_real = []
     diff_perm_95 = []
+    diff_perm_5 = []
 
     # --- fixed noise (important for your design) ---
     noise1 = gen_noise(cond1_a, randseed)
@@ -585,7 +579,7 @@ def run_increment_decoding(
                 )
 
                 diff_scores.append(np.mean(acc_g1) - np.mean(acc_g2))
-
+            diff_perm_5.append(np.percentile(diff_scores, 5))
             diff_perm_95.append(np.percentile(diff_scores, 95))
 
     # Convert to arrays
@@ -614,12 +608,12 @@ def run_increment_decoding(
         if do_permutation:
             plt.figure(figsize=(6, 4))
             plt.plot(window_sizes_ms, diff_real, label='Real difference', marker='o')
-            plt.plot(window_sizes_ms, diff_perm_95, label='95% perm', marker='o')
+            plt.plot(window_sizes_ms, diff_perm_95, label='95% perm', color = 'k', marker='o')
+            plt.plot(window_sizes_ms, diff_perm_5, label='5% perm', color = 'k', marker='o')
             plt.axhline(0, linestyle='--', label='No difference')
 
             plt.xlabel('Window size (ms)')
             plt.ylabel('Accuracy difference')
-            plt.title(f'{labels[0]} - {labels[1]}')
             plt.legend()
             plt.grid(True)
             plt.tight_layout()
@@ -630,6 +624,7 @@ def run_increment_decoding(
         "acc1": acc1_all,
         "acc2": acc2_all,
         "diff_real": diff_real,
+        "diff_perm_5": diff_perm_5,
         "diff_perm_95": diff_perm_95
     }
 
@@ -1070,11 +1065,11 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 times = np.linspace(-0.02, 0.2, 1101)
 
 #%%####################################### load the data
-file_type = 'sensor'
-subject_type = 'adults'
-# fs,std_all = load_CBS_file(file_type, 'p10', subject_type)
-# fs,dev1_all = load_CBS_file(file_type, 'n40', subject_type)
-# fs,dev2_all = load_CBS_file(file_type, 'p40', subject_type)
+# file_type = 'morph'
+# subject_type = 'infants'
+# fs,p10_cbs = load_CBS_file(file_type, 'p10', subject_type)
+# fs,n40_cbs = load_CBS_file(file_type, 'n40', subject_type)
+# fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
 file_type = 'morph'
@@ -1083,36 +1078,104 @@ ntrial = '200'
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
+print(nfilter)
+print(ntrial)
 ## remove the rim subjects for now
 # p10_eng = np.delete(p10_eng,10,axis=0)
 # n40_eng = np.delete(n40_eng,10,axis=0)
 # p10_spa = np.delete(p10_spa,[1,7,14],axis=0)
 # n40_spa = np.delete(n40_spa,[1,7,14],axis=0)
 
-#%%####################################### Subject-by-subject MEG decoding for each condition 
-ts = 0
-te = 0.2
-shuffle = 'keep pair'
-randseed = 2
+#%%####################################### Brainstem Subject-by-subject MEG decoding for each condition 
+# ts = 0.04
+# te = 0.2
+# shuffle = 'keep pair'
+# randseed = 2
 
-## One-shot decoding
-acc_all_eng = []
-acc_all_spa = []
+# ## One-shot decoding
+# acc_all_eng = []
+# acc_all_spa = []
 
-print(nfilter)
-print(ntrial)
-print(ntop)
-for n in np.arange(0,np.shape(p10_eng)[1],1):
-    print("Doing v " + str(n))
-    acc_eng = do_subject_by_subject_decoding([p10_eng[:,n,:], n40_eng[:,n,:]], times, ts, te, len(p10_eng), 'keep pair', randseed)
-    acc_spa = do_subject_by_subject_decoding([p10_spa[:,n,:], n40_spa[:,n,:]], times, ts, te, len(p10_spa), 'keep pair', randseed)
-    acc_all_eng.append(acc_eng.mean(0))
-    acc_all_spa.append(acc_spa.mean(0))
-acc_all_eng = np.array(acc_all_eng)
-acc_all_spa = np.array(acc_all_spa)
-print(acc_all_eng.mean())
-print(acc_all_eng.std())
-print(acc_all_spa.mean())
-print(acc_all_spa.std())
-np.save('eng_svmacc_p10n40_pcffr802000_ntrial200_3_morph.npy',acc_all_eng)
-np.save('spa_svmacc_p10n40_pcffr802000_ntrial200_3_morph.npy',acc_all_spa)
+# print(nfilter)
+# print(ntrial)
+# print(ntop)
+# for n in np.arange(0,np.shape(p10_eng)[1],1):
+#     print("Doing v " + str(n))
+#     acc_eng = do_subject_by_subject_decoding([p10_eng[:,n,:], n40_eng[:,n,:]], times, ts, te, len(p10_eng), 'keep pair', randseed)
+#     acc_spa = do_subject_by_subject_decoding([p10_spa[:,n,:], n40_spa[:,n,:]], times, ts, te, len(p10_spa), 'keep pair', randseed)
+#     acc_all_eng.append(acc_eng.mean(0))
+#     acc_all_spa.append(acc_spa.mean(0))
+# acc_all_eng = np.array(acc_all_eng)
+# acc_all_spa = np.array(acc_all_spa)
+# print(acc_all_eng.mean())
+# print(acc_all_eng.std())
+# print(acc_all_spa.mean())
+# print(acc_all_spa.std())
+# np.save('eng_svmacc_p10n40_pcffr80200_ntrial200_3_morph_40-200ms.npy',acc_all_eng)
+# np.save('spa_svmacc_p10n40_pcffr80200_ntrial200_3_morph_40-200ms.npy',acc_all_spa)
+
+#%%####################################### Brainstem increment decoding
+acc_incre_eng = np.empty((np.shape(p10_eng)[1],40)) ## sorry but hardcoding for now
+acc_incre_spa = np.empty((np.shape(p10_spa)[1],40))
+
+for nch in np.arange(0,np.shape(p10_eng)[1],1): # for morph whole brain
+    print("Doing v " + str(nch))
+    condition_pairs = (
+        [p10_eng[:,nch,:], n40_eng[:,nch,:]],
+        [p10_spa[:,nch,:], n40_spa[:,nch,:]]
+    )
+    ## Differential decoding
+    # decode_fn = make_decode_fn(times, ts, te, 15, 16, shuffle, randseed)
+    # real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
+    # # plt.title(ch_names[nch] + ' (' + str(nch) + ')' ) # for sensor
+    # plt.title(label_names[nch] + ' (' + str(nch) + ')' ) # for roi
+
+    ## Increment decoding
+    
+    window_step = 0.005
+    
+    output = run_increment_decoding(
+        p10_eng[:,nch,:], n40_eng[:,nch,:],
+        p10_spa[:,nch,:], n40_spa[:,nch,:],
+        times,
+        window_step=window_step,
+        ncv1=np.shape(p10_eng)[0],
+        ncv2=np.shape(p10_spa)[0],
+        shuffle="keep pair",
+        randseed=2,
+        do_permutation=None,
+        niter=100,
+        labels=("English", "Spanish"),
+        plot=False)
+    acc_incre_eng[nch,:] = output['acc1']
+    acc_incre_spa[nch,:] = output['acc2']
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_increment_svmacc_p10n40_pcffr802000_ntrial200_3_morph.npy',acc_incre_eng)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_increment_svmacc_p10n40_pcffr802000_ntrial200_3_morph.npy',acc_incre_spa)
+# np.save('increment_svmacc_time.npy',output['window_ms'])
+
+#%%####################################### CBS Subject-by-subject MEG decoding for each condition 
+# os.chdir('/media/tzcheng/storage2/CBS/cbsb_meg_analysis/decoding')
+
+# ts = 0.04
+# te = 0.2
+# shuffle = 'keep pair'
+# randseed = 2
+
+# ## One-shot decoding
+# acc_all_eng = []
+# acc_all_spa = []
+
+# for n in np.arange(0,np.shape(p10_cbs)[1],1):
+#     print("Doing v " + str(n))
+#     acc_eng = do_subject_by_subject_decoding([p10_cbs[:,n,:], n40_cbs[:,n,:]], times, ts, te, len(p10_cbs), 'keep pair', randseed)
+#     acc_spa = do_subject_by_subject_decoding([p10_cbs[:,n,:], p40_cbs[:,n,:]], times, ts, te, len(p10_cbs), 'keep pair', randseed)
+#     acc_all_eng.append(acc_eng.mean(0))
+#     acc_all_spa.append(acc_spa.mean(0))
+# acc_all_eng = np.array(acc_all_eng)
+# acc_all_spa = np.array(acc_all_spa)
+# print(acc_all_eng.mean())
+# print(acc_all_eng.std())
+# print(acc_all_spa.mean())
+# print(acc_all_spa.std())
+# np.save('svmacc_p10n40_pcffr80200_ntrial200_3_morph_40-200ms.npy',acc_all_eng)
+# np.save('svmacc_p10p40_pcffr80200_ntrial200_3_morph_40-200ms.npy',acc_all_spa)
