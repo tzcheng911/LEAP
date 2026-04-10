@@ -155,7 +155,7 @@ def do_cov(subject,data, do_cabr,hp,lp):
     root_path = os.getcwd()
     fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + run + '_erm_otp_raw_sss_proj_f'
     if do_cabr == True:     
-        fname_erm_out = fname_erm + str(hp) + str(lp) + '_ffr-cov'
+        fname_erm_out = fname_erm + str(hp) + str(lp) + '_replicate_ffr-cov'
     else: 
         fname_erm_out = fname_erm + 'il50_mmr-cov'
     noise_cov = mne.compute_raw_covariance(data, tmin=0, tmax=None)
@@ -305,10 +305,10 @@ def do_epoch_cabr(data, subject, run, n_trials,hp,lp):
         evoked_dev2_n=new_epochs['Deviant2n'][rand_ind].average()
         evoked_dev2 = mne.combine_evoked([evoked_dev2_p,evoked_dev2_n], weights='equal')
         
-    epochs.save(file_out + '_ffr_e_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_substd.save(file_out + '_evoked_substd_ffr_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_dev1.save(file_out + '_evoked_dev1_ffr_' + str(n_trials) + '.fif',overwrite=True)
-    evoked_dev2.save(file_out + '_evoked_dev2_ffr_' + str(n_trials) + '.fif',overwrite=True)
+    epochs.save(file_out + '_ffr_e_' + str(n_trials) + '_replicate.fif',overwrite=True)
+    evoked_substd.save(file_out + '_evoked_substd_ffr_' + str(n_trials) + '_replicate.fif',overwrite=True)
+    evoked_dev1.save(file_out + '_evoked_dev1_ffr_' + str(n_trials) + '_replicate.fif',overwrite=True)
+    evoked_dev2.save(file_out + '_evoked_dev2_ffr_' + str(n_trials) + '_replicate.fif',overwrite=True)
     return evoked_substd,evoked_dev1,evoked_dev2,epochs
 
 def do_epoch_cabr_eeg(data, subject, run, n_trials):  
@@ -367,7 +367,7 @@ runs = ['_01'] # ['_01','_02'] for the adults and ['_01'] for the infants
 # runs = ['_unplug'] # for stimuli leakage test
 st_correlation = 0.98 # 0.98 for adults and 0.9 for infants
 int_order = 8 # 8 for adults and 6 for infants
-lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ, Coffey paper
+lp = 450 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ, Coffey paper
 hp = 80
 do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
