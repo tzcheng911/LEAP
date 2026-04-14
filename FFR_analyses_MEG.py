@@ -1084,9 +1084,9 @@ times = np.linspace(-0.02, 0.2, 1101)
 # fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
-file_type = 'sensor'
+file_type = 'morph'
 nfilter = '80200'
-ntrial = 'all'
+ntrial = '200'
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
