@@ -1077,16 +1077,21 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 times = np.linspace(-0.02, 0.2, 1101)
 
 #%%####################################### load the data
-# file_type = 'morph'
-# subject_type = 'adults'
-# fs,p10_cbs = load_CBS_file(file_type, 'p10', subject_type)
-# fs,n40_cbs = load_CBS_file(file_type, 'n40', subject_type)
-# fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
+file_type = 'morph'
+subject_type = 'adults'
+fs,p10_cbs = load_CBS_file(file_type, 'p10', subject_type)
+fs,n40_cbs = load_CBS_file(file_type, 'n40', subject_type)
+fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
     
+## remove the rim subjects for now
+p10_cbs = np.delete(p10_cbs,[10,12],axis=0)
+n40_cbs = np.delete(n40_cbs,[10,12],axis=0)
+p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
+
 ## brainstem
 file_type = 'morph'
 nfilter = '80200'
-ntrial = '200'
+ntrial = 'all'
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1214,8 +1219,8 @@ evoked[0].info['bads'] = ch_names[idx_overlap].tolist()
 evoked[0].plot_sensors(ch_type = 'all')
 
 ## svm acc english > spanish 
-idx_diff = np.argsort(diff_acc_all)[-30:] ## 50 for the 200 reps, 20 for the 3000 reps
-print(np.sort(diff_acc_all)[-30:])
+idx_diff = np.argsort(diff_acc_all)[-20:] ## 50 for the 200 reps, 20 for the 3000 reps
+print(np.sort(diff_acc_all)[-20:])
 idx_diff = idx_diff[acc_all_spa[idx_diff] > 0.5] # ensure that acc_all_spa is higher than chance level 
 
 # MEG2022 (idx 226), MEG2033 (idx 229) showed high decoding acc
@@ -1298,10 +1303,10 @@ for nch in idx_diff: # for sensor
 # for nch in np.arange(0,np.shape(p10_cbs)[1],1): # for morph whole brain
     print("Doing v " + str(nch))
     condition_pairs = (
-        # [p10_eng[:,nch,:], n40_eng[:,nch,:]],
-        # [p10_spa[:,nch,:], n40_spa[:,nch,:]]
-        [p10_cbs[:,nch,:], n40_cbs[:,nch,:]],
-        [p10_cbs[:,nch,:], p40_cbs[:,nch,:]]
+        [p10_eng[:,nch,:], n40_eng[:,nch,:]],
+        [p10_spa[:,nch,:], n40_spa[:,nch,:]]
+        # [p10_cbs[:,nch,:], n40_cbs[:,nch,:]],
+        # [p10_cbs[:,nch,:], p40_cbs[:,nch,:]]
     )
     ## Differential decoding
     # decode_fn = make_decode_fn(times, ts, te, 15, 16, shuffle, randseed)
@@ -1314,29 +1319,29 @@ for nch in idx_diff: # for sensor
     window_step = 0.005
     
     output = run_increment_decoding(
-        # p10_eng[:,nch,:], n40_eng[:,nch,:],
-        # p10_spa[:,nch,:], n40_spa[:,nch,:],
-        p10_cbs[:,nch,:], n40_cbs[:,nch,:],
-        p10_cbs[:,nch,:], p40_cbs[:,nch,:],
+        p10_eng[:,nch,:], n40_eng[:,nch,:],
+        p10_spa[:,nch,:], n40_spa[:,nch,:],
+        # p10_cbs[:,nch,:], n40_cbs[:,nch,:],
+        # p10_cbs[:,nch,:], p40_cbs[:,nch,:],
         times,
         window_step=window_step,
-        # ncv1=np.shape(p10_eng)[0],
-        # ncv2=np.shape(p10_spa)[0],
-        ncv1=np.shape(p10_cbs)[0],
-        ncv2=np.shape(p10_cbs)[0],
+        ncv1=np.shape(p10_eng)[0],
+        ncv2=np.shape(p10_spa)[0],
+        # ncv1=np.shape(p10_cbs)[0],
+        # ncv2=np.shape(p10_cbs)[0],
         shuffle="keep pair",
         randseed=2,
         do_permutation=None,
         niter=100,
-        # labels=("English", "Spanish"),
-        labels=("p10n40", "p10p40"),
+        labels=("English", "Spanish"),
+        # labels=("p10n40", "p10p40"),
         plot=True)
     title = label_names[nch] + ' (' + str(nch) + ')'
     plt.title(title)
     acc_incre_eng[nch,:] = output['acc1']
     acc_incre_spa[nch,:] = output['acc2']
-np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/adult_increment_svmacc_p10n40_pcffr80200_ntrial200_3_morph_replicate.npy',acc_incre_eng)
-np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/adult_increment_svmacc_p10p40_pcffr80200_ntrial200_3_morph_replicate.npy',acc_incre_spa)
+np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/adultnorim10_12_increment_svmacc_p10n40_pcffr80200_ntrial200_3_morph_replicate.npy',acc_incre_eng)
+np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/adultnorim10_12_increment_svmacc_p10p40_pcffr80200_ntrial200_3_morph_replicate.npy',acc_incre_spa)
 np.save('increment_svmacc_time.npy',output['window_ms'])
 
 acc_incre_eng = np.load('eng_increment_svmacc_p10n40_pcffr80200_ntrialall_3_morph.npy')
