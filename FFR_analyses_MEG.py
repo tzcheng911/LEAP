@@ -41,6 +41,7 @@ from mne.decoding import (
 )
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.pipeline import make_pipeline
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 import random
@@ -252,11 +253,12 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     clf = make_pipeline(
         StandardScaler(),  # z-score normalization
         # SVC(kernel='rbf',gamma='auto',C=0.1,class_weight='balanced')  
+        PCA(n_components=0.75),
         SVC(kernel='linear', C=1,class_weight='balanced')
     )
     scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
     score = np.mean(scores, axis=0)
-    # print("Decoding Accuracy %0.1f%%" % (100 * score)) # stop printing for the speed
+    print("Decoding Accuracy %0.1f%%" % (100 * score)) # stop printing for the speed
     
     ## see the weights 
     # from sklearn.model_selection import StratifiedKFold
@@ -1089,7 +1091,7 @@ n40_cbs = np.delete(n40_cbs,[10,12],axis=0)
 p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
 
 ## brainstem
-file_type = 'morph'
+file_type = 'sensor'
 nfilter = '80200'
 ntrial = 'all'
 ntop = '3'
