@@ -1057,7 +1057,7 @@ subject_type = 'adults'
 fs,std = load_CBS_file(file_type, 'p10', subject_type)
 fs,dev1 = load_CBS_file(file_type, 'n40', subject_type)
 fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
-    
+
 ## brainstem
 file_type = 'EEG'
 ntrial = '200'
@@ -1145,18 +1145,18 @@ te = 0.20
 niter = 500 
 shuffle = "keep pair"
 randseed = 2
-ncv1 = 15
-ncv2 = 16
+ncv1 = 18
+ncv2 = 18
 
 condition_pairs = (
     [std, dev1],
     [std, dev2]
 )
 
-condition_pairs = (
-    [p10_eng, n40_eng],
-    [p10_spa, n40_spa]
-)
+# condition_pairs = (
+#     [p10_eng, n40_eng],
+#     [p10_spa, n40_spa]
+# )
 
 decode_fn = make_decode_fn(times, ts, te, ncv1, ncv2, shuffle, randseed)
 real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
@@ -1188,12 +1188,14 @@ decoding_acc = do_subject_by_subject_decoding([p10_spa_new, n40_spa], times, ts,
 window_step = 0.005
 
 run_increment_decoding(
-    p10_eng, n40_eng,
-    p10_spa, n40_spa,
+    std, dev1,
+    std, dev2,
+    # p10_eng, n40_eng,
+    # p10_spa, n40_spa,
     times,
     window_step=window_step,
-    ncv1=15,
-    ncv2=16,
+    ncv1=18,
+    ncv2=18,
     shuffle="keep pair",
     randseed=2,
     do_permutation=None,
@@ -1406,9 +1408,9 @@ plt.tight_layout()
 plt.show()
 
 #%% Decode F0
-f_min, f_max = 60,150
+f_min, f_max = 50,150
 ts = 0
-te = 0.075
+te = 0.2
 niter = 500 
 shuffle = "keep pair"
 randseed = 2
@@ -1428,23 +1430,138 @@ condition_pairs = (
     [band_power_p10_spa, band_power_n40_spa]
 )
 
-decode_fn = make_decode_fn(times, ts, te, ncv1, ncv2, shuffle, randseed)
+decode_fn = make_decode_fn(times, ts, te,len(condition_pairs[0][0]), len(condition_pairs[1][0]), shuffle, randseed)
 real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
 
-#%%####################################### ITPC analysis
-data = p10_spa
+window_step = 0.005
 
-ts = 0.025
-te = 0.1 # 100 for ba and 130 for mba and pa
-tslice = slice(ff(times, ts), ff(times, te))
-fmin = 60
-fmax = 140
-itpc = itpc_hilbert(data, fs,times,ts,te,fmin,fmax)
-# plt.figure()
-plt.plot(times[tslice],itpc)
-plt.xlim(times[tslice][0], times[tslice][-1])
-plt.legend(['eng','spa'])
-plt.title('ITPC between ' + str(fmin) + ' Hz and ' + str(fmax) + ' Hz')
+run_increment_decoding(
+    band_power_p10_eng, band_power_n40_eng,
+    band_power_p10_spa, band_power_n40_spa,
+    times,
+    window_step=window_step,
+    ncv1=15,
+    ncv2=16,
+    shuffle="keep pair",
+    randseed=2,
+    do_permutation=None,
+    niter=500,
+    labels=("English", "Spanish"),
+    plot = True
+)
+
+#%% Decode spectrogram
+nfft = fs
+wl = 0.02 # window length
+wo = 0.019 # window overlap
+hop = int(nfft * (wl - wo))
+win_len = int(nfft * wl)
+
+## calculate spectrogram
+p10_eng_S_mag = []
+p10_eng_S_db = []
+n40_eng_S_mag = []
+n40_eng_S_db = []
+p10_spa_S_mag = []
+p10_spa_S_db = []
+n40_spa_S_mag = []
+n40_spa_S_db = []
+
+## p10_eng
+for subj in range(p10_eng.shape[0]):
+    signal = p10_eng[subj].astype(np.float32)
+    signal = signal / np.max(np.abs(signal))
+    S = librosa.stft(
+        signal,
+        n_fft=nfft,
+        hop_length=hop,
+        win_length=win_len,
+        window='hamm'
+    )
+    S_mag = np.abs(S)
+    S_db  = librosa.amplitude_to_db(S_mag, ref=np.max)
+    p10_eng_S_mag.append(S_mag)
+    p10_eng_S_db.append(S_db)
+
+## n40_eng
+for subj in range(n40_eng.shape[0]):
+    signal = n40_eng[subj].astype(np.float32)
+    signal = signal / np.max(np.abs(signal))
+    S = librosa.stft(
+        signal,
+        n_fft=nfft,
+        hop_length=hop,
+        win_length=win_len,
+        window='hamm'
+    )
+    S_mag = np.abs(S)
+    S_db  = librosa.amplitude_to_db(S_mag, ref=np.max)
+    n40_eng_S_mag.append(S_mag)
+    n40_eng_S_db.append(S_db)
+
+## p10_spa   
+for subj in range(p10_spa.shape[0]):
+    signal = p10_spa[subj].astype(np.float32)
+    signal = signal / np.max(np.abs(signal))
+    S = librosa.stft(
+        signal,
+        n_fft=nfft,
+        hop_length=hop,
+        win_length=win_len,
+        window='hamm'
+    )
+    S_mag = np.abs(S)
+    S_db  = librosa.amplitude_to_db(S_mag, ref=np.max)
+    p10_spa_S_mag.append(S_mag)
+    p10_spa_S_db.append(S_db)
+
+## n40_spa
+for subj in range(n40_spa.shape[0]):
+    signal = n40_spa[subj].astype(np.float32)
+    signal = signal / np.max(np.abs(signal))
+    S = librosa.stft(
+        signal,
+        n_fft=nfft,
+        hop_length=hop,
+        win_length=win_len,
+        window='hamm'
+    )
+    S_mag = np.abs(S)
+    S_db  = librosa.amplitude_to_db(S_mag, ref=np.max)
+    n40_spa_S_mag.append(S_mag)
+    n40_spa_S_db.append(S_db)
+
+## 
+p10_eng_S_mag = np.asarray(p10_eng_S_mag)
+n40_eng_S_mag = np.asarray(n40_eng_S_mag)
+p10_spa_S_mag = np.asarray(p10_spa_S_mag)
+n40_spa_S_mag = np.asarray(n40_spa_S_mag)
+p10_eng_flat = p10_eng_S_mag.reshape(p10_eng_S_mag.shape[0],-1)
+n40_eng_flat = n40_eng_S_mag.reshape(n40_eng_S_mag.shape[0],-1)
+p10_spa_flat = p10_spa_S_mag.reshape(p10_spa_S_mag.shape[0],-1)
+n40_spa_flat = n40_spa_S_mag.reshape(n40_spa_S_mag.shape[0],-1)
+
+decoding_acc = do_subject_by_subject_decoding([p10_eng_flat, n40_eng_flat], times, ts, te, len(p10_eng), 'keep pair', randseed)
+decoding_acc = do_subject_by_subject_decoding([p10_spa_flat, n40_spa_flat], times, ts, te, len(p10_spa), 'keep pair', randseed)
+
+#%%
+window_step = 0.005
+
+run_increment_decoding(
+    p10_eng_flat, n40_eng_flat,
+    p10_spa_flat, n40_spa_flat,
+    times,
+    window_step=window_step,
+    ncv1=15,
+    ncv2=16,
+    shuffle="keep pair",
+    randseed=2,
+    do_permutation=None,
+    niter=500,
+    labels=("English", "Spanish"),
+    plot = True
+)    
+
 
 #%%####################################### SNR analysis
 level = 'individual' # 'group' (mean first then SNR) or 'individual' (SNR on individual level then mean)
