@@ -114,15 +114,14 @@ subjects = []
 for file in os.listdir():
     if file.startswith('brainstem_' + lang): ## it's easier to run 100s and 200s seperately so they can be saved into two npy files
         subjects.append(file)
-
 print(subjects)
 
 ## preproc parameters
 n_top = 3 # 3 or 10 or 0: indicate no PCA was done
 n_trial = 'allall' ## 'all'(3000) or 200 or 'allall'(6000)
-lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
+lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
-runs = ['_0102'] # only run 01 for now, add the ['_01','_02'] for all runs, note that brainstem_107 only has run1 for p10
+runs = ['_01'] # only run 01 for now, add the ['_01','_02'] for all runs, note that brainstem_107 only has run1 for p10
 conditions = ['_p10','_n40']
 
 ## PCA parameters
@@ -145,7 +144,8 @@ for ns,s in enumerate(subjects):
     # do_foward(s)
     for ncondition,condition in enumerate(conditions):
         for nrun,run in enumerate(runs):
-            file_in = root_path + s + '/sss_fif/' + s + condition + run
+            # file_in = root_path + s + '/sss_fif/' + s + condition + run
+            file_in = root_path + s + '/sss_fif/' + s + condition + '_0102' # for reps = 6000
             evokeds = mne.read_evokeds(file_in + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_evoked_ffr.fif')[0]
             data = evokeds.get_data()
             if do_PCA:
