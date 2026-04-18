@@ -1091,9 +1091,9 @@ n40_cbs = np.delete(n40_cbs,[10,12],axis=0)
 p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
 
 ## brainstem
-file_type = 'sensor'
+file_type = 'roi'
 nfilter = '80200'
-ntrial = 'all'
+ntrial = '200'
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1177,7 +1177,7 @@ acc_all_eng = []
 acc_all_spa = []
 
 for n in np.arange(0,np.shape(p10_eng)[1],1):
-    print("Doing v " + str(n))
+    # print("Doing v " + str(n))
     acc_eng = do_subject_by_subject_decoding([p10_eng[:,n,:], n40_eng[:,n,:]], times, ts, te, len(p10_eng), 'keep pair', randseed)
     acc_spa = do_subject_by_subject_decoding([p10_spa[:,n,:], n40_spa[:,n,:]], times, ts, te, len(p10_spa), 'keep pair', randseed)
     acc_all_eng.append(acc_eng.mean(0))
@@ -1300,8 +1300,8 @@ acc_incre_spa = np.empty((np.shape(p10_cbs)[1],40))
 # acc_incre_eng = np.empty((len(ROI_label),40)) ## sorry but hardcoding for now
 # acc_incre_spa = np.empty((len(ROI_label),40))  # for roi
 
-for nch in idx_diff: # for sensor
-# for n, nch in enumerate(ROI_label): # for roi
+# for nch in idx_diff: # for sensor
+for n, nch in enumerate(ROI_label): # for roi
 # for nch in np.arange(0,np.shape(p10_cbs)[1],1): # for morph whole brain
     print("Doing v " + str(nch))
     condition_pairs = (
