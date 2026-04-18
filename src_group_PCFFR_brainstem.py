@@ -102,8 +102,7 @@ def group_stc(subj,condition,run,n_trial,n_top,hp,lp):
     stc_roi_data = stc_roi.data
     return stc_data,stc_roi_data
 
-#%%########################
-###############'
+#%%####################################### 
 do_PCA = True ## if True, assign n_top cuz it cannot be 0
 morph = True
 lang = '1'
@@ -120,10 +119,10 @@ print(subjects)
 
 ## preproc parameters
 n_top = 3 # 3 or 10 or 0: indicate no PCA was done
-n_trial = 'all' ## 'all' or 200 or any number
-lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
+n_trial = 'allall' ## 'all'(3000) or 200 or 'allall'(6000)
+lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
-runs = ['_01'] # only run 01 for now, add the ['_01','_02'] for all runs, note that brainstem_107 only has run1 for p10
+runs = ['_0102'] # only run 01 for now, add the ['_01','_02'] for all runs, note that brainstem_107 only has run1 for p10
 conditions = ['_p10','_n40']
 
 ## PCA parameters

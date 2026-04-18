@@ -152,7 +152,7 @@ conditions = ['_p10','_n40']
 runs = ['_01','_02'] 
 lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
-n_trials = 'all'  ## 'all' or 200 or any number
+n_trials = 'allall'  ## 'all' or 200 or or 'allall'(6000)
 
 do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
@@ -160,6 +160,7 @@ subj = [] # A104 got some technical issue
 for file in os.listdir():
     if file.startswith('brainstem_1'): # brainstem
         subj.append(file)
+
 # subj = ['brainstem_113', 'brainstem_203', 'brainstem_214', 'brainstem_213', 'brainstem_124', 'brainstem_110', 'brainstem_118', 'brainstem_226', 'brainstem_215', 'brainstem_225', 'brainstem_224', 'brainstem_106', 'brainstem_204', 'brainstem_111', 'brainstem_112', 'brainstem_206', 'brainstem_133', 'brainstem_104', 'brainstem_220']
 print(subj)
 # brainstem_107 doesn't have p10_02
@@ -266,6 +267,19 @@ for s in subj:
                 do_epoch_cabr_meg(raw_filt, events, s, condition, run,n_trials,hp,lp)
             else:
                 print('Doing something else than cabr.')
+
+#%%##### do the jobs for MEG: combine the evoked of 1st and 2nd block for higher SNR for source localization 
+print(subj)
+for s in subj:
+    print(s)
+    for condition in conditions:
+        filename1 = root_path + '/' + s + '/sss_fif/' + s + condition + '_01_otp_raw_sss_proj_f' + str(hp) + str(lp)
+        filename2 = root_path + '/' + s + '/sss_fif/' + s + condition + '_02_otp_raw_sss_proj_f' + str(hp) + str(lp)
+        fileout = root_path + '/' + s + '/sss_fif/' + s + condition + '_0102_otp_raw_sss_proj_f' + str(hp) + str(lp)
+        evoked1 = mne.read_evokeds(filename1 + '_ntrialall_evoked_ffr.fif')
+        evoked2 = mne.read_evokeds(filename2 + '_ntrialall_evoked_ffr.fif')
+        combined = mne.combine_evoked([evoked1[0], evoked2[0]], weights='equal')
+        combined.save(fileout + '_ntrialallall_evoked_ffr.fif',overwrite=True)
 
 #%%##### save EEG from the MEG recording file
 ## brainstem_107,brainstem_113 EEG030, the rest 100x use EEG034
