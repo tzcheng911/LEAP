@@ -1060,7 +1060,7 @@ fs,dev2 = load_CBS_file(file_type, 'p40', subject_type)
 
 ## brainstem
 file_type = 'EEG'
-ntrial = '200'
+ntrial = 'all'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
     
 #%%####################################### visualize the data to examine
