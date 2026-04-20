@@ -1072,14 +1072,19 @@ times = np.linspace(-0.02, 0.2, 1101)
 # fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
     
 ## brainstem
-file_type = 'morph'
-nfilter = '802000'
-ntrial = '200'
-ntop = '3'
-fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
+# file_type = 'morph'
+# nfilter = '802000'
+# ntrial = '200'
+# ntop = '3'
+# fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
-print(nfilter)
-print(ntrial)
+# print(nfilter)
+# print(ntrial)
+p10_eng = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr802000_ntrialallall_3_p10_01_morph.npy')
+n40_eng = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr802000_ntrialallall_3_n40_01_morph.npy')
+p10_spa = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr802000_ntrialallall_3_p10_01_morph.npy')
+n40_spa = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr802000_ntrialallall_3_n40_01_morph.npy')
+
 ## remove the rim subjects for now
 # p10_eng = np.delete(p10_eng,10,axis=0)
 # n40_eng = np.delete(n40_eng,10,axis=0)
@@ -1149,8 +1154,8 @@ for nch in np.arange(0,np.shape(p10_eng)[1],1): # for morph whole brain
         plot=False)
     acc_incre_eng[nch,:] = output['acc1']
     acc_incre_spa[nch,:] = output['acc2']
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_increment_svmacc_p10n40_pcffr802000_ntrial200_3_morph.npy',acc_incre_eng)
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_increment_svmacc_p10n40_pcffr802000_ntrial200_3_morph.npy',acc_incre_spa)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_increment_svmacc_p10n40_pcffr802000_ntrialallall_3_morph.npy',acc_incre_eng)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_increment_svmacc_p10n40_pcffr802000_ntrialallall_3_morph.npy',acc_incre_spa)
 # np.save('increment_svmacc_time.npy',output['window_ms'])
 
 #%%####################################### CBS Subject-by-subject MEG decoding for each condition 
