@@ -1091,9 +1091,9 @@ n40_cbs = np.delete(n40_cbs,[10,12],axis=0)
 p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
 
 ## brainstem
-file_type = 'roi'
-nfilter = '80200'
-ntrial = '200'
+file_type = 'sensor'
+nfilter = '802000'
+ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1136,11 +1136,29 @@ for s in np.arange(0,len(p10_spa),1):
 subjects_eng=['113','124','107','110','121','118','126','129','108','106','111','112','133','104','123']
 subjects_spa=['203','214','213','223','226','222','212','215','225','224','204','221','206','211','220','205'] ## 202 event code has some issues
 
-subjects_eng_dict = dict(zip(subjects_eng, n40_eng))
-subjects_spa_dict = dict(zip(subjects_spa, n40_spa))
+subjects_eng_dict = dict(zip(subjects_eng, p10_eng[:,145,:]))
+subjects_spa_dict = dict(zip(subjects_spa, p10_spa[:,145,:]))
 n_cols = 3
 plot_individuals(subjects_eng_dict,n_cols,times)
 plot_individuals(subjects_spa_dict,n_cols,times)
+
+## plot individual EEG-FFRs and MEG-FFRs
+lang = 'eng' # eng or spa
+condition = '_p10'
+run = '_01'
+eeg_path = '/media/tzcheng/storage/Brainstem/EEG/preprocessed/ntrial_all/'
+meg_path = '/media/tzcheng/storage/Brainstem/'
+
+eeg_all = np.empty([len(subjects_eng),1101])
+meg_all = np.empty([len(subjects_eng),306,1101])
+for ns,s in enumerate(subjects_eng):
+    print(s)
+    meg_file_in = meg_path + 'brainstem_' + s + '/sss_fif/brainstem_' + s + condition + run
+    meg = mne.read_evokeds(meg_file_in + '_otp_raw_sss_proj_f802000_ntrialall_evoked_ffr.fif')[0].get_data()
+    meg_all[ns,:,:] = np.squeeze(meg)
+    eeg_file_in = eeg_path + lang + '/brainstem_' + s + condition + run
+    eeg = mne.read_evokeds(eeg_file_in + '_evoked_cabr_all.fif')[0].get_data()
+    eeg_all[ns,:] = np.squeeze(eeg)
 
 ## plot average FFRs between p10 vs. n40
 plot_group_ffr(p10_eng[:,12,:], n40_eng[:,12,:], 'p10','n40', times)
