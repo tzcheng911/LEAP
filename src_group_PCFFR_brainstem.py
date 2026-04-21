@@ -103,7 +103,7 @@ def group_stc(subj,condition,run,n_trial,n_top,hp,lp):
     return stc_data,stc_roi_data
 
 #%%####################################### 
-do_PCA = True ## if True, assign n_top cuz it cannot be 0
+do_PCA = False ## if True, assign n_top cuz it cannot be 0
 morph = True
 lang = '1'
 
@@ -144,8 +144,8 @@ for ns,s in enumerate(subjects):
     # do_foward(s)
     for ncondition,condition in enumerate(conditions):
         for nrun,run in enumerate(runs):
-            # file_in = root_path + s + '/sss_fif/' + s + condition + run
-            file_in = root_path + s + '/sss_fif/' + s + condition + '_0102' # for reps = 6000
+            file_in = root_path + s + '/sss_fif/' + s + condition + run
+            # file_in = root_path + s + '/sss_fif/' + s + condition + '_0102' # for reps = 6000
             evokeds = mne.read_evokeds(file_in + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_evoked_ffr.fif')[0]
             data = evokeds.get_data()
             if do_PCA:
@@ -159,8 +159,8 @@ for ns,s in enumerate(subjects):
             else:
                 print('Run src on non-PCA signals')
                 group_sensor[ns,ncondition,nrun,:len(data),:] = data
-            do_inverse_FFR(s,evokeds,condition,run,morph,n_trial,n_top,hp,lp)
-            group_morph[ns,ncondition,nrun,:,:],group_roi[ns,ncondition,nrun,:,:] = group_stc(s,condition,run,n_trial,n_top,hp,lp)
+            # do_inverse_FFR(s,evokeds,condition,run,morph,n_trial,n_top,hp,lp)
+            # group_morph[ns,ncondition,nrun,:,:],group_roi[ns,ncondition,nrun,:,:] = group_stc(s,condition,run,n_trial,n_top,hp,lp)
 
 for ncondition,condition in enumerate(conditions):
     for nrun,run in enumerate(runs):
