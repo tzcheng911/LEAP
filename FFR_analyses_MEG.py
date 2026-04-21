@@ -1143,22 +1143,38 @@ plot_individuals(subjects_eng_dict,n_cols,times)
 plot_individuals(subjects_spa_dict,n_cols,times)
 
 ## plot individual EEG-FFRs and MEG-FFRs
-lang = 'eng' # eng or spa
 condition = '_p10'
 run = '_01'
 eeg_path = '/media/tzcheng/storage/Brainstem/EEG/preprocessed/ntrial_all/'
 meg_path = '/media/tzcheng/storage/Brainstem/'
 
-eeg_all = np.empty([len(subjects_eng),1101])
-meg_all = np.empty([len(subjects_eng),306,1101])
+eeg_all_eng = np.empty([len(subjects_eng),1101])
+meg_all_eng = np.empty([len(subjects_eng),306,1101])
+eeg_all_spa = np.empty([len(subjects_spa),1101])
+meg_all_spa = np.empty([len(subjects_spa),306,1101])
 for ns,s in enumerate(subjects_eng):
     print(s)
     meg_file_in = meg_path + 'brainstem_' + s + '/sss_fif/brainstem_' + s + condition + run
     meg = mne.read_evokeds(meg_file_in + '_otp_raw_sss_proj_f802000_ntrialall_evoked_ffr.fif')[0].get_data()
-    meg_all[ns,:,:] = np.squeeze(meg)
-    eeg_file_in = eeg_path + lang + '/brainstem_' + s + condition + run
+    meg_all_eng[ns,:len(meg),:] = np.squeeze(meg)
+    eeg_file_in = eeg_path + 'eng/brainstem_' + s + condition + run
     eeg = mne.read_evokeds(eeg_file_in + '_evoked_cabr_all.fif')[0].get_data()
-    eeg_all[ns,:] = np.squeeze(eeg)
+    eeg_all_eng[ns,:] = np.squeeze(eeg)
+
+for ns,s in enumerate(subjects_spa):
+    print(s)
+    meg_file_in = meg_path + 'brainstem_' + s + '/sss_fif/brainstem_' + s + condition + run
+    meg = mne.read_evokeds(meg_file_in + '_otp_raw_sss_proj_f802000_ntrialall_evoked_ffr.fif')[0].get_data()
+    meg_all_spa[ns,:len(meg),:] = np.squeeze(meg)
+    eeg_file_in = eeg_path + 'spa/brainstem_' + s + condition + run
+    eeg = mne.read_evokeds(eeg_file_in + '_evoked_cabr_all.fif')[0].get_data()
+    eeg_all_spa[ns,:] = np.squeeze(eeg)
+    
+subjects_dict1 = dict(zip(subjects_eng, eeg_all_eng))
+subjects_dict2 = dict(zip(subjects_eng, meg_all_eng[:,151,:]))
+n_cols = 3
+plot_individuals(subjects_dict1,n_cols,times)
+plot_individuals(subjects_dict2,n_cols,times)
 
 ## plot average FFRs between p10 vs. n40
 plot_group_ffr(p10_eng[:,12,:], n40_eng[:,12,:], 'p10','n40', times)
