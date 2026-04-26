@@ -38,6 +38,7 @@ from mne.decoding import (
     get_coef,
     Vectorizer,
     CSP,
+    get_coef
 )
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.pipeline import make_pipeline
@@ -85,7 +86,7 @@ def load_CBS_file(file_type, sound_type, subject_type):
         signal = np.load(root_path + 'cbsA_meeg_analysis/misc/adult_group_' + sound_type + '_misc_200.npy')
     elif file_type == 'EEG':
         signal = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_' + sound_type + '_ffr_eeg_200.npy')
-    elif file_type in ('sensor', 'roi','morph'): ## for the MEG
+    elif file_type in ('sensor', 'pc_data', 'roi','morph'): ## for the MEG
         if subject_type == 'adults':
             signal = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_pcffr80200_ntrial200_top_3_' + sound_type + '_01_' + file_type + '.npy')
         elif subject_type == 'infants':   
@@ -253,7 +254,7 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     clf = make_pipeline(
         StandardScaler(),  # z-score normalization
         # SVC(kernel='rbf',gamma='auto',C=0.1,class_weight='balanced')  
-        PCA(n_components=0.75),
+        # PCA(n_components=0.75),
         SVC(kernel='linear', C=1,class_weight='balanced')
     )
     scores = cross_val_multiscore(clf, X, y, cv=ncv, n_jobs=None)
@@ -264,6 +265,7 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
     # from sklearn.model_selection import StratifiedKFold
     # cv = StratifiedKFold(n_splits=ncv, shuffle=False)
 
+    # patterns = []
     # weights = []
     # scores = []
 
@@ -274,17 +276,35 @@ def do_subject_by_subject_decoding(X_list,times,ts,te,ncv,shuffle,random_state):
         
     #     clf = SVC(kernel='linear', C=1)
     #     clf.fit(X_train, y[train_idx])
-
+        
     #     scores.append(clf.score(X_test, y[test_idx]))
     #     weights.append(clf.coef_.squeeze())
-
+    #     # --- Haufe transform ---
+    #     w = clf.coef_.squeeze()  # (n_features,)
+           
+    #     # covariance of training data
+    #     cov_X = np.cov(X_train, rowvar=False)  # (n_features, n_features)
+           
+    #     pattern = cov_X @ w  # (n_features,)
+    #     patterns.append(pattern)
+        
     # score = np.mean(scores, axis=0)
     # print("Decoding Accuracy %0.1f%%" % (100 * score))
     # weights = np.array(weights)   # shape: (n_folds, n_timepoints)
+    # patterns = np.array(patterns)  # (n_folds, n_features)
+    # mean_pattern = np.mean(patterns, axis=0)
+    # std_pattern = np.std(patterns, axis=0)
+
     # plt.figure()
     # plt.plot(times[tslice],np.mean(weights,axis=0))
     # plt.title('SVM weights across time')
     
+    # plt.figure()
+    # plt.plot(times[tslice], mean_pattern, label='Mean pattern')
+    # plt.plot(times[tslice], std_pattern, label='STD (variance)', linestyle='--')
+    # plt.title('Haufe-transformed patterns across time')
+    # plt.xlabel('Time')
+    # plt.ylabel('Pattern strength')
     return scores
     
     ## using leave one out vs. leave one group out with stratified and matching subjects order give same results
@@ -510,7 +530,7 @@ def run_increment_decoding(
     cond2_a, cond2_b,          # e.g., p10_spa, n40_spa
     times,
     ts=0,
-    te=0.2,
+    te=0.15,
     window_step=0.005,
     ncv1=15,
     ncv2=16,
@@ -1079,6 +1099,7 @@ label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
 times = np.linspace(-0.02, 0.2, 1101)
 
 #%%####################################### load the data
+## CBS
 file_type = 'morph'
 subject_type = 'adults'
 fs,p10_cbs = load_CBS_file(file_type, 'p10', subject_type)
@@ -1091,11 +1112,18 @@ n40_cbs = np.delete(n40_cbs,[10,12],axis=0)
 p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
 
 ## brainstem
-file_type = 'sensor'
+root_path='/media/tzcheng/storage/Brainstem/'
+file_type = 'morph'
 nfilter = '802000'
-ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
+ntrial = 'allall' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
+
+if file_type == 'pc_data': ## for the MEG
+    p10_eng_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_info.npy')
+    n40_eng_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_info.npy')
+    p10_spa_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_info.npy')
+    n40_spa_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_info.npy')
 
 ## remove the rim subjects for now
 # p10_eng = np.delete(p10_eng,10,axis=0)
@@ -1105,15 +1133,22 @@ fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter,
 
 #%%####################################### visualization
 # average sensor data
-sensor_data = p10_eng.mean(0)
+sensor_data = n40_eng.mean(0)
 evoked = mne.read_evokeds('/media/tzcheng/storage/Brainstem/brainstem_203/sss_fif/brainstem_203_n40_02_otp_raw_sss_proj_f802000_ntrial200_evoked_ffr.fif')
 evoked[0].data = sensor_data
 evoked[0].plot_topo()
 
-## pca data 
-npc = 0
-plot_group_ffr(p10_eng[:,npc,:], n40_eng[:,npc,:], 'eng','spa', times)
-plot_group_ffr(p10_spa[:,npc,:], n40_spa[:,npc,:], 'eng','spa', times)
+## sanity check for each individual
+for n in np.arange(0,len(p10_eng),1):
+    evoked = mne.read_evokeds('/media/tzcheng/storage/Brainstem/brainstem_203/sss_fif/brainstem_203_n40_02_otp_raw_sss_proj_f802000_ntrial200_evoked_ffr.fif')
+    evoked[0].data = n40_eng[n,:,:]
+    # evoked[0].plot_joint()
+    evoked[0].plot_topo()
+    
+## pca data or sensor
+n = 145
+plot_group_ffr(p10_eng[:,n,:], n40_eng[:,n,:], 'p10','n40', times)
+plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
 
 ## source ROI data
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
@@ -1136,8 +1171,8 @@ for s in np.arange(0,len(p10_spa),1):
 subjects_eng=['113','124','107','110','121','118','126','129','108','106','111','112','133','104','123']
 subjects_spa=['203','214','213','223','226','222','212','215','225','224','204','221','206','211','220','205'] ## 202 event code has some issues
 
-subjects_eng_dict = dict(zip(subjects_eng, p10_eng[:,145,:]))
-subjects_spa_dict = dict(zip(subjects_spa, p10_spa[:,145,:]))
+subjects_eng_dict = dict(zip(subjects_eng, p10_eng[:,n,:]))
+subjects_spa_dict = dict(zip(subjects_spa, p10_spa[:,n,:]))
 n_cols = 3
 plot_individuals(subjects_eng_dict,n_cols,times)
 plot_individuals(subjects_spa_dict,n_cols,times)
@@ -1193,7 +1228,7 @@ plot_audio_ffr(times,n40_audio,fs_audio,n40_spa,0.13)
 
 #%%####################################### Subject-by-subject MEG decoding for each condition 
 ts = 0
-te = 0.2
+te = 0.15
 shuffle = 'keep pair'
 randseed = 2
 
@@ -1205,6 +1240,31 @@ acc_eng = do_subject_by_subject_decoding([p10_eng[:,ch_idx,:].reshape(p10_eng.sh
 acc_spa = do_subject_by_subject_decoding([p10_spa[:,ch_idx,:].reshape(p10_spa.shape[0],-1), n40_spa[:,ch_idx,:].reshape(n40_spa.shape[0],-1)], times, ts, te, len(p10_spa), 'keep pair', randseed)
 print(acc_eng.mean(0))
 print(acc_spa.mean(0))
+
+## One-shot decoding for 1 pcs x times
+eng_p10_pc_idx = p10_eng_pc_info[:, 0, 0].astype(int)
+eng_n40_pc_idx = n40_eng_pc_info[:, 0, 0].astype(int)
+spa_p10_pc_idx = p10_spa_pc_info[:, 0, 0].astype(int)
+spa_n40_pc_idx = n40_spa_pc_info[:, 0, 0].astype(int)
+
+eng_p10_pc = p10_eng[np.arange(p10_eng.shape[0]), eng_p10_pc_idx]
+eng_n40_pc = n40_eng[np.arange(n40_eng.shape[0]), eng_p10_pc_idx]
+spa_p10_pc = p10_spa[np.arange(p10_spa.shape[0]), spa_p10_pc_idx]
+spa_n40_pc = n40_spa[np.arange(n40_spa.shape[0]), spa_n40_pc_idx]
+
+subjects_eng_dict = dict(zip(subjects_eng, eng_p10_pc))
+subjects_spa_dict = dict(zip(subjects_spa, spa_p10_pc))
+n_cols = 3
+plot_individuals(subjects_eng_dict,n_cols,times)
+plot_individuals(subjects_spa_dict,n_cols,times)
+
+## use the first pc
+acc_eng = do_subject_by_subject_decoding([p10_eng[:,0,:], n40_eng[:,0,:]], times, ts, te, len(p10_eng), shuffle, randseed)
+acc_spa = do_subject_by_subject_decoding([p10_spa[:,0,:], n40_spa[:,0,:]], times, ts, te, len(p10_spa), shuffle, randseed)
+
+## use the top pc that showed most F0
+acc_eng = do_subject_by_subject_decoding([eng_p10_pc,eng_n40_pc], times, ts, te, len(eng_p10_pc), shuffle, randseed)
+acc_spa = do_subject_by_subject_decoding([spa_p10_pc,spa_n40_pc], times, ts, te, len(spa_p10_pc), shuffle, randseed)
 
 ## One-shot decoding for each loc
 acc_all_eng = []
@@ -1396,7 +1456,7 @@ stc1.plot_3d(src=src,subject = 'fsaverage')
 
 #%%####################################### Sliding estimator 
 tic = time.time()
-k_feature = 'all'
+k_feature = 500
 
 X = np.concatenate((p10_eng,n40_eng),axis=0)
 y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(n40_eng)))) 
@@ -1405,7 +1465,7 @@ y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(n40_eng))))
 clf = make_pipeline(
     StandardScaler(),  # z-score normalization
     SelectKBest(f_classif, k=k_feature),  # select features for speed
-    LinearModel(),
+    SVC(kernel='linear', C=1,class_weight='balanced')
     )
 time_decod = SlidingEstimator(clf)
 
