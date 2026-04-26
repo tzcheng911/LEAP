@@ -18,7 +18,7 @@ def select_PC(data,sfreq,fmin,fmax,lb,hb,n_top):
     X = data.transpose()
     pca = PCA()
     pca.fit(X) 
-    pca_data = pca.fit_transform(X) ## These are PC x time series
+    pca_data = pca.fit_transform(X) ## These are PC x time series note that this is just PC series not the PCs with top F0 
     
     psds, freqs = mne.time_frequency.psd_array_welch(
         pca_data.transpose()[:,100:],sfreq, # could replace with label time series # hard coded 100 cuz it's time 0 based on my preprocessing pipeline
