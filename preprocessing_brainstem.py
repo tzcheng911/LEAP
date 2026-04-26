@@ -103,7 +103,7 @@ def do_epoch_cabr_meg(data, events, subject, condition, run, n_trials, hp,lp):
     root_path = os.getcwd()
     file_out = root_path + '/' + subject + '/sss_fif/' + subject + condition + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ntrial' + str(n_trials)
     
-    reject=dict(grad=4000e-13,mag=4e-12)
+    reject=dict(grad=4000e-13,mag=4e-12) # coffey used reject=dict(grad=1000e-13,mag=1e-12)
     picks = mne.pick_types(data.info,meg=True,eeg=False) 
     epochs = mne.Epochs(data, events, event_id = [44,88], tmin =-0.02, tmax=0.2, baseline=(-0.02,0),reject=reject,picks=picks)
     new_epochs = epochs.copy().drop_bad()
