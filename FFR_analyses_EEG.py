@@ -1590,16 +1590,16 @@ level = 'individual'
 # p10_eng = p10_eng_all[:,rh_ROI_label[nROI],:] 
 # n40_eng = n40_eng_all[:,rh_ROI_label[nROI],:] 
 
-ts = 0.02 # 0.02 for ba and pa, 0.06 for mba
-te = 0.13 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
+ts = 0 # 0.02 for ba and pa, 0.06 for mba
+te = 0.04 # 0.1 for ba and 0.13 for mba and pa, this is hard cut off because audio files are this long
 
 fs_audio, p10_audio = load_CBS_file('audio', 'p10', 'adults')
 fs_audio, n40_audio = load_CBS_file('audio', 'n40', 'adults')
 fs_audio, p40_audio = load_CBS_file('audio', 'p40', 'adults')
 fs_eeg, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, ntrial)
 
-audio = p10_audio
-EEG = std
+audio = n40_audio
+EEG = dev1
 audio = stats.zscore(audio)
 EEG = stats.zscore(EEG,axis=-1)
 
