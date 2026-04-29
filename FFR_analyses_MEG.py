@@ -1114,8 +1114,8 @@ p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'morph'
-nfilter = '802000'
+file_type = 'pc_data'
+nfilter = '80200'
 ntrial = 'allall' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
@@ -1267,6 +1267,26 @@ acc_spa = do_subject_by_subject_decoding([p10_spa[:,0,:], n40_spa[:,0,:]], times
 acc_eng = do_subject_by_subject_decoding([eng_p10_pc,eng_n40_pc], times, ts, te, len(eng_p10_pc), shuffle, randseed)
 acc_spa = do_subject_by_subject_decoding([spa_p10_pc,spa_n40_pc], times, ts, te, len(spa_p10_pc), shuffle, randseed)
 
+## increment decoding for pc_data
+window_step = 0.005
+
+output = run_increment_decoding(
+    eng_p10_pc, eng_n40_pc,
+    spa_p10_pc, spa_n40_pc,
+    times,
+    window_step=window_step,
+    ncv1=np.shape(eng_p10_pc)[0],
+    ncv2=np.shape(spa_p10_pc)[0],
+    # ncv1=np.shape(p10_cbs)[0],
+    # ncv2=np.shape(p10_cbs)[0],
+    shuffle="keep pair",
+    randseed=2,
+    do_permutation=True,
+    niter=100,
+    labels=("English", "Spanish"),
+    # labels=("p10n40", "p10p40"),
+    plot=True)
+
 ## One-shot decoding for each loc
 acc_all_eng = []
 acc_all_spa = []
@@ -1406,10 +1426,10 @@ for n, nch in enumerate(ROI_label): # for roi
         # [p10_cbs[:,nch,:], p40_cbs[:,nch,:]]
     )
     ## Differential decoding
-    # decode_fn = make_decode_fn(times, ts, te, 15, 16, shuffle, randseed)
-    # real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
-    # # plt.title(ch_names[nch] + ' (' + str(nch) + ')' ) # for sensor
-    # plt.title(label_names[nch] + ' (' + str(nch) + ')' ) # for roi
+    decode_fn = make_decode_fn(times, ts, te, 14, 16, shuffle, randseed)
+    real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
+    # plt.title(ch_names[nch] + ' (' + str(nch) + ')' ) # for sensor
+    plt.title(label_names[nch] + ' (' + str(nch) + ')' ) # for roi
 
     ## Increment decoding
     
@@ -1491,8 +1511,8 @@ patterns = get_coef(time_decod, "patterns_",
 
 toc = time.time()
 
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all.npy',scores_observed)
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all.npy',patterns)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_roc_auc_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all_reverse.npy',scores_observed)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_patterns_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all_reverse.npy',patterns)
 
 #%%#######################################
 
