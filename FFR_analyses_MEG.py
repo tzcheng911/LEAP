@@ -375,20 +375,12 @@ def run_random_seed_decoding(
         )
     return scores_all
 
-def make_decode_fn(times, ts, te, ncv1, ncv2, shuffle, randseed):
-    def decode_fn(group1, group2):
-        acc1 = do_subject_by_subject_decoding(
-            group1, times, ts, te, ncv1, shuffle, randseed
-        )
-        acc2 = do_subject_by_subject_decoding(
-            group2, times, ts, te, ncv2, shuffle, randseed
-        )
-        return np.mean(acc1, axis=0) - np.mean(acc2, axis=0)
-    return decode_fn
-
 def permutation_decoding_diff(
     condition_pairs,
-    decode_fn,
+    ncv1,
+    ncv2,
+    shuffle,
+    randseed,
     niter=1000,
     rng=None,
     plot = True,
@@ -405,26 +397,42 @@ def permutation_decoding_diff(
     group1, group2 = condition_pairs
 
     # real difference
-    real_diff = decode_fn(group1, group2)
+    acc1 = do_subject_by_subject_decoding(
+            group1, times, ts, te, ncv1, shuffle, randseed
+        )
+    acc2 = do_subject_by_subject_decoding(
+            group2, times, ts, te, ncv2, shuffle, randseed
+        )
+    real_diff = np.mean(acc1, axis=0) - np.mean(acc2, axis=0)
 
     # stack corresponding conditions
     stacked = [np.vstack([g1, g2]) for g1, g2 in zip(group1, group2)]
     n_total = stacked[0].shape[0]
 
     diff_scores_perm = []
-
+    data_a = np.vstack([group1[0], group2[0]])
+    data_b = np.vstack([group1[1], group2[1]])
+    n_total = data_a.shape[0]
+            
     for i in range(niter):
         if verbose:
             print(f"iter {i}")
 
         perm = rng.permutation(n_total)
-        idx1 = perm[:n_total // 2]
-        idx2 = perm[n_total // 2:]
-
-        perm_group1 = [s[idx1] for s in stacked]
-        perm_group2 = [s[idx2] for s in stacked]
-
-        diff_scores_perm.append(decode_fn(perm_group1, perm_group2))
+        perm_group1 = perm[:n_total // 2]
+        perm_group2 = perm[n_total // 2:]
+        
+        acc_g1 = do_subject_by_subject_decoding(
+                    [data_a[perm_group1], data_b[perm_group1]],
+                    times, ts, te, ncv1, shuffle, randseed
+                )
+        acc_g2 = do_subject_by_subject_decoding(
+                    [data_a[perm_group2], data_b[perm_group2]],
+                    times, ts, te, ncv1, shuffle, randseed
+                )
+        
+        temp_diff_perm = np.mean(acc_g1, axis=0) - np.mean(acc_g2, axis=0)        
+        diff_scores_perm.append(temp_diff_perm)
 
     if plot:
         # ---- plotting ----
@@ -606,11 +614,11 @@ def run_increment_decoding(
 
                 acc_g1 = do_subject_by_subject_decoding(
                     [data_a[g1], data_b[g1]],
-                    times, ts, te, ncv1, shuffle, randseed
+                    times, ts, te, len(g1), shuffle, randseed
                 )
                 acc_g2 = do_subject_by_subject_decoding(
                     [data_a[g2], data_b[g2]],
-                    times, ts, te, ncv1, shuffle, randseed
+                    times, ts, te, len(g1), shuffle, randseed
                 )
 
                 diff_scores.append(np.mean(acc_g1) - np.mean(acc_g2))
@@ -1114,7 +1122,7 @@ p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'pc_data'
+file_type = 'sensor'
 nfilter = '80200'
 ntrial = 'allall' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
@@ -1426,13 +1434,11 @@ for n, nch in enumerate(ROI_label): # for roi
         # [p10_cbs[:,nch,:], p40_cbs[:,nch,:]]
     )
     ## Differential decoding
-    decode_fn = make_decode_fn(times, ts, te, 14, 16, shuffle, randseed)
-    real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,decode_fn,niter, rng=None, plot=True, verbose=True)
+    real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,np.shape(p10_eng)[0],np.shape(p10_spa)[0],shuffle,randseed,niter, rng=None, plot=True, verbose=True)
     # plt.title(ch_names[nch] + ' (' + str(nch) + ')' ) # for sensor
     plt.title(label_names[nch] + ' (' + str(nch) + ')' ) # for roi
 
     ## Increment decoding
-    
     window_step = 0.005
     
     output = run_increment_decoding(
