@@ -1125,7 +1125,7 @@ root_path='/media/tzcheng/storage/Brainstem/'
 file_type = 'sensor'
 nfilter = '802000'
 ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
-ntop = '1'
+ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
 if file_type == 'pc_data' or file_type == 'sensor': ## for the MEG
@@ -1174,7 +1174,7 @@ eng_n40_w = n40_eng_pc_w[np.arange(p10_eng.shape[0]),eng_n40_pc_idx]
 spa_p10_w = p10_spa_pc_w[np.arange(p10_spa.shape[0]),spa_p10_pc_idx]
 spa_n40_w = n40_spa_pc_w[np.arange(p10_spa.shape[0]),spa_n40_pc_idx]
 
-n_weight = 1
+n_weight = 10
 eng_p10_wind = np.argsort(eng_p10_w,axis=1)[:,-n_weight:]
 eng_n40_wind = np.argsort(eng_n40_w,axis=1)[:,-n_weight:]
 spa_p10_wind = np.argsort(spa_p10_w,axis=1)[:,-n_weight:]
@@ -1225,7 +1225,7 @@ p10_eng_top_weight_PC = np.array([
     for s in range(len(p10_eng))
 ])
 n40_eng_top_weight_PC = np.array([
-    n40_eng[s, eng_n40_wind[s], :].mean(axis=0)
+    n40_eng[s,eng_n40_wind[s], :].mean(axis=0)
     for s in range(len(n40_eng))
 ])
 p10_spa_top_weight_PC = np.array([
@@ -1312,7 +1312,7 @@ plot_audio_ffr(times,n40_audio,fs_audio,n40_spa,0.13)
 
 #%%####################################### Subject-by-subject MEG decoding for each condition 
 ts = 0
-te = 0.15
+te = 0.20
 shuffle = 'keep pair'
 randseed = 2
 
