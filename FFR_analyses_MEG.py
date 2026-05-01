@@ -1122,9 +1122,9 @@ p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'sensor'
+file_type = 'morph'
 nfilter = '802000'
-ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
+ntrial = '200' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1312,7 +1312,7 @@ plot_audio_ffr(times,n40_audio,fs_audio,n40_spa,0.13)
 
 #%%####################################### Subject-by-subject MEG decoding for each condition 
 ts = 0
-te = 0.20
+te = 0.15
 shuffle = 'keep pair'
 randseed = 2
 
@@ -1548,15 +1548,21 @@ X = np.concatenate((p10_spa,n40_spa),axis=0)
 y = np.concatenate((np.repeat(0,len(p10_spa)),np.repeat(1,len(n40_spa)))) 
 
 # prepare a series of classifier applied at each time sample
+# clf = make_pipeline(
+#     StandardScaler(),  # z-score normalization
+#     SelectKBest(f_classif, k=k_feature),  # select features for speed
+#     LinearModel(LogisticRegression(C=1, solver="liblinear"))
+#     )
 clf = make_pipeline(
     StandardScaler(),  # z-score normalization
-    SelectKBest(f_classif, k=k_feature),  # select features for speed
-    LinearModel(LogisticRegression(C=1, solver="liblinear"))
-    )
+    # SVC(kernel='rbf',gamma='auto',C=0.1,class_weight='balanced')  
+    # PCA(n_components=0.75),
+    SVC(kernel='linear', C=1,class_weight='balanced')
+)
 time_decod = SlidingEstimator(clf)
 
 # Run cross-validated decoding analyses
-scores_observed = cross_val_multiscore(time_decod, X, y, cv=5, n_jobs=None) # leave one out
+scores_observed = cross_val_multiscore(time_decod, X, y, cv=5, n_jobs=None) 
 score = np.mean(scores_observed, axis=0)
 
 #Plot average decoding scores of 5 splits
@@ -1573,11 +1579,13 @@ time_decod.fit(X, y) # not changed after shuffling the initial
 # Retrieve patterns after inversing the z-score normalization step:
 patterns = get_coef(time_decod, "patterns_",
                     inverse_transform=True)
+# !!! when clf is linear SVM not sure if this is correct implementation
+coef = np.squeeze(get_coef(time_decod, "coef_",inverse_transform=True))
 
 toc = time.time()
 
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_roc_auc_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all_reverse.npy',scores_observed)
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_patterns_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all_reverse.npy',patterns)
+# np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_roc_auc_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all_reverse.npy',scores_observed)
+# np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_patterns_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all_reverse.npy',patterns)
 
 #%%#######################################
 
