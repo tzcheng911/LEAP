@@ -108,7 +108,7 @@ def load_brainstem_file(file_type, nfilter, ntrial, ntop):
         n40_eng = np.load(root_path + 'EEG/n40_eng_eeg_ntr' + ntrial + '_01.npy')
         p10_spa = np.load(root_path + 'EEG/p10_spa_eeg_ntr' + ntrial + '_01.npy')
         n40_spa = np.load(root_path + 'EEG/n40_spa_eeg_ntr' + ntrial + '_01.npy')
-    elif file_type in ('sensor', 'pc_data', 'roi','morph'): ## for the MEG
+    elif file_type in ('sensor', 'sensor_whiten', 'pc_data', 'roi','morph'): ## for the MEG
         p10_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
         n40_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_' + file_type + '.npy')
         p10_spa = np.load(root_path + 'MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
@@ -1122,9 +1122,9 @@ p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'sensor'
-nfilter = '80200'
-ntrial = 'allall' # 200, all (reps = 3000) or allall (reps = 6000)
+file_type = 'pc_data'
+nfilter = '802000'
+ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1142,7 +1142,7 @@ if file_type == 'pc_data': ## for the MEG
 
 #%%####################################### visualization
 # average sensor data
-sensor_data = n40_eng.mean(0)
+sensor_data = p10_eng.mean(0)
 evoked = mne.read_evokeds('/media/tzcheng/storage/Brainstem/brainstem_203/sss_fif/brainstem_203_n40_02_otp_raw_sss_proj_f802000_ntrial200_evoked_ffr.fif')
 evoked[0].data = sensor_data
 evoked[0].plot_topo()
@@ -1180,11 +1180,45 @@ for s in np.arange(0,len(p10_spa),1):
 subjects_eng=['113','124','107','110','121','118','126','129','108','106','111','112','133','104','123']
 subjects_spa=['203','214','213','223','226','222','212','215','225','224','204','221','206','211','220','205'] ## 202 event code has some issues
 
+# plot n pc
 subjects_eng_dict = dict(zip(subjects_eng, p10_eng[:,n,:]))
 subjects_spa_dict = dict(zip(subjects_spa, p10_spa[:,n,:]))
 n_cols = 3
 plot_individuals(subjects_eng_dict,n_cols,times)
 plot_individuals(subjects_spa_dict,n_cols,times)
+
+# plot top selected pc
+eng_p10_pc_idx = p10_eng_pc_info[:, 0, 0].astype(int)
+eng_n40_pc_idx = n40_eng_pc_info[:, 0, 0].astype(int)
+spa_p10_pc_idx = p10_spa_pc_info[:, 0, 0].astype(int)
+spa_n40_pc_idx = n40_spa_pc_info[:, 0, 0].astype(int)
+
+eng_p10_pc = p10_eng[np.arange(p10_eng.shape[0]), eng_p10_pc_idx]
+eng_n40_pc = n40_eng[np.arange(n40_eng.shape[0]), eng_n40_pc_idx]
+spa_p10_pc = p10_spa[np.arange(p10_spa.shape[0]), spa_p10_pc_idx]
+spa_n40_pc = n40_spa[np.arange(n40_spa.shape[0]), spa_n40_pc_idx]
+
+subjects_eng_dict = dict(zip(subjects_eng, eng_p10_pc))
+subjects_spa_dict = dict(zip(subjects_spa, spa_p10_pc))
+n_cols = 3
+plot_individuals(subjects_eng_dict,n_cols,times)
+plot_individuals(subjects_spa_dict,n_cols,times)
+
+## display top n PCs of each subject s
+s = 0
+n = 10
+fig, axes = plt.subplots(n, 1, figsize=(10, 2*n), sharex=True)
+
+for i in range(n):
+    axes[i].plot(time, p10_eng[s,i,:])
+    axes[i].set_ylabel(f'PC {i+1}')
+    axes[i].grid(True)
+
+axes[-1].set_xlabel('Time')
+fig.suptitle(f'Top {n} Principal Components (stacked)', y=1.02)
+
+plt.tight_layout()
+plt.show()
 
 ## plot individual EEG-FFRs and MEG-FFRs
 condition = '_p10'
@@ -1251,22 +1285,6 @@ print(acc_eng.mean(0))
 print(acc_spa.mean(0))
 
 ## One-shot decoding for 1 pcs x times
-eng_p10_pc_idx = p10_eng_pc_info[:, 0, 0].astype(int)
-eng_n40_pc_idx = n40_eng_pc_info[:, 0, 0].astype(int)
-spa_p10_pc_idx = p10_spa_pc_info[:, 0, 0].astype(int)
-spa_n40_pc_idx = n40_spa_pc_info[:, 0, 0].astype(int)
-
-eng_p10_pc = p10_eng[np.arange(p10_eng.shape[0]), eng_p10_pc_idx]
-eng_n40_pc = n40_eng[np.arange(n40_eng.shape[0]), eng_p10_pc_idx]
-spa_p10_pc = p10_spa[np.arange(p10_spa.shape[0]), spa_p10_pc_idx]
-spa_n40_pc = n40_spa[np.arange(n40_spa.shape[0]), spa_n40_pc_idx]
-
-subjects_eng_dict = dict(zip(subjects_eng, eng_p10_pc))
-subjects_spa_dict = dict(zip(subjects_spa, spa_p10_pc))
-n_cols = 3
-plot_individuals(subjects_eng_dict,n_cols,times)
-plot_individuals(subjects_spa_dict,n_cols,times)
-
 ## use the first pc
 acc_eng = do_subject_by_subject_decoding([p10_eng[:,0,:], n40_eng[:,0,:]], times, ts, te, len(p10_eng), shuffle, randseed)
 acc_spa = do_subject_by_subject_decoding([p10_spa[:,0,:], n40_spa[:,0,:]], times, ts, te, len(p10_spa), shuffle, randseed)
