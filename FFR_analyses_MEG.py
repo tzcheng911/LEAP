@@ -108,7 +108,7 @@ def load_brainstem_file(file_type, nfilter, ntrial, ntop):
         n40_eng = np.load(root_path + 'EEG/n40_eng_eeg_ntr' + ntrial + '_01.npy')
         p10_spa = np.load(root_path + 'EEG/p10_spa_eeg_ntr' + ntrial + '_01.npy')
         n40_spa = np.load(root_path + 'EEG/n40_spa_eeg_ntr' + ntrial + '_01.npy')
-    elif file_type in ('sensor', 'sensor_whiten', 'pc_data', 'roi','morph'): ## for the MEG
+    elif file_type in ('sensor', 'sensor_whiten', 'pc_data', 'pc_data_whiten','roi','morph'): ## for the MEG
         p10_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
         n40_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_' + file_type + '.npy')
         p10_spa = np.load(root_path + 'MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
@@ -1122,17 +1122,21 @@ p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'pc_data'
+file_type = 'sensor_whiten'
 nfilter = '802000'
 ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
-if file_type == 'pc_data': ## for the MEG
-    p10_eng_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_info.npy')
-    n40_eng_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_info.npy')
-    p10_spa_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_info.npy')
-    n40_spa_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_info.npy')
+if file_type == 'pc_data_whiten': ## for the MEG
+    p10_eng_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_info_whiten.npy')
+    n40_eng_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_info_whiten.npy')
+    p10_spa_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_info_whiten.npy')
+    n40_spa_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_info_whiten.npy')
+    p10_eng_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_weight_whiten.npy')
+    n40_eng_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_weight_whiten.npy')
+    p10_spa_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_weight_whiten.npy')
+    n40_spa_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_weight_whiten.npy')
 
 ## remove the rim subjects for now
 # p10_eng = np.delete(p10_eng,10,axis=0)
@@ -1158,6 +1162,17 @@ for n in np.arange(0,len(p10_eng),1):
 n = 145
 plot_group_ffr(p10_eng[:,n,:], n40_eng[:,n,:], 'p10','n40', times)
 plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
+
+## select the channel based on the PCA weights
+eng_p10_pc_idx = p10_eng_pc_info[:, 0, 0].astype(int)
+eng_n40_pc_idx = n40_eng_pc_info[:, 0, 0].astype(int)
+spa_p10_pc_idx = p10_spa_pc_info[:, 0, 0].astype(int)
+spa_n40_pc_idx = n40_spa_pc_info[:, 0, 0].astype(int)
+
+eng_p10_w = p10_eng_pc_w[np.arange(p10_eng.shape[0]),eng_p10_pc_idx]
+eng_n40_w = 
+spa_p10_w = 
+spa_n40_w = 
 
 ## source ROI data
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
@@ -1188,16 +1203,10 @@ plot_individuals(subjects_eng_dict,n_cols,times)
 plot_individuals(subjects_spa_dict,n_cols,times)
 
 # plot top selected pc
-eng_p10_pc_idx = p10_eng_pc_info[:, 0, 0].astype(int)
-eng_n40_pc_idx = n40_eng_pc_info[:, 0, 0].astype(int)
-spa_p10_pc_idx = p10_spa_pc_info[:, 0, 0].astype(int)
-spa_n40_pc_idx = n40_spa_pc_info[:, 0, 0].astype(int)
-
 eng_p10_pc = p10_eng[np.arange(p10_eng.shape[0]), eng_p10_pc_idx]
 eng_n40_pc = n40_eng[np.arange(n40_eng.shape[0]), eng_n40_pc_idx]
 spa_p10_pc = p10_spa[np.arange(p10_spa.shape[0]), spa_p10_pc_idx]
 spa_n40_pc = n40_spa[np.arange(n40_spa.shape[0]), spa_n40_pc_idx]
-
 subjects_eng_dict = dict(zip(subjects_eng, eng_p10_pc))
 subjects_spa_dict = dict(zip(subjects_spa, spa_p10_pc))
 n_cols = 3
