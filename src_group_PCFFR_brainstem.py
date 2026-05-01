@@ -136,7 +136,7 @@ print(subjects)
 # subjects = ['brainstem_213'] # bad
 
 ## preproc parameters
-n_top = 3 # 3 or 10 or 0: indicate no PCA was done
+n_top = 1 # 3 or 10 or 0: indicate no PCA was done
 n_trial = 'all' ## 'all'(3000) or 200 or 'allall'(6000)
 lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
@@ -147,8 +147,9 @@ conditions = ['_p10','_n40']
 fmin = 50
 fmax = 150
 sfreq = 5000
-lb = 90
-hb = 100
+# note that the freq resolution is not high so chec kthe freqs in psds to see what freq cutoff it is selected 
+lb = 80 # change from 90 to 80 to include the peaks for spanish speakers 05/01/2026
+hb = 105
 
 group = []
 group_roi = []
@@ -189,10 +190,10 @@ for ncondition,condition in enumerate(conditions):
             head = '/MEG/FFR/eng_group_pcffr'
         elif lang == '2':
             head = '/MEG/FFR/spa_group_pcffr'
-        np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_sensor_whiten.npy',group_sensor[:,ncondition,nrun,:,:])
+        np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_sensor.npy',group_sensor[:,ncondition,nrun,:,:])
         # np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_morph.npy',group_morph[:,ncondition,nrun,:,:])
         # np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_roi.npy',group_roi[:,ncondition,nrun,:,:])
         if do_PCA:
-            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_data_whiten.npy',group_pca[:,ncondition,nrun,:,:])
-            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_weight_whiten.npy',group_pca_weight[:,ncondition,nrun,:,:])
-            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run +'_pc_info_whiten.npy',group_pc_info[:,ncondition,nrun,:,:])
+            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_data.npy',group_pca[:,ncondition,nrun,:,:])
+            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_weight.npy',group_pca_weight[:,ncondition,nrun,:,:])
+            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run +'_pc_info.npy',group_pc_info[:,ncondition,nrun,:,:])
