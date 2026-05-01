@@ -1128,15 +1128,15 @@ ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '1'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
-if file_type == 'pc_data': ## for the MEG
+if file_type == 'pc_data' or file_type == 'sensor': ## for the MEG
     p10_eng_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_info.npy')
     n40_eng_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_info.npy')
     p10_spa_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_info.npy')
     n40_spa_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_info.npy')
     p10_eng_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_weight.npy')
     n40_eng_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_weight.npy')
-    p10_spa_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_weight.npy')
-    n40_spa_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_weight.npy')
+    p10_spa_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_weight.npy')
+    n40_spa_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_weight.npy')
 
 ## remove the rim subjects for now
 # p10_eng = np.delete(p10_eng,10,axis=0)
@@ -1163,16 +1163,22 @@ n = 145
 plot_group_ffr(p10_eng[:,n,:], n40_eng[:,n,:], 'p10','n40', times)
 plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
 
-## select the channel based on the PCA weights
-eng_p10_pc_idx = p10_eng_pc_info[:, 0, 0].astype(int)
+## select the channel based on the PCA weights (top 5)
+eng_p10_pc_idx = p10_eng_pc_info[:, 0, 0].astype(int) 
 eng_n40_pc_idx = n40_eng_pc_info[:, 0, 0].astype(int)
 spa_p10_pc_idx = p10_spa_pc_info[:, 0, 0].astype(int)
 spa_n40_pc_idx = n40_spa_pc_info[:, 0, 0].astype(int)
 
 eng_p10_w = p10_eng_pc_w[np.arange(p10_eng.shape[0]),eng_p10_pc_idx]
-eng_n40_w = 
-spa_p10_w = 
-spa_n40_w = 
+eng_n40_w = n40_eng_pc_w[np.arange(p10_eng.shape[0]),eng_n40_pc_idx]
+spa_p10_w = p10_spa_pc_w[np.arange(p10_spa.shape[0]),spa_p10_pc_idx]
+spa_n40_w = n40_spa_pc_w[np.arange(p10_spa.shape[0]),spa_n40_pc_idx]
+
+n_weight = 1
+eng_p10_wind = np.argsort(eng_p10_w,axis=1)[:,-n_weight:]
+eng_n40_wind = np.argsort(eng_n40_w,axis=1)[:,-n_weight:]
+spa_p10_wind = np.argsort(spa_p10_w,axis=1)[:,-n_weight:]
+spa_n40_wind = np.argsort(spa_n40_w,axis=1)[:,-n_weight:]
 
 ## source ROI data
 lh_ROI_label = [12, 72,76,74] # [subcortical] brainstem,[AC] STG, transversetemporal, [controls] frontal pole
@@ -1212,6 +1218,32 @@ subjects_spa_dict = dict(zip(subjects_spa, spa_p10_pc))
 n_cols = 3
 plot_individuals(subjects_eng_dict,n_cols,times)
 plot_individuals(subjects_spa_dict,n_cols,times)
+
+# plot the mean of top weigths projected MEG sensors
+p10_eng_top_weight_PC = np.array([
+    p10_eng[s, eng_p10_wind[s], :].mean(axis=0)
+    for s in range(len(p10_eng))
+])
+n40_eng_top_weight_PC = np.array([
+    n40_eng[s, eng_n40_wind[s], :].mean(axis=0)
+    for s in range(len(n40_eng))
+])
+p10_spa_top_weight_PC = np.array([
+    p10_spa[s, spa_p10_wind[s], :].mean(axis=0)
+    for s in range(len(p10_spa))
+])
+n40_spa_top_weight_PC = np.array([
+    n40_spa[s, spa_n40_wind[s], :].mean(axis=0)
+    for s in range(len(n40_spa))
+])
+subjects_eng_dict = dict(zip(subjects_eng, p10_eng_top_weight_PC))
+subjects_spa_dict = dict(zip(subjects_spa, p10_spa_top_weight_PC))
+n_cols = 3
+plot_individuals(subjects_eng_dict,n_cols,times)
+plot_individuals(subjects_spa_dict,n_cols,times)
+
+acc_eng = do_subject_by_subject_decoding([p10_eng_top_weight_PC,n40_eng_top_weight_PC], times, ts, te, len(p10_eng_top_weight_PC), shuffle, randseed)
+acc_spa = do_subject_by_subject_decoding([p10_spa_top_weight_PC,n40_spa_top_weight_PC], times, ts, te, len(p10_spa_top_weight_PC), shuffle, randseed)
 
 ## display top n PCs of each subject s
 s = 0
