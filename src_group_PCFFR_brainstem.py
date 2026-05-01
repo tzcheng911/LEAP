@@ -14,9 +14,11 @@ import numpy as np
 import os
 from sklearn.decomposition import PCA
 
-def select_PC(data,sfreq,fmin,fmax,lb,hb,n_top):
+def select_PC(evokeds,sfreq,fmin,fmax,lb,hb,n_top):
+    data = evokeds.get_data()
     X = data.transpose()
-    pca = PCA()
+    pca = PCA(whiten=True)
+    # pca = PCA()
     pca.fit(X) 
     pca_data = pca.fit_transform(X) ## These are PC x time series note that this is just PC series not the PCs with top F0 
     
@@ -34,16 +36,27 @@ def select_PC(data,sfreq,fmin,fmax,lb,hb,n_top):
     ind_components = np.argsort(psds[:,fl:fh].mean(axis=1))[::-1][:n_top] # do top three PCs for now
     explained_variance_ratio = pca.explained_variance_ratio_[ind_components]
     
+    ## plot top 3 PC's spectrum
     plt.figure()
     plt.plot(freqs,psds.transpose())
     plt.plot(freqs,psds[ind_components,:].transpose(),color='red',linestyle='dashed')
     print('variance explained: ' + str(explained_variance_ratio))
     
+    ## display top n PCs weight in spatial location 
+    w = pca.components_
+    picks = mne.pick_types(evokeds.info, meg='mag') # meg='grad' or meg='mag'
+    info_sel = mne.pick_info(evokeds.info, picks)
+    weights = w[:, picks]
+    for i in range(len(ind_components)):
+        mne.viz.plot_topomap(weights[i], info_sel)
+        plt.title(f'PC {i+1}')
+        plt.show()
+
     ## keep only top 3 PC's data: PC projection to all the channels
-    Xhat = np.dot(pca.transform(X)[:,ind_components], pca.components_[ind_components,:])
+    Xhat = np.dot(pca_data[:,ind_components], w[ind_components,:])
     Xhat += np.mean(X, axis=0) 
-    Xhat = Xhat.transpose()    
-    return pca_data.transpose(),ind_components,explained_variance_ratio,Xhat
+    Xhat = Xhat.transpose()
+    return pca_data.transpose(),ind_components,w,explained_variance_ratio,Xhat
 
 def do_foward(s):
     root_path='/media/tzcheng/storage/Brainstem/'
@@ -103,9 +116,9 @@ def group_stc(subj,condition,run,n_trial,n_top,hp,lp):
     return stc_data,stc_roi_data
 
 #%%####################################### 
-do_PCA = False ## if True, assign n_top cuz it cannot be 0
+do_PCA = True ## if True, assign n_top cuz it cannot be 0
 morph = True
-lang = '1'
+lang = '2'
 
 root_path='/media/tzcheng/storage/Brainstem/'
 os.chdir(root_path)
@@ -116,9 +129,15 @@ for file in os.listdir():
         subjects.append(file)
 print(subjects)
 
+## observe individual subjects
+# subjects = ['brainstem_106'] # good
+# subjects = ['brainstem_133'] # bad
+# subjects = ['brainstem_214'] # good
+# subjects = ['brainstem_213'] # bad
+
 ## preproc parameters
 n_top = 3 # 3 or 10 or 0: indicate no PCA was done
-n_trial = 'allall' ## 'all'(3000) or 200 or 'allall'(6000)
+n_trial = 'all' ## 'all'(3000) or 200 or 'allall'(6000)
 lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
 runs = ['_01'] # only run 01 for now, add the ['_01','_02'] for all runs, note that brainstem_107 only has run1 for p10
@@ -137,6 +156,7 @@ group_sensor = np.empty([len(subjects),len(conditions),len(runs),306,1101])
 group_morph = np.empty([len(subjects),len(conditions),len(runs),14629,1101])
 group_roi = np.empty([len(subjects),len(conditions),len(runs),114,1101])
 group_pca = np.empty([len(subjects),len(conditions),len(runs),306,1101])
+group_pca_weight = np.empty([len(subjects),len(conditions),len(runs),306,306])
 group_pc_info = np.empty([len(subjects),len(conditions),len(runs),n_top,2]) # Last dim: first is the ind, 2nd is the explained var ratio of the corresponding PC
 
 for ns,s in enumerate(subjects):
@@ -150,10 +170,11 @@ for ns,s in enumerate(subjects):
             data = evokeds.get_data()
             if do_PCA:
                 print('Run src on PCA-reduced signals')
-                pca_data,ind_components,explained_variance_ratio,data_topPC = select_PC(data,sfreq,fmin,fmax,lb,hb,n_top)
+                pca_data,ind_components,pca_weight,explained_variance_ratio,data_topPC = select_PC(evokeds,sfreq,fmin,fmax,lb,hb,n_top)
                 evokeds.data = data_topPC
                 group_sensor[ns,ncondition,nrun,:len(data_topPC),:] = data_topPC # somehow brainstem_113 subject only has 305 channels
                 group_pca[ns,ncondition,nrun,:len(data_topPC),:] = pca_data # somehow brainstem_113 subject only has 305 channels
+                group_pca_weight[ns,ncondition,nrun,:len(data_topPC),:len(data_topPC)] = pca_weight
                 group_pc_info[ns,ncondition,nrun,:,0] = ind_components
                 group_pc_info[ns,ncondition,nrun,:,1] = explained_variance_ratio
             else:
@@ -168,9 +189,10 @@ for ncondition,condition in enumerate(conditions):
             head = '/MEG/FFR/eng_group_pcffr'
         elif lang == '2':
             head = '/MEG/FFR/spa_group_pcffr'
-        np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_sensor.npy',group_sensor[:,ncondition,nrun,:,:])
-        np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_morph.npy',group_morph[:,ncondition,nrun,:,:])
-        np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_roi.npy',group_roi[:,ncondition,nrun,:,:])
+        np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_sensor_whiten.npy',group_sensor[:,ncondition,nrun,:,:])
+        # np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_morph.npy',group_morph[:,ncondition,nrun,:,:])
+        # np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_roi.npy',group_roi[:,ncondition,nrun,:,:])
         if do_PCA:
-            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_top_' + str(n_top) + condition + run + 'pc_data.npy',group_pca[:,ncondition,nrun,:,:])
-            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_top_' + str(n_top) + condition + run +'pc_info.npy',group_pc_info[:,ncondition,nrun,:,:])
+            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_data_whiten.npy',group_pca[:,ncondition,nrun,:,:])
+            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_weight_whiten.npy',group_pca_weight[:,ncondition,nrun,:,:])
+            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run +'_pc_info_whiten.npy',group_pc_info[:,ncondition,nrun,:,:])
