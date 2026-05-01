@@ -108,7 +108,7 @@ def load_brainstem_file(file_type, nfilter, ntrial, ntop):
         n40_eng = np.load(root_path + 'EEG/n40_eng_eeg_ntr' + ntrial + '_01.npy')
         p10_spa = np.load(root_path + 'EEG/p10_spa_eeg_ntr' + ntrial + '_01.npy')
         n40_spa = np.load(root_path + 'EEG/n40_spa_eeg_ntr' + ntrial + '_01.npy')
-    elif file_type in ('sensor', 'sensor_whiten', 'pc_data', 'pc_data_whiten','roi','morph'): ## for the MEG
+    elif file_type in ('sensor', 'sensor', 'pc_data', 'pc_data','roi','morph'): ## for the MEG
         p10_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
         n40_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_' + file_type + '.npy')
         p10_spa = np.load(root_path + 'MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
@@ -1122,21 +1122,21 @@ p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'sensor_whiten'
+file_type = 'sensor'
 nfilter = '802000'
 ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
-ntop = '3'
+ntop = '1'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
-if file_type == 'pc_data_whiten': ## for the MEG
-    p10_eng_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_info_whiten.npy')
-    n40_eng_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_info_whiten.npy')
-    p10_spa_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_info_whiten.npy')
-    n40_spa_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_info_whiten.npy')
-    p10_eng_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_weight_whiten.npy')
-    n40_eng_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_weight_whiten.npy')
-    p10_spa_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_weight_whiten.npy')
-    n40_spa_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_weight_whiten.npy')
+if file_type == 'pc_data': ## for the MEG
+    p10_eng_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_info.npy')
+    n40_eng_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_info.npy')
+    p10_spa_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_info.npy')
+    n40_spa_pc_info = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_info.npy')
+    p10_eng_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_weight.npy')
+    n40_eng_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_weight.npy')
+    p10_spa_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_pc_weight.npy')
+    n40_spa_pc_w = np.load('/media/tzcheng/storage/Brainstem/MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_pc_weight.npy')
 
 ## remove the rim subjects for now
 # p10_eng = np.delete(p10_eng,10,axis=0)
@@ -1146,7 +1146,7 @@ if file_type == 'pc_data_whiten': ## for the MEG
 
 #%%####################################### visualization
 # average sensor data
-sensor_data = p10_eng.mean(0)
+sensor_data = n40_eng.mean(0)
 evoked = mne.read_evokeds('/media/tzcheng/storage/Brainstem/brainstem_203/sss_fif/brainstem_203_n40_02_otp_raw_sss_proj_f802000_ntrial200_evoked_ffr.fif')
 evoked[0].data = sensor_data
 evoked[0].plot_topo()
