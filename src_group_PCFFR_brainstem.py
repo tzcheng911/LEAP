@@ -33,7 +33,8 @@ def select_PC(evokeds,sfreq,fmin,fmax,lb,hb,n_top):
     ## peak detection
     fl = np.where(freqs>lb)[0][0]
     fh = np.where(freqs<hb)[0][-1]
-    ind_components = np.argsort(psds[:,fl:fh].mean(axis=1))[::-1][:n_top] # do top three PCs for now
+    # ind_components = np.argsort(psds[:,fl:fh].mean(axis=1))[::-1][:n_top] # do top n PC
+    ind_components = np.argsort(np.max(psds[:,fl:fh],axis=1))[::-1][:n_top] # modify from getting the max mean value to get the max max value between the [lb, hb]
     explained_variance_ratio = pca.explained_variance_ratio_[ind_components]
     
     ## plot top 3 PC's spectrum
@@ -149,7 +150,7 @@ fmax = 150
 sfreq = 5000
 # note that the freq resolution is not high so chec kthe freqs in psds to see what freq cutoff it is selected 
 lb = 80 # change from 90 to 80 to include the peaks for spanish speakers 05/01/2026
-hb = 105
+hb = 110
 
 group = []
 group_roi = []
