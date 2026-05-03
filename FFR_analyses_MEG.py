@@ -1124,7 +1124,7 @@ p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
 root_path='/media/tzcheng/storage/Brainstem/'
 file_type = 'morph'
 nfilter = '802000'
-ntrial = 'allall' # 200, all (reps = 3000) or allall (reps = 6000)
+ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
