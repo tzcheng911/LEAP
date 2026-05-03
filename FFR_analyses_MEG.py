@@ -1124,7 +1124,7 @@ p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
 root_path='/media/tzcheng/storage/Brainstem/'
 file_type = 'morph'
 nfilter = '802000'
-ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
+ntrial = '200' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1562,7 +1562,7 @@ clf = make_pipeline(
 time_decod = SlidingEstimator(clf)
 
 # Run cross-validated decoding analyses
-scores_observed = cross_val_multiscore(time_decod, X, y, cv=16, n_jobs=None) 
+scores_observed = cross_val_multiscore(time_decod, X, y, cv=5, n_jobs=None) 
 score = np.mean(scores_observed, axis=0)
 
 #Plot average decoding scores of 5 splits
@@ -1580,12 +1580,12 @@ time_decod.fit(X, y) # not changed after shuffling the initial
 patterns = get_coef(time_decod, "patterns_",
                     inverse_transform=True)
 # !!! when clf is linear SVM not sure if this is correct implementation
-coef = np.squeeze(get_coef(time_decod, "coef_",inverse_transform=True))
+# coef = np.squeeze(get_coef(time_decod, "coef_",inverse_transform=True))
 
 toc = time.time()
 
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_roc_auc_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all_LOO.npy',scores_observed)
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_patterns_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all_LOO.npy',patterns)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_roc_auc_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all.npy',scores_observed)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_patterns_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all.npy',patterns)
 
 #%%#######################################
 
