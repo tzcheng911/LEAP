@@ -1124,7 +1124,7 @@ p40_cbs = np.delete(p40_cbs,[10,12],axis=0)
 root_path='/media/tzcheng/storage/Brainstem/'
 file_type = 'morph'
 nfilter = '802000'
-ntrial = '200' # 200, all (reps = 3000) or allall (reps = 6000)
+ntrial = 'allall' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1479,8 +1479,8 @@ stc1.plot_3d(src=src,subject = 'fsaverage')
 acc_incre_eng = np.empty((np.shape(p10_cbs)[1],40)) ## sorry but hardcoding for now
 acc_incre_spa = np.empty((np.shape(p10_cbs)[1],40))
 
-# acc_incre_eng = np.empty((len(ROI_label),40)) ## sorry but hardcoding for now
-# acc_incre_spa = np.empty((len(ROI_label),40))  # for roi
+acc_incre_eng = np.empty((len(ROI_label),40)) ## sorry but hardcoding for now
+acc_incre_spa = np.empty((len(ROI_label),40))  # for roi
 
 # for nch in idx_diff: # for sensor
 for n, nch in enumerate(ROI_label): # for roi
@@ -1513,7 +1513,7 @@ for n, nch in enumerate(ROI_label): # for roi
         # ncv2=np.shape(p10_cbs)[0],
         shuffle="keep pair",
         randseed=2,
-        do_permutation=None,
+        do_permutation=True,
         niter=100,
         labels=("English", "Spanish"),
         # labels=("p10n40", "p10p40"),
@@ -1548,21 +1548,21 @@ X = np.concatenate((p10_spa,n40_spa),axis=0)
 y = np.concatenate((np.repeat(0,len(p10_spa)),np.repeat(1,len(n40_spa)))) 
 
 # prepare a series of classifier applied at each time sample
-# clf = make_pipeline(
-#     StandardScaler(),  # z-score normalization
-#     SelectKBest(f_classif, k=k_feature),  # select features for speed
-#     LinearModel(LogisticRegression(C=1, solver="liblinear"))
-#     )
 clf = make_pipeline(
     StandardScaler(),  # z-score normalization
-    # SVC(kernel='rbf',gamma='auto',C=0.1,class_weight='balanced')  
-    # PCA(n_components=0.75),
-    SVC(kernel='linear', C=1,class_weight='balanced')
-)
+    SelectKBest(f_classif, k=k_feature),  # select features for speed
+    LinearModel(LogisticRegression(C=1, solver="liblinear"))
+    )
+# clf = make_pipeline(
+#     StandardScaler(),  # z-score normalization
+#     # SVC(kernel='rbf',gamma='auto',C=0.1,class_weight='balanced')  
+#     # PCA(n_components=0.75),
+#     SVC(kernel='linear', C=1,class_weight='balanced')
+# )
 time_decod = SlidingEstimator(clf)
 
 # Run cross-validated decoding analyses
-scores_observed = cross_val_multiscore(time_decod, X, y, cv=5, n_jobs=None) 
+scores_observed = cross_val_multiscore(time_decod, X, y, cv=16, n_jobs=None) 
 score = np.mean(scores_observed, axis=0)
 
 #Plot average decoding scores of 5 splits
@@ -1584,8 +1584,8 @@ coef = np.squeeze(get_coef(time_decod, "coef_",inverse_transform=True))
 
 toc = time.time()
 
-# np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_roc_auc_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all_reverse.npy',scores_observed)
-# np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_patterns_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all_reverse.npy',patterns)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_roc_auc_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all_LOO.npy',scores_observed)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_patterns_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all_LOO.npy',patterns)
 
 #%%#######################################
 
