@@ -1125,9 +1125,9 @@ fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'morph'
-nfilter = '802000'
-ntrial = '200' # 200, all (reps = 3000) or allall (reps = 6000)
+file_type = 'roi'
+nfilter = '80200'
+ntrial = 'allall' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1450,9 +1450,9 @@ for n, nch in enumerate(ROI_label): # for roi
         # [p10_cbs[:,nch,:], p40_cbs[:,nch,:]]
     )
     ## Differential decoding
-    real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,np.shape(p10_eng)[0],np.shape(p10_spa)[0],shuffle,randseed,niter, rng=None, plot=True, verbose=True)
+    # real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,np.shape(p10_eng)[0],np.shape(p10_spa)[0],shuffle,randseed,niter, rng=None, plot=True, verbose=True)
     # plt.title(ch_names[nch] + ' (' + str(nch) + ')' ) # for sensor
-    plt.title(label_names[nch] + ' (' + str(nch) + ')' ) # for roi
+    # plt.title(label_names[nch] + ' (' + str(nch) + ')' ) # for roi
 
     ## Increment decoding
     window_step = 0.005
@@ -1470,7 +1470,7 @@ for n, nch in enumerate(ROI_label): # for roi
         # ncv2=np.shape(p10_cbs)[0],
         shuffle="keep pair",
         randseed=2,
-        do_permutation=True,
+        do_permutation=False,
         niter=100,
         labels=("English", "Spanish"),
         # labels=("p10n40", "p10p40"),
