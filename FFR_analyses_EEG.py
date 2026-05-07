@@ -1188,7 +1188,7 @@ decoding_acc = do_subject_by_subject_decoding([p10_spa_new, n40_spa], times, ts,
 window_step = 0.005
 
 run_increment_decoding(
-    std, dev1,
+    dev2, dev1,
     std, dev2,
     # p10_eng, n40_eng,
     # p10_spa, n40_spa,
@@ -1198,9 +1198,9 @@ run_increment_decoding(
     ncv2=18,
     shuffle="keep pair",
     randseed=2,
-    do_permutation=None,
-    niter=500,
-    labels=("English", "Spanish"),
+    do_permutation=True,
+    niter=100,
+    labels=("p40n40", "p10p40"),
     plot = True
 )
 
