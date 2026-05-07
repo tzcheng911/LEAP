@@ -1104,7 +1104,9 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_substd_pcffr80200_3200_morph-vl.stc')
 src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif')
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
+fname_brainstem = subjects_dir + 'fsaverage/mri/brainstemSsLabels.v13.mgz'
 label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_aseg))
+brainstem_label_names = np.asarray(mne.get_volume_labels_from_aseg(fname_brainstem))
 ROI_label = [12, 72,76, 108,112] # [subcortical] brainstem,[AC] left STG, left transversetemporal, right STG, right transversetemporal
 times = np.linspace(-0.02, 0.2, 1101)
 evoked = mne.read_evokeds('/media/tzcheng/storage/Brainstem/brainstem_203/sss_fif/brainstem_203_n40_02_otp_raw_sss_proj_f802000_ntrial200_evoked_ffr.fif')
@@ -1112,7 +1114,7 @@ ch_names = np.array(evoked[0].info['ch_names'])
 
 #%%####################################### load the data
 ## CBS
-file_type = 'morph'
+file_type = 'roi'
 subject_type = 'adults'
 fs,p10_cbs = load_CBS_file(file_type, 'p10', subject_type)
 fs,n40_cbs = load_CBS_file(file_type, 'n40', subject_type)
@@ -1206,8 +1208,8 @@ spa_n40_pc = n40_spa[np.arange(n40_spa.shape[0]), spa_n40_pc_idx]
 ## Source
 # plot group ROI data
 nROI = 3
-plot_group_ffr(p10_eng[:,ROI_label[nROI],:], n40_eng[:,ROI_label[nROI],:], 'eng','spa', times)
-plot_group_ffr(p10_spa[:,ROI_label[nROI],:], n40_spa[:,ROI_label[nROI],:], 'eng','spa', times)
+plot_group_ffr(p10_eng[:,ROI_label[nROI],:], n40_eng[:,ROI_label[nROI],:], 'p10','n40', times)
+plot_group_ffr(p10_spa[:,ROI_label[nROI],:], n40_spa[:,ROI_label[nROI],:], 'p10','n40', times)
 
 # plot group morph data
 source_data = p10_eng.mean(0)
