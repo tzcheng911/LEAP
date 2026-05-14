@@ -1127,7 +1127,7 @@ fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'morph_beamformer'
+file_type = 'roi_beamformer'
 nfilter = '802000'
 ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
@@ -1153,7 +1153,7 @@ if file_type == 'pc_data' or file_type == 'sensor':
 #%%####################################### visualization
 ## Sensor
 # plot group sensor or pca data
-n = 0
+n = 145
 plot_group_ffr(p10_eng[:,n,:], n40_eng[:,n,:], 'p10','n40', times)
 plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
 
@@ -1521,8 +1521,8 @@ acc_incre_eng = np.empty((len(ROI_label),40)) ## sorry but hardcoding for now
 acc_incre_spa = np.empty((len(ROI_label),40))  # for roi
 
 # for nch in idx_diff: # for sensor
-# for n, nch in enumerate(ROI_label): # for roi
-for nch in np.arange(0,np.shape(p10_eng)[1],1): # for morph whole brain
+for n, nch in enumerate(ROI_label): # for roi
+# for nch in np.arange(0,np.shape(p10_eng)[1],1): # for morph whole brain
     print("Doing v " + str(nch))
     # condition_pairs = (
     #     [p10_eng[:,nch,:], n40_eng[:,nch,:]],
@@ -1551,15 +1551,17 @@ for nch in np.arange(0,np.shape(p10_eng)[1],1): # for morph whole brain
         # ncv2=np.shape(p10_cbs)[0],
         shuffle="keep pair",
         randseed=2,
-        do_permutation=False,
-        niter=100,
+        do_permutation=True,
+        niter=500,
         labels=("English", "Spanish"),
         # labels=("p40n40", "p10p40"),
-        plot=False)
+        plot=True)
     # title = label_names[nch] + ' (' + str(nch) + ')'
     # plt.title(title)
-    acc_incre_eng[nch,:] = output['acc1']
-    acc_incre_spa[nch,:] = output['acc2']
+    # acc_incre_eng[nch,:] = output['acc1']
+    # acc_incre_spa[nch,:] = output['acc2']
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_spa_increment_svmacc_p10n40_pcffr802000_ntrialall_3_morph_bf.npy',output)
+
 np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/adult_increment_svmacc_p10n40_pcffr802000_ntrialall_3_morph_bf.npy',acc_incre_eng)
 np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/adult_increment_svmacc_p10p40_pcffr802000_ntrialall_3_morph_bf.npy',acc_incre_spa)
 
