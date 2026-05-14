@@ -12,7 +12,9 @@ import mne
 from mne.beamformer import apply_lcmv, make_lcmv
 import os
 
-root_path='/media/tzcheng/storage2/CBS/'
+root_path='/media/tzcheng/storage2/CBS/' # test cbs_A114
+root_path='/media/tzcheng/storage/Brainstem/' # test spa 214
+
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
@@ -82,3 +84,46 @@ mne.viz.plot_alignment(
     surfaces=["head-dense", "white"],
     coord_frame="meg",
 )
+
+#%%
+lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
+hp = 80
+
+s = 'brainstem_214'
+condition = '_n40'
+run = '_01'
+file_in = root_path + s + '/sss_fif/' + s + condition + run 
+evokeds = mne.read_evokeds(file_in + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_evoked_ffr.fif')[0]
+fwd = mne.read_forward_solution(root_path + s + '/sss_fif/' + s + '-fwd.fif')
+noise_cov = mne.read_cov(file_in + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e-noise-cov.fif')
+data_cov = mne.read_cov(file_in + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e-data-cov.fif')
+
+filters = make_lcmv(
+    evokeds.info,
+    fwd,
+    data_cov,
+    reg=0,
+    noise_cov=noise_cov,
+    pick_ori="max-power",
+    weight_norm="unit-noise-gain",
+    rank='info',
+    reduce_rank = True,
+    depth = 0.8
+)
+    
+stc_lcmv = apply_lcmv(evokeds, filters)
+stc_lcmv.plot(src = inverse_operator['src'])
+
+
+fname_src_fsaverage = subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif'
+src_fs = mne.read_source_spaces(fname_src_fsaverage)
+morph = mne.compute_source_morph(
+     inverse_operator['src'],
+     subject_from=s+'_zoe',
+     subjects_dir=subjects_dir,
+     niter_affine=[10, 10, 5],
+     niter_sdr=[10, 10, 5],  # just for speed
+     src_to=src_fs,
+     verbose=True)
+evokeds_inv_stc_fsaverage = morph.apply(stc_lcmv)
+evokeds_inv_stc_fsaverage.save(file_in + '_pcffr' + str(hp) + str(lp) + '_ntrial' + str(n_trial)  + '_' + str(n_top) + condition + run + '_morph', overwrite=True)
