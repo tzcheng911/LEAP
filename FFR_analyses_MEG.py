@@ -108,7 +108,7 @@ def load_brainstem_file(file_type, nfilter, ntrial, ntop):
         n40_eng = np.load(root_path + 'EEG/n40_eng_eeg_ntr' + ntrial + '_01.npy')
         p10_spa = np.load(root_path + 'EEG/p10_spa_eeg_ntr' + ntrial + '_01.npy')
         n40_spa = np.load(root_path + 'EEG/n40_spa_eeg_ntr' + ntrial + '_01.npy')
-    elif file_type in ('sensor', 'sensor', 'pc_data', 'pc_data','roi','morph','morph_mag_only'): ## for the MEG
+    elif file_type in ('sensor', 'sensor', 'pc_data', 'pc_data_beamformer','roi','roi_beamformer','morph','morph_mag_only','morph_beamformer'): ## for the MEG
         p10_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
         n40_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_' + file_type + '.npy')
         p10_spa = np.load(root_path + 'MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
@@ -1127,7 +1127,7 @@ fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'sensor'
+file_type = 'morph_beamformer'
 nfilter = '802000'
 ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
@@ -1153,7 +1153,7 @@ if file_type == 'pc_data' or file_type == 'sensor':
 #%%####################################### visualization
 ## Sensor
 # plot group sensor or pca data
-n = 145
+n = 0
 plot_group_ffr(p10_eng[:,n,:], n40_eng[:,n,:], 'p10','n40', times)
 plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
 
@@ -1168,12 +1168,14 @@ for n in np.arange(0,len(p10_eng),1):
     evoked[0].data = n40_eng[n,:,:]
     evoked[0].plot_topo()
 
-# select the channel based on the pca weights: double dipping on the source? no because it is used for sensor analysis
-eng_p10_pc_idx = p10_eng_pc_info[:, 0, 0].astype(int) 
-eng_n40_pc_idx = n40_eng_pc_info[:, 0, 0].astype(int)
-spa_p10_pc_idx = p10_spa_pc_info[:, 0, 0].astype(int)
-spa_n40_pc_idx = n40_spa_pc_info[:, 0, 0].astype(int)
-
+## select the channel based on the pca weights: double dipping on the source? no because it is used for sensor analysis
+# get the top 1 PC index that captures most f0
+ntop = 0
+eng_p10_pc_idx = p10_eng_pc_info[:, ntop, 0].astype(int) 
+eng_n40_pc_idx = n40_eng_pc_info[:, ntop, 0].astype(int)
+spa_p10_pc_idx = p10_spa_pc_info[:, ntop, 0].astype(int)
+spa_n40_pc_idx = n40_spa_pc_info[:, ntop, 0].astype(int)
+    
 # subject indices
 s_eng_p10 = np.arange(p10_eng.shape[0])
 s_eng_n40 = np.arange(n40_eng.shape[0])
@@ -1191,8 +1193,8 @@ eng_p10_wind = np.argmax(eng_p10_w,axis=-1)
 eng_n40_wind = np.argmax(eng_n40_w,axis=-1)
 spa_p10_wind = np.argmax(spa_p10_w,axis=-1)
 spa_n40_wind = np.argmax(spa_n40_w,axis=-1)
-
-# pull out each individual's top sensor (based on the top spatial weight) from the pc projected data 
+    
+# pull out each individual's top sensor (based on the top 1 PC top spatial weight) from the pc projected data 
 p10_eng_top_weight_PC = np.array([
     p10_eng[s, eng_p10_wind[s], :]
     for s in range(len(p10_eng))
@@ -1210,11 +1212,63 @@ n40_spa_top_weight_PC = np.array([
     for s in range(len(n40_spa))
 ])
 
+# get the top 3 PC index that captures most f0
+eng_p10_pc_idx = np.empty([len(p10_eng),3])
+eng_n40_pc_idx = np.empty([len(n40_eng),3])
+spa_p10_pc_idx = np.empty([len(p10_spa),3])
+spa_n40_pc_idx = np.empty([len(n40_spa),3])
+
+for npc in np.arange(0,3,1):
+    eng_p10_pc_idx[:,npc] = p10_eng_pc_info[:, npc, 0]
+    eng_n40_pc_idx[:,npc] = n40_eng_pc_info[:, npc, 0]
+    spa_p10_pc_idx[:,npc] = p10_spa_pc_info[:, npc, 0]
+    spa_n40_pc_idx[:,npc] = n40_spa_pc_info[:, npc, 0]
+
+# get the top weitghs of the top 3 PCs that captures most f0
+eng_p10_wind = np.empty([len(p10_eng),3])
+eng_n40_wind = np.empty([len(n40_eng),3])
+spa_p10_wind = np.empty([len(p10_spa),3])
+spa_n40_wind = np.empty([len(n40_spa),3])
+
+for npc in np.arange(0,3,1):
+    eng_p10_wind[:,npc] = np.argmax(p10_eng_pc_w[s_eng_p10,eng_p10_pc_idx[:,npc].astype(int),:],axis=-1)
+    eng_n40_wind[:,npc] = np.argmax(n40_eng_pc_w[s_eng_n40,eng_n40_pc_idx[:,npc].astype(int),:],axis=-1)
+    spa_p10_wind[:,npc] = np.argmax(p10_spa_pc_w[s_spa_p10,spa_p10_pc_idx[:,npc].astype(int),:],axis=-1)
+    spa_n40_wind[:,npc] = np.argmax(n40_spa_pc_w[s_spa_n40,spa_n40_pc_idx[:,npc].astype(int),:],axis=-1)
+    
+# pull out each individual's top sensor (based on the top 3 PC top spatial weight) from the pc projected data 
+p10_eng_top_weight_PC = np.array([
+    p10_eng[s, eng_p10_wind[s].astype(int), :].mean(0)
+    for s in range(len(p10_eng))
+])
+n40_eng_top_weight_PC = np.array([
+    n40_eng[s,eng_n40_wind[s].astype(int), :].mean(0)
+    for s in range(len(n40_eng))
+])
+p10_spa_top_weight_PC = np.array([
+    p10_spa[s, spa_p10_wind[s].astype(int), :].mean(0)
+    for s in range(len(p10_spa))
+])
+n40_spa_top_weight_PC = np.array([
+    n40_spa[s, spa_n40_wind[s].astype(int), :].mean(0)
+    for s in range(len(n40_spa))
+])
+
 # select the pc based on the top F0 spectrum
 eng_p10_pc = p10_eng[np.arange(p10_eng.shape[0]), eng_p10_pc_idx]
 eng_n40_pc = n40_eng[np.arange(n40_eng.shape[0]), eng_n40_pc_idx]
 spa_p10_pc = p10_spa[np.arange(p10_spa.shape[0]), spa_p10_pc_idx]
 spa_n40_pc = n40_spa[np.arange(n40_spa.shape[0]), spa_n40_pc_idx]
+
+# plot pca weight of the top F0 pc across all subjects
+picks = mne.pick_types(evoked.info, meg='mag')
+info_sel = mne.pick_info(evoked.info, picks)
+weights = p10_spa_pc_w[:, :,picks]
+idx = spa_p10_pc_idx
+for s in range(len(p10_spa_pc_info)):
+    mne.viz.plot_topomap(weights[s,idx[s],:], info_sel)
+    plt.title(f'subject {s+1}')
+    plt.show()
 
 ## Source
 # plot group ROI data
@@ -1223,9 +1277,9 @@ plot_group_ffr(p10_eng[:,ROI_label[nROI],:], n40_eng[:,ROI_label[nROI],:], 'p10'
 plot_group_ffr(p10_spa[:,ROI_label[nROI],:], n40_spa[:,ROI_label[nROI],:], 'p10','n40', times)
 
 # plot group morph data
-source_data = n40_eng.mean(0)
+source_data = p10_eng.mean(0)
 stc1.data = source_data 
-stc1.plot(src=src,subject = 'fsaverage')
+stc1.plot_3d(src=src,subject = 'fsaverage')
 
 # plot individual morph data
 for s in np.arange(0,len(p10_spa),1):
@@ -1248,7 +1302,7 @@ plot_individuals(subjects_eng_dict,n_cols,times)
 plot_individuals(subjects_spa_dict,n_cols,times)
 
 # plot top selected pc
-subjects_eng_dict = dict(zip(subjects_eng, eng_p10_pc))
+subjects_eng_dict = dict(zip(subjects_eng, eng_n40_pc))
 subjects_spa_dict = dict(zip(subjects_spa, spa_p10_pc))
 n_cols = 3
 plot_individuals(subjects_eng_dict,n_cols,times)
@@ -1401,8 +1455,16 @@ acc_eng = do_subject_by_subject_decoding([p10_eng[:,n,:], n40_eng[:,n,:]], times
 acc_spa = do_subject_by_subject_decoding([p10_spa[:,n,:], n40_spa[:,n,:]], times, ts, te, len(p10_spa), shuffle, randseed)
 
 # the top pc that showed most F0
+eng_pc_polarity = [-1,1,1,-1,-1,1,-1,-1,1,1,-1,-1,1,1,1]
+spa_pc_polarity = [1,1,1,-1,1,1,1,1,-1,1,1,1,1,1,-1,-1]
+eng_p10_pc = (eng_p10_pc.transpose()*eng_pc_polarity).transpose()
+spa_p10_pc = (spa_p10_pc.transpose()*spa_pc_polarity).transpose()
+
 acc_eng = do_subject_by_subject_decoding([eng_p10_pc,eng_n40_pc], times, ts, te, len(eng_p10_pc), shuffle, randseed)
 acc_spa = do_subject_by_subject_decoding([spa_p10_pc,spa_n40_pc], times, ts, te, len(spa_p10_pc), shuffle, randseed)
+
+acc_eng = do_subject_by_subject_decoding([np.abs(eng_p10_pc),np.abs(eng_n40_pc)], times, ts, te, len(eng_p10_pc), shuffle, randseed)
+acc_spa = do_subject_by_subject_decoding([np.abs(spa_p10_pc),np.abs(spa_n40_pc)], times, ts, te, len(spa_p10_pc), shuffle, randseed)
 
 # the mean of top weigths projected MEG sensors
 acc_eng = do_subject_by_subject_decoding([p10_eng_top_weight_PC,n40_eng_top_weight_PC], times, ts, te, len(p10_eng_top_weight_PC), shuffle, randseed)
@@ -1452,12 +1514,15 @@ randseed = 2
 acc_incre_eng = np.empty((np.shape(p10_cbs)[1],40)) ## sorry but hardcoding for now
 acc_incre_spa = np.empty((np.shape(p10_cbs)[1],40))
 
+acc_incre_eng = np.empty((np.shape(p10_eng)[1],30)) ## sorry but hardcoding for now
+acc_incre_spa = np.empty((np.shape(p10_spa)[1],30))
+
 acc_incre_eng = np.empty((len(ROI_label),40)) ## sorry but hardcoding for now
 acc_incre_spa = np.empty((len(ROI_label),40))  # for roi
 
 # for nch in idx_diff: # for sensor
-for n, nch in enumerate(ROI_label): # for roi
-# for nch in np.arange(0,np.shape(p10_cbs)[1],1): # for morph whole brain
+# for n, nch in enumerate(ROI_label): # for roi
+for nch in np.arange(0,np.shape(p10_eng)[1],1): # for morph whole brain
     print("Doing v " + str(nch))
     # condition_pairs = (
     #     [p10_eng[:,nch,:], n40_eng[:,nch,:]],
@@ -1474,27 +1539,30 @@ for n, nch in enumerate(ROI_label): # for roi
     window_step = 0.005
     
     output = run_increment_decoding(
-        # p10_eng[:,nch,:], n40_eng[:,nch,:],
-        # p10_spa[:,nch,:], n40_spa[:,nch,:],
-        p40_cbs[:,nch,:], n40_cbs[:,nch,:],
-        p10_cbs[:,nch,:], p40_cbs[:,nch,:],
+        p10_eng[:,nch,:], n40_eng[:,nch,:],
+        p10_spa[:,nch,:], n40_spa[:,nch,:],
+        # p40_cbs[:,nch,:], n40_cbs[:,nch,:],
+        # p10_cbs[:,nch,:], p40_cbs[:,nch,:],
         times,
         window_step=window_step,
-        # ncv1=np.shape(p10_eng)[0],
-        # ncv2=np.shape(p10_spa)[0],
-        ncv1=np.shape(p10_cbs)[0],
-        ncv2=np.shape(p10_cbs)[0],
+        ncv1=np.shape(p10_eng)[0],
+        ncv2=np.shape(p10_spa)[0],
+        # ncv1=np.shape(p10_cbs)[0],
+        # ncv2=np.shape(p10_cbs)[0],
         shuffle="keep pair",
         randseed=2,
         do_permutation=False,
         niter=100,
-        # labels=("English", "Spanish"),
-        labels=("p40n40", "p10p40"),
-        plot=True)
-    title = label_names[nch] + ' (' + str(nch) + ')'
-    plt.title(title)
+        labels=("English", "Spanish"),
+        # labels=("p40n40", "p10p40"),
+        plot=False)
+    # title = label_names[nch] + ' (' + str(nch) + ')'
+    # plt.title(title)
     acc_incre_eng[nch,:] = output['acc1']
     acc_incre_spa[nch,:] = output['acc2']
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/adult_increment_svmacc_p10n40_pcffr802000_ntrialall_3_morph_bf.npy',acc_incre_eng)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/adult_increment_svmacc_p10p40_pcffr802000_ntrialall_3_morph_bf.npy',acc_incre_spa)
+
 np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/adultnorim10_12_increment_svmacc_p10n40_pcffr80200_ntrial200_3_morph_replicate.npy',acc_incre_eng)
 np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/adultnorim10_12_increment_svmacc_p10p40_pcffr80200_ntrial200_3_morph_replicate.npy',acc_incre_spa)
 np.save('increment_svmacc_time.npy',output['window_ms'])
@@ -1515,7 +1583,7 @@ stc1.plot_3d(src=src,subject = 'fsaverage')
 
 #%%####################################### Sliding estimator 
 tic = time.time()
-k_feature = 500
+k_feature = 'all'
 
 X = np.concatenate((p10_spa,n40_spa),axis=0)
 y = np.concatenate((np.repeat(0,len(p10_spa)),np.repeat(1,len(n40_spa)))) 
@@ -1557,8 +1625,8 @@ patterns = get_coef(time_decod, "patterns_",
 
 toc = time.time()
 
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_roc_auc_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all.npy',scores_observed)
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_patterns_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_all.npy',patterns)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
 
 #%%#######################################
 
