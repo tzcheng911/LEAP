@@ -129,7 +129,7 @@ run = runs[0]
 
 subjects = [] 
 for file in os.listdir():
-    if file.startswith('cbs_A'):
+    if file.startswith('cbs_b'):
         subjects.append(file)
 print(subjects)
 group_morph = np.empty([len(subjects),len(cond),14629,1101])
