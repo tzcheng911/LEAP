@@ -89,9 +89,9 @@ def load_CBS_file(file_type, sound_type, subject_type):
         signal = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_' + sound_type + '_ffr_eeg_200.npy')
     elif file_type in ('sensor', 'pc_data', 'roi','morph'): ## for the MEG
         if subject_type == 'adults':
-            signal = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_pcffr80200_ntrial200_top_3_' + sound_type + '_01_' + file_type + '.npy')
+            signal = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_pcffr802000_ntrial200_top_3_' + sound_type + '_01_' + file_type + '.npy')
         elif subject_type == 'infants':   
-            signal = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/ntrial_200/group_pcffr80200_ntrial200_top_3_' + sound_type + '_' + file_type + '.npy')
+            signal = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/ntrial_200/group_pcffr802000_ntrial200_top_3_' + sound_type + '_' + file_type + '.npy')
     return fs, signal
 
 def load_brainstem_file(file_type, nfilter, ntrial, ntop):
@@ -108,7 +108,7 @@ def load_brainstem_file(file_type, nfilter, ntrial, ntop):
         n40_eng = np.load(root_path + 'EEG/n40_eng_eeg_ntr' + ntrial + '_01.npy')
         p10_spa = np.load(root_path + 'EEG/p10_spa_eeg_ntr' + ntrial + '_01.npy')
         n40_spa = np.load(root_path + 'EEG/n40_spa_eeg_ntr' + ntrial + '_01.npy')
-    elif file_type in ('sensor', 'sensor', 'pc_data', 'pc_data','roi','morph'): ## for the MEG
+    elif file_type in ('sensor', 'sensor', 'pc_data', 'pc_data','roi','morph','morph_mag_only'): ## for the MEG
         p10_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
         n40_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_' + file_type + '.npy')
         p10_spa = np.load(root_path + 'MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
@@ -1114,7 +1114,7 @@ ch_names = np.array(evoked[0].info['ch_names'])
 
 #%%####################################### load the data
 ## CBS
-file_type = 'roi'
+file_type = 'sensor'
 subject_type = 'adults'
 fs,p10_cbs = load_CBS_file(file_type, 'p10', subject_type)
 fs,n40_cbs = load_CBS_file(file_type, 'n40', subject_type)
@@ -1127,9 +1127,9 @@ fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'roi'
-nfilter = '80200'
-ntrial = 'allall' # 200, all (reps = 3000) or allall (reps = 6000)
+file_type = 'sensor'
+nfilter = '802000'
+ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1168,34 +1168,45 @@ for n in np.arange(0,len(p10_eng),1):
     evoked[0].data = n40_eng[n,:,:]
     evoked[0].plot_topo()
 
-# select the channel based on the pca weights (top 5): double dipping on the source?
+# select the channel based on the pca weights: double dipping on the source? no because it is used for sensor analysis
 eng_p10_pc_idx = p10_eng_pc_info[:, 0, 0].astype(int) 
 eng_n40_pc_idx = n40_eng_pc_info[:, 0, 0].astype(int)
 spa_p10_pc_idx = p10_spa_pc_info[:, 0, 0].astype(int)
 spa_n40_pc_idx = n40_spa_pc_info[:, 0, 0].astype(int)
-eng_p10_w = p10_eng_pc_w[np.arange(p10_eng.shape[0]),eng_p10_pc_idx]
-eng_n40_w = n40_eng_pc_w[np.arange(p10_eng.shape[0]),eng_n40_pc_idx]
-spa_p10_w = p10_spa_pc_w[np.arange(p10_spa.shape[0]),spa_p10_pc_idx]
-spa_n40_w = n40_spa_pc_w[np.arange(p10_spa.shape[0]),spa_n40_pc_idx]
-n_weight = 5
-eng_p10_wind = np.argsort(eng_p10_w,axis=1)[:,-n_weight:]
-eng_n40_wind = np.argsort(eng_n40_w,axis=1)[:,-n_weight:]
-spa_p10_wind = np.argsort(spa_p10_w,axis=1)[:,-n_weight:]
-spa_n40_wind = np.argsort(spa_n40_w,axis=1)[:,-n_weight:]
+
+# subject indices
+s_eng_p10 = np.arange(p10_eng.shape[0])
+s_eng_n40 = np.arange(n40_eng.shape[0])
+s_spa_p10 = np.arange(p10_spa.shape[0])
+s_spa_n40 = np.arange(n40_spa.shape[0])
+
+# spatial weights of each subject's top pc
+eng_p10_w = p10_eng_pc_w[s_eng_p10,eng_p10_pc_idx,:]
+eng_n40_w = n40_eng_pc_w[s_eng_n40,eng_n40_pc_idx,:]
+spa_p10_w = p10_spa_pc_w[s_spa_p10,spa_p10_pc_idx,:]
+spa_n40_w = n40_spa_pc_w[s_spa_n40,spa_n40_pc_idx,:]
+
+# the index of top spatial weight of each subject's top pc
+eng_p10_wind = np.argmax(eng_p10_w,axis=-1)
+eng_n40_wind = np.argmax(eng_n40_w,axis=-1)
+spa_p10_wind = np.argmax(spa_p10_w,axis=-1)
+spa_n40_wind = np.argmax(spa_n40_w,axis=-1)
+
+# pull out each individual's top sensor (based on the top spatial weight) from the pc projected data 
 p10_eng_top_weight_PC = np.array([
-    p10_eng[s, eng_p10_wind[s], :].mean(axis=0)
+    p10_eng[s, eng_p10_wind[s], :]
     for s in range(len(p10_eng))
 ])
 n40_eng_top_weight_PC = np.array([
-    n40_eng[s,eng_n40_wind[s], :].mean(axis=0)
+    n40_eng[s,eng_n40_wind[s], :]
     for s in range(len(n40_eng))
 ])
 p10_spa_top_weight_PC = np.array([
-    p10_spa[s, spa_p10_wind[s], :].mean(axis=0)
+    p10_spa[s, spa_p10_wind[s], :]
     for s in range(len(p10_spa))
 ])
 n40_spa_top_weight_PC = np.array([
-    n40_spa[s, spa_n40_wind[s], :].mean(axis=0)
+    n40_spa[s, spa_n40_wind[s], :]
     for s in range(len(n40_spa))
 ])
 
@@ -1212,9 +1223,9 @@ plot_group_ffr(p10_eng[:,ROI_label[nROI],:], n40_eng[:,ROI_label[nROI],:], 'p10'
 plot_group_ffr(p10_spa[:,ROI_label[nROI],:], n40_spa[:,ROI_label[nROI],:], 'p10','n40', times)
 
 # plot group morph data
-source_data = p10_eng.mean(0)
+source_data = n40_eng.mean(0)
 stc1.data = source_data 
-stc1.plot(src=src)
+stc1.plot(src=src,subject = 'fsaverage')
 
 # plot individual morph data
 for s in np.arange(0,len(p10_spa),1):
@@ -1225,6 +1236,9 @@ for s in np.arange(0,len(p10_spa),1):
 # this is the order of how eeg subjects are saved. Refer to preprocessing_brainstem.py
 subjects_eng=['113','124','107','110','121','118','126','129','108','106','111','112','133','104','123']
 subjects_spa=['203','214','213','223','226','222','212','215','225','224','204','221','206','211','220','205'] ## 202 event code has some issues
+
+subjects_cbsA = ['cbs_A108','cbs_A119','cbs_A106','cbs_A115','cbs_A116','cbs_A107','cbs_A122','cbs_A118','cbs_A105','cbs_A101','cbs_A114','cbs_A123','cbs_A121','cbs_A110','cbs_A117','cbs_A109','cbs_A103','cbs_A111']
+subjects_cbsb = ['cbs_b101', 'cbs_b901', 'cbs_b111', 'cbs_b102', 'cbs_b107', 'cbs_b106', 'cbs_b112', 'cbs_b117', 'cbs_b902', 'cbs_b110', 'cbs_b103', 'cbs_b114']
 
 # plot n sensor, pc, ROI or vertex
 subjects_eng_dict = dict(zip(subjects_eng, p10_eng[:,n,:]))
@@ -1357,12 +1371,12 @@ evoked[0].info['bads'] = ch_names[idx_overlap].tolist()
 evoked[0].plot_sensors(ch_type = 'all')
 
 # svm acc english > spanish 
-idx_diff = np.argsort(diff_acc_all)[-20:] ## 50 for the 200 reps, 20 for the 3000 reps
-print(np.sort(diff_acc_all)[-20:])
+idx_diff = np.argsort(diff_acc_all)[-30:] ## 50 for the 200 reps, 20 for the 3000 reps
+print(np.sort(diff_acc_all)[-30:])
 idx_diff = idx_diff[acc_all_spa[idx_diff] > 0.5] # ensure that acc_all_spa is higher than chance level 
 
 # MEG2022 (idx 226), MEG2033 (idx 229) showed high decoding acc
-nch = 226
+nch = 295
 
 # svm acc english < spanish 
 idx_diff = np.argsort(diff_acc_all)[:20]
@@ -1408,7 +1422,7 @@ output = run_increment_decoding(
     # ncv2=np.shape(p10_cbs)[0],
     shuffle="keep pair",
     randseed=2,
-    do_permutation=True,
+    do_permutation=False,
     niter=100,
     labels=("English", "Spanish"),
     # labels=("p10n40", "p10p40"),
@@ -1445,12 +1459,12 @@ acc_incre_spa = np.empty((len(ROI_label),40))  # for roi
 for n, nch in enumerate(ROI_label): # for roi
 # for nch in np.arange(0,np.shape(p10_cbs)[1],1): # for morph whole brain
     print("Doing v " + str(nch))
-    condition_pairs = (
-        [p10_eng[:,nch,:], n40_eng[:,nch,:]],
-        [p10_spa[:,nch,:], n40_spa[:,nch,:]]
-        # [p10_cbs[:,nch,:], n40_cbs[:,nch,:]],
-        # [p10_cbs[:,nch,:], p40_cbs[:,nch,:]]
-    )
+    # condition_pairs = (
+    #     [p10_eng[:,nch,:], n40_eng[:,nch,:]],
+    #     [p10_spa[:,nch,:], n40_spa[:,nch,:]]
+    #     # [p10_cbs[:,nch,:], n40_cbs[:,nch,:]],
+    #     # [p10_cbs[:,nch,:], p40_cbs[:,nch,:]]
+    # )
     ## Differential decoding
     # real_diff, diff_perm, fig, ax = permutation_decoding_diff(condition_pairs,np.shape(p10_eng)[0],np.shape(p10_spa)[0],shuffle,randseed,niter, rng=None, plot=True, verbose=True)
     # plt.title(ch_names[nch] + ' (' + str(nch) + ')' ) # for sensor
@@ -1460,22 +1474,22 @@ for n, nch in enumerate(ROI_label): # for roi
     window_step = 0.005
     
     output = run_increment_decoding(
-        p10_eng[:,nch,:], n40_eng[:,nch,:],
-        p10_spa[:,nch,:], n40_spa[:,nch,:],
-        # p10_cbs[:,nch,:], n40_cbs[:,nch,:],
-        # p10_cbs[:,nch,:], p40_cbs[:,nch,:],
+        # p10_eng[:,nch,:], n40_eng[:,nch,:],
+        # p10_spa[:,nch,:], n40_spa[:,nch,:],
+        p40_cbs[:,nch,:], n40_cbs[:,nch,:],
+        p10_cbs[:,nch,:], p40_cbs[:,nch,:],
         times,
         window_step=window_step,
-        ncv1=np.shape(p10_eng)[0],
-        ncv2=np.shape(p10_spa)[0],
-        # ncv1=np.shape(p10_cbs)[0],
-        # ncv2=np.shape(p10_cbs)[0],
+        # ncv1=np.shape(p10_eng)[0],
+        # ncv2=np.shape(p10_spa)[0],
+        ncv1=np.shape(p10_cbs)[0],
+        ncv2=np.shape(p10_cbs)[0],
         shuffle="keep pair",
         randseed=2,
         do_permutation=False,
         niter=100,
-        labels=("English", "Spanish"),
-        # labels=("p10n40", "p10p40"),
+        # labels=("English", "Spanish"),
+        labels=("p40n40", "p10p40"),
         plot=True)
     title = label_names[nch] + ' (' + str(nch) + ')'
     plt.title(title)
