@@ -182,6 +182,7 @@ if __name__ == '__main__':
     #%% Parameters
     age = ['7mo','11mo','br']  
     run = ['_02','_03','_04'] # random, duple, triple
+    random = ['', 'randduple','randtriple'] # in case of the need to do random duple and triple seperately 
     which_data_type = ['_sensor','_roi','_roi_redo4','_morph']
     data_type = which_data_type[2]
     MEG_fs = 250
@@ -199,9 +200,9 @@ if __name__ == '__main__':
     for n_age in age:
         for n_run in run:
             if data_type == '_sensor':
-                f_name = n_age + '_group' + n_run + '_rs_mag6pT' + data_type 
+                f_name = n_age + '_group' + n_run + '_rs_mag6pT' + random[1] +  data_type 
             else:
-                f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + data_type 
+                f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + random[1] + data_type 
             MEG = np.load(root_path + 'data/' + f_name + '.npy') 
             psds = do_SSEP(MEG, f_name, fmin=0.5, fmax=5, MEG_fs=MEG_fs)
             # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
