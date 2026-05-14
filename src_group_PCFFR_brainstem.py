@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from sklearn.decomposition import PCA
+from mne.beamformer import apply_lcmv, make_lcmv
 
 def select_PC(evokeds,sfreq,fmin,fmax,lb,hb,n_top):
     data = evokeds.get_data()
@@ -38,20 +39,20 @@ def select_PC(evokeds,sfreq,fmin,fmax,lb,hb,n_top):
     explained_variance_ratio = pca.explained_variance_ratio_[ind_components]
     
     ## plot top 3 PC's spectrum
-    plt.figure()
-    plt.plot(freqs,psds.transpose())
-    plt.plot(freqs,psds[ind_components,:].transpose(),color='red',linestyle='dashed')
-    print('variance explained: ' + str(explained_variance_ratio))
+    # plt.figure()
+    # plt.plot(freqs,psds.transpose())
+    # plt.plot(freqs,psds[ind_components,:].transpose(),color='red',linestyle='dashed')
+    # print('variance explained: ' + str(explained_variance_ratio))
     
     ## display top n PCs weight in spatial location 
-    w = pca.components_
-    picks = mne.pick_types(evokeds.info, meg='mag') # meg='grad' or meg='mag'
+    w = pca.components_ # (n_components, n_features)
+    picks = mne.pick_types(evokeds.info, meg='grad') # meg='grad' or meg='mag'
     info_sel = mne.pick_info(evokeds.info, picks)
     weights = w[:, picks]
-    for i in range(len(ind_components)):
-        mne.viz.plot_topomap(weights[i], info_sel)
-        plt.title(f'PC {i+1}')
-        plt.show()
+    # for i in range(len(ind_components)):
+    #     mne.viz.plot_topomap(weights[i], info_sel)
+    #     plt.title(f'PC {i+1}')
+    #     plt.show()
 
     ## keep only top 3 PC's data: PC projection to all the channels
     Xhat = np.dot(pca_data[:,ind_components], w[ind_components,:])
@@ -72,22 +73,43 @@ def do_foward(s):
     mne.write_forward_solution(file_in + s +'-fwd.fif',fwd,overwrite=True)
     return fwd, src
 
-def do_inverse_FFR(s,evokeds_inv,condition,run,morph,n_trial,n_top,hp,lp):
+def do_inverse_FFR(model,s,evokeds_inv,condition,run,morph,n_trial,n_top,hp,lp):
     root_path='/media/tzcheng/storage/Brainstem/'
     subjects_dir = '/media/tzcheng/storage2/subjects/'
 
     file_in = root_path + s + '/sss_fif/' + s
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
+    src = fwd['src']
     cov = mne.read_cov(file_in + condition + run + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr-cov.fif')
-    inverse_operator = mne.minimum_norm.make_inverse_operator(evokeds_inv.info, fwd, cov,loose=1,depth=0.8)
-    evokeds_inv_stc = mne.minimum_norm.apply_inverse((evokeds_inv), inverse_operator, pick_ori = None)
-
+    noise_cov = mne.read_cov(file_in + condition + run + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e-noise-cov.fif')
+    data_cov = mne.read_cov(file_in + condition + run + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e-data-cov.fif')
+    
+    if model == 'mne':
+        inverse_operator = mne.minimum_norm.make_inverse_operator(evokeds_inv.info, fwd, cov,loose=1,depth=0.8)
+        evokeds_inv_stc = mne.minimum_norm.apply_inverse((evokeds_inv), inverse_operator, pick_ori = None)
+    elif model == 'beamformer':
+        filters = make_lcmv(
+            evokeds_inv.info,
+            fwd,
+            data_cov,
+            reg=0,
+            noise_cov=noise_cov,
+            pick_ori="max-power",
+            weight_norm="unit-noise-gain",
+            rank='info',
+            reduce_rank = True,
+            depth = 0.8
+        )
+        evokeds_inv_stc = apply_lcmv(evokeds_inv, filters)
+        # evokeds_inv_stc.plot(src = src)
+    else: 
+        print("specify the inverse model to use")
     if morph == True:
         print('Morph ' + s +  ' src space to common cortical space.')
         fname_src_fsaverage = subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif'
         src_fs = mne.read_source_spaces(fname_src_fsaverage)
         morph = mne.compute_source_morph(
-            inverse_operator["src"],
+            src,
             subject_from=s+'_zoe',
             subjects_dir=subjects_dir,
             niter_affine=[10, 10, 5],
@@ -117,9 +139,10 @@ def group_stc(subj,condition,run,n_trial,n_top,hp,lp):
     return stc_data,stc_roi_data
 
 #%%####################################### 
-do_PCA = True ## if True, assign n_top cuz it cannot be 0
+do_PCA = False ## if True, assign n_top cuz it cannot be 0
 morph = True
 lang = '2'
+inverse_model = 'beamformer'
 
 root_path='/media/tzcheng/storage/Brainstem/'
 os.chdir(root_path)
@@ -128,6 +151,7 @@ subjects = []
 for file in os.listdir():
     if file.startswith('brainstem_' + lang): ## it's easier to run 100s and 200s seperately so they can be saved into two npy files
         subjects.append(file)
+
 print(subjects)
 
 ## observe individual subjects
@@ -137,7 +161,7 @@ print(subjects)
 # subjects = ['brainstem_213'] # bad
 
 ## preproc parameters
-n_top = 1 # 3 or 10 or 0: indicate no PCA was done
+n_top = 0 # 3 or 10 or 0: indicate no PCA was done
 n_trial = 'all' ## 'all'(3000) or 200 or 'allall'(6000)
 lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
@@ -155,10 +179,13 @@ hb = 110
 group = []
 group_roi = []
 group_sensor = np.empty([len(subjects),len(conditions),len(runs),306,1101])
+# group_sensor = np.empty([len(subjects),len(conditions),len(runs),204,1101]) # mag (102) or grad (204) only
 group_morph = np.empty([len(subjects),len(conditions),len(runs),14629,1101])
 group_roi = np.empty([len(subjects),len(conditions),len(runs),114,1101])
 group_pca = np.empty([len(subjects),len(conditions),len(runs),306,1101])
+# group_pca = np.empty([len(subjects),len(conditions),len(runs),204,1101]) # mag (102) or grad (204) only
 group_pca_weight = np.empty([len(subjects),len(conditions),len(runs),306,306])
+# group_pca_weight = np.empty([len(subjects),len(conditions),len(runs),204,204]) # mag (102) or grad (204) only
 group_pc_info = np.empty([len(subjects),len(conditions),len(runs),n_top,2]) # Last dim: first is the ind, 2nd is the explained var ratio of the corresponding PC
 
 for ns,s in enumerate(subjects):
@@ -169,11 +196,13 @@ for ns,s in enumerate(subjects):
             file_in = root_path + s + '/sss_fif/' + s + condition + run
             # file_in = root_path + s + '/sss_fif/' + s + condition + '_0102' # for reps = 6000
             evokeds = mne.read_evokeds(file_in + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_evoked_ffr.fif')[0]
-            data = evokeds.get_data()
+            # evoked = evokeds.copy().pick(picks='grad') ## only keep mag or grad
+            evoked = evokeds.copy()
+            data = evoked.get_data()
             if do_PCA:
                 print('Run src on PCA-reduced signals')
-                pca_data,ind_components,pca_weight,explained_variance_ratio,data_topPC = select_PC(evokeds,sfreq,fmin,fmax,lb,hb,n_top)
-                evokeds.data = data_topPC
+                pca_data,ind_components,pca_weight,explained_variance_ratio,data_topPC = select_PC(evoked,sfreq,fmin,fmax,lb,hb,n_top)
+                evoked.data = data_topPC
                 group_sensor[ns,ncondition,nrun,:len(data_topPC),:] = data_topPC # somehow brainstem_113 subject only has 305 channels
                 group_pca[ns,ncondition,nrun,:len(data_topPC),:] = pca_data # somehow brainstem_113 subject only has 305 channels
                 group_pca_weight[ns,ncondition,nrun,:len(data_topPC),:len(data_topPC)] = pca_weight
@@ -182,8 +211,8 @@ for ns,s in enumerate(subjects):
             else:
                 print('Run src on non-PCA signals')
                 group_sensor[ns,ncondition,nrun,:len(data),:] = data
-            # do_inverse_FFR(s,evokeds,condition,run,morph,n_trial,n_top,hp,lp)
-            # group_morph[ns,ncondition,nrun,:,:],group_roi[ns,ncondition,nrun,:,:] = group_stc(s,condition,run,n_trial,n_top,hp,lp)
+            do_inverse_FFR(inverse_model,s,evoked,condition,run,morph,n_trial,n_top,hp,lp)
+            group_morph[ns,ncondition,nrun,:,:],group_roi[ns,ncondition,nrun,:,:] = group_stc(s,condition,run,n_trial,n_top,hp,lp)
 
 for ncondition,condition in enumerate(conditions):
     for nrun,run in enumerate(runs):
@@ -191,10 +220,10 @@ for ncondition,condition in enumerate(conditions):
             head = '/MEG/FFR/eng_group_pcffr'
         elif lang == '2':
             head = '/MEG/FFR/spa_group_pcffr'
-        np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_sensor.npy',group_sensor[:,ncondition,nrun,:,:])
-        # np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_morph.npy',group_morph[:,ncondition,nrun,:,:])
-        # np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_roi.npy',group_roi[:,ncondition,nrun,:,:])
+        np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_sensor_beamformer.npy',group_sensor[:,ncondition,nrun,:,:])
+        np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_morph_beamformer.npy',group_morph[:,ncondition,nrun,:,:])
+        np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_roi_beamformer.npy',group_roi[:,ncondition,nrun,:,:])
         if do_PCA:
-            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_data.npy',group_pca[:,ncondition,nrun,:,:])
-            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_weight.npy',group_pca_weight[:,ncondition,nrun,:,:])
-            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run +'_pc_info.npy',group_pc_info[:,ncondition,nrun,:,:])
+            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_data_beamformer.npy',group_pca[:,ncondition,nrun,:,:])
+            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_weight_beamformer.npy',group_pca_weight[:,ncondition,nrun,:,:])
+            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run +'_pc_info_beamformer.npy',group_pc_info[:,ncondition,nrun,:,:])
