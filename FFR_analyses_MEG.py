@@ -1585,8 +1585,8 @@ stc1.plot_3d(src=src,subject = 'fsaverage')
 tic = time.time()
 k_feature = 'all'
 
-X = np.concatenate((p10_spa,n40_spa),axis=0)
-y = np.concatenate((np.repeat(0,len(p10_spa)),np.repeat(1,len(n40_spa)))) 
+X = np.concatenate((p10_eng,n40_eng),axis=0)
+y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(n40_eng)))) 
 
 # prepare a series of classifier applied at each time sample
 clf = make_pipeline(
@@ -1625,8 +1625,8 @@ patterns = get_coef(time_decod, "patterns_",
 
 toc = time.time()
 
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
 
 #%%#######################################
 
