@@ -46,13 +46,13 @@ def select_PC(evokeds,sfreq,fmin,fmax,lb,hb,n_top):
     
     ## display top n PCs weight in spatial location 
     w = pca.components_ # (n_components, n_features)
-    picks = mne.pick_types(evokeds.info, meg='grad') # meg='grad' or meg='mag'
+    picks = mne.pick_types(evokeds.info, meg='mag') # meg='grad' or meg='mag'
     info_sel = mne.pick_info(evokeds.info, picks)
     weights = w[:, picks]
-    # for i in range(len(ind_components)):
-    #     mne.viz.plot_topomap(weights[i], info_sel)
-    #     plt.title(f'PC {i+1}')
-    #     plt.show()
+    for i in range(len(ind_components)):
+        mne.viz.plot_topomap(weights[i], info_sel)
+        plt.title(f'PC {i+1}')
+        plt.show()
 
     ## keep only top 3 PC's data: PC projection to all the channels
     Xhat = np.dot(pca_data[:,ind_components], w[ind_components,:])
@@ -139,7 +139,7 @@ def group_stc(subj,condition,run,n_trial,n_top,hp,lp):
     return stc_data,stc_roi_data
 
 #%%####################################### 
-do_PCA = False ## if True, assign n_top cuz it cannot be 0
+do_PCA = True ## if True, assign n_top cuz it cannot be 0
 morph = True
 lang = '2'
 inverse_model = 'beamformer'
