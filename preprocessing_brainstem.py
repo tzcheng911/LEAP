@@ -8,7 +8,7 @@ starting after otp and sss
 @author: tzcheng
 """
 
-###### Import library 
+#%%##### Import library 
 import mne
 # import mnefun
 import matplotlib
@@ -53,7 +53,7 @@ def do_filtering(data, lp, hp, do_cabr):
         data.filter(l_freq=0,h_freq=50,method='iir',iir_params=dict(order=4,ftype='butter'))
     return data
     
-def do_cov(subject,data, do_cabr,hp,lp):
+def do_cov(subject,data, do_cabr,condition, run, hp,lp):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
     fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + condition + run + '_erm_otp_raw_sss_proj_f'
@@ -141,6 +141,15 @@ def do_epoch_cabr_eeg(data, events, subject, condition, run, n_trials):
     evoked.save(file_out + '_evoked_cabr_' + str(n_trials) + '.fif',overwrite=True)
     return evoked, new_epochs
 
+def do_epoch_cov(subject,data, do_cabr,condition, run, hp,lp):
+    ###### noise covariance for each run based on its eog ecg proj
+    root_path = os.getcwd()
+    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + condition + run + '_erm_otp_raw_sss_proj_f'
+    noise_cov = mne.compute_covariance(data, tmin= None, tmax=0)
+    mne.write_cov(fname_erm + str(hp) + str(lp) + '_ffr_e-noise-cov.fif', noise_cov,overwrite=True)
+    data_cov = mne.compute_covariance(data, tmin=0, tmax=0.15)
+    mne.write_cov(fname_erm + str(hp) + str(lp) + '_ffr_e-data-cov.fif', data_cov,overwrite=True)
+    
 #%%######################################## 
 # mne.set_config('MNE_MEMMAP_MIN_SIZE', '10M') 
 # mne.set_config('MNE_CACHE_DIR', '/dev/shm')
@@ -148,17 +157,18 @@ root_path='/media/tzcheng/storage/Brainstem/' # brainstem files
 os.chdir(root_path)
 
 ## parameters 
-conditions = ['_p10','_n40']
+conditions = ['_n40']
 runs = ['_01','_02'] 
+runs = ['_01'] 
 lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
-n_trials = 'allall'  ## 'all' or 200 or or 'allall'(6000)
+n_trials = 'all'  ## 'all' or 200 or or 'allall'(6000)
 
 do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
 subj = [] # A104 got some technical issue
 for file in os.listdir():
-    if file.startswith('brainstem_1'): # brainstem
+    if file.startswith('brainstem_108'): # brainstem
         subj.append(file)
 
 # subj = ['brainstem_113', 'brainstem_203', 'brainstem_214', 'brainstem_213', 'brainstem_124', 'brainstem_110', 'brainstem_118', 'brainstem_226', 'brainstem_215', 'brainstem_225', 'brainstem_224', 'brainstem_106', 'brainstem_204', 'brainstem_111', 'brainstem_112', 'brainstem_206', 'brainstem_133', 'brainstem_104', 'brainstem_220']
@@ -239,6 +249,7 @@ for s in subj:
 
 #%%##### do the jobs for MEG
 os.chdir(root_path)
+
 print(subj)
 for s in subj:
     print(s)
@@ -251,20 +262,22 @@ for s in subj:
             if os.path.exists(filename):
                 print ('ECG/EOG projection exists, loading...')
                 raw = mne.io.read_raw_fif(filename, allow_maxshield=True,preload=True)
-                raw_erm = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + condition + run + '_erm_raw_sss_proj.fif', allow_maxshield=True,preload=True)
+                # raw_erm = mne.io.read_raw_fif(root_path + s + '/sss_fif/' + s + condition + run + '_erm_raw_sss_proj.fif', allow_maxshield=True,preload=True)
             else:
                 print ('Doing ECG/EOG projection...')
                 [raw,raw_erm] = do_projection(s,condition,run)
             print ('Doing filtering...')
             raw_filt = do_filtering(raw,lp,hp,do_cabr)
-            raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
+            # raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
             print ('calculate cov...')
-            do_cov(s,raw_erm_filt, do_cabr,hp,lp)
+            # do_cov(s,raw_erm_filt, do_cabr,condition, run,hp,lp)
             print ('Doing epoch...')
             raw_file = mne.io.read_raw_fif(filename,preload=True,allow_maxshield=True)
             events = find_events(raw_file)
             if do_cabr == True: 
-                do_epoch_cabr_meg(raw_filt, events, s, condition, run,n_trials,hp,lp)
+                [evokeds,epochs] = do_epoch_cabr_meg(raw_filt, events, s, condition, run,n_trials,hp,lp)
+                print ('calculate cov...')
+                do_epoch_cov(s,epochs, do_cabr,condition, run ,hp,lp)
             else:
                 print('Doing something else than cabr.')
 
