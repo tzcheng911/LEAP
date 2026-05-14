@@ -153,97 +153,96 @@ def do_decoding(X1, X2, ts, te, model, seed):
         all_score.append(score)
     return all_score
 
-def redo_ROI(new_ROI): 
+def redo_ROI(new_ROI,f_name): 
     ## Average or select ROIs from the 114 labels
     # Auditory (STG 72,108, HG 76, 112), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
     # Basal ganglia group (7,8,9,16,26,27,28,31): out of all include caudate (7 26) and putamen (8 27) only based on Cannon & Patel 2020 TICS, putamen is most relevant 
     # Frontal IFG (60,61,62,96,97,98)
     # new_ROI = {"AuditoryL": [72,76],"AuditoryR": [108,112], "MotorL": [66],"MotorR": [102], "SensoryL": [59,64],"SensoryR": [95,100], "BGL": [7,8],"BGR": [26,27], "IFGL": [60,61,62], "IFGR": [96,97,98]}
     # new_ROI = {"Auditory": [72,76,108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
-    age = ['7mo','11mo','br']  
-    run = ['_02','_03','_04'] # random, duple, triple
-    
-    for n_age in age:
-        for n_run in run:
-            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT_roi' 
-            MEG0 = np.load(root_path + 'data/' + f_name + '.npy')   
-            f_name = f_name +'_redo' + str(len(new_ROI))
-            MEG = np.zeros((np.shape(MEG0)[0],len(new_ROI),np.shape(MEG0)[2]))
-            for index, ROI in enumerate(new_ROI):
-                MEG[:,index,:] = MEG0[:,new_ROI[ROI],:].mean(axis=1)
-                np.save(root_path + 'data/' + f_name + '.npy', MEG)
+
+    MEG0 = np.load(root_path + 'data/' + f_name + '.npy')   
+    f_name = f_name +'_redo' + str(len(new_ROI))
+    MEG = np.zeros((np.shape(MEG0)[0],len(new_ROI),np.shape(MEG0)[2]))
+    for index, ROI in enumerate(new_ROI):
+        MEG[:,index,:] = MEG0[:,new_ROI[ROI],:].mean(axis=1)
+        np.save(root_path + 'data/' + f_name + '.npy', MEG)
 
 #%%####################################### Do the jobs           
-if __name__ == '__main__':
-    #%%####################################### Set path
-    root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
-    subjects_dir = '/media/tzcheng/storage2/subjects/'
 
-    #%% Parameters
-    age = ['7mo','11mo','br']  
-    run = ['_02','_03','_04'] # random, duple, triple
-    random = ['', 'randduple','randtriple'] # in case of the need to do random duple and triple seperately 
-    which_data_type = ['_sensor','_roi','_roi_redo4','_morph']
-    data_type = which_data_type[2]
-    MEG_fs = 250
+#%%####################################### Set path
+root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
+subjects_dir = '/media/tzcheng/storage2/subjects/'
 
-    #%% Redo ROI if needed
-    new_ROI = {"Auditory": [72,76, 108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
-    new_ROI = {"Auditory": [72,76, 108,112], "SensoriMotor": [66,102,59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
-    redo_ROI(new_ROI)
-    
-    #%%####################################### Run the psds, tfr, conn
-    ## Can run psds, tfr and conn for sensor, ROI and wholebrain. The research interests are: 
-    ## 1. psds of the sensor, ROI, whole brain 
-    ## 2. conn between the ROIs
-    ## Load each condition one by one
-    for n_age in age:
-        for n_run in run:
-            if data_type == '_sensor':
-                f_name = n_age + '_group' + n_run + '_rs_mag6pT' + random[1] +  data_type 
-            else:
-                f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + random[1] + data_type 
-            MEG = np.load(root_path + 'data/' + f_name + '.npy') 
-            psds = do_SSEP(MEG, f_name, fmin=0.5, fmax=5, MEG_fs=MEG_fs)
-            # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
-            con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
-            del MEG
+#%% Parameters
+age = ['7mo','11mo','br']  
+run = ['_02'] # random, duple, triple
+randomDT = ['', 'randduple','randtriple'] # in case of the need to do random duple and triple seperately 
+which_data_type = ['_sensor','_roi','_roi_redo4','_morph']
+data_type = which_data_type[2]
+MEG_fs = 250
 
-    #%%####################################### Run the decoding
-    ## Can run decoding on sensor, ROI and wholebrain. The research interests are on the wholebrain decoding results
-    ## Decode the duple vs. random and triple vs. random, need to load at least two conditions
-    #%% Decode across subjects
-    for n_age in age:
-        MEG_random = np.load(root_path + 'data/' + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + '.npy')
-        MEG_duple = np.load(root_path + 'data/' + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + '.npy')
-        MEG_triple = np.load(root_path + 'data/' + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + '.npy')
+#%% Redo ROI if needed
+new_ROI = {"Auditory": [72,76, 108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
+new_ROI = {"Auditory": [72,76, 108,112], "SensoriMotor": [66,102,59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
+data_type = which_data_type[1]
+for n_age in age:
+    for n_run in run:
+        f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT_' + randomDT[1] + data_type 
+        redo_ROI(new_ROI,f_name)
+
+#%%####################################### Run the psds, tfr, conn
+## Can run psds, tfr and conn for sensor, ROI and wholebrain. The research interests are: 
+## 1. psds of the sensor, ROI, whole brain 
+## 2. conn between the ROIs
+## Load each condition one by one
+for n_age in age:
+    for n_run in run:
+        if data_type == '_sensor':
+            f_name = n_age + '_group' + n_run + '_rs_mag6pT' + randomDT[1] +  data_type 
+        else:
+            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + randomDT[1] + data_type 
+        MEG = np.load(root_path + 'data/' + f_name + '.npy') 
+        psds = do_SSEP(MEG, f_name, fmin=0.5, fmax=5, MEG_fs=MEG_fs)
+        # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
+        con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
+        del MEG
+
+#%%####################################### Run the decoding
+## Can run decoding on sensor, ROI and wholebrain. The research interests are on the wholebrain decoding results
+## Decode the duple vs. random and triple vs. random, need to load at least two conditions
+#%% Decode across subjects
+for n_age in age:
+    MEG_random = np.load(root_path + 'data/' + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + '.npy')
+    MEG_duple = np.load(root_path + 'data/' + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + '.npy')
+    MEG_triple = np.load(root_path + 'data/' + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + '.npy')
+    acc_duple = do_decoding(MEG_duple, MEG_random, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
+    acc_triple = do_decoding(MEG_triple, MEG_random, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
+    np.save(root_path + 'decoding/' + n_age + data_type +'_decodingACC_duple.npy',acc_duple)
+    np.save(root_path + 'decoding/' + n_age + data_type +'_decodingACC_triple.npy',acc_triple)
+
+#%% Decode across trials for each subject
+all_score_duple = []
+all_score_triple = []
+subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
+           '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/',
+           '/media/tzcheng/storage/BabyRhythm/']
+for age_group in subj_path:
+    subj = [] 
+    for file in os.listdir(age_group):
+        if file.startswith('br_') or file.startswith('me2_'):
+            subj.append(file)
+            
+    for s in subj:
+        file_in = age_group + s + '/sss_fif/' + s
+        MEG_random = np.load(file_in + '_02_stc_mne_epoch_rs100_mag6pT'  + '.npy')
+        MEG_duple = np.load(file_in + '_03_stc_mne_epoch_rs100_mag6pT'  + '.npy')
+        MEG_triple = np.load(file_in + '_04_stc_mne_epoch_rs100_mag6pT'  + '.npy')
         acc_duple = do_decoding(MEG_duple, MEG_random, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
         acc_triple = do_decoding(MEG_triple, MEG_random, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
-        np.save(root_path + 'decoding/' + n_age + data_type +'_decodingACC_duple.npy',acc_duple)
-        np.save(root_path + 'decoding/' + n_age + data_type +'_decodingACC_triple.npy',acc_triple)
-
-    #%% Decode across trials for each subject
-    all_score_duple = []
-    all_score_triple = []
-    subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
-               '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/',
-               '/media/tzcheng/storage/BabyRhythm/']
-    for age_group in subj_path:
-        subj = [] 
-        for file in os.listdir(age_group):
-            if file.startswith('br_') or file.startswith('me2_'):
-                subj.append(file)
-                
-        for s in subj:
-            file_in = age_group + s + '/sss_fif/' + s
-            MEG_random = np.load(file_in + '_02_stc_mne_epoch_rs100_mag6pT'  + '.npy')
-            MEG_duple = np.load(file_in + '_03_stc_mne_epoch_rs100_mag6pT'  + '.npy')
-            MEG_triple = np.load(file_in + '_04_stc_mne_epoch_rs100_mag6pT'  + '.npy')
-            acc_duple = do_decoding(MEG_duple, MEG_random, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
-            acc_triple = do_decoding(MEG_triple, MEG_random, ts=0, te=2350, model='SVM', seed=15, nperm=100, criteria = 95) # outside the run loop
-            np.save(root_path + 'decoding/by_subjects/' + s + '_wholebrain_decodingACC_duple.npy',acc_duple)
-            np.save(root_path + 'decoding/by_subjects/' + s + '_wholebrain_decodingACC_triple.npy',acc_triple)
-            all_score_duple.append(acc_duple)
-            all_score_triple.append(acc_triple)
-        np.save(root_path + 'decoding/by_subjects/' + 'br_wholebrain_decodingACC_trial_duple.npy', np.asarray(all_score_duple))
-        np.save(root_path + 'decoding/by_subjects/' + 'br_wholebrain_decodingACC_trial_triple.npy', np.asarray(all_score_triple))
+        np.save(root_path + 'decoding/by_subjects/' + s + '_wholebrain_decodingACC_duple.npy',acc_duple)
+        np.save(root_path + 'decoding/by_subjects/' + s + '_wholebrain_decodingACC_triple.npy',acc_triple)
+        all_score_duple.append(acc_duple)
+        all_score_triple.append(acc_triple)
+    np.save(root_path + 'decoding/by_subjects/' + 'br_wholebrain_decodingACC_trial_duple.npy', np.asarray(all_score_duple))
+    np.save(root_path + 'decoding/by_subjects/' + 'br_wholebrain_decodingACC_trial_triple.npy', np.asarray(all_score_triple))
