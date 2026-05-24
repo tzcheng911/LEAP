@@ -16,7 +16,7 @@ from scipy.io import wavfile
 import mne
 from mne import spatial_src_adjacency
 from mne.stats import spatio_temporal_cluster_1samp_test, summarize_clusters_stc
-from mne.time_frequency import tfr_morlet, tfr_multitaper, tfr_stockwell, AverageTFRArray
+# from mne.time_frequency import tfr_morlet, tfr_multitaper, tfr_stockwell, AverageTFRArray
 from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time,read_connectivity
 from mne_connectivity.viz import plot_connectivity_circle
 from mne.viz import circular_layout
@@ -152,11 +152,10 @@ def plot_audio(audio,fmin,fmax,fs):
     plt.plot(freqs,psds)
     plt.xlim([fmin,fmax])
     
-def plot_SSEP(psds,freqs,title):
-    plt.figure()
-    plot_err(psds,'k',freqs)
+def plot_SSEP(psds,freqs,color,title):
+    plot_err(psds,color,freqs)
     plt.xlim([freqs[0],freqs[-1]])
-    plt.ylim([0,4.25e-25])
+    # plt.ylim([0,4.25e-25])
     plt.title(title)
 
 def plot_CONN(conn,freqs,nlines,vmin,vmax,FOI,label_names,title):
@@ -216,9 +215,9 @@ fs, audio = wavfile.read(root_path + 'Stimuli/Random/random15rr.wav') # Random, 
 plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
 
 #%% Parameters
-ages = ['7mo'] 
+ages = ['7mo','11mo','br'] 
 folders = ['SSEP/','decoding/','connectivity/'] # random, duple, triple
-analysis = ['psds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
+analysis = ['fpsds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
 which_data_type = ['_sensor_','_roi_','_roi_redo4_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
 
 #%%####################################### Visualize the sensor level 
@@ -228,22 +227,39 @@ data_type = which_data_type[0]
 
 for n_age in ages:
     print("Doing age " + n_age)
-    random = np.load(root_path + n_folder + n_age + '_group_02_rs_mag6pT' + data_type + n_analysis +'.npz') 
+    random = np.load(root_path + n_folder + n_age + '_group_02_rs_mag6pT' + data_type + n_analysis +'.npz')
+    randomD = np.load(root_path + n_folder + n_age + '_group_02_rs_mag6pT_randduple' + data_type + n_analysis +'.npz')
+    randomT = np.load(root_path + n_folder + n_age + '_group_02_rs_mag6pT_randtriple' + data_type + n_analysis +'.npz')
     duple = np.load(root_path + n_folder + n_age + '_group_03_rs_mag6pT' + data_type + n_analysis + '.npz') 
     triple = np.load(root_path + n_folder + n_age + '_group_04_rs_mag6pT' + data_type + n_analysis + '.npz') 
     
     analysis_type = random.files[0]
     freqs = random[random.files[1]]
     random = random[random.files[0]]
+    randomD = randomD[randomD.files[0]]
+    randomT = randomT[randomT.files[0]]
     duple = duple[duple.files[0]]
     triple = triple[triple.files[0]]
     
-    psds_random = random.mean(axis = 1)
-    psds_duple = duple.mean(axis = 1)
-    psds_triple = triple.mean(axis = 1)
-    plot_SSEP(psds_random,freqs,'MEG_random_psds')
-    plot_SSEP(psds_duple,freqs,'MEG_duple_psds')
-    plot_SSEP(psds_triple,freqs,'MEG_triple_psds')
+    if n_analysis == 'psds':
+        psds_random = random.mean(axis = 1)
+        psds_randomD = randomD.mean(axis = 1)
+        psds_randomT = randomT.mean(axis = 1)
+        psds_duple = duple.mean(axis = 1)
+        psds_triple = triple.mean(axis = 1)
+    elif n_analysis == 'fpsds':
+        psds_random = random
+        psds_randomD = randomD
+        psds_randomT = randomT
+        psds_duple = duple
+        psds_triple = triple
+        
+    plt.figure()
+    plot_SSEP(psds_random,freqs,'k','MEG_random_psds')
+    plot_SSEP(psds_randomD,freqs,'cyan','MEG_random_duple_psds')
+    plot_SSEP(psds_randomT,freqs,'m','MEG_random_triple_psds')
+    plot_SSEP(psds_duple,freqs,'b','MEG_duple_psds')
+    plot_SSEP(psds_triple,freqs,'r','MEG_triple_psds')
     
     ## plot bar plot for the significant freqs based on non-parametric test (stats_ME2.py)
     # Doing age 7mo
@@ -309,8 +325,8 @@ for n_age in ages:
 
 
 #%%####################################### Visualize on the source level: ROI 
-n_folder = folders[2]
-n_analysis = analysis[2]
+n_folder = folders[0]
+n_analysis = analysis[0]
 data_type = which_data_type[2]
 
 vmin = 0.5
@@ -328,6 +344,7 @@ elif data_type == '_roi_redo5_':
     label_names = np.asarray(["Auditory", "Motor", "Sensory", "BG", "IFG"])
 elif data_type == '_roi_redo4_':
     label_names = np.asarray(["Auditory", "SensoryMotor", "BG", "IFG"])
+    nROI = [0,1,2,3]
 
 # Auditory (STG 72,108, HG 76,112), Motor (precentral 66 102), Sensorimotor (postcentral 64 100), and between them is paracentral 59, 95
 # Basal ganglia group (7,8,9,16,26,27,28,31): out of all include caudate (7 26) and putamen (8 27) only based on Cannon & Patel 2020 TICS, putamen is most relevant 
@@ -373,10 +390,11 @@ for nn_age,n_age in enumerate(ages):
                 random = random0[random0.files[0]]
                 duple = duple0[duple0.files[0]]
                 triple = triple0[triple0.files[0]]
-                freqs = random0[random0.files[1]]          
-                # plot_SSEP(random[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_random')
-                # plot_SSEP(duple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_duple')
-                # plot_SSEP(triple[:,n,:],freqs,label_names[nROI[n]] + '_' + n_age + '_triple')
+                freqs = random0[random0.files[1]]   
+                plt.figure()
+                plot_SSEP(random[:,n,:],freqs,'k',label_names[nROI[n]] + '_' + n_age)
+                plot_SSEP(duple[:,n,:],freqs,'orange',label_names[nROI[n]] + '_' + n_age)
+                plot_SSEP(triple[:,n,:],freqs,'blue',label_names[nROI[n]] + '_' + n_age)
                 
                 # Doing ROI SSEP: Auditory
                 # -------------------Doing duple-------------------

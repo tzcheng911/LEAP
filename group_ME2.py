@@ -18,8 +18,8 @@ tmax = 9.0
 fmin = 0.5
 fmax = 5
 
-age = '7mo/' # '7mo/', '11mo/' or '' for adults br
-runs = ['_02','_03','_04']
+age = '11mo/' # '7mo/', '11mo/' or '' for adults br
+runs = ['_02']
 resample_or_not = True
 rfs = 250
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/' 
@@ -29,8 +29,8 @@ os.chdir(root_path + age)
 subjects = []
 
 for file in os.listdir():
-    # if file.startswith('me2_'): 
     if file.startswith('me2_'): 
+    # if file.startswith('br_'): 
         subjects.append(file)
 
 for run in runs:
@@ -41,16 +41,14 @@ for run in runs:
     for s in subjects:
         print('Extracting ' + s + ' data')
         file_in = root_path + age + s + '/sss_fif/' + s + run
-        evoked = mne.read_evokeds(file_in + '_otp_raw_sss_proj_fil50_mag6pT_evoked.fif')[0]
+        evoked = mne.read_evokeds(file_in + '_otp_raw_sss_proj_fil50_mag6pT_evoked_randtriple.fif')[0]
         evoked.resample(sfreq = rfs)
         group.append(evoked.data)
     group=np.asarray(group)
-    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group' + run + '_rs_mag6pT_sensor.npy',group)
-    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/br_group' + run + '_rs_mag6pT_sensor.npy',group)
+    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/11mo_group' + run + '_rs_mag6pT_randtriple_sensor.npy',group)
+    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/br_group' + run + '_rs_mag6pT_randduple_sensor.npy',group)
     
 #%% output the source time series in npy files
-
-    
 src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif') # for morphing data
 fname_aseg = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
 for run in runs:

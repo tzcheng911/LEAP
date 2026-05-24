@@ -161,7 +161,7 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
     cond_col = []
     ROI_col = []
     ages = ['7mo','11mo','br'] 
-    conditions = ['_02','_03','_04']
+    conditions = ['_02','_03','_04'] # need to manually do random duple and random triple by setting conditions to '02' and cahnge the data0
     subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
                '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/',
                '/media/tzcheng/storage/BabyRhythm/'] # NEED TO BE THE ORDER OF where 7mo, 11mo and br data at
@@ -169,7 +169,7 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
         print(age)
         for n_cond,cond in enumerate(conditions):
             print(cond)
-            if n_analysis == 'psds':
+            if n_analysis == 'fpsds':
                 if data_type == which_data_type[1] or data_type == which_data_type[2]:
                     print('-----------------Extracting ROI data-----------------')
                     for nROI, ROI in enumerate(labels):
@@ -178,7 +178,7 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
                         data1 = data0[data0.files[0]]
                         freqs = data0[data0.files[1]]
                         print(np.shape(data1))
-                        data2 = np.vstack((data1[:,nROI,ff(freqs,1.11)],data1[:,nROI,ff(freqs,1.67)],data1[:,nROI,ff(freqs,3.33)])).transpose()
+                        data2 = np.vstack((data1[:,nROI,ff(freqs,1.11)],data1[:,nROI,ff(freqs,1.67)],data1[:,nROI,ff(freqs,2.22)],data1[:,nROI,ff(freqs,3.33)])).transpose()
                         lm_np.append(data2)
                         for file in os.listdir(subj_path[n_age]):
                             if file.endswith('7m') or file.endswith('11m') or file.startswith('br'):
@@ -187,13 +187,14 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
                                 cond_col.append(cond)
                                 age_col.append(age)
                                 ROI_col.append(ROI)
-                    lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col, 'ROI':ROI_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'3.3Hz': np.concatenate(lm_np)[:,2]})
+                    lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col, 'ROI':ROI_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'2.22Hz': np.concatenate(lm_np)[:,2],'3.3Hz': np.concatenate(lm_np)[:,3]})
                 elif data_type == which_data_type[0]:
                     print('-----------------Extracting sensor data-----------------')
                     data0 = np.load(root_path + n_folder + age + '_group' + cond + '_rs_mag6pT' + data_type + n_analysis +'.npz') 
                     data1 = data0[data0.files[0]].mean(axis=1)
+                    freqs = data0[data0.files[1]]
                     print(np.shape(data1))
-                    data2 = np.vstack((data1[:,[6,7]].mean(axis=1),data1[:,[12,13]].mean(axis=1),data1[:,[30,31]].mean(axis=1))).transpose()
+                    data2 = np.vstack((data1[:,ff(freqs,1.11)],data1[:,ff(freqs,1.67)],data1[:,ff(freqs,2.22)],data1[:,ff(freqs,3.33)])).transpose()
                     lm_np.append(data2)
                     for file in os.listdir(subj_path[n_age]):
                         if file.endswith('7m') or file.endswith('11m') or file.startswith('br'):
@@ -201,7 +202,7 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
                             sub_col.append(file)
                             cond_col.append(cond)
                             age_col.append(age)
-                    lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'3.3Hz': np.concatenate(lm_np)[:,2]}) 
+                    lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1], '2.22Hz': np.concatenate(lm_np)[:,2],'3.3Hz': np.concatenate(lm_np)[:,3]}) 
             elif n_analysis == 'conn_plv':
                 data0 = read_connectivity(root_path + n_folder + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type + n_analysis) 
                 freqs = data0.freqs
@@ -279,7 +280,7 @@ def extract_MEG(MEGAge,data_type,n_analysis,n_condition,subj_noCDI_ind,conn_FOI,
         elif conn_FOI == 'alpha_beta':
             print('From freqs ' + str(F1) + ' Hz to ' + str(F2) + ' Hz')
             return conn_alpha_beta     
-    elif n_analysis == 'psds':
+    elif n_analysis == 'fpsds':
         SSEP0 = np.load(root_path + 'SSEP/' + MEGAge + '_group' + n_condition + '_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
         SSEP = SSEP0[SSEP0.files[0]]
         if MEGAge == '7mo':
@@ -391,15 +392,15 @@ label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/
 ages = ['7mo','11mo','br'] 
 conditions = ['_02','_03','_04'] # random, duple, triple
 folders = ['SSEP/','ERSP/','decoding/','connectivity/'] 
-analysis = ['psds','conn_plv','conn_coh','conn_pli','conn_GC_AM','conn_GC_MA']
+analysis = ['fpsds','conn_plv','conn_coh','conn_pli','conn_GC_AM','conn_GC_MA']
 which_data_type = ['_sensor_','_roi_','_roi_redo4_','_morph_'] 
 
 #%%####################################### Analysis on the sensor SSEP
 for n_age in ages:
     print("Doing age " + n_age)
-    random = np.load(root_path + 'SSEP/' + n_age + '_group_02_rs_mag6pT_sensor_psds.npz') 
-    duple = np.load(root_path + 'SSEP/' + n_age + '_group_03_rs_mag6pT_sensor_psds.npz') 
-    triple = np.load(root_path + 'SSEP/' + n_age + '_group_04_rs_mag6pT_sensor_psds.npz') 
+    random = np.load(root_path + 'SSEP/' + n_age + '_group_02_rs_mag6pT_sensor_fpsds.npz') 
+    duple = np.load(root_path + 'SSEP/' + n_age + '_group_03_rs_mag6pT_sensor_fpsds.npz') 
+    triple = np.load(root_path + 'SSEP/' + n_age + '_group_04_rs_mag6pT_sensor_fpsds.npz') 
     freqs = random[random.files[1]]
     psds_random = random[random.files[0]].mean(axis = 1)
     psds_duple = duple[duple.files[0]].mean(axis = 1)
@@ -408,7 +409,7 @@ for n_age in ages:
     stats_SSEP(psds_duple-psds_random,freqs,True)
     print("-------------------Doing triple-------------------")
     stats_SSEP(psds_triple-psds_random,freqs,True)
-convert_to_csv('_sensor_',0,'psds','SSEP',1,0)
+convert_to_csv(which_data_type[0],label_names,analysis[0],folders[0],1,0)
 
 #%%####################################### Analysis on the ROI SSEP
 n_folder = folders[0] # 0: SSEP

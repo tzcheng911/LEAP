@@ -16,6 +16,9 @@ Currently don't have the computing power to run ERSP and conn on the whole brain
 import numpy as np
 import random
 import mne
+from fooof import FOOOF
+from fooof.sim.gen import gen_aperiodic
+from fooof.plts.spectra import plot_spectra
 from mne.decoding import cross_val_multiscore
 from mne_connectivity import spectral_connectivity_time, read_connectivity
 import os
@@ -25,7 +28,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 
 #%%####################################### Define functions
-def do_SSEP(data, f_name, fmin, fmax, MEG_fs):  
+def do_SSEP(data, f_name, fmin, fmax, MEG_fs,fooof, width,n_peaks,min_peak_height):  
     ## compute psds from the time series with mne.time_frequency.psd_array_welch function
     # data: input MEG time series (subjects, sources, times) 
     # f_name: input name for saving the file
@@ -39,8 +42,20 @@ def do_SSEP(data, f_name, fmin, fmax, MEG_fs):
     n_per_seg=None,
     fmin=fmin,
     fmax=fmax,)
-    np.savez(root_path + 'SSEP/' + f_name + '_psds.npz', psds=psds,freqs=freqs)
-    return psds
+    flat_psds = []
+    if fooof:
+        for nsub in np.arange(0,len(data)):
+            fm = FOOOF(peak_width_limits=width, max_n_peaks=n_peaks, min_peak_height=min_peak_height)
+            fm.fit(freqs, psds.mean(axis=1)[nsub], width)
+            init_ap_fit = gen_aperiodic(fm.freqs, fm._robust_ap_fit(fm.freqs, fm.power_spectrum))
+            init_flat_spec = fm.power_spectrum - init_ap_fit
+            flat_psds.append(init_flat_spec)
+        init_flat_spec = np.array(flat_psds)[:,np.newaxis,:]
+        # plot_spectra(fm.freqs, init_flat_spec.mean(0), False, label='Flattened Spectrum', color='black')
+        np.savez(root_path + 'SSEP/' + f_name + '_fpsds.npz', psds=init_flat_spec,freqs=freqs)
+    else:
+        np.savez(root_path + 'SSEP/' + f_name + '_psds.npz', psds=psds,freqs=freqs)
+    return psds,init_flat_spec
 
 def do_ERSP(data, f_name, fmin, fmax, f_step, MEG_fs,n_cycles,baseline,output):  
     ## compute time-frequency decompositions from the time series with mne.time_frequency.tfr_array_morlet function
@@ -177,10 +192,17 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 #%% Parameters
 age = ['7mo','11mo','br']  
 run = ['_02'] # random, duple, triple
-randomDT = ['', 'randduple','randtriple'] # in case of the need to do random duple and triple seperately 
+# random duple and triple seperately 
+randomDT = ['', '_randduple','_randtriple'] # use randomDT[1] and randomDT[2] with run = '02', otherwise use randomDT[0] 
 which_data_type = ['_sensor','_roi','_roi_redo4','_morph']
-data_type = which_data_type[2]
+data_type = which_data_type[3]
 MEG_fs = 250
+fooof = True
+width = [0.5,5]
+n_peaks=3
+min_peak_height=5e-26
+fmin = 0.5
+fmax = 5
 
 #%% Redo ROI if needed
 new_ROI = {"Auditory": [72,76, 108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
@@ -188,7 +210,7 @@ new_ROI = {"Auditory": [72,76, 108,112], "SensoriMotor": [66,102,59,64,95,100], 
 data_type = which_data_type[1]
 for n_age in age:
     for n_run in run:
-        f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT_' + randomDT[1] + data_type 
+        f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT_' + randomDT[2] + data_type 
         redo_ROI(new_ROI,f_name)
 
 #%%####################################### Run the psds, tfr, conn
@@ -199,13 +221,13 @@ for n_age in age:
 for n_age in age:
     for n_run in run:
         if data_type == '_sensor':
-            f_name = n_age + '_group' + n_run + '_rs_mag6pT' + randomDT[1] +  data_type 
+            f_name = n_age + '_group' + n_run + '_rs_mag6pT' + randomDT[0] +  data_type 
         else:
-            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + randomDT[1] + data_type 
+            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + randomDT[0] + data_type 
         MEG = np.load(root_path + 'data/' + f_name + '.npy') 
-        psds = do_SSEP(MEG, f_name, fmin=0.5, fmax=5, MEG_fs=MEG_fs)
+        [psds,init_flat_spec] = do_SSEP(MEG, f_name, fmin, fmax, MEG_fs, fooof, width,n_peaks,min_peak_height)
         # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
-        con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
+        # con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
         del MEG
 
 #%%####################################### Run the decoding

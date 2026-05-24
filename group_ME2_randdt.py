@@ -22,8 +22,7 @@ from scipy import stats,signal
 import os
 
 #%%#######################################   
-
-age = '11mo' # '7mo', '11mo' or '' for adults br
+age = '7mo' # '7mo', '11mo' or '' for adults br
 runs = ['_02']
 resample_or_not = True
 rfs = 250
@@ -49,14 +48,15 @@ for run in runs:
         file_in = root_path + age + '/' + s + '/sss_fif/' + s + run
         evoked_randduple = mne.read_evokeds(file_in + '_otp_raw_sss_proj_fil50_mag6pT_evoked_randduple.fif')[0]
         evoked_randtriple = mne.read_evokeds(file_in + '_otp_raw_sss_proj_fil50_mag6pT_evoked_randtriple.fif')[0]
-
+        evoked_randduple = evoked_randduple.resample(sfreq = rfs)
+        evoked_randtriple = evoked_randtriple.resample(sfreq = rfs)
         group_randduple.append(evoked_randduple.data)
         group_randtriple.append(evoked_randtriple.data)
 
     group_randduple = np.asarray(group_randduple)
     group_randtriple = np.asarray(group_randtriple)
-    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_group' + run + '_mag6pT_randduple_sensor.npy',group_randduple)
-    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/7mo_group' + run + '_mag6pT_randtriple_sensor.npy',group_randtriple)
+    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/11mo_group' + run + '_rs_mag6pT_randduple_sensor.npy',group_randduple)
+    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/11mo_group' + run + '_rs_mag6pT_randtriple_sensor.npy',group_randtriple)
     
     #%% output the source time series in npy files
     group_stc_mne_rd = []
