@@ -49,10 +49,10 @@ def select_PC(evokeds,sfreq,fmin,fmax,lb,hb,n_top):
     picks = mne.pick_types(evokeds.info, meg='mag') # meg='grad' or meg='mag'
     info_sel = mne.pick_info(evokeds.info, picks)
     weights = w[:, picks]
-    for i in range(len(ind_components)):
-        mne.viz.plot_topomap(weights[i], info_sel)
-        plt.title(f'PC {i+1}')
-        plt.show()
+    # for i in range(len(ind_components)):
+    #     mne.viz.plot_topomap(weights[i], info_sel)
+    #     plt.title(f'PC {i+1}')
+    #     plt.show()
 
     ## keep only top 3 PC's data: PC projection to all the channels
     Xhat = np.dot(pca_data[:,ind_components], w[ind_components,:])
@@ -141,7 +141,7 @@ def group_stc(subj,condition,run,n_trial,n_top,hp,lp):
 #%%####################################### 
 do_PCA = True ## if True, assign n_top cuz it cannot be 0
 morph = True
-lang = '2'
+lang = '1'
 inverse_model = 'beamformer'
 
 root_path='/media/tzcheng/storage/Brainstem/'
@@ -161,9 +161,9 @@ print(subjects)
 # subjects = ['brainstem_213'] # bad
 
 ## preproc parameters
-n_top = 0 # 3 or 10 or 0: indicate no PCA was done
-n_trial = 'all' ## 'all'(3000) or 200 or 'allall'(6000)
-lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
+n_top = 3 # 3 or 10 or 0: indicate no PCA was done
+n_trial = 200 ## 'all'(3000) or 200 or 'allall'(6000)
+lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
 runs = ['_01'] # only run 01 for now, add the ['_01','_02'] for all runs, note that brainstem_107 only has run1 for p10
 conditions = ['_p10','_n40']
