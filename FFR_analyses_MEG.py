@@ -87,11 +87,11 @@ def load_CBS_file(file_type, sound_type, subject_type):
         signal = np.load(root_path + 'cbsA_meeg_analysis/misc/adult_group_' + sound_type + '_misc_200.npy')
     elif file_type == 'EEG':
         signal = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_' + sound_type + '_ffr_eeg_200.npy')
-    elif file_type in ('sensor', 'pc_data', 'roi','morph'): ## for the MEG
+    elif file_type in ('sensor', 'sensor_beamformer','pc_data','pc_data_beamformer', 'roi','roi_beamformer','morph','morph_beamformer'): ## for the MEG
         if subject_type == 'adults':
-            signal = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_pcffr802000_ntrial200_top_3_' + sound_type + '_01_' + file_type + '.npy')
+            signal = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_pcffr802000_ntrial200_3_' + sound_type + '_' + file_type + '.npy')
         elif subject_type == 'infants':   
-            signal = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/ntrial_200/group_pcffr802000_ntrial200_top_3_' + sound_type + '_' + file_type + '.npy')
+            signal = np.load(root_path + 'cbsb_meg_analysis/MEG/FFR/ntrial_200/group_pcffr802000_ntrial200_3_' + sound_type + '_' + file_type + '.npy')
     return fs, signal
 
 def load_brainstem_file(file_type, nfilter, ntrial, ntop):
@@ -1114,12 +1114,20 @@ ch_names = np.array(evoked[0].info['ch_names'])
 
 #%%####################################### load the data
 ## CBS
-file_type = 'sensor'
+data_path = '/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/'
+file_type = 'sensor_beamformer'
 subject_type = 'adults'
 fs,p10_cbs = load_CBS_file(file_type, 'p10', subject_type)
 fs,n40_cbs = load_CBS_file(file_type, 'n40', subject_type)
 fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
-    
+
+p10_cbs_pc_info = np.load(data_path + 'group_pcffr802000_ntrial200_3_p10_pc_info_beamformer.npy')
+n40_cbs_pc_info = np.load(data_path + 'group_pcffr802000_ntrial200_3_n40_pc_info_beamformer.npy')
+p40_cbs_pc_info = np.load(data_path + 'group_pcffr802000_ntrial200_3_p40_pc_info_beamformer.npy')
+p10_cbs_pc_w = np.load(data_path + 'group_pcffr802000_ntrial200_3_p10_pc_weight_beamformer.npy')
+n40_cbs_pc_w = np.load(data_path + 'group_pcffr802000_ntrial200_3_n40_pc_weight_beamformer.npy')
+p40_cbs_pc_w = np.load(data_path + 'group_pcffr802000_ntrial200_3_p40_pc_weight_beamformer.npy')
+
 ## remove the rim subjects for now
 # p10_cbs = np.delete(p10_cbs,[10,12],axis=0)
 # n40_cbs = np.delete(n40_cbs,[10,12],axis=0)
@@ -1127,7 +1135,7 @@ fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'roi_beamformer'
+file_type = 'morph_beamformer'
 nfilter = '802000'
 ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
@@ -1153,7 +1161,7 @@ if file_type == 'pc_data' or file_type == 'sensor':
 #%%####################################### visualization
 ## Sensor
 # plot group sensor or pca data
-n = 145
+n = 146
 plot_group_ffr(p10_eng[:,n,:], n40_eng[:,n,:], 'p10','n40', times)
 plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
 
@@ -1175,7 +1183,7 @@ eng_p10_pc_idx = p10_eng_pc_info[:, ntop, 0].astype(int)
 eng_n40_pc_idx = n40_eng_pc_info[:, ntop, 0].astype(int)
 spa_p10_pc_idx = p10_spa_pc_info[:, ntop, 0].astype(int)
 spa_n40_pc_idx = n40_spa_pc_info[:, ntop, 0].astype(int)
-    
+
 # subject indices
 s_eng_p10 = np.arange(p10_eng.shape[0])
 s_eng_n40 = np.arange(n40_eng.shape[0])
@@ -1478,16 +1486,16 @@ output = run_increment_decoding(
     spa_p10_pc, spa_n40_pc,
     times,
     window_step=window_step,
-    ncv1=np.shape(eng_p10_pc)[0],
-    ncv2=np.shape(spa_p10_pc)[0],
-    # ncv1=np.shape(p10_cbs)[0],
-    # ncv2=np.shape(p10_cbs)[0],
+    # ncv1=np.shape(eng_p10_pc)[0],
+    # ncv2=np.shape(spa_p10_pc)[0],
+    ncv1=np.shape(p10_cbs)[0],
+    ncv2=np.shape(p10_cbs)[0],
     shuffle="keep pair",
     randseed=2,
     do_permutation=False,
     niter=100,
-    labels=("English", "Spanish"),
-    # labels=("p10n40", "p10p40"),
+    # labels=("English", "Spanish"),
+    labels=("p10n40", "p10p40"),
     plot=True)
 
 ## Source 
@@ -1506,7 +1514,7 @@ print(acc_all_spa[ROI_label])
 
 #### Differential decoding, incremental decoding
 ts = 0
-te = 0.2
+te = 0.15
 niter = 500 
 shuffle = "keep pair"
 randseed = 2
@@ -1521,8 +1529,8 @@ acc_incre_eng = np.empty((len(ROI_label),40)) ## sorry but hardcoding for now
 acc_incre_spa = np.empty((len(ROI_label),40))  # for roi
 
 # for nch in idx_diff: # for sensor
-for n, nch in enumerate(ROI_label): # for roi
-# for nch in np.arange(0,np.shape(p10_eng)[1],1): # for morph whole brain
+# for n, nch in enumerate(ROI_label): # for roi
+for nch in np.arange(0,np.shape(p10_cbs)[1],1): # for morph whole brain
     print("Doing v " + str(nch))
     # condition_pairs = (
     #     [p10_eng[:,nch,:], n40_eng[:,nch,:]],
@@ -1539,34 +1547,38 @@ for n, nch in enumerate(ROI_label): # for roi
     window_step = 0.005
     
     output = run_increment_decoding(
-        p10_eng[:,nch,:], n40_eng[:,nch,:],
-        p10_spa[:,nch,:], n40_spa[:,nch,:],
-        # p40_cbs[:,nch,:], n40_cbs[:,nch,:],
-        # p10_cbs[:,nch,:], p40_cbs[:,nch,:],
+        # p10_eng[:,nch,:], n40_eng[:,nch,:],
+        # p10_spa[:,nch,:], n40_spa[:,nch,:],
+        p10_cbs[:,nch,:], n40_cbs[:,nch,:],
+        p10_cbs[:,nch,:], p40_cbs[:,nch,:],
         times,
         window_step=window_step,
-        ncv1=np.shape(p10_eng)[0],
-        ncv2=np.shape(p10_spa)[0],
-        # ncv1=np.shape(p10_cbs)[0],
-        # ncv2=np.shape(p10_cbs)[0],
+        # ncv1=np.shape(p10_eng)[0],
+        # ncv2=np.shape(p10_spa)[0],
+        ncv1=np.shape(p10_cbs)[0],
+        ncv2=np.shape(p10_cbs)[0],
         shuffle="keep pair",
         randseed=2,
-        do_permutation=True,
+        do_permutation=False,
         niter=500,
-        labels=("English", "Spanish"),
-        # labels=("p40n40", "p10p40"),
-        plot=True)
+        # labels=("English", "Spanish"),
+        labels=("p10n40", "p10p40"),
+        plot=False)
     # title = label_names[nch] + ' (' + str(nch) + ')'
     # plt.title(title)
-    # acc_incre_eng[nch,:] = output['acc1']
-    # acc_incre_spa[nch,:] = output['acc2']
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_spa_increment_svmacc_p10n40_pcffr802000_ntrialall_3_morph_bf.npy',output)
+    acc_incre_eng[nch,:] = output['acc1']
+    acc_incre_spa[nch,:] = output['acc2']
+    
+np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/infants_increment_svmacc_p10n40_pcffr802000_ntrial200_3_morph_beamformer.npy',acc_incre_eng)
+np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/infants_increment_svmacc_p10p40_pcffr802000_ntrial200_3_morph_beamformer.npy',acc_incre_spa)
+np.save('increment_svmacc_time.npy',output['window_ms'])
 
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/adult_increment_svmacc_p10n40_pcffr802000_ntrialall_3_morph_bf.npy',acc_incre_eng)
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/adult_increment_svmacc_p10p40_pcffr802000_ntrialall_3_morph_bf.npy',acc_incre_spa)
+# np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_spa_increment_svmacc_p10n40_pcffr802000_ntrialall_3_morph_bf.npy',output)
+# np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/adult_increment_svmacc_p10n40_pcffr802000_ntrialall_3_morph_bf.npy',acc_incre_eng)
+# np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/adult_increment_svmacc_p10p40_pcffr802000_ntrialall_3_morph_bf.npy',acc_incre_spa)
 
-np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/adultnorim10_12_increment_svmacc_p10n40_pcffr80200_ntrial200_3_morph_replicate.npy',acc_incre_eng)
-np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/adultnorim10_12_increment_svmacc_p10p40_pcffr80200_ntrial200_3_morph_replicate.npy',acc_incre_spa)
+np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/adult_increment_svmacc_p10n40_pcffr802000_ntrial200_3_morph_beamformer.npy',acc_incre_eng)
+np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/adult_increment_svmacc_p10p40_pcffr802000_ntrial200_3_morph_beamformer.npy',acc_incre_spa)
 np.save('increment_svmacc_time.npy',output['window_ms'])
 
 acc_incre_eng = np.load('eng_increment_svmacc_p10n40_pcffr80200_ntrialall_3_morph.npy')
@@ -1587,8 +1599,8 @@ stc1.plot_3d(src=src,subject = 'fsaverage')
 tic = time.time()
 k_feature = 'all'
 
-X = np.concatenate((p10_eng,n40_eng),axis=0)
-y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(n40_eng)))) 
+X = np.concatenate((p10_spa,n40_spa),axis=0)
+y = np.concatenate((np.repeat(0,len(p10_spa)),np.repeat(1,len(n40_spa)))) 
 
 # prepare a series of classifier applied at each time sample
 clf = make_pipeline(
@@ -1627,8 +1639,8 @@ patterns = get_coef(time_decod, "patterns_",
 
 toc = time.time()
 
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
 
 #%%#######################################
 
