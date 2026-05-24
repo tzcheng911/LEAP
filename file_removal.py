@@ -13,7 +13,7 @@ Be very very careful when using this script because it can delete all the files 
 import os
 
 root = "/media/tzcheng/storage2/CBS/"
-keywords = ["pcffr_morph-vl.stc"]
+keywords = ["pcffr80450"]
 
 file_to_del = []
 subj = [] 
