@@ -144,11 +144,11 @@ def do_epoch_cabr_eeg(data, events, subject, condition, run, n_trials):
 def do_epoch_cov(subject,data, do_cabr,condition, run, hp,lp):
     ###### noise covariance for each run based on its eog ecg proj
     root_path = os.getcwd()
-    fname_erm = root_path + '/' + subject + '/sss_fif/' + subject + condition + run + '_erm_otp_raw_sss_proj_f'
+    fname = root_path + '/' + subject + '/sss_fif/' + subject + condition + run + '_otp_raw_sss_proj_f' ## misleading name, it is not the cov of erm
     noise_cov = mne.compute_covariance(data, tmin= None, tmax=0)
-    mne.write_cov(fname_erm + str(hp) + str(lp) + '_ffr_e-noise-cov.fif', noise_cov,overwrite=True)
+    mne.write_cov(fname + str(hp) + str(lp) + '_ffr_e-noise-cov.fif', noise_cov,overwrite=True)
     data_cov = mne.compute_covariance(data, tmin=0, tmax=0.15)
-    mne.write_cov(fname_erm + str(hp) + str(lp) + '_ffr_e-data-cov.fif', data_cov,overwrite=True)
+    mne.write_cov(fname + str(hp) + str(lp) + '_ffr_e-data-cov.fif', data_cov,overwrite=True)
     
 #%%######################################## 
 # mne.set_config('MNE_MEMMAP_MIN_SIZE', '10M') 
@@ -268,9 +268,9 @@ for s in subj:
                 [raw,raw_erm] = do_projection(s,condition,run)
             print ('Doing filtering...')
             raw_filt = do_filtering(raw,lp,hp,do_cabr)
-            # raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
+            raw_erm_filt = do_filtering(raw_erm,lp,hp,do_cabr)
             print ('calculate cov...')
-            # do_cov(s,raw_erm_filt, do_cabr,condition, run,hp,lp)
+            do_cov(s,raw_erm_filt, do_cabr,condition, run,hp,lp)
             print ('Doing epoch...')
             raw_file = mne.io.read_raw_fif(filename,preload=True,allow_maxshield=True)
             events = find_events(raw_file)
