@@ -221,9 +221,9 @@ for n_age in age:
 for n_age in age:
     for n_run in run:
         if data_type == '_sensor':
-            f_name = n_age + '_group' + n_run + '_rs_mag6pT' + randomDT[0] +  data_type 
+            f_name = n_age + '_group' + n_run + '_rs_mag6pT' + randomDT[1] +  data_type 
         else:
-            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + randomDT[0] + data_type 
+            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + randomDT[1] + data_type 
         MEG = np.load(root_path + 'data/' + f_name + '.npy') 
         [psds,init_flat_spec] = do_SSEP(MEG, f_name, fmin, fmax, MEG_fs, fooof, width,n_peaks,min_peak_height)
         # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
