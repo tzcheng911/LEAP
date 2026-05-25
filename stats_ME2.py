@@ -161,7 +161,9 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
     cond_col = []
     ROI_col = []
     ages = ['7mo','11mo','br'] 
-    conditions = ['_02','_03','_04'] # need to manually do random duple and random triple by setting conditions to '02' and cahnge the data0
+    ## WIP, need to change the conditions according to sensor vs. source data
+    # conditions = ['_02_stc_rs_mne_mag6pT','_02_stc_rs_mne_mag6pT_randduple','_02_stc_rs_mne_mag6pT_randtriple','_03_stc_rs_mne_mag6pT','_04_stc_rs_mne_mag6pT']
+    conditions = ['_02_rs_mag6pT','_02_rs_mag6pT_randduple','_02_rs_mag6pT_randtriple','_03_rs_mag6pT','_04_rs_mag6pT']
     subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
                '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/',
                '/media/tzcheng/storage/BabyRhythm/'] # NEED TO BE THE ORDER OF where 7mo, 11mo and br data at
@@ -174,7 +176,7 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
                     print('-----------------Extracting ROI data-----------------')
                     for nROI, ROI in enumerate(labels):
                         print(ROI)
-                        data0 = np.load(root_path + n_folder + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
+                        data0 = np.load(root_path + n_folder + age + '_group' + cond + data_type + n_analysis +'.npz') 
                         data1 = data0[data0.files[0]]
                         freqs = data0[data0.files[1]]
                         print(np.shape(data1))
@@ -190,7 +192,7 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
                     lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col, 'ROI':ROI_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'2.22Hz': np.concatenate(lm_np)[:,2],'3.3Hz': np.concatenate(lm_np)[:,3]})
                 elif data_type == which_data_type[0]:
                     print('-----------------Extracting sensor data-----------------')
-                    data0 = np.load(root_path + n_folder + age + '_group' + cond + '_rs_mag6pT' + data_type + n_analysis +'.npz') 
+                    data0 = np.load(root_path + n_folder + age + '_group' + cond + data_type + n_analysis +'.npz') 
                     data1 = data0[data0.files[0]].mean(axis=1)
                     freqs = data0[data0.files[1]]
                     print(np.shape(data1))
