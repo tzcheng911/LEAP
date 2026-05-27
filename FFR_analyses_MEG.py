@@ -87,7 +87,7 @@ def load_CBS_file(file_type, sound_type, subject_type):
         signal = np.load(root_path + 'cbsA_meeg_analysis/misc/adult_group_' + sound_type + '_misc_200.npy')
     elif file_type == 'EEG':
         signal = np.load(root_path + 'cbsA_meeg_analysis/EEG/group_' + sound_type + '_ffr_eeg_200.npy')
-    elif file_type in ('sensor', 'sensor_beamformer','pc_data','pc_data_beamformer', 'roi','roi_beamformer','morph','morph_beamformer'): ## for the MEG
+    elif file_type in ('sensor', 'sensor_beamformer','pc_data','pc_data_beamformer', 'roi','roi_beamformer','roi_common_beamformer','morph','morph_beamformer','morph_common_beamformer'): ## for the MEG
         if subject_type == 'adults':
             signal = np.load(root_path + 'cbsA_meeg_analysis/MEG/FFR/ntrial_200/group_pcffr802000_ntrial200_3_' + sound_type + '_' + file_type + '.npy')
         elif subject_type == 'infants':   
@@ -1115,8 +1115,8 @@ ch_names = np.array(evoked[0].info['ch_names'])
 #%%####################################### load the data
 ## CBS
 data_path = '/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/'
-file_type = 'sensor_beamformer'
-subject_type = 'adults'
+file_type = 'morph_common_beamformer'
+subject_type = 'infants'
 fs,p10_cbs = load_CBS_file(file_type, 'p10', subject_type)
 fs,n40_cbs = load_CBS_file(file_type, 'n40', subject_type)
 fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
@@ -1287,6 +1287,7 @@ plot_group_ffr(p10_spa[:,ROI_label[nROI],:], n40_spa[:,ROI_label[nROI],:], 'p10'
 # plot group morph data
 source_data = p10_eng.mean(0)
 stc1.data = source_data 
+stc1.plot(src=src)
 stc1.plot_3d(src=src,subject = 'fsaverage')
 
 # plot individual morph data
@@ -1529,8 +1530,8 @@ acc_incre_eng = np.empty((len(ROI_label),40)) ## sorry but hardcoding for now
 acc_incre_spa = np.empty((len(ROI_label),40))  # for roi
 
 # for nch in idx_diff: # for sensor
-# for n, nch in enumerate(ROI_label): # for roi
-for nch in np.arange(0,np.shape(p10_cbs)[1],1): # for morph whole brain
+for n, nch in enumerate(ROI_label): # for roi
+# for nch in np.arange(0,np.shape(p10_cbs)[1],1): # for morph whole brain
     print("Doing v " + str(nch))
     # condition_pairs = (
     #     [p10_eng[:,nch,:], n40_eng[:,nch,:]],
@@ -1559,13 +1560,13 @@ for nch in np.arange(0,np.shape(p10_cbs)[1],1): # for morph whole brain
         ncv2=np.shape(p10_cbs)[0],
         shuffle="keep pair",
         randseed=2,
-        do_permutation=False,
+        do_permutation=True,
         niter=500,
         # labels=("English", "Spanish"),
         labels=("p10n40", "p10p40"),
-        plot=False)
-    # title = label_names[nch] + ' (' + str(nch) + ')'
-    # plt.title(title)
+        plot=True)
+    title = label_names[nch] + ' (' + str(nch) + ')'
+    plt.title(title)
     acc_incre_eng[nch,:] = output['acc1']
     acc_incre_spa[nch,:] = output['acc2']
     
