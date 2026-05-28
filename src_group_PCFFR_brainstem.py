@@ -81,8 +81,8 @@ def do_inverse_FFR(model,s,evokeds_inv,condition,run,morph,n_trial,n_top,hp,lp):
     fwd = mne.read_forward_solution(file_in + '-fwd.fif')
     src = fwd['src']
     cov = mne.read_cov(file_in + condition + run + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr-cov.fif')
-    noise_cov = mne.read_cov(file_in + condition + run + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e-noise-cov.fif')
-    data_cov = mne.read_cov(file_in + condition + run + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e-data-cov.fif')
+    noise_cov = mne.read_cov(file_in + condition + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_ffr_e-noise-cov.fif')
+    data_cov = mne.read_cov(file_in + condition + run + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_ffr_e-data-cov.fif')
     
     if model == 'mne':
         inverse_operator = mne.minimum_norm.make_inverse_operator(evokeds_inv.info, fwd, cov,loose=1,depth=0.8)
@@ -163,7 +163,7 @@ print(subjects)
 ## preproc parameters
 n_top = 3 # 3 or 10 or 0: indicate no PCA was done
 n_trial = 200 ## 'all'(3000) or 200 or 'allall'(6000)
-lp = 200 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
+lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
 runs = ['_01'] # only run 01 for now, add the ['_01','_02'] for all runs, note that brainstem_107 only has run1 for p10
 conditions = ['_p10','_n40']
@@ -203,14 +203,14 @@ for ns,s in enumerate(subjects):
                 print('Run src on PCA-reduced signals')
                 pca_data,ind_components,pca_weight,explained_variance_ratio,data_topPC = select_PC(evoked,sfreq,fmin,fmax,lb,hb,n_top)
                 evoked.data = data_topPC
-                group_sensor[ns,ncondition,nrun,:len(data_topPC),:] = data_topPC # somehow brainstem_113 subject only has 305 channels
-                group_pca[ns,ncondition,nrun,:len(data_topPC),:] = pca_data # somehow brainstem_113 subject only has 305 channels
-                group_pca_weight[ns,ncondition,nrun,:len(data_topPC),:len(data_topPC)] = pca_weight
-                group_pc_info[ns,ncondition,nrun,:,0] = ind_components
-                group_pc_info[ns,ncondition,nrun,:,1] = explained_variance_ratio
-            else:
-                print('Run src on non-PCA signals')
-                group_sensor[ns,ncondition,nrun,:len(data),:] = data
+            #     group_sensor[ns,ncondition,nrun,:len(data_topPC),:] = data_topPC # somehow brainstem_113 subject only has 305 channels
+            #     group_pca[ns,ncondition,nrun,:len(data_topPC),:] = pca_data # somehow brainstem_113 subject only has 305 channels
+            #     group_pca_weight[ns,ncondition,nrun,:len(data_topPC),:len(data_topPC)] = pca_weight
+            #     group_pc_info[ns,ncondition,nrun,:,0] = ind_components
+            #     group_pc_info[ns,ncondition,nrun,:,1] = explained_variance_ratio
+            # else:
+            #     print('Run src on non-PCA signals')
+            #     group_sensor[ns,ncondition,nrun,:len(data),:] = data
             do_inverse_FFR(inverse_model,s,evoked,condition,run,morph,n_trial,n_top,hp,lp)
             group_morph[ns,ncondition,nrun,:,:],group_roi[ns,ncondition,nrun,:,:] = group_stc(s,condition,run,n_trial,n_top,hp,lp)
 
@@ -223,7 +223,7 @@ for ncondition,condition in enumerate(conditions):
         np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_sensor_beamformer.npy',group_sensor[:,ncondition,nrun,:,:])
         np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_morph_beamformer.npy',group_morph[:,ncondition,nrun,:,:])
         np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_roi_beamformer.npy',group_roi[:,ncondition,nrun,:,:])
-        if do_PCA:
-            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_data_beamformer.npy',group_pca[:,ncondition,nrun,:,:])
-            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_weight_beamformer.npy',group_pca_weight[:,ncondition,nrun,:,:])
-            np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run +'_pc_info_beamformer.npy',group_pc_info[:,ncondition,nrun,:,:])
+        # if do_PCA:
+            # np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_data_beamformer.npy',group_pca[:,ncondition,nrun,:,:])
+            # np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_weight_beamformer.npy',group_pca_weight[:,ncondition,nrun,:,:])
+            # np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run +'_pc_info_beamformer.npy',group_pc_info[:,ncondition,nrun,:,:])
