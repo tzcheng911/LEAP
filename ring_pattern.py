@@ -88,6 +88,7 @@ mne.viz.plot_alignment(
 #%%
 lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
+n_trial = 'all'
 
 s = 'brainstem_214'
 condition = '_n40'
@@ -97,6 +98,7 @@ evokeds = mne.read_evokeds(file_in + '_otp_raw_sss_proj_f' + str(hp) + str(lp) +
 fwd = mne.read_forward_solution(root_path + s + '/sss_fif/' + s + '-fwd.fif')
 noise_cov = mne.read_cov(file_in + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e-noise-cov.fif')
 data_cov = mne.read_cov(file_in + '_erm_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ffr_e-data-cov.fif')
+inverse_operator = mne.minimum_norm.make_inverse_operator(evokeds.info, fwd, noise_cov,loose=1,depth=0.8)
 
 filters = make_lcmv(
     evokeds.info,
@@ -108,12 +110,12 @@ filters = make_lcmv(
     weight_norm="unit-noise-gain",
     rank='info',
     reduce_rank = True,
+    label = ['brain-stem'],
     depth = 0.8
 )
     
 stc_lcmv = apply_lcmv(evokeds, filters)
 stc_lcmv.plot(src = inverse_operator['src'])
-
 
 fname_src_fsaverage = subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif'
 src_fs = mne.read_source_spaces(fname_src_fsaverage)
@@ -126,4 +128,3 @@ morph = mne.compute_source_morph(
      src_to=src_fs,
      verbose=True)
 evokeds_inv_stc_fsaverage = morph.apply(stc_lcmv)
-evokeds_inv_stc_fsaverage.save(file_in + '_pcffr' + str(hp) + str(lp) + '_ntrial' + str(n_trial)  + '_' + str(n_top) + condition + run + '_morph', overwrite=True)
