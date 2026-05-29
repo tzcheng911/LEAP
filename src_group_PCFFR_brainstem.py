@@ -141,7 +141,7 @@ def group_stc(subj,condition,run,n_trial,n_top,hp,lp):
 #%%####################################### 
 do_PCA = True ## if True, assign n_top cuz it cannot be 0
 morph = True
-lang = '1'
+lang = '2'
 inverse_model = 'beamformer'
 
 root_path='/media/tzcheng/storage/Brainstem/'
