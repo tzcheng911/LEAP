@@ -108,7 +108,7 @@ def load_brainstem_file(file_type, nfilter, ntrial, ntop):
         n40_eng = np.load(root_path + 'EEG/n40_eng_eeg_ntr' + ntrial + '_01.npy')
         p10_spa = np.load(root_path + 'EEG/p10_spa_eeg_ntr' + ntrial + '_01.npy')
         n40_spa = np.load(root_path + 'EEG/n40_spa_eeg_ntr' + ntrial + '_01.npy')
-    elif file_type in ('sensor', 'sensor', 'pc_data', 'pc_data_beamformer','roi','roi_beamformer','morph','morph_mag_only','morph_beamformer'): ## for the MEG
+    elif file_type in ('sensor', 'sensor','sensor_beamformer', 'pc_data', 'pc_data_beamformer','roi','roi_beamformer','morph','morph_mag_only','morph_beamformer'): ## for the MEG
         p10_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
         n40_eng = np.load(root_path + 'MEG/FFR/eng_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_n40_01_' + file_type + '.npy')
         p10_spa = np.load(root_path + 'MEG/FFR/spa_group_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_p10_01_' + file_type + '.npy')
@@ -1135,7 +1135,7 @@ p40_cbs_pc_w = np.load(data_path + 'group_pcffr802000_ntrial200_3_p40_pc_weight_
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'roi_beamformer'
+file_type = 'sensor_beamformer'
 nfilter = '802000'
 ntrial = '200' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
@@ -1166,7 +1166,7 @@ plot_group_ffr(p10_eng[:,n,:], n40_eng[:,n,:], 'p10','n40', times)
 plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
 
 # plot average sensor topo plot
-sensor_data = n40_eng.mean(0)
+sensor_data = p10_eng.mean(0)
 evoked[0].data = sensor_data
 evoked[0].plot_topo()
 
@@ -1529,8 +1529,8 @@ acc_incre_spa = np.empty((np.shape(p10_spa)[1],30))
 acc_incre_eng = np.empty((len(ROI_label),40)) ## sorry but hardcoding for now
 acc_incre_spa = np.empty((len(ROI_label),40))  # for roi
 
-# for nch in idx_diff: # for sensor
-for n, nch in enumerate(ROI_label): # for roi
+for nch in idx_diff: # for sensor
+# for n, nch in enumerate(ROI_label): # for roi
 # for nch in np.arange(0,np.shape(p10_cbs)[1],1): # for morph whole brain
     print("Doing v " + str(nch))
     # condition_pairs = (
@@ -1560,7 +1560,7 @@ for n, nch in enumerate(ROI_label): # for roi
         # ncv2=np.shape(p10_cbs)[0],
         shuffle="keep pair",
         randseed=2,
-        do_permutation=True,
+        do_permutation=False,
         niter=500,
         labels=("English", "Spanish"),
         # labels=("p10n40", "p10p40"),
