@@ -1135,9 +1135,9 @@ p40_cbs_pc_w = np.load(data_path + 'group_pcffr802000_ntrial200_3_p40_pc_weight_
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'morph_beamformer'
+file_type = 'roi_beamformer'
 nfilter = '802000'
-ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
+ntrial = '200' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1548,22 +1548,22 @@ for n, nch in enumerate(ROI_label): # for roi
     window_step = 0.005
     
     output = run_increment_decoding(
-        # p10_eng[:,nch,:], n40_eng[:,nch,:],
-        # p10_spa[:,nch,:], n40_spa[:,nch,:],
-        p10_cbs[:,nch,:], n40_cbs[:,nch,:],
-        p10_cbs[:,nch,:], p40_cbs[:,nch,:],
+        p10_eng[:,nch,:], n40_eng[:,nch,:],
+        p10_spa[:,nch,:], n40_spa[:,nch,:],
+        # p10_cbs[:,nch,:], n40_cbs[:,nch,:],
+        # p10_cbs[:,nch,:], p40_cbs[:,nch,:],
         times,
         window_step=window_step,
-        # ncv1=np.shape(p10_eng)[0],
-        # ncv2=np.shape(p10_spa)[0],
-        ncv1=np.shape(p10_cbs)[0],
-        ncv2=np.shape(p10_cbs)[0],
+        ncv1=np.shape(p10_eng)[0],
+        ncv2=np.shape(p10_spa)[0],
+        # ncv1=np.shape(p10_cbs)[0],
+        # ncv2=np.shape(p10_cbs)[0],
         shuffle="keep pair",
         randseed=2,
         do_permutation=True,
         niter=500,
-        # labels=("English", "Spanish"),
-        labels=("p10n40", "p10p40"),
+        labels=("English", "Spanish"),
+        # labels=("p10n40", "p10p40"),
         plot=True)
     title = label_names[nch] + ' (' + str(nch) + ')'
     plt.title(title)
@@ -1598,10 +1598,10 @@ stc1.plot_3d(src=src,subject = 'fsaverage')
 
 #%%####################################### Sliding estimator 
 tic = time.time()
-k_feature = 'all'
+k_feature = 500
 
-X = np.concatenate((p10_spa,n40_spa),axis=0)
-y = np.concatenate((np.repeat(0,len(p10_spa)),np.repeat(1,len(n40_spa)))) 
+X = np.concatenate((p10_eng,n40_eng),axis=0)
+y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(n40_eng)))) 
 
 # prepare a series of classifier applied at each time sample
 clf = make_pipeline(
@@ -1640,8 +1640,8 @@ patterns = get_coef(time_decod, "patterns_",
 
 toc = time.time()
 
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_roc_auc_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_patterns_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
 
 #%%#######################################
 
