@@ -109,13 +109,17 @@ def do_epoch_cabr_meg(data, events, subject, condition, run, n_trials, hp,lp):
     new_epochs = epochs.copy().drop_bad()
     if n_trials == 'all':
         evoked=new_epochs.average()
+    elif n_trials == 'first200':
+        evoked_p=new_epochs['44'][:100].average() # first 100 trails
+        evoked_n=new_epochs['88'][:100].average() # first 100 trails
+        evoked = mne.combine_evoked([evoked_p,evoked_n], weights='equal')
     else:
         rand_ind = random.Random().sample(range(min(len(new_epochs['44'].events),len(new_epochs['88'].events))),n_trials//2) 
         evoked_p=new_epochs['44'][rand_ind].average()
         evoked_n=new_epochs['88'][rand_ind].average()
         evoked = mne.combine_evoked([evoked_p,evoked_n], weights='equal')
     # epochs.save(file_out + '_ffr_e.fif',overwrite=True)
-    # evoked.save(file_out + '_evoked_ffr.fif',overwrite=True)
+    evoked.save(file_out + '_evoked_ffr.fif',overwrite=True)
     return evoked, epochs
 
 def do_epoch_cabr_eeg(data, events, subject, condition, run, n_trials):  
@@ -162,7 +166,7 @@ runs = ['_01','_02']
 runs = ['_01'] 
 lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
-n_trials = 200  ## 'all' or 200 or or 'allall'(6000)
+n_trials = 'first200'  ## 'all' or 200 or or 'allall'(6000)
 
 do_cabr = True # True: use the cABR filter, cov and epoch setting; False: use the MMR filter, cov and epoch setting
 
