@@ -28,13 +28,16 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 
 #%%####################################### Define functions
-def do_SSEP(data, f_name, fmin, fmax, MEG_fs,fooof, width,n_peaks,min_peak_height):  
+def do_SSEP(data, f_name, fmin, fmax, MEG_fs,fooof, width,n_peaks,min_peak_height, data_type):  
     ## compute psds from the time series with mne.time_frequency.psd_array_welch function
     # data: input MEG time series (subjects, sources, times) 
     # f_name: input name for saving the file
     # fmin: min frequency for the psd output
     # fmax: max frequency for the psd output
     # MEG_fs: MEG (re)sampling rate
+    # data_type : str
+    # 'sensor' -> average sensors before FOOOF
+    # 'source' -> run FOOOF separately for each ROI
     psds, freqs = mne.time_frequency.psd_array_welch(
     data,MEG_fs, # could replace with label time series
     n_fft=np.shape(data)[2],
@@ -42,20 +45,95 @@ def do_SSEP(data, f_name, fmin, fmax, MEG_fs,fooof, width,n_peaks,min_peak_heigh
     n_per_seg=None,
     fmin=fmin,
     fmax=fmax,)
-    flat_psds = []
+
+    init_flat_spec = None
+
     if fooof:
-        for nsub in np.arange(0,len(data)):
-            fm = FOOOF(peak_width_limits=width, max_n_peaks=n_peaks, min_peak_height=min_peak_height)
-            fm.fit(freqs, psds.mean(axis=1)[nsub], width)
-            init_ap_fit = gen_aperiodic(fm.freqs, fm._robust_ap_fit(fm.freqs, fm.power_spectrum))
-            init_flat_spec = fm.power_spectrum - init_ap_fit
-            flat_psds.append(init_flat_spec)
-        init_flat_spec = np.array(flat_psds)[:,np.newaxis,:]
-        # plot_spectra(fm.freqs, init_flat_spec.mean(0), False, label='Flattened Spectrum', color='black')
-        np.savez(root_path + 'SSEP/' + f_name + '_fpsds.npz', psds=init_flat_spec,freqs=freqs)
+
+        flat_psds = []
+
+        # --------------------------------------------------
+        # SENSOR DATA: average sensors
+        # (subj, sensor, freq) -> (subj, freq)
+        # --------------------------------------------------
+        if data_type == "_sensor":
+
+            sensor_mean_psds = psds.mean(axis=1)
+
+            for nsub in range(sensor_mean_psds.shape[0]):
+
+                fm = FOOOF(
+                    peak_width_limits=width,
+                    max_n_peaks=n_peaks,
+                    min_peak_height=min_peak_height,
+                )
+
+                fm.fit(freqs, sensor_mean_psds[nsub], width)
+
+                init_ap_fit = gen_aperiodic(
+                    fm.freqs,
+                    fm._robust_ap_fit(fm.freqs, fm.power_spectrum),
+                )
+
+                init_flat_spec = fm.power_spectrum - init_ap_fit
+
+                flat_psds.append(init_flat_spec)
+
+            # (subj, 1, freq)
+            init_flat_spec = np.array(flat_psds)[:, np.newaxis, :]
+
+        # --------------------------------------------------
+        # SOURCE DATA: preserve ROI dimension
+        # (subj, ROI, freq)
+        # --------------------------------------------------
+        elif data_type == "_roi_redo4":
+
+            for nsub in range(psds.shape[0]):
+
+                roi_specs = []
+
+                for nroi in range(psds.shape[1]):
+
+                    fm = FOOOF(
+                        peak_width_limits=width,
+                        max_n_peaks=n_peaks,
+                        min_peak_height=min_peak_height,
+                    )
+
+                    fm.fit(freqs, psds[nsub, nroi], width)
+
+                    init_ap_fit = gen_aperiodic(
+                        fm.freqs,
+                        fm._robust_ap_fit(fm.freqs, fm.power_spectrum),
+                    )
+
+                    init_flat = fm.power_spectrum - init_ap_fit
+
+                    roi_specs.append(init_flat)
+
+                flat_psds.append(roi_specs)
+
+            # (subj, ROI, freq)
+            init_flat_spec = np.array(flat_psds)
+
+        else:
+            raise ValueError("data_type must be '_sensor' or '_roi_redo4'")
+
+        np.savez(
+            root_path + 'SSEP/' + f_name + '_fpsds.npz',
+            psds=init_flat_spec,
+            freqs=freqs,
+        )
+
     else:
-        np.savez(root_path + 'SSEP/' + f_name + '_psds.npz', psds=psds,freqs=freqs)
-    return psds,init_flat_spec
+
+        np.savez(
+            root_path + 'SSEP/' + f_name + '_psds.npz',
+            psds=psds,
+            freqs=freqs,
+        )
+
+    return psds, init_flat_spec
 
 def do_ERSP(data, f_name, fmin, fmax, f_step, MEG_fs,n_cycles,baseline,output):  
     ## compute time-frequency decompositions from the time series with mne.time_frequency.tfr_array_morlet function
@@ -191,11 +269,11 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 #%% Parameters
 age = ['7mo','11mo','br']  
-run = ['_02'] # random, duple, triple
+run = ['_04'] # random, duple, triple
 # random duple and triple seperately 
 randomDT = ['', '_randduple','_randtriple'] # use randomDT[1] and randomDT[2] with run = '02', otherwise use randomDT[0] 
 which_data_type = ['_sensor','_roi','_roi_redo4','_morph']
-data_type = which_data_type[3]
+data_type = which_data_type[2]
 MEG_fs = 250
 fooof = True
 width = [0.5,5]
@@ -221,11 +299,11 @@ for n_age in age:
 for n_age in age:
     for n_run in run:
         if data_type == '_sensor':
-            f_name = n_age + '_group' + n_run + '_rs_mag6pT' + randomDT[1] +  data_type 
+            f_name = n_age + '_group' + n_run + '_rs_mag6pT' + randomDT[0] +  data_type 
         else:
-            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + randomDT[1] + data_type 
+            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + randomDT[0] + data_type 
         MEG = np.load(root_path + 'data/' + f_name + '.npy') 
-        [psds,init_flat_spec] = do_SSEP(MEG, f_name, fmin, fmax, MEG_fs, fooof, width,n_peaks,min_peak_height)
+        [psds,init_flat_spec] = do_SSEP(MEG, f_name, fmin, fmax, MEG_fs, fooof, width,n_peaks,min_peak_height,data_type)
         # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
         # con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
         del MEG
