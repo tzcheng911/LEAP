@@ -141,7 +141,7 @@ def group_stc(subj,condition,run,n_trial,n_top,hp,lp):
 #%%####################################### 
 do_PCA = True ## if True, assign n_top cuz it cannot be 0
 morph = True
-lang = '1'
+lang = '2'
 inverse_model = 'beamformer'
 
 root_path='/media/tzcheng/storage/Brainstem/'
@@ -162,7 +162,7 @@ print(subjects)
 
 ## preproc parameters
 n_top = 3 # 3 or 10 or 0: indicate no PCA was done
-n_trial = 200 ## 'all'(3000) or 200 or 'allall'(6000)
+n_trial = 'first200' ## 'all'(3000) or 200 or 'allall'(6000)
 lp = 2000 # try 200 (suggested by Nike) or 450 (from Coffey paper) or 2000 CZ and Coffey paper 
 hp = 80
 runs = ['_01'] # only run 01 for now, add the ['_01','_02'] for all runs, note that brainstem_107 only has run1 for p10
@@ -196,7 +196,7 @@ for ns,s in enumerate(subjects):
             file_in = root_path + s + '/sss_fif/' + s + condition + run
             # file_in = root_path + s + '/sss_fif/' + s + condition + '_0102' # for reps = 6000
             evokeds = mne.read_evokeds(file_in + '_otp_raw_sss_proj_f' + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_evoked_ffr.fif')[0]
-            # evoked = evokeds.copy().pick(picks='grad') ## only keep mag or grad
+            evoked = evokeds.copy().pick(picks='grad') ## only keep mag or grad
             evoked = evokeds.copy()
             data = evoked.get_data()
             if do_PCA:
@@ -211,8 +211,8 @@ for ns,s in enumerate(subjects):
             else:
                 print('Run src on non-PCA signals')
                 group_sensor[ns,ncondition,nrun,:len(data),:] = data
-            # do_inverse_FFR(inverse_model,s,evoked,condition,run,morph,n_trial,n_top,hp,lp)
-            # group_morph[ns,ncondition,nrun,:,:],group_roi[ns,ncondition,nrun,:,:] = group_stc(s,condition,run,n_trial,n_top,hp,lp)
+            do_inverse_FFR(inverse_model,s,evoked,condition,run,morph,n_trial,n_top,hp,lp)
+            group_morph[ns,ncondition,nrun,:,:],group_roi[ns,ncondition,nrun,:,:] = group_stc(s,condition,run,n_trial,n_top,hp,lp)
 
 for ncondition,condition in enumerate(conditions):
     for nrun,run in enumerate(runs):
@@ -221,8 +221,8 @@ for ncondition,condition in enumerate(conditions):
         elif lang == '2':
             head = '/MEG/FFR/spa_group_pcffr'
         np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_sensor_beamformer.npy',group_sensor[:,ncondition,nrun,:,:])
-        # np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_morph_beamformer.npy',group_morph[:,ncondition,nrun,:,:])
-        # np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_roi_beamformer.npy',group_roi[:,ncondition,nrun,:,:])
+        np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_morph_beamformer.npy',group_morph[:,ncondition,nrun,:,:])
+        np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_roi_beamformer.npy',group_roi[:,ncondition,nrun,:,:])
         if do_PCA:
             np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_data_beamformer.npy',group_pca[:,ncondition,nrun,:,:])
             np.save(root_path + head + str(hp) + str(lp) + '_ntrial' + str(n_trial) + '_' + str(n_top) + condition + run + '_pc_weight_beamformer.npy',group_pca_weight[:,ncondition,nrun,:,:])
