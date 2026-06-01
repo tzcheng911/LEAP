@@ -162,8 +162,8 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
     ROI_col = []
     ages = ['7mo','11mo','br'] 
     ## WIP, need to change the conditions according to sensor vs. source data
-    # conditions = ['_02_stc_rs_mne_mag6pT','_02_stc_rs_mne_mag6pT_randduple','_02_stc_rs_mne_mag6pT_randtriple','_03_stc_rs_mne_mag6pT','_04_stc_rs_mne_mag6pT']
-    conditions = ['_02_rs_mag6pT','_02_rs_mag6pT_randduple','_02_rs_mag6pT_randtriple','_03_rs_mag6pT','_04_rs_mag6pT']
+    conditions = ['_02_stc_rs_mne_mag6pT','_02_stc_rs_mne_mag6pT_randduple','_02_stc_rs_mne_mag6pT_randtriple','_03_stc_rs_mne_mag6pT','_04_stc_rs_mne_mag6pT']
+    # conditions = ['_02_rs_mag6pT','_02_rs_mag6pT_randduple','_02_rs_mag6pT_randtriple','_03_rs_mag6pT','_04_rs_mag6pT']
     subj_path=['/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' ,
                '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/',
                '/media/tzcheng/storage/BabyRhythm/'] # NEED TO BE THE ORDER OF where 7mo, 11mo and br data at
