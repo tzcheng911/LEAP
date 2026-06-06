@@ -21,6 +21,7 @@ import numpy as np
 import scipy.stats as stats
 from scipy.stats import pearsonr, spearmanr, t
 import mne
+from mne.stats import spatio_temporal_cluster_1samp_test, summarize_clusters_stc
 from mne_connectivity.viz import plot_connectivity_circle
 from mne_connectivity import spectral_connectivity_epochs, spectral_connectivity_time,read_connectivity
 from mne.viz import circular_layout
@@ -68,7 +69,7 @@ def stats_SSEP(X,freqs,nonparametric):
         print('t statistics: ' + str(t))
         print('p-value: ' + str(p))
 
-def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold,freqs):
+def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold):
     ## Compute non-parametric 2D cluster test (across freqs and vertex) on X (psd1 - psd2) and save the cluster results
     print("Computing adjacency.")
     stc1 = mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
@@ -88,7 +89,7 @@ def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold
         buffer_size=None,
         verbose=True,
     )
-    filename = root_path + n_folder + n_age + '_SSEP_wholebrain_cluster_test_' + n_meter +'.pkl'
+    filename = root_path + n_folder + n_age + '_fSSEP_wholebrain_cluster_' + n_meter +'.pkl'
     with open(filename, 'wb') as f:
         pickle.dump(clu, f) # clu: clustering results of T_obs, clusters, cluster_p_values, H0
 
@@ -129,6 +130,8 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,fmin,fma
         X = XX[:,:,:,ff(freqs,8):ff(freqs,12)].mean(axis=3)
     elif FOI == "Beta":  # 15-30 Hz
         X = XX[:,:,:,ff(freqs,15):ff(freqs,30)].mean(axis=3)
+    elif FOI == 'infant_motor': # 5-10 Hz
+        X = XX[:,:,:,ff(freqs,5):ff(freqs,10)].mean(axis=3)
     else:  # broadband
         X = XX.mean(axis=3)
             
@@ -154,7 +157,7 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,fmin,fma
     # ax=ax)
     # fig.tight_layout() 
 
-def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
+def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2): ## wip, need a more neat way to write this instead of looping lm_df everytime
     lm_np = []
     sub_col = [] 
     age_col = []
@@ -189,7 +192,7 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
                                 cond_col.append(cond)
                                 age_col.append(age)
                                 ROI_col.append(ROI)
-                    lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col, 'ROI':ROI_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'2.22Hz': np.concatenate(lm_np)[:,2],'3.3Hz': np.concatenate(lm_np)[:,3]})
+                        lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col, 'ROI':ROI_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1],'2.22Hz': np.concatenate(lm_np)[:,2],'3.3Hz': np.concatenate(lm_np)[:,3]})
                 elif data_type == which_data_type[0]:
                     print('-----------------Extracting sensor data-----------------')
                     data0 = np.load(root_path + n_folder + age + '_group' + cond + data_type + n_analysis +'.npz') 
@@ -206,7 +209,7 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
                             age_col.append(age)
                     lm_df = pd.DataFrame({'sub_id': sub_col,'age':age_col,'condition':cond_col,'1.11Hz': np.concatenate(lm_np)[:,0], '1.67Hz': np.concatenate(lm_np)[:,1], '2.22Hz': np.concatenate(lm_np)[:,2],'3.3Hz': np.concatenate(lm_np)[:,3]}) 
             elif n_analysis == 'conn_plv':
-                data0 = read_connectivity(root_path + n_folder + age + '_group' + cond + '_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+                data0 = read_connectivity(root_path + n_folder + age + '_group' + cond + data_type + n_analysis) 
                 freqs = data0.freqs
                 data0_conn = data0.get_data(output='dense')
                 print(np.shape(data0_conn))
@@ -214,7 +217,8 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
                                   data0_conn[:,ROI1,ROI2,ff(freqs,4):ff(freqs,8)].mean(axis=-1),
                                   data0_conn[:,ROI1,ROI2,ff(freqs,8):ff(freqs,12)].mean(axis=-1),
                                   data0_conn[:,ROI1,ROI2,ff(freqs,15):ff(freqs,30)].mean(axis=-1),
-                                  data0_conn[:,ROI1,ROI2,:].mean(axis=-1))).transpose() # delta, theta, alpha, beta total 4 cols
+                                  data0_conn[:,ROI1,ROI2,:].mean(axis=-1),
+                                  data0_conn[:,ROI1,ROI2,ff(freqs,5):ff(freqs,10)].mean(axis=-1))).transpose() # delta, theta, alpha, beta, broadband 5-35 Hz, infant motor 5-10 Hz total 6 cols
                 lm_np.append(data)
                 for file in os.listdir(subj_path[n_age]):
                     if file.endswith('7m') or file.endswith('11m') or file.startswith('br'):
@@ -227,8 +231,9 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2):
                           'Theta conn': np.concatenate(lm_np)[:,1],
                           'Alpha conn': np.concatenate(lm_np)[:,2],
                           'Beta conn': np.concatenate(lm_np)[:,3],
-                          'Broadband conn': np.concatenate(lm_np)[:,4]})
-            lm_df.to_csv(root_path + n_folder + n_analysis + data_type + labels[ROI1][0] + label_names[ROI2][0] + '.csv')
+                          'Broadband conn': np.concatenate(lm_np)[:,4],
+                          'Infant motor conn': np.concatenate(lm_np)[:,5]})
+    lm_df.to_csv(root_path + n_folder + n_analysis + data_type + labels[ROI1][0] + labels[ROI2][0] + '.csv')
 
 def extract_CDI(MEGAge,CDIAge,CDIscore):
     ages = ['7mo','11mo']
@@ -379,6 +384,38 @@ def wholebrain_corr_cluster_test(MEG, CDI, src, filename, n_permutations=500, p_
                             max_cluster_stats=max_cluster_stats)
     return results, cluster_stats, p_values, cluster_labels, max_cluster_stats
 
+def analyze_clusters(clu, src, label_names, label_v_ind, p=0.05):
+    results = []
+    for c in [clu[1][i] for i in np.where(clu[2] < p)[0]]:
+        verts = c[-1]
+        coords = np.round(src[0]['rr'][src[0]['vertno'][verts]] * 1000)
+
+        roi_all = [label_names[j]
+                   for v in verts
+                   for j in range(len(label_names))
+                   if v in label_v_ind[j][0]]
+
+        res = {
+            "cluster_stat": c[0],
+            "min": coords.min(0),
+            "max": coords.max(0),
+            "mean": coords.mean(0),
+            "ROIs_unique": list(set(roi_all)),
+            "ROI_counts": {l: roi_all.count(l) for l in label_names}
+        }
+
+        print(
+            c[0],
+            "\nmin:", res["min"],
+            "\nmax:", res["max"],
+            "\nmean:", res["mean"],
+            "\nROIs:", res["ROIs_unique"],
+            "\n" + "\n".join(f"{res['ROI_counts'][l]} {l}" for l in label_names),
+        )
+
+        results.append(res)
+
+    return results
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -391,26 +428,34 @@ fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
 
 #%% Parameters
-ages = ['7mo','11mo','br'] 
+ages = ['7mo','11mo'] 
 conditions = ['_02','_03','_04'] # random, duple, triple
 folders = ['SSEP/','ERSP/','decoding/','connectivity/'] 
 analysis = ['fpsds','conn_plv','conn_coh','conn_pli','conn_GC_AM','conn_GC_MA']
 which_data_type = ['_sensor_','_roi_','_roi_redo4_','_morph_'] 
 
 #%%####################################### Analysis on the sensor SSEP
+n_folder = folders[0] # 0: SSEP
+n_analysis = analysis[0] # 0: psds
+data_type = which_data_type[0] # 1:_roi_ or 2:_roi_redo_
+
 for n_age in ages:
     print("Doing age " + n_age)
-    random = np.load(root_path + 'SSEP/' + n_age + '_group_02_rs_mag6pT_sensor_fpsds.npz') 
-    duple = np.load(root_path + 'SSEP/' + n_age + '_group_03_rs_mag6pT_sensor_fpsds.npz') 
-    triple = np.load(root_path + 'SSEP/' + n_age + '_group_04_rs_mag6pT_sensor_fpsds.npz') 
+    random = np.load(root_path + n_folder + n_age + '_group_02_rs_mag6pT' + data_type + n_analysis +'.npz') 
+    randomD = np.load(root_path + n_folder + n_age + '_group_02_rs_mag6pT_randduple' + data_type + n_analysis +'.npz') 
+    randomT = np.load(root_path + n_folder + n_age + '_group_02_rs_mag6pT_randtriple' + data_type + n_analysis +'.npz') 
+    duple = np.load(root_path + n_folder + n_age + '_group_03_rs_mag6pT' + data_type + n_analysis +'.npz') 
+    triple = np.load(root_path + n_folder + n_age + '_group_04_rs_mag6pT' + data_type + n_analysis +'.npz') 
     freqs = random[random.files[1]]
     psds_random = random[random.files[0]].mean(axis = 1)
+    psds_randomD = randomD[randomD.files[0]].mean(axis = 1)
+    psds_randomT = randomT[randomT.files[0]].mean(axis = 1)
     psds_duple = duple[duple.files[0]].mean(axis = 1)
     psds_triple = triple[triple.files[0]].mean(axis = 1)
     print("-------------------Doing duple-------------------")
-    stats_SSEP(psds_duple-psds_random,freqs,True)
+    stats_SSEP(psds_duple-psds_randomD,freqs,True)
     print("-------------------Doing triple-------------------")
-    stats_SSEP(psds_triple-psds_random,freqs,True)
+    stats_SSEP(psds_triple-psds_randomT,freqs,True)
 convert_to_csv(which_data_type[0],label_names,analysis[0],folders[0],1,0)
 
 #%%####################################### Analysis on the ROI SSEP
@@ -432,31 +477,104 @@ for n_age in ages:
     for n in nROI: 
         print("Doing ROI SSEP: " + label_names[n])
         random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
+        randomD = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randduple' + data_type + n_analysis +'.npz')
+        randomT = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randtriple' + data_type + n_analysis +'.npz')
         duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
         triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
         random = random0[random0.files[0]]
+        randomD = randomD[randomD.files[0]]
+        randomT = randomT[randomT.files[0]]
         duple = duple0[duple0.files[0]]
         triple = triple0[triple0.files[0]]
         freqs = random0[random0.files[1]]          
         print("-------------------Doing duple-------------------")
-        stats_SSEP(duple[:,n,:]-random[:,n,:],freqs,True)
+        stats_SSEP(duple[:,n,:]-randomD[:,n,:],freqs,True)
         print("-------------------Doing triple-------------------")
-        stats_SSEP(triple[:,n,:]-random[:,n,:],freqs,True)
+        stats_SSEP(triple[:,n,:]-randomT[:,n,:],freqs,True)
 convert_to_csv(data_type,label_names,n_analysis,n_folder,1,0)
     
 #%%####################################### Analysis on the wholebrain SSEP
-p_threshold = 0.05 # set a cluster forming threshold based on a p-value for the cluster based permutation test
+n_folder = folders[0] # 0: SSEP
+n_analysis = analysis[0] # 0: psds
+data_type = which_data_type[3] # 1:_roi_ or 2:_roi_redo_ or 3:_morph_
+
+p_threshold = 0.001 # set a cluster forming threshold based on a p-value for the cluster based permutation test p = 0.001 to replicate previous results
+random = []
+randomD = []
+randomT = []
+duple = []
+triple = []
+
 for n_age in ages:
-    print("Doing age " + n_age)
-    random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_morph_psds.npz') 
-    duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT_morph_psds.npz') 
-    triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT_morph_psds.npz') 
-    random = random0[random0.files[0]]
-    duple = duple0[duple0.files[0]]
-    triple = triple0[triple0.files[0]]
-    freqs = random0[random0.files[1]] 
-    wholebrain_spatio_temporal_cluster_test(duple-random,'duple',n_age,n_folder,p_threshold,freqs)
-    wholebrain_spatio_temporal_cluster_test(triple-random,'triple',n_age,n_folder,p_threshold,freqs)
+    random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_morph_' + n_analysis +'.npz')
+    randomD0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randduple_morph_' + n_analysis +'.npz')
+    randomT0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randtriple_morph_' + n_analysis +'.npz')
+    duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT_morph_' + n_analysis +'.npz')
+    triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT_morph_' + n_analysis +'.npz')
+    freqs = random0[random0.files[1]]         
+    random.append(random0[random0.files[0]])
+    randomD.append(randomD0[randomD0.files[0]])
+    randomT.append(randomT0[randomT0.files[0]])
+    duple.append(duple0[duple0.files[0]])
+    triple.append(triple0[triple0.files[0]])
+random = np.asarray(random)
+randomD = np.asarray(randomD)
+randomT = np.asarray(randomT)
+duple = np.asarray(duple)
+triple = np.asarray(triple)
+
+## Addressing Q0: whether and where is significant difference between rhythmic and random condition in the wholebrian
+# 7 mo 
+wholebrain_spatio_temporal_cluster_test(duple[0]-random[0],'duple_random',n_age,n_folder,p_threshold)
+wholebrain_spatio_temporal_cluster_test(triple[0]-random[0],'triple_random',n_age,n_folder,p_threshold)
+# 11 mo
+wholebrain_spatio_temporal_cluster_test(duple[1]-random[1],'duple_random',n_age,n_folder,p_threshold)
+wholebrain_spatio_temporal_cluster_test(triple[1]-random[1],'triple_random',n_age,n_folder,p_threshold)
+
+## Addressing Q1: whether MBR, meter and beat responses are significantly different between rhythm type and age
+## Q1a: different SSEP across age 7 mo vs. 11 mo; MBR across age 7 mo vs. 11 m
+wholebrain_spatio_temporal_cluster_test(duple[1]-duple[0],'duple_11mo_7mo',n_age,n_folder,p_threshold)
+wholebrain_spatio_temporal_cluster_test(triple[1]-triple[0],'triple_11mo_7mo',n_age,n_folder,p_threshold)
+
+MBR_duple = duple[1,:,:,ff(freqs,1.67)]/duple[1,:,:,ff(freqs,3.33)] - duple[0,:,:,ff(freqs,1.67)]/duple[0,:,:,ff(freqs,3.33)]
+MBR_triple = triple[1,:,:,ff(freqs,1.11)]/triple[1,:,:,ff(freqs,3.33)] - triple[0,:,:,ff(freqs,1.11)]/triple[0,:,:,ff(freqs,3.33)]
+T_obs, clusters, cluster_p_values, H0 = clu = mne.stats.permutation_cluster_1samp_test(MBR_duple, seed = 0,verbose='ERROR')
+results = analyze_clusters(clu, src, label_names, label_v_ind, p=0.05)
+T_obs, clusters, cluster_p_values, H0 = clu = mne.stats.permutation_cluster_1samp_test(MBR_triple, seed = 0,verbose='ERROR')
+results = analyze_clusters(clu, src, label_names, label_v_ind, p=0.05)
+
+## Q1b: different SSEP across rhythm type for each age group 7 mo and 11 mo
+# MBR
+MBR_7mo = duple[0,:,:,ff(freqs,1.67)]/duple[0,:,:,ff(freqs,3.33)] - triple[0,:,:,ff(freqs,1.11)]/triple[0,:,:,ff(freqs,3.33)]
+MBR_11mo = duple[1,:,:,ff(freqs,1.67)]/duple[1,:,:,ff(freqs,3.33)] - triple[1,:,:,ff(freqs,1.11)]/triple[1,:,:,ff(freqs,3.33)]
+# duple meter 1.67 Hz vs. triple meter 1.11 Hz 
+meter_7mo = duple[0,:,:,ff(freqs,1.67)] - triple[0,:,:,ff(freqs,1.11)]
+meter_11mo = duple[1,:,:,ff(freqs,1.67)] - triple[1,:,:,ff(freqs,1.11)]
+# normalized duple meter 1.67 Hz vs. normalized triple meter 1.11 Hz
+meter_7mo = (duple[0,:,:,ff(freqs,1.67)] - randomD[0,:,:,ff(freqs,1.67)]) - (triple[0,:,:,ff(freqs,1.11)] - randomT[0,:,:,ff(freqs,1.11)])
+meter_11mo = (duple[1,:,:,ff(freqs,1.67)] - randomD[1,:,:,ff(freqs,1.67)]) - (triple[1,:,:,ff(freqs,1.11)] - randomT[1,:,:,ff(freqs,1.11)])
+# duple beat 3.33 Hz vs. triple beat 3.33 Hz 
+beat_7mo = duple[0,:,:,ff(freqs,3.33)] - triple[0,:,:,ff(freqs,3.33)]
+beat_11mo = duple[1,:,:,ff(freqs,3.33)] - triple[1,:,:,ff(freqs,3.33)]
+
+## change the y to any dependent measure above
+y_7mo = MBR_7mo
+y_11mo = MBR_11mo
+T_obs, clusters, cluster_p_values, H0 = clu = mne.stats.permutation_cluster_1samp_test(y_7mo, seed = 0,verbose='ERROR')
+results = analyze_clusters(clu, src, label_names, label_v_ind, p=0.05)
+T_obs, clusters, cluster_p_values, H0 = clu = mne.stats.permutation_cluster_1samp_test(y_11mo, seed = 0,verbose='ERROR')
+results = analyze_clusters(clu, src, label_names, label_v_ind, p=0.05)
+
+## visualize the spatial clusters
+good_cluster_inds = np.where(clu[2] < p_threshold)[0]
+good_clusters = [clu[1][idx] for idx in good_cluster_inds]
+stc1 =  mne.read_source_estimate('/media/tzcheng/storage/BabyRhythm/br_03/sss_fif/br_03_01_stc_mne_morph_mag6pT-vl.stc')
+n_positions = len(stc1.data)
+mask = np.zeros(n_positions, dtype=np.uint8)
+positions = np.concatenate([x[0] for x in good_clusters])
+mask[positions] = 1
+stc1.data = np.vstack((mask,mask)).transpose()
+stc1.plot(src=src,clim=dict(kind="value", lims=[0,1,2]))
 
 #%%####################################### Analysis on the ROI conn
 n_folder = folders[3] 
