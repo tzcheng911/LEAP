@@ -137,7 +137,7 @@ def plot_multiFreq_random_vs_rhythmic(
     plt.show()
 
     
-def plot_audio(audio,fmin,fmax,fs):
+def plot_audio(audio,fmin,fmax,fs,meter_type):
     plt.figure()
     plt.plot(np.linspace(0,audio.size/fs,audio.size),audio)
 
@@ -152,10 +152,21 @@ def plot_audio(audio,fmin,fmax,fs):
     plt.plot(freqs,psds)
     plt.xlim([fmin,fmax])
     
+    beat_idx = ff(freqs,3.33)
+    if meter_type == 'duple':
+        meter_idx = ff(freqs,1.67) 
+    elif meter_type == 'triple':
+        meter_idx = ff(freqs,1.11) 
+    mbr = psds[meter_idx]/psds[beat_idx]
+    print("Meter/Beat ratio: " + str(mbr))
+    
 def plot_SSEP(psds,freqs,color,title):
     plot_err(psds,color,freqs)
-    plt.xlim([freqs[0],freqs[-1]])
-    # plt.ylim([0,4.25e-25])
+    # plt.xlim([freqs[0],freqs[-1]])
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('Power Spectral Density')
+    plt.ylim([-0.23,2.4])
+    plt.xlim([0.55,4])
     plt.title(title)
 
 def plot_CONN(conn,freqs,nlines,vmin,vmax,FOI,label_names,title):
@@ -211,13 +222,16 @@ fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
 
 #%%####################################### Load the audio files
+fmin = 0.5
+fmax = 15
 fs, audio = wavfile.read(root_path + 'Stimuli/Random/random15rr.wav') # Random, Duple300, Triple300
-plot_audio(audio,fmin=0.5,fmax=5,fs=fs)
+fs, audio = wavfile.read(root_path + 'Stimuli/Triple300.wav') # Random, Duple300, Triple300
+plot_audio(audio,fmin,fmax,fs,'triple')
 
 #%% Parameters
 ages = ['7mo','11mo','br'] 
 folders = ['SSEP/','decoding/','connectivity/'] # random, duple, triple
-analysis = ['fpsds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli']
+analysis = ['fpsds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli','conn_wpli']
 which_data_type = ['_sensor_','_roi_','_roi_redo4_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
 
 #%%####################################### Visualize the sensor level 
@@ -241,25 +255,20 @@ for n_age in ages:
     duple = duple[duple.files[0]]
     triple = triple[triple.files[0]]
     
-    if n_analysis == 'psds':
+    if n_analysis == 'psds' or n_analysis == 'fpsds':
         psds_random = random.mean(axis = 1)
         psds_randomD = randomD.mean(axis = 1)
         psds_randomT = randomT.mean(axis = 1)
         psds_duple = duple.mean(axis = 1)
         psds_triple = triple.mean(axis = 1)
-    elif n_analysis == 'fpsds':
-        psds_random = random
-        psds_randomD = randomD
-        psds_randomT = randomT
-        psds_duple = duple
-        psds_triple = triple
+
         
     plt.figure()
-    plot_SSEP(psds_random,freqs,'k','MEG_random_psds')
-    plot_SSEP(psds_randomD,freqs,'cyan','MEG_random_duple_psds')
-    plot_SSEP(psds_randomT,freqs,'m','MEG_random_triple_psds')
-    plot_SSEP(psds_duple,freqs,'b','MEG_duple_psds')
-    plot_SSEP(psds_triple,freqs,'r','MEG_triple_psds')
+    plot_SSEP(psds_random,freqs,'#000000','')
+    plot_SSEP(psds_randomD,freqs,'#cccccc','')
+    plot_SSEP(psds_randomT,freqs,'#a3a3a3','')
+    plot_SSEP(psds_duple,freqs,'#ff7f0e','')
+    plot_SSEP(psds_triple,freqs,'#1f77b4','')
     
     ## plot bar plot for the significant freqs based on non-parametric test (stats_ME2.py)
     # Doing age 7mo
@@ -322,11 +331,41 @@ for n_age in ages:
         save_path="/home/tzcheng/Desktop/sensor_PSD_barplot_all_meter.pdf"
     )
 
+def analyze_clusters(clu, src, label_names, label_v_ind, p=0.05):
+    results = []
+    for c in [clu[1][i] for i in np.where(clu[2] < p)[0]]:
+        verts = c[-1]
+        coords = np.round(src[0]['rr'][src[0]['vertno'][verts]] * 1000)
 
+        roi_all = [label_names[j]
+                   for v in verts
+                   for j in range(len(label_names))
+                   if v in label_v_ind[j][0]]
 
+        res = {
+            "cluster_stat": c[0],
+            "min": coords.min(0),
+            "max": coords.max(0),
+            "mean": coords.mean(0),
+            "ROIs_unique": list(set(roi_all)),
+            "ROI_counts": {l: roi_all.count(l) for l in label_names}
+        }
+
+        print(
+            c[0],
+            "\nmin:", res["min"],
+            "\nmax:", res["max"],
+            "\nmean:", res["mean"],
+            "\nROIs:", res["ROIs_unique"],
+            "\n" + "\n".join(f"{res['ROI_counts'][l]} {l}" for l in label_names),
+        )
+
+        results.append(res)
+
+    return results
 #%%####################################### Visualize on the source level: ROI 
-n_folder = folders[0]
-n_analysis = analysis[0]
+n_folder = folders[2]
+n_analysis = analysis[4]
 data_type = which_data_type[2]
 
 vmin = 0.5
@@ -352,50 +391,66 @@ elif data_type == '_roi_redo4_':
 # Posterior Parietal: inferior parietal (50 86),  superior parietal (71 107)
 # roi_redo pools ROIs to be 6 new_ROIs = {"Auditory": [72,108], "Motor": [66,102], "Sensory": [64,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98],  "Posterior": [50,86,71,107]}
 
-plt.figure()    
+# plt.figure()    
 color1 = ['m','r']
 color2 = ['c','b']
-ROI1 = 66
-ROI2 = 53
+ROI1 = 2
+ROI2 = 1
 for nn_age,n_age in enumerate(ages):
     print("Doing age " + n_age)
     if n_folder == 'connectivity/':
         random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+        randomD = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randduple' + data_type + n_analysis)
+        randomT = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randtriple' + data_type + n_analysis)
         duple = read_connectivity(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis) 
         triple = read_connectivity(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+        
         freqs = np.array(random.freqs)
         random_conn = random.get_data(output='dense')
+        randomD_conn = randomD.get_data(output='dense')
+        randomT_conn = randomT.get_data(output='dense')
         duple_conn = duple.get_data(output='dense')
         triple_conn = triple.get_data(output='dense')
         
-        plot_err(duple_conn[:,ROI1,ROI2,:]-random_conn[:,ROI1,ROI2,:],color1[nn_age],freqs)
-        plot_err(triple_conn[:,ROI1,ROI2,:]-random_conn[:,ROI1,ROI2,:],color2[nn_age],freqs)
+        # plot the relative conn
+        # plot_err(duple_conn[:,ROI1,ROI2,:]-random_conn[:,ROI1,ROI2,:],color1[nn_age],freqs)
+        # plot_err(triple_conn[:,ROI1,ROI2,:]-random_conn[:,ROI1,ROI2,:],color2[nn_age],freqs)
         
         plt.figure()
         plt.title(n_age)
-        plot_err(duple_conn[:,ROI1,ROI2,:],'r',freqs)
-        plot_err(triple_conn[:,ROI1,ROI2,:],'b',freqs)
-        plot_err(random_conn[:,ROI1,ROI2,:],'k',freqs)
+        plot_err(duple_conn[:,ROI1,ROI2,:],'#ff7f0e',freqs)
+        plot_err(triple_conn[:,ROI1,ROI2,:],'#1f77b4',freqs)
+        plot_err(random_conn[:,ROI1,ROI2,:],'#000000',freqs)
+        plot_err(randomD_conn[:,ROI1,ROI2,:],'#cccccc',freqs)
+        plot_err(randomT_conn[:,ROI1,ROI2,:],'#a3a3a3',freqs)
         plt.xlim([4,35])
-        plot_CONN(random_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_random_' + n_analysis)
-        plot_CONN(duple_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_duple_' + n_analysis)
-        plot_CONN(triple_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_triple_' + n_analysis)
+        # plot_CONN(random_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_random_' + n_analysis)
+        # plot_CONN(duple_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_duple_' + n_analysis)
+        # plot_CONN(triple_conn,freqs,nlines,vmin,vmax, FOI,label_names,n_age + '_triple_' + n_analysis)
     else:
         for n in nROI: 
             print("---------------------------------------------------Doing ROI: " + label_names[n])
             if n_folder == 'SSEP/':
                 random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
+                randomD = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randduple' + data_type + n_analysis +'.npz')
+                randomT = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randtriple' + data_type + n_analysis +'.npz')
                 duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
                 triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
-                random = random0[random0.files[0]]
-                duple = duple0[duple0.files[0]]
-                triple = triple0[triple0.files[0]]
-                freqs = random0[random0.files[1]]   
-                plt.figure()
-                plot_SSEP(random[:,n,:],freqs,'k',label_names[nROI[n]] + '_' + n_age)
-                plot_SSEP(duple[:,n,:],freqs,'orange',label_names[nROI[n]] + '_' + n_age)
-                plot_SSEP(triple[:,n,:],freqs,'blue',label_names[nROI[n]] + '_' + n_age)
                 
+                freqs = random0[random0.files[1]]  
+                psds_random = random0[random0.files[0]]
+                psds_randomD = randomD[randomD.files[0]]
+                psds_randomT = randomT[randomT.files[0]]
+                psds_duple = duple0[duple0.files[0]]
+                psds_triple = triple0[triple0.files[0]]
+                
+                plt.figure()
+                plot_SSEP(psds_random[:,n,:],freqs,'#000000','')
+                plot_SSEP(psds_randomD[:,n,:],freqs,'#cccccc','')
+                plot_SSEP(psds_randomT[:,n,:],freqs,'#a3a3a3','')
+                plot_SSEP(psds_duple[:,n,:],freqs,'#ff7f0e','')
+                plot_SSEP(psds_triple[:,n,:],freqs,'#1f77b4',label_names[n])
+#%%                
                 # Doing ROI SSEP: Auditory
                 # -------------------Doing duple-------------------
                 # The 1st significant cluster
@@ -476,51 +531,38 @@ for nn_age,n_age in enumerate(ages):
                 print(decoding_triple[n])
 
 #%%####################################### Visualize the source level: wholebrain 
+## raw SSEP
+# random0 = np.load(root_path + n_folder + '7mo_group_02_stc_rs_mne_mag6pT_morph_fpsds.npz')
+# randomD0 = np.load(root_path + n_folder + '7mo_group_02_stc_rs_mne_mag6pT_randduple_morph_fpsds.npz')
+# randomT0 = np.load(root_path + n_folder + '7mo_group_02_stc_rs_mne_mag6pT_randtriple_morph_fpsds.npz')
+# duple0 = np.load(root_path + n_folder + '7mo_group_03_stc_rs_mne_mag6pT_morph_fpsds.npz')
+# triple0 = np.load(root_path + n_folder + '7mo_group_04_stc_rs_mne_mag6pT_morph_fpsds.npz')
+
+# freqs = random0[random0.files[1]]
+# random = random0[random0.files[0]]
+# randomD = randomD0[randomD0.files[0]]
+# randomT = randomT0[randomT0.files[0]]
+# duple = duple0[duple0.files[0]]
+# triple = triple0[triple0.files[0]]
+
+# stc1.data = randomT.mean(0)
+# stc1.tmin = freqs[0]
+# stc1.tstep = freqs[1]-freqs[0]
+# stc1.plot(src=src)
+
+## cluster results
 data_type = which_data_type[-1]
 n_analysis = analysis[0]
 n_folder = folders[0]
-n_meter = 'duple' # 'duple' or 'triple'
-p_threshold = 0.05 # set a cluster forming threshold based on a p-value for the cluster based permutation test
+n_meter = 'duple_random' # 'duple' or 'triple'
+p_threshold = 0.05 # note that this is different from the cluster forming threshold (psds and fpsds: p_threshold = 0.001)
 
 for n_age in ages:
+    print(n_age)
     if n_folder == 'SSEP/':
-        with open(root_path + n_folder + n_age + '_SSEP_wholebrain_cluster_test_' + n_meter + '.pkl', 'rb') as f:
+        with open(root_path + n_folder + n_age + '_fSSEP_wholebrain_cluster_' + n_meter + '.pkl', 'rb') as f:
             clu = pickle.load(f)
-        good_cluster_inds = np.where(clu[2] < p_threshold)[0]
-        good_clusters = [clu[1][idx] for idx in good_cluster_inds]
-
-        for c in good_clusters:
-            print(c[0])
-            
-            ## print the min and max and mean MNI coordinate for this cluster
-            coord = [] 
-            for i in np.arange(0,len(c[-1]),1):
-                coord.append(np.round(src[0]['rr'][src[0]['vertno'][c[-1][i]]]*1000))
-            np_coord = np.array(coord)
-            print("min MNI coord:" + str(np.min(np_coord,axis=0)))
-            print("max MNI coord:" + str(np.max(np_coord,axis=0)))
-            print("mean MNI coord (center of mass):" + str(np.mean(np_coord,axis=0)))
-            
-            ## get all the ROIs in this cluster (no repeat)
-            # ROIs = []
-            # for i in np.arange(0,len(c[-1]),1):
-            #     for nlabel in np.arange(0,len(label_names),1):
-            #         if c[-1][i] in label_v_ind[nlabel][0] and label_names[nlabel] not in ROIs:
-            #             ROIs.append(label_names[nlabel])
-            # print(ROIs)
-            
-            ## get all the ROIs in this cluster (with repeat)
-            ROIs = []
-            count_ROIs = []
-            for i in np.arange(0,len(c[-1]),1):
-                for nlabel in np.arange(0,len(label_names),1):
-                    if c[-1][i] in label_v_ind[nlabel][0]:
-                        ROIs.append(label_names[nlabel])
-            ROIs.sort()
-            for label in label_names:
-                count_ROIs.append(ROIs.count(label))
-                print(str(ROIs.count(label)) + " " + label)
-            
+        results = analyze_clusters(clu, src, label_names, label_v_ind, p=p_threshold)
         ## visualize this cluster
         stc_all_cluster_vis = summarize_clusters_stc(
             clu, p_thresh = p_threshold, vertices=src, subject="fsaverage"
