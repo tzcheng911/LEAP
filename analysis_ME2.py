@@ -49,7 +49,7 @@ def do_SSEP(data, f_name, fmin, fmax, MEG_fs,fooof, width,n_peaks,min_peak_heigh
     init_flat_spec = None
 
     if fooof:
-
+        print("Doing FOOOF")
         flat_psds = []
 
         # --------------------------------------------------
@@ -86,21 +86,25 @@ def do_SSEP(data, f_name, fmin, fmax, MEG_fs,fooof, width,n_peaks,min_peak_heigh
         # SOURCE DATA: preserve ROI dimension
         # (subj, ROI, freq)
         # --------------------------------------------------
-        elif data_type == "_roi_redo4":
+        elif data_type == "_roi_redo4" or data_type == "_morph":
 
             for nsub in range(psds.shape[0]):
 
                 roi_specs = []
 
                 for nroi in range(psds.shape[1]):
-
+                    # print("Now doing v " + str(nroi))
                     fm = FOOOF(
                         peak_width_limits=width,
                         max_n_peaks=n_peaks,
                         min_peak_height=min_peak_height,
                     )
+                    
+                    ## Replace zeros with a small epsilon for FOOOF
+                    eps = np.finfo(float).eps
+                    psd_safe = np.maximum(psds[nsub, nroi], eps)
 
-                    fm.fit(freqs, psds[nsub, nroi], width)
+                    fm.fit(freqs, psd_safe, width)
 
                     init_ap_fit = gen_aperiodic(
                         fm.freqs,
@@ -117,8 +121,8 @@ def do_SSEP(data, f_name, fmin, fmax, MEG_fs,fooof, width,n_peaks,min_peak_heigh
             init_flat_spec = np.array(flat_psds)
 
         else:
-            raise ValueError("data_type must be '_sensor' or '_roi_redo4'")
-
+            raise ValueError("data_type must be '_sensor' or '_roi_redo4' or '_morph'")
+            
         np.savez(
             root_path + 'SSEP/' + f_name + '_fpsds.npz',
             psds=init_flat_spec,
@@ -195,7 +199,7 @@ def do_connectivity(data, f_name, fmin, fmax, f_step, MEG_fs, directional):
             n_jobs=1,)
         con.save(root_path + 'connectivity/' + f_name + '_conn_GC_MA')
     else:
-        con_methods = ["plv","coh","pli"]
+        con_methods = ["plv","coh","pli","wpli"]
         con = spectral_connectivity_time( # Compute frequency- and time-frequency-domain connectivity measures
         data,
         freqs=freqs,
@@ -209,6 +213,7 @@ def do_connectivity(data, f_name, fmin, fmax, f_step, MEG_fs, directional):
         con[0].save(root_path + 'connectivity/' + f_name + '_conn_plv')
         con[1].save(root_path + 'connectivity/' + f_name + '_conn_coh')
         con[2].save(root_path + 'connectivity/' + f_name + '_conn_pli')
+        con[3].save(root_path + 'connectivity/' + f_name + '_conn_wpli')
     return con
 
 def do_decoding(X1, X2, ts, te, model, seed):  
@@ -269,11 +274,12 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 #%% Parameters
 age = ['7mo','11mo','br']  
-run = ['_04'] # random, duple, triple
+run = ['_02','_03','_04'] # random, duple, triple
+run = ['_02'] # random
 # random duple and triple seperately 
 randomDT = ['', '_randduple','_randtriple'] # use randomDT[1] and randomDT[2] with run = '02', otherwise use randomDT[0] 
 which_data_type = ['_sensor','_roi','_roi_redo4','_morph']
-data_type = which_data_type[2]
+data_type = which_data_type[3]
 MEG_fs = 250
 fooof = True
 width = [0.5,5]
@@ -297,11 +303,13 @@ for n_age in age:
 ## 2. conn between the ROIs
 ## Load each condition one by one
 for n_age in age:
+    print("Doing age " + n_age)
     for n_run in run:
+        print("Doing run " + n_run)
         if data_type == '_sensor':
-            f_name = n_age + '_group' + n_run + '_rs_mag6pT' + randomDT[0] +  data_type 
+            f_name = n_age + '_group' + n_run + '_rs_mag6pT' + randomDT[1] +  data_type 
         else:
-            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + randomDT[0] + data_type 
+            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + randomDT[1] + data_type 
         MEG = np.load(root_path + 'data/' + f_name + '.npy') 
         [psds,init_flat_spec] = do_SSEP(MEG, f_name, fmin, fmax, MEG_fs, fooof, width,n_peaks,min_peak_height,data_type)
         # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
