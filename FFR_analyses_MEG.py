@@ -1135,9 +1135,9 @@ p40_cbs_pc_w = np.load(data_path + 'group_pcffr802000_ntrial200_3_p40_pc_weight_
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'sensor_beamformer'
+file_type = 'roi_beamformer'
 nfilter = '802000'
-ntrial = '200' # 200, all (reps = 3000) or allall (reps = 6000)
+ntrial = 'first200' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1166,7 +1166,7 @@ plot_group_ffr(p10_eng[:,n,:], n40_eng[:,n,:], 'p10','n40', times)
 plot_group_ffr(p10_spa[:,n,:], n40_spa[:,n,:], 'p10','n40', times)
 
 # plot average sensor topo plot
-sensor_data = p10_eng.mean(0)
+sensor_data = n40_eng.mean(0)
 evoked[0].data = sensor_data
 evoked[0].plot_topo()
 
@@ -1285,7 +1285,7 @@ plot_group_ffr(p10_eng[:,ROI_label[nROI],:], n40_eng[:,ROI_label[nROI],:], 'p10'
 plot_group_ffr(p10_spa[:,ROI_label[nROI],:], n40_spa[:,ROI_label[nROI],:], 'p10','n40', times)
 
 # plot group morph data
-source_data = p10_eng.mean(0)
+source_data = n40_eng.mean(0)
 stc1.data = source_data 
 stc1.plot(src=src)
 stc1.plot_3d(src=src,subject = 'fsaverage')
@@ -1529,8 +1529,8 @@ acc_incre_spa = np.empty((np.shape(p10_spa)[1],30))
 acc_incre_eng = np.empty((len(ROI_label),40)) ## sorry but hardcoding for now
 acc_incre_spa = np.empty((len(ROI_label),40))  # for roi
 
-for nch in idx_diff: # for sensor
-# for n, nch in enumerate(ROI_label): # for roi
+# for nch in idx_diff: # for sensor
+for n, nch in enumerate(ROI_label): # for roi
 # for nch in np.arange(0,np.shape(p10_cbs)[1],1): # for morph whole brain
     print("Doing v " + str(nch))
     # condition_pairs = (
@@ -1560,7 +1560,7 @@ for nch in idx_diff: # for sensor
         # ncv2=np.shape(p10_cbs)[0],
         shuffle="keep pair",
         randseed=2,
-        do_permutation=False,
+        do_permutation=True,
         niter=500,
         labels=("English", "Spanish"),
         # labels=("p10n40", "p10p40"),
