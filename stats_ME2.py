@@ -100,11 +100,12 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,fmin,fma
     threshold_tfce = dict(start=0, step=0.05)
     T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(XX[:,ROI1,ROI2,:], threshold = threshold_tfce,  seed = 0,verbose='ERROR') # test which frequency in Sensorimotor-Auditory is significant
     good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
-    print(cluster_p_values)
+    # print(cluster_p_values)
     for i in np.arange(0,len(good_cluster_inds),1):
         print("The " + str(i+1) + "st significant cluster")
         print(clusters[good_cluster_inds[i]])
         print('Significant freqs: ' + str(freqs[clusters[good_cluster_inds[i]][0]]))
+    
     # parametric
     t,p = stats.ttest_1samp(XX[:,ROI1,ROI2,ff(freqs,fmin):ff(freqs,fmax)].mean(-1),0) 
     print('Significant freqs for uncorrected ttest (' + str(fmin) + '-' + str(fmax) + ' Hz): ' + 't-stats = ' + str(t))
@@ -582,26 +583,34 @@ n_analysis = analysis[1] # 1:'conn_plv', 2:'conn_coh', 3:'conn_pli'
 data_type = which_data_type[2] # 1:_roi_ or 2:_roi_redo5_
 
 random_conn_all = []
+randomD_conn_all = []
+randomT_conn_all = []
 duple_conn_all = []
 triple_conn_all = []
 
 nlines = 10
-ROI1 = 1
-ROI2 = 0
+ROI1 = 2
+ROI2 = 1
 fmin = 5
 fmax = 10
 FOI = 'Beta' # Delta, Theta, Alpha, Beta 
 
-for n_age in ages[:-2]:
+for n_age in ages:
     print("Doing connectivity " + n_age)
     random = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis) 
+    randomD = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randduple' + data_type + n_analysis) 
+    randomT = read_connectivity(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randtriple' + data_type + n_analysis) 
     duple = read_connectivity(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis) 
     triple = read_connectivity(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis) 
     freqs = np.array(random.freqs)
     random_conn = random.get_data(output='dense')
+    randomD_conn = randomD.get_data(output='dense')
+    randomT_conn = randomT.get_data(output='dense')
     duple_conn = duple.get_data(output='dense')
     triple_conn = triple.get_data(output='dense')
     random_conn_all.append(random_conn)
+    randomD_conn_all.append(randomD_conn)
+    randomT_conn_all.append(randomT_conn)
     duple_conn_all.append(duple_conn)
     triple_conn_all.append(triple_conn)
     print("-------------------Doing duple-------------------")
@@ -611,12 +620,13 @@ for n_age in ages[:-2]:
 print("-------------------Doing duple-------------------")
 conn1 = duple_conn_all[0]-random_conn_all[0] # 7mo
 conn2 = duple_conn_all[1]-random_conn_all[1] # 11mo
-stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2,-0.15,0.25)
+stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2,fmin,fmax,-0.15,0.25)
 print("-------------------Doing triple-------------------")
 conn1 = triple_conn_all[0]-random_conn_all[0] # 7mo
 conn2 = triple_conn_all[1]-random_conn_all[1] # 11mo
-stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2,-0.15,0.25)
+stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2,fmin,fmax,-0.15,0.25)
 
+#%%
 convert_to_csv('_roi_redo4_',label_names,'conn_plv','connectivity/',3,0)
 
 ## Power analysis based on 7 mo duple vs. random conn 6-9 Hz sensorimotor-auditory conn
