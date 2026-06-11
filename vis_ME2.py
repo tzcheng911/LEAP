@@ -160,15 +160,27 @@ def plot_audio(audio,fmin,fmax,fs,meter_type):
     mbr = psds[meter_idx]/psds[beat_idx]
     print("Meter/Beat ratio: " + str(mbr))
     
-def plot_SSEP(psds,freqs,color,title):
-    plot_err(psds,color,freqs)
-    # plt.xlim([freqs[0],freqs[-1]])
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Power Spectral Density')
-    plt.ylim([-0.23,2.4])
-    plt.xlim([0.55,4])
-    plt.title(title)
-
+def plot_SSEP(psds,freqs,color,title,level):
+    if level == 'group':
+        plot_err(psds,color,freqs)
+        # plt.xlim([freqs[0],freqs[-1]])
+        plt.xlabel('Frequency (Hz)')
+        plt.ylabel('Power Spectral Density')
+        plt.ylim([-0.23,2.4])
+        plt.xlim([0.55,4])
+        plt.title(title)
+    elif level == 'individual':
+        n_subjects = psds.shape[0]
+        fig, axes = plt.subplots(5, 6, figsize=(18, 15), sharex=True, sharey=True)
+        axes = axes.ravel()
+        for subj in range(n_subjects):
+            axes[subj].plot(freqs, psds[subj, :], color=color)
+            axes[subj].set_title(f'S{subj+1}')
+            # hide unused panels
+        for ax in axes[n_subjects:]:
+            ax.set_visible(False)
+        plt.tight_layout()
+        
 def plot_CONN(conn,freqs,nlines,vmin,vmax,FOI,label_names,title):
     if FOI == "Theta": # 4-8 Hz
         X = conn[:,:,:,ff(freqs,4):ff(freqs,8)].mean(axis=3)
@@ -209,6 +221,41 @@ def plot_CONN(conn,freqs,nlines,vmin,vmax,FOI,label_names,title):
     title= title + " connectivity " + FOI,
     ax=ax)
     fig.tight_layout()
+
+def analyze_clusters(clu, src, label_names, label_v_ind, p=0.05):
+    results = []
+    sig_clu = np.where(clu[2] < p)[0]
+    print("Found " + str(len(sig_clu)) + " significant clusters")
+    for c in [clu[1][i] for i in sig_clu]:
+        verts = c[-1]
+        coords = np.round(src[0]['rr'][src[0]['vertno'][verts]] * 1000)
+
+        roi_all = [label_names[j]
+                   for v in verts
+                   for j in range(len(label_names))
+                   if v in label_v_ind[j][0]]
+
+        res = {
+            "cluster_stat": c[0],
+            "min": coords.min(0),
+            "max": coords.max(0),
+            "mean": coords.mean(0),
+            "ROIs_unique": list(set(roi_all)),
+            "ROI_counts": {l: roi_all.count(l) for l in label_names}
+        }
+
+        print(
+            c[0], 
+            "\nmin:", res["min"],
+            "\nmax:", res["max"],
+            "\nmean:", res["mean"],
+            "\nROIs:", res["ROIs_unique"],
+            "\n" + "\n".join(f"{res['ROI_counts'][l]} {l}" for l in label_names),
+        )
+
+        results.append(res)
+
+    return results
         
 #%%####################################### Set path
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/'
@@ -229,7 +276,7 @@ fs, audio = wavfile.read(root_path + 'Stimuli/Triple300.wav') # Random, Duple300
 plot_audio(audio,fmin,fmax,fs,'triple')
 
 #%% Parameters
-ages = ['7mo','11mo','br'] 
+ages = ['7mo','11mo'] 
 folders = ['SSEP/','decoding/','connectivity/'] # random, duple, triple
 analysis = ['fpsds','decoding_acc_perm100','conn_plv','conn_coh','conn_pli','conn_wpli']
 which_data_type = ['_sensor_','_roi_','_roi_redo4_','_morph_'] ## currently not able to run ERSP and conn on the wholebrain data
@@ -364,9 +411,10 @@ def analyze_clusters(clu, src, label_names, label_v_ind, p=0.05):
 
     return results
 #%%####################################### Visualize on the source level: ROI 
-n_folder = folders[2]
-n_analysis = analysis[4]
+n_folder = folders[0]
+n_analysis = analysis[0]
 data_type = which_data_type[2]
+level = 'individual'
 
 vmin = 0.5
 vmax = 1
@@ -445,11 +493,13 @@ for nn_age,n_age in enumerate(ages):
                 psds_triple = triple0[triple0.files[0]]
                 
                 plt.figure()
-                plot_SSEP(psds_random[:,n,:],freqs,'#000000','')
-                plot_SSEP(psds_randomD[:,n,:],freqs,'#cccccc','')
-                plot_SSEP(psds_randomT[:,n,:],freqs,'#a3a3a3','')
-                plot_SSEP(psds_duple[:,n,:],freqs,'#ff7f0e','')
-                plot_SSEP(psds_triple[:,n,:],freqs,'#1f77b4',label_names[n])
+                plot_SSEP(psds_random[:,n,:],freqs,'#000000','',level)
+                plot_SSEP(psds_randomD[:,n,:],freqs,'#cccccc','',level)
+                plot_SSEP(psds_randomT[:,n,:],freqs,'#a3a3a3','',level)
+                plot_SSEP(psds_duple[:,n,:],freqs,'#ff7f0e','',level)
+                plot_SSEP(psds_triple[:,n,:],freqs,'#1f77b4',label_names[n],level)
+                
+                
 #%%                
                 # Doing ROI SSEP: Auditory
                 # -------------------Doing duple-------------------
@@ -554,21 +604,22 @@ for nn_age,n_age in enumerate(ages):
 data_type = which_data_type[-1]
 n_analysis = analysis[0]
 n_folder = folders[0]
-n_meter = 'duple_random' # 'duple' or 'triple'
+n_meter = 'triple_randomT' # 'duple' or 'triple'
 p_threshold = 0.05 # note that this is different from the cluster forming threshold (psds and fpsds: p_threshold = 0.001)
 
 for n_age in ages:
     print(n_age)
+    print(n_meter)
     if n_folder == 'SSEP/':
         with open(root_path + n_folder + n_age + '_fSSEP_wholebrain_cluster_' + n_meter + '.pkl', 'rb') as f:
             clu = pickle.load(f)
         results = analyze_clusters(clu, src, label_names, label_v_ind, p=p_threshold)
-        ## visualize this cluster
+        # visualize this cluster
         stc_all_cluster_vis = summarize_clusters_stc(
             clu, p_thresh = p_threshold, vertices=src, subject="fsaverage"
         )
-        stc_all_cluster_vis.plot(src=src,clim=dict(kind="percent",lims=[99.7,99.75,99.975])) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
-        # stc_all_cluster_vis.plot(src=src) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
+        # stc_all_cluster_vis.plot(src=src,clim=dict(kind="percent",lims=[99.7,99.75,99.975])) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
+        stc_all_cluster_vis.plot(src=src) ## The first time point in this SourceEstimate object is the summation of all the clusters. Subsequent time points contain each individual cluster. The magnitude of the activity corresponds to the duration spanned (the freq in my case) by the cluster
         # stc_all_cluster_vis.plot_3d(src=src)
         
     elif n_folder == 'decoding/':
