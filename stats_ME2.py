@@ -96,9 +96,11 @@ def wholebrain_spatio_temporal_cluster_test(X,n_meter,n_age,n_folder,p_threshold
 def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,fmin,fmax,ymin,ymax):
     XX = conn1-conn2
     ## compare whole freq spectrum between conditions and ages 
+    
     # non-parametric
-    threshold_tfce = dict(start=0, step=0.05)
-    T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(XX[:,ROI1,ROI2,:], threshold = threshold_tfce,  seed = 0,verbose='ERROR') # test which frequency in Sensorimotor-Auditory is significant
+    # threshold_tfce = dict(start=0, step=0.05)
+    
+    T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(XX[:,ROI1,ROI2,:], seed = 0,verbose='ERROR') # test which frequency in Sensorimotor-Auditory is significant
     good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
     # print(cluster_p_values)
     for i in np.arange(0,len(good_cluster_inds),1):
@@ -580,7 +582,7 @@ stc1.plot(src=src,clim=dict(kind="value", lims=[0,1,2]))
 #%%####################################### Analysis on the ROI conn
 n_folder = folders[3] 
 n_analysis = analysis[1] # 1:'conn_plv', 2:'conn_coh', 3:'conn_pli'
-data_type = which_data_type[2] # 1:_roi_ or 2:_roi_redo5_
+data_type = which_data_type[2] # 1:_roi_ or 2:_roi_redo4_
 
 random_conn_all = []
 randomD_conn_all = []
@@ -589,10 +591,10 @@ duple_conn_all = []
 triple_conn_all = []
 
 nlines = 10
-ROI1 = 2
-ROI2 = 1
+ROI1 = 3
+ROI2 = 0
 fmin = 5
-fmax = 10
+fmax = 30
 FOI = 'Beta' # Delta, Theta, Alpha, Beta 
 
 for n_age in ages:
@@ -613,10 +615,10 @@ for n_age in ages:
     randomT_conn_all.append(randomT_conn)
     duple_conn_all.append(duple_conn)
     triple_conn_all.append(triple_conn)
-    print("-------------------Doing duple-------------------")
-    stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis,ROI1,ROI2,fmin,fmax, 0.39,1)
-    print("-------------------Doing triple-------------------")
-    stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis,ROI1,ROI2,fmin,fmax, 0.39,1)
+    # print("-------------------Doing duple-------------------")
+    # stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis,ROI1,ROI2,fmin,fmax, 0.39,1)
+    # print("-------------------Doing triple-------------------")
+    # stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis,ROI1,ROI2,fmin,fmax, 0.39,1)
 print("-------------------Doing duple-------------------")
 conn1 = duple_conn_all[0]-random_conn_all[0] # 7mo
 conn2 = duple_conn_all[1]-random_conn_all[1] # 11mo
