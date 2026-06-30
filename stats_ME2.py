@@ -101,8 +101,8 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,fmin,fma
     # threshold_tfce = dict(start=0, step=0.05)
     
     T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(XX[:,ROI1,ROI2,:], seed = 0,verbose='ERROR') # test which frequency in Sensorimotor-Auditory is significant
-    good_cluster_inds = np.where(cluster_p_values < 0.05)[0]
-    # print(cluster_p_values)
+    good_cluster_inds = np.where(cluster_p_values < 0.1)[0]
+    print(cluster_p_values)
     for i in np.arange(0,len(good_cluster_inds),1):
         print("The " + str(i+1) + "st significant cluster")
         print(clusters[good_cluster_inds[i]])
@@ -220,7 +220,7 @@ def convert_to_csv(data_type,labels,n_analysis,n_folder,ROI1,ROI2): ## wip, need
                                   data0_conn[:,ROI1,ROI2,ff(freqs,4):ff(freqs,8)].mean(axis=-1),
                                   data0_conn[:,ROI1,ROI2,ff(freqs,8):ff(freqs,12)].mean(axis=-1),
                                   data0_conn[:,ROI1,ROI2,ff(freqs,15):ff(freqs,30)].mean(axis=-1),
-                                  data0_conn[:,ROI1,ROI2,:].mean(axis=-1),
+                                  data0_conn[:,ROI1,ROI2,ff(freqs,5):ff(freqs,30)].mean(axis=-1),
                                   data0_conn[:,ROI1,ROI2,ff(freqs,5):ff(freqs,10)].mean(axis=-1))).transpose() # delta, theta, alpha, beta, broadband 5-35 Hz, infant motor 5-10 Hz total 6 cols
                 lm_np.append(data)
                 for file in os.listdir(subj_path[n_age]):
@@ -462,8 +462,8 @@ for n_age in ages:
 convert_to_csv(which_data_type[0],label_names,analysis[0],folders[0],1,0)
 
 #%%####################################### Analysis on the ROI SSEP
-n_folder = folders[0] # 0: SSEP
-n_analysis = analysis[0] # 0: psds
+n_folder = folders[3] # 0: SSEP
+n_analysis = analysis[1] # 0: psds
 data_type = which_data_type[2] # 1:_roi_ or 2:_roi_redo_
 
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
@@ -480,20 +480,29 @@ for n_age in ages:
     for n in nROI: 
         print("Doing ROI SSEP: " + label_names[n])
         random0 = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT' + data_type + n_analysis +'.npz') 
-        randomD = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randduple' + data_type + n_analysis +'.npz')
-        randomT = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randtriple' + data_type + n_analysis +'.npz')
+        # randomD = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randduple' + data_type + n_analysis +'.npz')
+        # randomT = np.load(root_path + n_folder + n_age + '_group_02_stc_rs_mne_mag6pT_randtriple' + data_type + n_analysis +'.npz')
         duple0 = np.load(root_path + n_folder + n_age + '_group_03_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
         triple0 = np.load(root_path + n_folder + n_age + '_group_04_stc_rs_mne_mag6pT' + data_type + n_analysis + '.npz') 
         random = random0[random0.files[0]]
-        randomD = randomD[randomD.files[0]]
-        randomT = randomT[randomT.files[0]]
+        # randomD = randomD[randomD.files[0]]
+        # randomT = randomT[randomT.files[0]]
         duple = duple0[duple0.files[0]]
         triple = triple0[triple0.files[0]]
         freqs = random0[random0.files[1]]          
         print("-------------------Doing duple-------------------")
-        stats_SSEP(duple[:,n,:]-randomD[:,n,:],freqs,True)
+        stats_SSEP(duple[:,n,:]-random[:,n,:],freqs,True)
         print("-------------------Doing triple-------------------")
-        stats_SSEP(triple[:,n,:]-randomT[:,n,:],freqs,True)
+        stats_SSEP(triple[:,n,:]-random[:,n,:],freqs,True)
+        plt.figure()
+        plot_SSEP(random[:,n,:],freqs,'black','',level)
+        plot_SSEP(duple[:,n,:],freqs,'#ff7f0e','',level)
+        plot_SSEP(triple[:,n,:],freqs,'#1f77b4','',level)
+        # plt.ylim([-0.23,1.4])
+        plt.xlim([0.5,4])
+        ax = plt.gca()
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
 convert_to_csv(data_type,label_names,n_analysis,n_folder,1,0)
     
 #%%####################################### Analysis on the wholebrain SSEP
@@ -591,7 +600,7 @@ duple_conn_all = []
 triple_conn_all = []
 
 nlines = 10
-ROI1 = 3
+ROI1 = 1
 ROI2 = 0
 fmin = 5
 fmax = 30
@@ -622,11 +631,19 @@ for n_age in ages:
 print("-------------------Doing duple-------------------")
 conn1 = duple_conn_all[0]-random_conn_all[0] # 7mo
 conn2 = duple_conn_all[1]-random_conn_all[1] # 11mo
-stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2,fmin,fmax,-0.15,0.25)
+stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2,fmin,fmax,0.5,0.9)
 print("-------------------Doing triple-------------------")
 conn1 = triple_conn_all[0]-random_conn_all[0] # 7mo
 conn2 = triple_conn_all[1]-random_conn_all[1] # 11mo
 stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'7 mo vs 11 mo',ROI1,ROI2,fmin,fmax,-0.15,0.25)
+print("-------------------Doing 7mo-------------------")
+conn1 = duple_conn_all[0]-random_conn_all[0] # 7mo duple
+conn2 = triple_conn_all[0]-random_conn_all[0] # 7mo triple
+stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'Duple vs. Triple',ROI1,ROI2,fmin,fmax,-0.15,0.25)
+print("-------------------Doing 11 mo-------------------")
+conn1 = duple_conn_all[1]-random_conn_all[1] # 11mo duple
+conn2 = triple_conn_all[1]-random_conn_all[1] # 11mo triple
+stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,'Duple vs. Triple',ROI1,ROI2,fmin,fmax,-0.15,0.25)
 
 #%%
 convert_to_csv('_roi_redo4_',label_names,'conn_plv','connectivity/',3,0)
