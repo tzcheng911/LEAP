@@ -86,7 +86,7 @@ def do_SSEP(data, f_name, fmin, fmax, MEG_fs,fooof, width,n_peaks,min_peak_heigh
         # SOURCE DATA: preserve ROI dimension
         # (subj, ROI, freq)
         # --------------------------------------------------
-        elif data_type == "_roi_redo4" or data_type == "_morph":
+        elif data_type == "_roi_redo4" or data_type == "_roi" or data_type == "_morph":
 
             for nsub in range(psds.shape[0]):
 
@@ -275,11 +275,10 @@ subjects_dir = '/media/tzcheng/storage2/subjects/'
 #%% Parameters
 age = ['7mo','11mo','br']  
 run = ['_02','_03','_04'] # random, duple, triple
-run = ['_02'] # random
 # random duple and triple seperately 
 randomDT = ['', '_randduple','_randtriple'] # use randomDT[1] and randomDT[2] with run = '02', otherwise use randomDT[0] 
 which_data_type = ['_sensor','_roi','_roi_redo4','_morph']
-data_type = which_data_type[3]
+data_type = which_data_type[1]
 MEG_fs = 250
 fooof = True
 width = [0.5,5]
@@ -307,9 +306,9 @@ for n_age in age:
     for n_run in run:
         print("Doing run " + n_run)
         if data_type == '_sensor':
-            f_name = n_age + '_group' + n_run + '_rs_mag6pT' + randomDT[1] +  data_type 
+            f_name = n_age + '_group' + n_run + '_rs_mag6pT' + randomDT[0] +  data_type 
         else:
-            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + randomDT[1] + data_type 
+            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + randomDT[0] + data_type 
         MEG = np.load(root_path + 'data/' + f_name + '.npy') 
         [psds,init_flat_spec] = do_SSEP(MEG, f_name, fmin, fmax, MEG_fs, fooof, width,n_peaks,min_peak_height,data_type)
         # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
