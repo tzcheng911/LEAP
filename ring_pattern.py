@@ -104,13 +104,12 @@ filters = make_lcmv(
     evokeds.info,
     fwd,
     data_cov,
-    reg=0,
+    reg=2,
     noise_cov=noise_cov,
     pick_ori="max-power",
     weight_norm="unit-noise-gain",
     rank='info',
     reduce_rank = True,
-    label = ['brain-stem'],
     depth = 0.8
 )
     
