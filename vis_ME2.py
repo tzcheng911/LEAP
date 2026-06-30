@@ -176,9 +176,15 @@ def plot_SSEP(psds,freqs,color,title,level):
         for subj in range(n_subjects):
             axes[subj].plot(freqs, psds[subj, :], color=color)
             axes[subj].set_title(f'S{subj+1}')
-            # hide unused panels
-        for ax in axes[n_subjects:]:
-            ax.set_visible(False)
+            axes[subj].axhline(y=0,
+                               color='red',
+                               linestyle='--')
+            axes[subj].axvline(x=3.33,
+                               color='red',
+                               linestyle='--')
+    # hide unused panels
+    for ax in axes[n_subjects:]:
+        ax.set_visible(False)
         plt.tight_layout()
         
 def plot_CONN(conn,freqs,nlines,vmin,vmax,FOI,label_names,title):
@@ -604,7 +610,7 @@ for nn_age,n_age in enumerate(ages):
 data_type = which_data_type[-1]
 n_analysis = analysis[0]
 n_folder = folders[0]
-n_meter = 'triple_randomT' # 'duple' or 'triple'
+n_meter = 'triple_random' # 'duple' or 'triple'
 p_threshold = 0.05 # note that this is different from the cluster forming threshold (psds and fpsds: p_threshold = 0.001)
 
 for n_age in ages:
