@@ -1135,9 +1135,9 @@ p40_cbs_pc_w = np.load(data_path + 'group_pcffr802000_ntrial200_3_p40_pc_weight_
 
 ## brainstem
 root_path='/media/tzcheng/storage/Brainstem/'
-file_type = 'roi_beamformer'
+file_type = 'morph_beamformer'
 nfilter = '802000'
-ntrial = 'first200' # 200, all (reps = 3000) or allall (reps = 6000)
+ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1598,10 +1598,13 @@ stc1.plot_3d(src=src,subject = 'fsaverage')
 
 #%%####################################### Sliding estimator 
 tic = time.time()
-k_feature = 500
+k_feature = 'all'
 
-X = np.concatenate((p10_eng,n40_eng),axis=0)
-y = np.concatenate((np.repeat(0,len(p10_eng)),np.repeat(1,len(n40_eng)))) 
+n40_p10_eng = n40_eng - p10_eng
+n40_p10_spa = n40_spa - p10_spa
+
+X = np.concatenate((n40_p10_eng,n40_p10_spa),axis=0)
+y = np.concatenate((np.repeat(0,len(n40_p10_eng)),np.repeat(1,len(n40_p10_spa)))) 
 
 # prepare a series of classifier applied at each time sample
 clf = make_pipeline(
@@ -1640,8 +1643,8 @@ patterns = get_coef(time_decod, "patterns_",
 
 toc = time.time()
 
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_roc_auc_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_slidingacc_patterns_k500_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_spa_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_spa_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
 
 #%%#######################################
 
