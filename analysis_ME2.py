@@ -20,7 +20,7 @@ from fooof import FOOOF
 from fooof.sim.gen import gen_aperiodic
 from fooof.plts.spectra import plot_spectra
 from mne.decoding import cross_val_multiscore
-from mne_connectivity import spectral_connectivity_time, read_connectivity
+from mne_connectivity import spectral_connectivity_time, read_connectivity, envelope_correlation
 import os
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -214,7 +214,15 @@ def do_connectivity(data, f_name, fmin, fmax, f_step, MEG_fs, directional):
         con[1].save(root_path + 'connectivity/' + f_name + '_conn_coh')
         con[2].save(root_path + 'connectivity/' + f_name + '_conn_pli')
         con[3].save(root_path + 'connectivity/' + f_name + '_conn_wpli')
-    return con
+        
+        ## implement AEP https://mne.tools/mne-connectivity/stable/auto_examples/mne_inverse_envelope_correlation.html
+        bp_MEG = mne.filter.filter_data(data, MEG_fs, fmin, fmax, verbose=None)
+        corr_obj = envelope_correlation(bp_MEG, orthogonalize="pairwise",verbose=None)
+        corr = corr_obj.get_data(output="dense")[:,:,:,0]
+        print("AEP between SM-A ROIs: " + str(corr.mean(0)[1][0]))
+        print("AEP between SM-B ROIs: " + str(corr.mean(0)[2][1]))
+        np.save(root_path + 'connectivity/' + f_name + '_conn_aec',corr)
+    return con,corr
 
 def do_decoding(X1, X2, ts, te, model, seed):  
     ## compute ML-based decoding using scikit learn functions
@@ -278,14 +286,14 @@ run = ['_02','_03','_04'] # random, duple, triple
 # random duple and triple seperately 
 randomDT = ['', '_randduple','_randtriple'] # use randomDT[1] and randomDT[2] with run = '02', otherwise use randomDT[0] 
 which_data_type = ['_sensor','_roi','_roi_redo4','_morph']
-data_type = which_data_type[1]
+data_type = which_data_type[2]
 MEG_fs = 250
 fooof = True
 width = [0.5,5]
 n_peaks=3
 min_peak_height=5e-26
-fmin = 0.5
-fmax = 5
+fmin = 5
+fmax = 10
 
 #%% Redo ROI if needed
 new_ROI = {"Auditory": [72,76, 108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
@@ -310,9 +318,9 @@ for n_age in age:
         else:
             f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + randomDT[0] + data_type 
         MEG = np.load(root_path + 'data/' + f_name + '.npy') 
-        [psds,init_flat_spec] = do_SSEP(MEG, f_name, fmin, fmax, MEG_fs, fooof, width,n_peaks,min_peak_height,data_type)
+        # [psds,init_flat_spec] = do_SSEP(MEG, f_name, fmin, fmax, MEG_fs, fooof, width,n_peaks,min_peak_height,data_type)
         # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
-        # con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
+        con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
         del MEG
 
 #%%####################################### Run the decoding
