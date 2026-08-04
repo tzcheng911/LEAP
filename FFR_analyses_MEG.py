@@ -1116,7 +1116,7 @@ ch_names = np.array(evoked[0].info['ch_names'])
 ## CBS
 data_path = '/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/'
 file_type = 'morph_common_beamformer'
-subject_type = 'infants'
+subject_type = 'adults'
 fs,p10_cbs = load_CBS_file(file_type, 'p10', subject_type)
 fs,n40_cbs = load_CBS_file(file_type, 'n40', subject_type)
 fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
@@ -1600,11 +1600,17 @@ stc1.plot_3d(src=src,subject = 'fsaverage')
 tic = time.time()
 k_feature = 'all'
 
-n40_p10_eng = n40_eng - p10_eng
-n40_p10_spa = n40_spa - p10_spa
+## brainstem
+# n40_p10_eng = n40_eng - p10_eng
+# n40_p10_spa = n40_spa - p10_spa
+# X = np.concatenate((n40_p10_eng,n40_p10_spa),axis=0)
+# y = np.concatenate((np.repeat(0,len(n40_p10_eng)),np.repeat(1,len(n40_p10_spa)))) 
 
-X = np.concatenate((n40_p10_eng,n40_p10_spa),axis=0)
-y = np.concatenate((np.repeat(0,len(n40_p10_eng)),np.repeat(1,len(n40_p10_spa)))) 
+## CBS
+n40_p10 = n40_cbs - p10_cbs
+p40_p10 = p40_cbs - p10_cbs
+X = np.concatenate((n40_p10,p40_p10),axis=0)
+y = np.concatenate((np.repeat(0,len(n40_p10)),np.repeat(1,len(p40_p10)))) 
 
 # prepare a series of classifier applied at each time sample
 clf = make_pipeline(
@@ -1640,11 +1646,58 @@ patterns = get_coef(time_decod, "patterns_",
                     inverse_transform=True)
 # !!! when clf is linear SVM not sure if this is correct implementation
 # coef = np.squeeze(get_coef(time_decod, "coef_",inverse_transform=True))
-
+stc1.data = patterns
+stc1.plot(src=src)
 toc = time.time()
 
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_spa_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
-np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_spa_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
+# np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_spa_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
+# np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_spa_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
+
+np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/infants_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
+np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/infants_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
+
+#%% create a permutation of scores
+# prepare a series of classifier applied at each time sample
+tic = time.time()
+import copy
+import random
+
+k_feature = 'all'
+
+## CBS
+n40_p10 = n40_cbs - p10_cbs
+p40_p10 = p40_cbs - p10_cbs
+X = np.concatenate((n40_p10,p40_p10),axis=0)
+y = np.concatenate((np.repeat(0,len(n40_p10)),np.repeat(1,len(p40_p10)))) 
+
+n_perm=500
+scores_perm=[]
+for i in range(n_perm):
+    print('Iteration' + str(i))
+    yp = copy.deepcopy(y)
+    random.shuffle(yp)
+    clf = make_pipeline(
+        StandardScaler(),  # z-score normalization
+        SelectKBest(f_classif, k=k_feature),  # select features for speed
+        LinearModel(LogisticRegression(C=1, solver="liblinear"))
+        )
+    time_decod = SlidingEstimator(clf, scoring="roc_auc")
+    # Run cross-validated decoding analyses:
+    scores = cross_val_multiscore(time_decod, X, yp, cv=5, n_jobs=None)
+    scores_perm.append(np.mean(scores,axis=0))
+scores_perm_array=np.asarray(scores_perm)
+np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/adults_slidingacc_perm100_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
+
+toc = time.time()
+print('It takes ' + str((toc - tic)/60) + 'min to run 100 iterations of kall decoding')
+
+plt.figure()
+plt.hist(scores_perm_array,bins=30,color='k')
+plt.vlines(score,ymin=0,ymax=12,color='r',linewidth=2)
+plt.vlines(np.percentile(scores_perm_array,97.5),ymin=0,ymax=12,color='grey',linewidth=2)
+plt.ylabel('Count',fontsize=20)
+plt.xlabel('Accuracy',fontsize=20)
+plt.title('Accuracy compared to 97.5 percentile of n = 100 null distribution')
 
 #%%#######################################
 
