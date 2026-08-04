@@ -99,7 +99,6 @@ def stats_CONN(conn1,conn2,freqs,nlines,FOI,label_names,title,ROI1,ROI2,fmin,fma
     
     # non-parametric
     # threshold_tfce = dict(start=0, step=0.05)
-    
     T_obs, clusters, cluster_p_values, H0 = mne.stats.permutation_cluster_1samp_test(XX[:,ROI1,ROI2,:], seed = 0,verbose='ERROR') # test which frequency in Sensorimotor-Auditory is significant
     good_cluster_inds = np.where(cluster_p_values < 0.1)[0]
     print(cluster_p_values)
@@ -429,12 +428,13 @@ src = mne.read_source_spaces(subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.f
 label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
 fname_aseg = subjects_dir + 'fsaverage/mri/aparc+aseg.mgz'
 label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
+evoked = mne.read_evokeds('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/me2_101_7m/sss_fif/me2_101_7m_04_otp_raw_sss_proj_fil50_mag6pT_evoked.fif')[0]
 
 #%% Parameters
 ages = ['7mo','11mo'] 
 conditions = ['_02','_03','_04'] # random, duple, triple
 folders = ['SSEP/','ERSP/','decoding/','connectivity/'] 
-analysis = ['fpsds','conn_plv','conn_coh','conn_pli','conn_GC_AM','conn_GC_MA']
+analysis = ['psds','conn_plv','conn_coh','conn_pli','conn_GC_AM','conn_GC_MA']
 which_data_type = ['_sensor_','_roi_','_roi_redo4_','_morph_'] 
 
 #%%####################################### Analysis on the sensor SSEP
@@ -494,15 +494,6 @@ for n_age in ages:
         stats_SSEP(duple[:,n,:]-random[:,n,:],freqs,True)
         print("-------------------Doing triple-------------------")
         stats_SSEP(triple[:,n,:]-random[:,n,:],freqs,True)
-        plt.figure()
-        plot_SSEP(random[:,n,:],freqs,'black','',level)
-        plot_SSEP(duple[:,n,:],freqs,'#ff7f0e','',level)
-        plot_SSEP(triple[:,n,:],freqs,'#1f77b4','',level)
-        # plt.ylim([-0.23,1.4])
-        plt.xlim([0.5,4])
-        ax = plt.gca()
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
 convert_to_csv(data_type,label_names,n_analysis,n_folder,1,0)
     
 #%%####################################### Analysis on the wholebrain SSEP
@@ -590,7 +581,7 @@ stc1.plot(src=src,clim=dict(kind="value", lims=[0,1,2]))
 
 #%%####################################### Analysis on the ROI conn
 n_folder = folders[3] 
-n_analysis = analysis[1] # 1:'conn_plv', 2:'conn_coh', 3:'conn_pli'
+n_analysis = analysis[1] 
 data_type = which_data_type[2] # 1:_roi_ or 2:_roi_redo4_
 
 random_conn_all = []
@@ -600,10 +591,10 @@ duple_conn_all = []
 triple_conn_all = []
 
 nlines = 10
-ROI1 = 1
-ROI2 = 0
+ROI1 = 2
+ROI2 = 1
 fmin = 5
-fmax = 30
+fmax = 10
 FOI = 'Beta' # Delta, Theta, Alpha, Beta 
 
 for n_age in ages:
@@ -624,10 +615,10 @@ for n_age in ages:
     randomT_conn_all.append(randomT_conn)
     duple_conn_all.append(duple_conn)
     triple_conn_all.append(triple_conn)
-    # print("-------------------Doing duple-------------------")
-    # stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis,ROI1,ROI2,fmin,fmax, 0.39,1)
-    # print("-------------------Doing triple-------------------")
-    # stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis,ROI1,ROI2,fmin,fmax, 0.39,1)
+    print("-------------------Doing duple-------------------")
+    stats_CONN(duple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' duple vs. random ' + n_analysis,ROI1,ROI2,fmin,fmax, 0.39,1)
+    print("-------------------Doing triple-------------------")
+    stats_CONN(triple_conn,random_conn,freqs,nlines,FOI,label_names,n_age + ' triple vs. random ' + n_analysis,ROI1,ROI2,fmin,fmax, 0.39,1)
 print("-------------------Doing duple-------------------")
 conn1 = duple_conn_all[0]-random_conn_all[0] # 7mo
 conn2 = duple_conn_all[1]-random_conn_all[1] # 11mo
