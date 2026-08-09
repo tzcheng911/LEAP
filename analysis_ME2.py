@@ -24,8 +24,10 @@ from mne_connectivity import spectral_connectivity_time, read_connectivity, enve
 import os
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogistiscRegression
 from sklearn.svm import SVC
+import matplotlib.pyplot as plt 
+from scipy import stats 
 
 #%%####################################### Define functions
 def do_SSEP(data, f_name, fmin, fmax, MEG_fs,fooof, width,n_peaks,min_peak_height, data_type):  
@@ -288,20 +290,25 @@ randomDT = ['', '_randduple','_randtriple'] # use randomDT[1] and randomDT[2] wi
 which_data_type = ['_sensor','_roi','_roi_redo4','_morph']
 data_type = which_data_type[2]
 MEG_fs = 250
-fooof = True
+fooof = False
 width = [0.5,5]
 n_peaks=3
 min_peak_height=5e-26
-fmin = 5
-fmax = 10
+fmin = 0.5
+fmax = 5
 
 #%% Redo ROI if needed
+## fsaverage 114 labels 
 new_ROI = {"Auditory": [72,76, 108,112], "Motor": [66,102], "Sensory": [59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
 new_ROI = {"Auditory": [72,76, 108,112], "SensoriMotor": [66,102,59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
+
+## ANTS6-0Months3T 101 labels 
+# new_ROI = {"Auditory": [61,65, 95,99], "SensoriMotor": [48,53,55,82,87,89], "BG": [6,7,20,21]}
+
 data_type = which_data_type[1]
 for n_age in age:
     for n_run in run:
-        f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT_' + randomDT[2] + data_type 
+        f_name = n_age + '_group' + n_run + '_stc_rs_mne_nonmorph_mag6pT' + randomDT[0] + data_type 
         redo_ROI(new_ROI,f_name)
 
 #%%####################################### Run the psds, tfr, conn
@@ -316,11 +323,11 @@ for n_age in age:
         if data_type == '_sensor':
             f_name = n_age + '_group' + n_run + '_rs_mag6pT' + randomDT[0] +  data_type 
         else:
-            f_name = n_age + '_group' + n_run + '_stc_rs_mne_mag6pT' + randomDT[0] + data_type 
+            f_name = n_age + '_group' + n_run + '_stc_rs_mne_nonmorph_mag6pT' + randomDT[0] + data_type 
         MEG = np.load(root_path + 'data/' + f_name + '.npy') 
-        # [psds,init_flat_spec] = do_SSEP(MEG, f_name, fmin, fmax, MEG_fs, fooof, width,n_peaks,min_peak_height,data_type)
+        [psds,init_flat_spec] = do_SSEP(MEG, f_name, fmin, fmax, MEG_fs, fooof, width,n_peaks,min_peak_height,data_type)
         # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
-        con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
+        # con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
         del MEG
 
 #%%####################################### Run the decoding
@@ -361,3 +368,152 @@ for age_group in subj_path:
         all_score_triple.append(acc_triple)
     np.save(root_path + 'decoding/by_subjects/' + 'br_wholebrain_decodingACC_trial_duple.npy', np.asarray(all_score_duple))
     np.save(root_path + 'decoding/by_subjects/' + 'br_wholebrain_decodingACC_trial_triple.npy', np.asarray(all_score_triple))
+
+#%%####################################### Address reviewer requests
+#%% Reviewer 1: cHPI head movement
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
+os.chdir(root_path)
+subjects = []
+runs = ['_02','_03','_04'] 
+head_pos_all = []
+
+for file in os.listdir():
+    if file.startswith('me2_'): 
+        subjects.append(file)
+for s in subjects:
+    print(s)      
+    for run in runs:
+        print(run)
+        filename = root_path + s + '/raw_fif/' + s + run + '_otp_raw.fif'
+        raw = mne.io.read_raw_fif(filename, allow_maxshield="yes")
+        chpi_freqs, ch_idx, chpi_codes = mne.chpi.get_chpi_info(info=raw.info)
+        chpi_amplitudes = mne.chpi.compute_chpi_amplitudes(raw)
+        chpi_locs = mne.chpi.compute_chpi_locs(raw.info, chpi_amplitudes)
+        head_pos = mne.chpi.compute_head_pos(raw.info, chpi_locs, verbose=True) #  The columns correspond to [t, q1, q2, q3, x, y, z, gof, err, v] for each time point
+        mne.viz.plot_head_positions(head_pos, mode="traces", totals=True)
+        plt.figure()
+        plt.plot(abs(head_pos[:,4])+abs(head_pos[:,5])+abs(head_pos[:,6]))
+        head_pos_all.append({
+            "subject": s,
+            "run": run,
+            "head_pos": head_pos,
+        })
+
+## calculate the total distance across conditions
+metric_by_run = {}
+
+for run in runs:
+    subject_means = []
+    plt.figure()
+    for record in head_pos_all:
+        if record["run"] == run:
+            hp = record["head_pos"]
+
+            # total displacement time series
+            total_dist = np.abs(hp[:, 4]) + np.abs(hp[:, 5]) + np.abs(hp[:, 6])
+            plt.plot(total_dist)
+            # one value for this subject/run
+            subject_means.append(np.mean(total_dist))
+            
+            
+    metric_by_run[run] = {
+        "mean": np.mean(subject_means),
+        "std": np.std(subject_means, ddof=1),
+        "n": len(subject_means),
+        "values": subject_means
+    }
+
+for run in runs:
+    print(
+        f"{run}: n={metric_by_run[run]['n']}, "
+        f"mean={metric_by_run[run]['mean']:.4f}, "
+        f"std={metric_by_run[run]['std']:.4f}"
+    )
+
+## does not survive multiple comparison correction
+# pvalue=np.float64(0.5618139504972308)
+stats.ttest_1samp(
+    np.asarray(metric_by_run['_03']['values']) -
+    np.asarray(metric_by_run['_02']['values']),
+    0
+)
+# pvalue=np.float64(0.01978672416754115)
+stats.ttest_1samp(
+    np.asarray(metric_by_run['_04']['values']) -
+    np.asarray(metric_by_run['_02']['values']),
+    0
+)
+# pvalue=np.float64(0.03952887777581683)
+stats.ttest_1samp(
+    np.asarray(metric_by_run['_03']['values']) -
+    np.asarray(metric_by_run['_04']['values']),
+    0
+)
+
+#%% Reviewer 2: Verification of source localization
+
+## Goodness-of-fit: plot the residual on top of evoked and see the print out of the vairance explained
+subjects_dir = '/media/tzcheng/storage2/subjects/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
+os.chdir(root_path)
+rfs=250
+lambda2 = 0.1111111111111111
+
+runs = ['_02','_03','_04']
+subj = [] 
+for file in os.listdir():
+    if file.startswith('me2_'):
+        subj.append(file)
+        file_in = root_path + s + '/sss_fif/' + s
+        fwd = mne.read_forward_solution(file_in + '-fwd.fif')
+        epoch = mne.read_epochs(file_in + run + '_otp_raw_sss_proj_fil50_mag6pT_epoch.fif').resample(sfreq = 100)
+        noise_cov = mne.read_cov(file_in + run + '_erm_otp_raw_sss_proj_fil50-cov.fif')
+        data_cov = mne.compute_covariance(epoch, tmin=0, tmax=None)
+        evoked = mne.read_evokeds(file_in + run + '_otp_raw_sss_proj_fil50_mag6pT_evoked.fif')[0].resample(sfreq = rfs)
+        
+        inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, noise_cov,loose=1,depth=0.8)
+        stc_mne, residual = mne.minimum_norm.apply_inverse((evoked), inverse_operator, return_residual=True, pick_ori = None)
+        
+        fig, axes = plt.subplots(2, 1)
+        evoked.plot(axes=axes)
+        for ax in axes:
+            for text in list(ax.texts):
+                text.remove()
+            for line in ax.lines:
+                line.set_color("#98df81")
+        residual.plot(axes=axes)
+
+## point-spread functions for the whole-brain
+# compute resolution matrix for dSPM
+rm_lor_vol = mne.minimum_norm.make_inverse_resolution_matrix(fwd, inverse_operator, method="dSPM", lambda2=lambda2)
+sources_vol = [100]
+stc_psf_vol = mne.minimum_norm.get_point_spread(rm_lor_vol, fwd["src"], sources_vol, norm=True)
+src_vol = fwd["src"]
+verttrue_vol = src_vol[0]["vertno"][sources_vol]
+
+# find vertex with maximum in PSF
+max_vert_idx, _ = np.unravel_index(stc_psf_vol.data.argmax(), stc_psf_vol.data.shape)
+vert_max_ctf_vol = src_vol[0]["vertno"][[max_vert_idx]]
+
+# plot them
+brain_psf_vol = stc_psf_vol.plot_3d(
+    "me2_215_7m",
+    src=fwd["src"],
+    views="ven",
+    subjects_dir=subjects_dir,
+    volume_options=dict(alpha=0.5),
+)
+brain_psf_vol.add_text(0.1, 0.9, "Volumetric sLORETA PSF", "title", font_size=16)
+brain_psf_vol.add_foci(
+    verttrue_vol, coords_as_verts=True, scale_factor=1, hemi="vol", color="green"
+)
+brain_psf_vol.add_foci(
+    vert_max_ctf_vol,
+    coords_as_verts=True,
+    scale_factor=1.25,
+    hemi="vol",
+    color="black",
+    alpha=0.3,
+)
+
+## point-spread functions for the ROI label
