@@ -18,8 +18,8 @@ tmax = 9.0
 fmin = 0.5
 fmax = 5
 
-age = '11mo/' # '7mo/', '11mo/' or '' for adults br
-runs = ['_02']
+age = '7mo/' # '7mo/', '11mo/' or '' for adults br
+runs = ['_04']
 resample_or_not = True
 rfs = 250
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/' 
@@ -49,8 +49,10 @@ for run in runs:
     # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/br_group' + run + '_rs_mag6pT_randduple_sensor.npy',group)
     
 #%% output the source time series in npy files
-src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif') # for morphing data
-fname_aseg = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
+
+## if morphed
+# src = mne.read_source_spaces('/media/tzcheng/storage2/subjects/fsaverage/bem/fsaverage-vol-5-src.fif') # for morphing data
+# fname_aseg = subjects_dir + 'fsaverage' + '/mri/aparc+aseg.mgz'
 for run in runs:
     group_stc_lcmv = []
     group_stc_mne = []
@@ -63,7 +65,7 @@ for run in runs:
         print('Extracting ' + s + ' data')
         file_in = root_path + age + '/' + s + '/sss_fif/' + s + run    
         # stc_lcmv = mne.read_source_estimate(file_in+'_stc_lcmv_morph_mag6pT-vl.stc')
-        stc_mne = mne.read_source_estimate(file_in+'_stc_mne_morph_ANTS6mo_mag6pT-vl.stc')
+        stc_mne = mne.read_source_estimate(file_in+'_stc_mne_mag6pT-vl.stc')
         if resample_or_not:
             # stc_lcmv.data = stc_lcmv.data.astype('float64') 
             stc_mne.data = stc_mne.data.astype('float64')
@@ -72,20 +74,27 @@ for run in runs:
         else:
             print("No resampling has been performed")
         # group_stc_lcmv.append(stc_lcmv.data)
-        group_stc_mne.append(stc_mne.data)
-            
+        # group_stc_mne.append(stc_mne.data)
+        
+        ## if not morphed have to use individual src and mri
+        fname_aseg = subjects_dir + s + '/mri/aparc+aseg.mgz'
+        labels_all = mne.get_volume_labels_from_aseg(fname_aseg)
+        print(len(labels_all))
+        print(labels_all)
+        src=mne.read_source_spaces(subjects_dir + s + '/bem/' + s + '-vol-5-src.fif')
+        
         # label_names = mne.get_volume_labels_from_aseg(fname_aseg)
         # stc_lcmv_roi = mne.extract_label_time_course(stc_lcmv,fname_aseg,src,mode='mean',allow_empty=True)
-        # stc_mne_roi = mne.extract_label_time_course(stc_mne,fname_aseg,src,mode='mean',allow_empty=True)
+        stc_mne_roi = mne.extract_label_time_course(stc_mne,fname_aseg,src,mode='mean',allow_empty=True)
         # group_stc_lcmv_roi.append(stc_lcmv_roi)
-        # group_stc_mne_roi.append(stc_mne_roi)
+        group_stc_mne_roi.append(stc_mne_roi)
         
     # group_stc_lcmv = np.asarray(group_stc_lcmv)
-    group_stc_mne = np.asarray(group_stc_mne)
+    # group_stc_mne = np.asarray(group_stc_mne)
     # group_stc_lcmv_roi = np.asarray(group_stc_lcmv_roi)
-    # group_stc_mne_roi = np.asarray(group_stc_mne_roi)
+    group_stc_mne_roi = np.asarray(group_stc_mne_roi)
             
     # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group' + run + '_stc_rs_lcmv_mag6pT_morph.npy',group_stc_lcmv)
-    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group' + run + '_stc_rs_mne_mag6pT_morph_ANTS6mo.npy',group_stc_mne)
+    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group' + run + '_stc_rs_mne_mag6pT_morph_ANTS6mo.npy',group_stc_mne)
     # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group' + run + '_stc_rs_lcmv_mag6pT_roi.npy',group_stc_lcmv_roi)
-    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis//data/7mo_group' + run + '_stc_rs_mne_mag6pT_roi.npy',group_stc_mne_roi)
+    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis//data/7mo_group' + run + '_stc_rs_mne_mag6pT_roi.npy',group_stc_mne_roi)
