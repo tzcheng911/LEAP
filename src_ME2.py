@@ -58,12 +58,12 @@ def do_inverse(s,morph,run,rfs,lambda2):
    
     inverse_operator = mne.minimum_norm.make_inverse_operator(epoch.info, fwd, noise_cov,loose=1,depth=0.8)
     stc_mne = mne.minimum_norm.apply_inverse((evoked), inverse_operator, pick_ori = None)
-    stc_mne_epoch = mne.minimum_norm.apply_inverse_epochs(epoch, inverse_operator, lambda2, pick_ori = None)
+    # stc_mne_epoch = mne.minimum_norm.apply_inverse_epochs(epoch, inverse_operator, lambda2, pick_ori = None)
     # stc_mne_random_duple = mne.minimum_norm.apply_inverse((evoked_random_duple), inverse_operator, pick_ori = None)
     # stc_mne_random_triple = mne.minimum_norm.apply_inverse((evoked_random_triple), inverse_operator, pick_ori = None)
     
-    src=mne.read_source_spaces(subjects_dir + s + '/bem/' + s + '-vol-5-src.fif')
-    fname_aseg = subjects_dir + s + '/mri/aparc+aseg.mgz'
+    # src=mne.read_source_spaces(subjects_dir + s + '/bem/' + s + '-vol-5-src.fif')
+    # fname_aseg = subjects_dir + s + '/mri/aparc+aseg.mgz'
     # stc_mne_epoch_roi = mne.extract_label_time_course(stc_mne_epoch,fname_aseg,src,mode='mean',allow_empty=True)
     # stc_mne_epoch_roi = np.asarray(stc_mne_epoch_roi)
     # new_ROI = {"AuditoryL": [72,76],"AuditoryR": [108,112], "MotorL": [66],"MotorR": [102], "SensoryL": [59,64],"SensoryR": [95,100], "BGL": [7,8],"BGR": [26,27], "IFGL": [60,61,62], "IFGR": [96,97,98]}
@@ -76,9 +76,9 @@ def do_inverse(s,morph,run,rfs,lambda2):
     if morph == True:
         print('Morph ' + s +  ' src space to common cortical space.')
         fname_src_fsaverage = subjects_dir + 'fsaverage/bem/fsaverage-vol-5-src.fif' # morph to adult brain template
-        fname_src_ANTS = '/media/tzcheng/storage2/subjects/ANTS6-0Months3T/bem/ANTS6-0Months3T-vol-5-src.fif' # morph to infant brain template
+        # fname_src_ANTS = '/media/tzcheng/storage2/subjects/ANTS6-0Months3T/bem/ANTS6-0Months3T-vol-5-src.fif' # morph to infant brain template
         src_fs = mne.read_source_spaces(fname_src_fsaverage) # morph to adult brain template
-        src_fs = mne.read_source_spaces(fname_src_ANTS) # morph to infant brain template
+        # src_fs = mne.read_source_spaces(fname_src_ANTS) # morph to infant brain template
         morph = mne.compute_source_morph(
             fwd["src"],
             subject_from=s,
@@ -104,10 +104,10 @@ def do_inverse(s,morph,run,rfs,lambda2):
     #     # stc_mne_random_duple_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT_randduple_rs', overwrite=True)
     #     # stc_mne_random_triple_fsaverage = morph.apply(stc_mne_random_triple)
     #     # stc_mne_random_triple_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT_randtriple_rs', overwrite=True)
-    # else: 
-    #     print('No morphing has been performed. The individual results may not be good to average.')
-    #     # stc_lcmv.save(file_in + '_stc_lcmv', overwrite=True)
-    #     # stc_mne.save(file_in + '_stc_mne', overwrite=True)
+    else: 
+        print('No morphing has been performed. The individual results may not be good to average.')
+        # stc_lcmv.save(file_in + '_stc_lcmv', overwrite=True)
+        stc_mne.save(file_in + run + '_stc_mne_mag6pT', overwrite=True)
 
 #%%#######################################   
 ## manually coregister to get the trans, bem and src.
@@ -121,8 +121,8 @@ os.chdir(root_path)
 rfs=250
 lambda2 = 0.1111111111111111
 
-morph = True
-epoch_ROI = True
+morph = False
+epoch_ROI = False
 
 runs = ['_02','_03','_04']
 subj = [] 
