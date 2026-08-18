@@ -26,7 +26,17 @@ def do_foward(s):
     bem=mne.read_bem_solution(subjects_dir +  s + '/bem/' + s + '-5120-5120-5120-bem-sol.fif')
     fwd=mne.make_forward_solution(raw_file.info,trans,src,bem,meg=True,eeg=False)
     mne.write_forward_solution(file_in + s +'-fwd.fif',fwd,overwrite=True)
+    return fwd, src
 
+def do_foward_template(s):
+    subjects_dir = '/media/tzcheng/storage2/subjects/'
+    file_in = subjects_dir + s
+    raw_file = mne.io.read_raw_fif('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/me2_101_7m/sss_fif/me2_101_7m_04_otp_raw_sss.fif') # can be any one of them
+    trans = mne.transforms.Transform(fro = "head", to = "mri", trans = None) # create identity matrix
+    src=mne.read_source_spaces(subjects_dir + s + '/bem/' + s + '-vol-5-src.fif')
+    bem=mne.read_bem_solution(subjects_dir +  s + '/bem/' + s + '-5120-5120-5120-bem-sol.fif')
+    fwd=mne.make_forward_solution(raw_file.info,trans,src,bem,meg=True,eeg=False)
+    mne.write_forward_solution(file_in +'/' + s +'-fwd.fif',fwd,overwrite=True)
     return fwd, src
 
 def do_inverse(s,morph,run,rfs,lambda2):
