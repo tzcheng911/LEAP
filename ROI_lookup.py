@@ -13,7 +13,7 @@ from scipy import stats
 import pandas as pd
 
 label = ["ctx-rh-superiortemporal"]
-subject = 'fsaverage'
+subject = 'ANTS6-0Months3T'
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
@@ -21,7 +21,7 @@ src = mne.read_source_spaces(subjects_dir + subject + '/bem/fsaverage-vol-5-src.
 
 ## Get the atlas labels 
 fname_aseg = subjects_dir + subject + '/mri/aparc+aseg.mgz'
-label_names = mne.get_volume_labels_from_aseg('/media/tzcheng/storage2/subjects/fsaverage/mri/aparc+aseg.mgz')
+label_names = mne.get_volume_labels_from_aseg(fname_aseg)
 
 #%% create a dummy eye matrix to feed in as stc.data
 dummy = np.eye(stc1.shape[0])
@@ -35,7 +35,7 @@ for nlabel in np.arange(0,len(label_names),1):
     label_tc_dummy = mne.extract_label_time_course(stc_dummy,(fname_aseg,label_names[nlabel]),src)
     idx = np.where(label_tc_dummy[0]>0)
     label_v_ind.append(idx)
-np.save('ROI_lookup_ANTS6-0Months3T.npy',np.array(label_v_ind, dtype=object),allow_pickle=True)
+np.save('/media/tzcheng/storage/scripts_zoe/ROI_lookup_ANTS6-0Months3T.npy',np.array(label_v_ind, dtype=object),allow_pickle=True)
 
 #%% Key in the vertex number from the stc.plot to see which ROI it's in, and check whether this location is relevant 
 label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
