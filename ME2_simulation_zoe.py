@@ -20,22 +20,44 @@ from mne.simulation.metrics import (
     spatial_deviation_error,
 )
 
-# def do_filtering(raw_data):
-#     # raw_data.notch_filter(np.arange(60,500,60),filter_length='auto',notch_widths=0.5)
-#     # band-pass filter between 0 and 50 Hz as in preprocessing_ME2.py
-#     raw_data.filter(l_freq=0,h_freq=50,method='iir',iir_params=dict(order=4,ftype='butter'))
-#     # spectrum plotting to check no usual frequency on the spectrum
-#     raw_data.plot_psd()
-#     return raw_data
+def compare(BG_v, SM_v):
+    BG, SM = set(BG_v), set(SM_v)
+    return {
+        "BG_unique": len(BG), "BG_duplicates": len(BG_v) - len(BG),
+        "SM_unique": len(SM), "SM_duplicates": len(SM_v) - len(SM),
+        "overlap": len(BG & SM),
+        "BG_only": len(BG - SM),
+        "SM_only": len(SM - BG),
+        "total_unique": len(BG | SM)
+    }
 
+lambda2 = 0.1111111111111111
+
+#%% test the spread from the cortical SM to the BG
+label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup_ANTS6-0Months3T.npy', allow_pickle=True)
+BG_list_idx = [6,7,20,21]
+SM_list_idx = [48,53,55,82,87,89]
+ventrical_list_idx = [9,10]
+BG_v = np.concatenate([np.asarray(label_v_ind[i][0]).ravel() for i in BG_list_idx])
+SM_v = np.concatenate([np.asarray(label_v_ind[i][0]).ravel() for i in SM_list_idx])
+V_v = np.concatenate([np.asarray(label_v_ind[i][0]).ravel() for i in ventrical_list_idx])
+## check for how many v ind is overlapped 
+print(compare(BG_v, SM_v))
+
+#%% test how accurate is the source localization for eahc individual
 template_subject = 'ANTS6-0Months3T'
-label_list = ['Left-Putamen','Left-Caudate','Right-Putamen','Right-Caudate']
+# label_list = ['Left-Putamen','Left-Caudate','Right-Putamen','Right-Caudate']
+label_list = ['ctx-lh-paracentral','ctx-lh-postcentral','ctx-lh-precentral','ctx-rh-paracentral','ctx-rh-postcentral','ctx-rh-precentral']
 
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 os.chdir(root_path)
 
 RLE_all = []
+BG_amp_all = []
+SM_amp_all = []
+V_amp_all = []
+
 subj = [] 
 for file in os.listdir():
     if file.startswith('me2_'):
@@ -68,7 +90,7 @@ for subject in subj:
     n_offset = int(round((t_offset - tmin) * raw.info['sfreq']))
     data[:, n_offset:n_offset + len(activation)] = activation
     stc = mne.VolSourceEstimate(data, vertices, tmin=tmin, tstep=1. / raw.info['sfreq'])
-    # stc.plot(src=src_BG)
+    # stc.plot(src=src_BG,clim=dict(kind="percent",lims=[95,97.5,99.975]))
     # stc.plot_3d(src=src_BG,subject = template_subject)
     
     ## Simulate data
@@ -92,8 +114,8 @@ for subject in subj:
     
     inverse_operator = make_inverse_operator(epoch.info, fwd, noise_cov,loose=1,depth=0.8)
     stc_mne = apply_inverse((evoked), inverse_operator, pick_ori = None)
-    stc_mne.plot(src=fwd['src'])
-    # stc_mne.plot_3d(src=fwd['src'],subject = subject)
+    stc_mne.plot(src=fwd['src'],clim=dict(kind="percent",lims=[97,99,99.975]))
+    # stc_mne.plot_3d(src=fwd['src'],subject = subject,volume_options={'surface_alpha': 0})
     
     ## Compare the simulated and ground truth source location 
     # At this particular time point, does my estimated spatial pattern look like the true spatial pattern?
@@ -104,3 +126,16 @@ for subject in subj:
     plt.figure()
     plt.plot(stc.times,RLE)
     RLE_all.append(np.min(RLE)*1000) ## in mm
+
+    BG_amp = stc_mne.data[BG_v,1000].mean() # peak of the signal across time and avearge across all label
+    SM_amp = stc_mne.data[SM_v,1000].mean() # peak of the signal across time and avearge across all label
+    V_amp = stc_mne.data[V_v,1000].mean() # peak of the signal across time and avearge across all label
+    print('--------------BG_amp:' + str(BG_amp))
+    print('--------------SM_amp:' + str(SM_amp))
+    print('--------------BG_amp/SM_amp ratio:' + str(BG_amp/SM_amp))
+    BG_amp_all.append(BG_amp)
+    SM_amp_all.append(SM_amp)
+    V_amp_all.append(V_amp)
+BG_amp_all = np.asarray(BG_amp_all)
+SM_amp_all = np.asarray(SM_amp_all)
+V_amp_all = np.asarray(V_amp_all)
