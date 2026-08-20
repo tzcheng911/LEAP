@@ -17,7 +17,7 @@ subject = 'ANTS6-0Months3T'
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
-src = mne.read_source_spaces(subjects_dir + subject + '/bem/fsaverage-vol-5-src.fif')
+src = mne.read_source_spaces(subjects_dir + subject + '/bem/' + subject + '-vol-5-src.fif')
 
 ## Get the atlas labels 
 fname_aseg = subjects_dir + subject + '/mri/aparc+aseg.mgz'
@@ -41,7 +41,7 @@ np.save('/media/tzcheng/storage/scripts_zoe/ROI_lookup_ANTS6-0Months3T.npy',np.a
 label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
 
 #%%
-nv = 23698
+nv = 11656
 v_ind = np.where(src[0]['vertno'] == nv)
 for nlabel in np.arange(0,len(label_names),1):
     if v_ind in label_v_ind[nlabel][0]:
