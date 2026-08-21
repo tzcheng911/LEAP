@@ -33,11 +33,12 @@ label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup_ANTS6-0Mont
 BG_list_idx = [6,7,20,21]
 SM_list_idx = [48,53,55,82,87,89]
 BG_list_idx = [6,7]
-SM_list_idx = [55]
+SM_list_idx = [89]
 BG_v = np.concatenate([np.asarray(label_v_ind[i][0]).ravel() for i in BG_list_idx])
 SM_v = np.concatenate([np.asarray(label_v_ind[i][0]).ravel() for i in SM_list_idx])
 ## check for how many v ind is overlapped 
 print(compare(BG_v, SM_v))
+print(label_names[SM_list_idx[0]])
 
 #%% point-spread functions for the whole-brain
 template_subject = 'ANTS6-0Months3T'
