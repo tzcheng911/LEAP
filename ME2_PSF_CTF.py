@@ -33,7 +33,7 @@ label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup_ANTS6-0Mont
 BG_list_idx = [6,7,20,21]
 SM_list_idx = [48,53,55,82,87,89]
 BG_list_idx = [6,7]
-SM_list_idx = [89]
+SM_list_idx = [55]
 BG_v = np.concatenate([np.asarray(label_v_ind[i][0]).ravel() for i in BG_list_idx])
 SM_v = np.concatenate([np.asarray(label_v_ind[i][0]).ravel() for i in SM_list_idx])
 ## check for how many v ind is overlapped 
@@ -68,7 +68,7 @@ for subject in subj:
     
     # compute resolution matrix for dSPM
     rm_lor_vol = mne.minimum_norm.make_inverse_resolution_matrix(fwd, inverse_operator, method="dSPM")
-    stc_psf_vol = mne.minimum_norm.get_point_spread(rm_lor_vol, fwd["src"], SM_v, mode = 'mean', norm=True)
+    stc_psf_vol = mne.minimum_norm.get_point_spread(rm_lor_vol, fwd["src"], BG_v, mode = 'mean', norm=True)
     # stc_ctf_vol = mne.minimum_norm.get_cross_talk(rm_lor_vol, fwd["src"], BG_v, mode = 'mean', norm=True)
     stc_psf_vol.plot(src = fwd['src'])
     # stc_ctf_vol.plot(src = fwd['src'])
