@@ -1116,7 +1116,10 @@ ch_names = np.array(evoked[0].info['ch_names'])
 ## CBS
 data_path = '/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/'
 file_type = 'morph_common_beamformer'
-subject_type = 'adults'
+subject_type = 'infants'
+nfilter = '802000'
+ntrial = '200'
+ntop = '3'
 fs,p10_cbs = load_CBS_file(file_type, 'p10', subject_type)
 fs,n40_cbs = load_CBS_file(file_type, 'n40', subject_type)
 fs,p40_cbs = load_CBS_file(file_type, 'p40', subject_type)
@@ -1137,7 +1140,7 @@ p40_cbs_pc_w = np.load(data_path + 'group_pcffr802000_ntrial200_3_p40_pc_weight_
 root_path='/media/tzcheng/storage/Brainstem/'
 file_type = 'morph_beamformer'
 nfilter = '802000'
-ntrial = 'all' # 200, all (reps = 3000) or allall (reps = 6000)
+ntrial = '200' # 200, all (reps = 3000) or allall (reps = 6000)
 ntop = '3'
 fs, p10_eng, n40_eng, p10_spa, n40_spa = load_brainstem_file(file_type, nfilter, ntrial, ntop)
 
@@ -1600,13 +1603,31 @@ stc1.plot_3d(src=src,subject = 'fsaverage')
 tic = time.time()
 k_feature = 'all'
 
-## brainstem
+#### brainstem 1st level sliding estimator eng n40 vs. p10; spa n40 vs. p10
+## eng
+# X = np.concatenate((n40_eng,p10_eng),axis=0)
+# y = np.concatenate((np.repeat(0,len(n40_eng)),np.repeat(1,len(p10_eng)))) 
+
+## spa
+# X = np.concatenate((n40_spa,p10_spa),axis=0)
+# y = np.concatenate((np.repeat(0,len(n40_spa)),np.repeat(1,len(p10_spa)))) 
+
+#### brainstem 2nd level sliding estimator eng (n40-p10) vs. spa (n40-p10)
 # n40_p10_eng = n40_eng - p10_eng
 # n40_p10_spa = n40_spa - p10_spa
 # X = np.concatenate((n40_p10_eng,n40_p10_spa),axis=0)
 # y = np.concatenate((np.repeat(0,len(n40_p10_eng)),np.repeat(1,len(n40_p10_spa)))) 
 
-## CBS
+## CBS 1st level sliding estimator n40 vs. p10; p40 vs. p10
+## n40 vs. p10
+# X = np.concatenate((n40_cbs,p10_cbs),axis=0)
+# y = np.concatenate((np.repeat(0,len(n40_cbs)),np.repeat(1,len(p10_cbs)))) 
+
+## p40 vs. p10
+# X = np.concatenate((p40_cbs,p10_cbs),axis=0)
+# y = np.concatenate((np.repeat(0,len(p40_cbs)),np.repeat(1,len(p10_cbs)))) 
+
+## CBS 2nd level sliding estimator n40-p10 vs. p40-p10
 n40_p10 = n40_cbs - p10_cbs
 p40_p10 = p40_cbs - p10_cbs
 X = np.concatenate((n40_p10,p40_p10),axis=0)
