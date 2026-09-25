@@ -1605,8 +1605,8 @@ k_feature = 'all'
 
 #### brainstem 1st level sliding estimator eng n40 vs. p10; spa n40 vs. p10
 ## eng
-# X = np.concatenate((n40_eng,p10_eng),axis=0)
-# y = np.concatenate((np.repeat(0,len(n40_eng)),np.repeat(1,len(p10_eng)))) 
+X = np.concatenate((n40_eng,p10_eng),axis=0)
+y = np.concatenate((np.repeat(0,len(n40_eng)),np.repeat(1,len(p10_eng)))) 
 
 ## spa
 # X = np.concatenate((n40_spa,p10_spa),axis=0)
@@ -1628,10 +1628,10 @@ k_feature = 'all'
 # y = np.concatenate((np.repeat(0,len(p40_cbs)),np.repeat(1,len(p10_cbs)))) 
 
 ## CBS 2nd level sliding estimator n40-p10 vs. p40-p10
-n40_p10 = n40_cbs - p10_cbs
-p40_p10 = p40_cbs - p10_cbs
-X = np.concatenate((n40_p10,p40_p10),axis=0)
-y = np.concatenate((np.repeat(0,len(n40_p10)),np.repeat(1,len(p40_p10)))) 
+# n40_p10 = n40_cbs - p10_cbs
+# p40_p10 = p40_cbs - p10_cbs
+# X = np.concatenate((n40_p10,p40_p10),axis=0)
+# y = np.concatenate((np.repeat(0,len(n40_p10)),np.repeat(1,len(p40_p10)))) 
 
 # prepare a series of classifier applied at each time sample
 clf = make_pipeline(
@@ -1671,11 +1671,11 @@ stc1.data = patterns
 stc1.plot(src=src)
 toc = time.time()
 
-# np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_spa_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
-# np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/eng_spa_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_n40_p10_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
+np.save('/media/tzcheng/storage/Brainstem/MEG/FFR/decoding/spa_n40_p10_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
 
-np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/infants_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
-np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/infants_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
+# np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/infants_p40_p10_slidingacc_roc_auc_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',scores_observed)
+# np.save('/media/tzcheng/storage2/CBS/cbsA_meeg_analysis/MEG/FFR/ntrial_200/decoding/infants_p40_p10_slidingacc_patterns_kall_pcffr' + nfilter + '_ntrial' + ntrial + '_' + ntop + '_bf.npy',patterns)
 
 #%% create a permutation of scores
 # prepare a series of classifier applied at each time sample
