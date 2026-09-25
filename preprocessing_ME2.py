@@ -282,6 +282,7 @@ def do_epoch(data, subject, run, events):
 ########################################
 # root_path='/media/tzcheng/storage/BabyRhythm/'
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/the_five_extra/' # run for the 5 extra 7mo for revision 2 R1 request
 os.chdir(root_path)
 
 #%%## parameters 

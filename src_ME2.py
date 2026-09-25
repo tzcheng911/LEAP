@@ -126,12 +126,14 @@ def do_inverse(s,morph,run,rfs,lambda2):
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/the_five_extra/' # run for the 5 extra 7mo for revision 2 R1 request
+
 # root_path = '/media/tzcheng/storage/BabyRhythm/'
 os.chdir(root_path)
 rfs=250
 lambda2 = 0.1111111111111111
 
-morph = False
+morph = True
 epoch_ROI = False
 
 runs = ['_02','_03','_04']
