@@ -13,7 +13,8 @@ from scipy import stats
 import pandas as pd
 
 label = ["ctx-rh-superiortemporal"]
-subject = 'ANTS6-0Months3T'
+subject = 'ANTS6-0Months3T' ## for infant template brain
+subject = 'fsaverage' ## for adult template brain
 root_path='/media/tzcheng/storage2/CBS/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 stc1 = mne.read_source_estimate(root_path + 'cbs_A101/sss_fif/cbs_A101_mmr2_morph-vl.stc')
@@ -41,7 +42,8 @@ np.save('/media/tzcheng/storage/scripts_zoe/ROI_lookup_ANTS6-0Months3T.npy',np.a
 label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
 
 #%%
-nv = 11656
+nv = 25052
+
 v_ind = np.where(src[0]['vertno'] == nv)
 for nlabel in np.arange(0,len(label_names),1):
     if v_ind in label_v_ind[nlabel][0]:
