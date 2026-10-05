@@ -101,7 +101,7 @@ def do_inverse(s,morph,run,rfs,lambda2):
         # stc_lcmv_fsaverage = morph.apply(stc_lcmv)
         # stc_lcmv_fsaverage.save(file_in + run + '_stc_lcmv_morph_mag6pT', overwrite=True)
         stc_mne_fsaverage = morph.apply(stc_mne)
-        stc_mne_fsaverage.save(file_in + run + '_stc_mne_morph_ANTS6mo_mag6pT', overwrite=True)
+        stc_mne_fsaverage.save(file_in + run + '_stc_mne_morph_mag6pT', overwrite=True)
         
     #     stc_mne_epoch_fsaverage = np.zeros((len(stc_mne_epoch),14629,np.shape(stc_mne_epoch[0])[1]))
     #     for ntrial in range(0,len(stc_mne_epoch)):
