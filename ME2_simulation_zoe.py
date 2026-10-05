@@ -44,10 +44,12 @@ V_v = np.concatenate([np.asarray(label_v_ind[i][0]).ravel() for i in ventrical_l
 ## check for how many v ind is overlapped 
 print(compare(BG_v, SM_v))
 
-#%% test how accurate is the source localization for eahc individual
+#%% test how accurate is the source localization for each individual
 template_subject = 'ANTS6-0Months3T'
-# label_list = ['Left-Putamen','Left-Caudate','Right-Putamen','Right-Caudate']
-label_list = ['ctx-lh-paracentral','ctx-lh-postcentral','ctx-lh-precentral','ctx-rh-paracentral','ctx-rh-postcentral','ctx-rh-precentral']
+
+## Change the label_list for RLE simulation
+label_list = ['Left-Putamen','Left-Caudate','Right-Putamen','Right-Caudate']
+# label_list = ['ctx-lh-paracentral','ctx-lh-postcentral','ctx-lh-precentral','ctx-rh-paracentral','ctx-rh-postcentral','ctx-rh-precentral']
 
 root_path = '/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -105,7 +107,7 @@ for subject in subj:
     events[:, 2] = 1  # all the same
     epoch = mne.Epochs(raw_stat, events, 1, tmin, tmax, verbose=False)
     evoked = epoch.average()
-    evoked.plot_joint()
+    # evoked.plot_joint()
     
     ## Localize the simulated raw 
     noise_cov = mne.read_cov(fname_cov)  ## read the individual cov
@@ -114,7 +116,7 @@ for subject in subj:
     
     inverse_operator = make_inverse_operator(epoch.info, fwd, noise_cov,loose=1,depth=0.8)
     stc_mne = apply_inverse((evoked), inverse_operator, pick_ori = None)
-    stc_mne.plot(src=fwd['src'],clim=dict(kind="percent",lims=[97,99,99.975]))
+    # stc_mne.plot(src=fwd['src'],clim=dict(kind="percent",lims=[97,99,99.975]))
     # stc_mne.plot_3d(src=fwd['src'],subject = subject,volume_options={'surface_alpha': 0})
     
     ## Compare the simulated and ground truth source location 
@@ -123,8 +125,8 @@ for subject in subj:
     print('cosine similarity: ' + str(cos_similarity))
     # How far apart are the true active sources and estimated active sources in physical brain space? RLE is sensitive to spatial displacement and spatial spread
     RLE = mne.simulation.metrics.region_localization_error(stc, stc_mne, fwd['src'], threshold='50%', per_sample=True) # output in meter
-    plt.figure()
-    plt.plot(stc.times,RLE)
+    # plt.figure()
+    # plt.plot(stc.times,RLE)
     RLE_all.append(np.min(RLE)*1000) ## in mm
 
     BG_amp = stc_mne.data[BG_v,1000].mean() # peak of the signal across time and avearge across all label
