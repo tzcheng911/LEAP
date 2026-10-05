@@ -30,9 +30,10 @@ label_names = mne.get_volume_labels_from_aseg(fname_aseg)
  
 #%% test the spread from the cortical SM to the BG
 label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup_ANTS6-0Months3T.npy', allow_pickle=True)
-BG_list_idx = [6,7,20,21]
-SM_list_idx = [48,53,55,82,87,89]
-SM_list_idx = [48]
+BG_list_idx = [6,7,20,21] # left caudate, left putamen, right caudate, right putamen
+BG_list_idx = [6,7] ## only analyze the left BG
+SM_list_idx = [48,53,55,82,87,89] # left: paracentral, postcentral, precentral; right: paracentral, postcentral, precentral, 
+SM_list_idx = [89] ## iterate thru all SM sub-regions
 BG_v = np.concatenate([np.asarray(label_v_ind[i][0]).ravel() for i in BG_list_idx])
 SM_v = np.concatenate([np.asarray(label_v_ind[i][0]).ravel() for i in SM_list_idx])
 ## check for how many v ind is overlapped 
@@ -69,7 +70,7 @@ for subject in subj:
     rm_lor_vol = mne.minimum_norm.make_inverse_resolution_matrix(fwd, inverse_operator, method="dSPM")
     stc_psf_vol = mne.minimum_norm.get_point_spread(rm_lor_vol, fwd["src"], BG_v, mode = 'mean', norm=True)
     # stc_ctf_vol = mne.minimum_norm.get_cross_talk(rm_lor_vol, fwd["src"], BG_v, mode = 'mean', norm=True)
-    stc_psf_vol.plot(src = fwd['src'])
+    # stc_psf_vol.plot(src = fwd['src'])
     # stc_ctf_vol.plot(src = fwd['src'])
     
     ## metrics to evaluate PSF
