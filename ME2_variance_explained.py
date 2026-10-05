@@ -7,6 +7,8 @@ Created on Tue Aug 18 15:57:22 2026
 """
 
 import mne
+import os
+import matplotlib.pyplot as plt
 
 #%% Goodness-of-fit: plot the residual on top of evoked and see the print out of the vairance explained
 subjects_dir = '/media/tzcheng/storage2/subjects/'
@@ -18,7 +20,7 @@ lambda2 = 0.1111111111111111
 runs = ['_02','_03','_04']
 subj = [] 
 for file in os.listdir():
-    if file.startswith('me2_'):
+    if file.startswith('me2_129'):
         subj.append(file)
 for s in subj:
     for run in runs:
