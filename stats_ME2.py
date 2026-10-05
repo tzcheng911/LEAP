@@ -260,7 +260,7 @@ def extract_CDI(MEGAge,CDIAge,CDIscore):
     
     ## De-select subjects who has neural data but does not have CDI data: 7mo ('me2_203', 'me2_120', 'me2_117')
     subj_noCDI = list(set(subj_7mo) - set(CDI_WS0['ParticipantId'])) # same result in list(set(subj_all) - set(CDI_WG0['ParticipantId']))   
-    subj_noCDI_ind = [2,8,25] # CAUTION hardcoded manual input here, check if this is the data storing order for 7mo in group_ME2.py (confirmed 2025/1/13 Zoe)
+    subj_noCDI_ind = [2,8,25] # CAUTION hardcoded manual input here, check if this is the data sorting order for 7mo in group_ME2.py (confirmed 2025/1/13 Zoe)
     if MEGAge == '7mo':
         CDI = CDI_WS_7mo[CDI_WS_7mo['CDIAge'] == CDIAge][CDIscore]
     elif MEGAge == '11mo':
