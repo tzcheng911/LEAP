@@ -356,7 +356,7 @@ for s in subjects:
 
 #%%###### save random duple and random triple: evoked
 # root_path='/media/tzcheng/storage/BabyRhythm/'
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/11mo/'
+root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/'
 os.chdir(root_path)
 event_id = {'Trial_Onset':5}
 reject=dict(grad=4000e-13,mag=6e-12) # Zoe's ME2 criteria
