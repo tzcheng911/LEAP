@@ -19,7 +19,7 @@ fmin = 0.5
 fmax = 5
 
 age = '7mo/' # '7mo/', '11mo/' or '' for adults br
-runs = ['_02','_03','_04']
+runs = ['_02']
 resample_or_not = True
 morph_or_not = True
 rfs = 250
@@ -42,12 +42,19 @@ for run in runs:
     for s in subjects:
         print('Extracting ' + s + ' data')
         file_in = root_path + age + s + '/sss_fif/' + s + run
-        evoked = mne.read_evokeds(file_in + '_otp_raw_sss_proj_fil50_mag6pT_evoked_randtriple.fif')[0]
+        evoked = mne.read_evokeds(file_in + '_otp_raw_sss_proj_fil50_mag6pT_evoked.fif')[0]
+#        evoked = mne.read_evokeds(file_in + '_otp_raw_sss_proj_fil50_mag6pT_evoked_randduple.fif')[0]
+#        evoked = mne.read_evokeds(file_in + '_otp_raw_sss_proj_fil50_mag6pT_evoked_randtriple.fif')[0]
         evoked.resample(sfreq = rfs)
         group.append(evoked.data)
     group=np.asarray(group)
-    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/11mo_group' + run + '_rs_mag6pT_randtriple_sensor.npy',group)
+    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/11mo_group' + run + '_rs_mag6pT_randtriple_sensor.npy',group)
     # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/br_group' + run + '_rs_mag6pT_randduple_sensor.npy',group)
+#    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group31' + run + '_rs_mag6pT_randduple_sensor.npy',group) # n = 26
+    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group31' + run + '_rs_mag6pT_randtriple_sensor.npy',group) # n = 26
+
+    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group' + run + '_rs_mag6pT_sensor.npy',group) # n = 26
+    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group31' + run + '_rs_mag6pT_sensor.npy',group) # n = 31
     
 #%% output the source time series in npy files
 for run in runs:
@@ -62,7 +69,9 @@ for run in runs:
         print('Extracting ' + s + ' data')
         file_in = root_path + age + '/' + s + '/sss_fif/' + s + run    
         # stc_lcmv = mne.read_source_estimate(file_in+'_stc_lcmv_morph_mag6pT-vl.stc')
-        stc_mne = mne.read_source_estimate(file_in+'_stc_mne_mag6pT-vl.stc')
+        # stc_mne = mne.read_source_estimate(file_in+'_stc_mne_mag6pT-vl.stc') ## non morph data
+        stc_mne = mne.read_source_estimate(file_in+'_stc_mne_morph_mag6pT-vl.stc') ## morph data
+
         if resample_or_not:
             # stc_lcmv.data = stc_lcmv.data.astype('float64') 
             stc_mne.data = stc_mne.data.astype('float64')
