@@ -303,7 +303,7 @@ new_ROI = {"Auditory": [72,76, 108,112], "Motor": [66,102], "Sensory": [59,64,95
 new_ROI = {"Auditory": [72,76, 108,112], "SensoriMotor": [66,102,59,64,95,100], "BG": [7,8,26,27], "IFG": [60,61,62,96,97,98]}
 
 ## ANTS6-0Months3T 101 labels 
-# new_ROI = {"Auditory": [61,65, 95,99], "SensoriMotor": [48,53,55,82,87,89], "BG": [6,7,20,21]}
+new_ROI = {"Auditory": [61,65, 95,99], "SensoriMotor": [48,53,55,82,87,89], "BG": [6,7,20,21]}
 
 data_type = which_data_type[1]
 for n_age in age:
@@ -316,7 +316,7 @@ for n_age in age:
 ## 1. psds of the sensor, ROI, whole brain 
 ## 2. conn between the ROIs
 ## Load each condition one by one
-data_type = which_data_type[1]
+data_type = which_data_type[2]
 
 for n_age in age:
     print("Doing age " + n_age)
@@ -325,11 +325,11 @@ for n_age in age:
         if data_type == '_sensor':
             f_name = n_age + '_group31' + n_run + '_rs_mag6pT' + randomDT[0] +  data_type 
         else:
-            f_name = n_age + '_group31' + n_run + '_stc_rs_mne_mag6pT' + randomDT[0] + data_type 
+            f_name = n_age + '_group31' + n_run + '_stc_rs_mne_nonmorph_mag6pT' + randomDT[0] + data_type 
         MEG = np.load(root_path + 'data/' + f_name + '.npy') 
         [psds,init_flat_spec] = do_SSEP(MEG, f_name, fmin, fmax, MEG_fs, fooof, width,n_peaks,min_peak_height,data_type)
         # tfr,times,freqs = do_ERSP(MEG, f_name, fmin=5, fmax=35, f_step=1, MEG_fs=MEG_fs,n_cycles=15,baseline='percent',output='power')
-        # con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
+        con = do_connectivity(MEG, f_name, fmin=1, fmax=35, f_step=200, MEG_fs=MEG_fs, directional=False)
         del MEG
 
 #%%####################################### Run the decoding
