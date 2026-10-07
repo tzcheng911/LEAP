@@ -126,14 +126,15 @@ def do_inverse(s,morph,run,rfs,lambda2):
 subjects_dir = '/media/tzcheng/storage2/subjects/'
 
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/' # change to 11mo and /media/tzcheng/storage/BabyRhythm/
-root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/the_five_extra/' # run for the 5 extra 7mo for revision 2 R1 request
+# root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/7mo/the_five_extra/' # run for the 5 extra 7mo for revision 2 R1 request
+# subj = ['me2_102_7m','me2_110_7m','me2_112_7m','me2_124_7m','me2_129_7m',]
 
 # root_path = '/media/tzcheng/storage/BabyRhythm/'
 os.chdir(root_path)
 rfs=250
 lambda2 = 0.1111111111111111
 
-morph = True
+morph = False
 epoch_ROI = False
 
 runs = ['_02','_03','_04']
@@ -142,7 +143,7 @@ for file in os.listdir():
     # if file.startswith('br_'):
     if file.startswith('me2_'):
         subj.append(file)
-
+subj = ['me2_102_7m','me2_110_7m','me2_112_7m','me2_124_7m','me2_129_7m',]
 for s in tqdm(subj):
     # do_foward(s)
     for run in runs:
