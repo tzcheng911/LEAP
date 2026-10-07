@@ -19,9 +19,9 @@ fmin = 0.5
 fmax = 5
 
 age = '7mo/' # '7mo/', '11mo/' or '' for adults br
-runs = ['_02']
+runs = ['_03','_04']
 resample_or_not = True
-morph_or_not = True
+morph_or_not = False
 rfs = 250
 root_path='/media/tzcheng/storage/ME2_MEG/Zoe_analyses/' 
 # root_path='/media/tzcheng/storage/BabyRhythm/' # for adults
@@ -69,8 +69,8 @@ for run in runs:
         print('Extracting ' + s + ' data')
         file_in = root_path + age + '/' + s + '/sss_fif/' + s + run    
         # stc_lcmv = mne.read_source_estimate(file_in+'_stc_lcmv_morph_mag6pT-vl.stc')
-        # stc_mne = mne.read_source_estimate(file_in+'_stc_mne_mag6pT-vl.stc') ## non morph data
-        stc_mne = mne.read_source_estimate(file_in+'_stc_mne_morph_mag6pT-vl.stc') ## morph data
+        stc_mne = mne.read_source_estimate(file_in+'_stc_mne_mag6pT-vl.stc') ## non morph data
+        # stc_mne = mne.read_source_estimate(file_in+'_stc_mne_morph_mag6pT-vl.stc') ## morph data
 
         if resample_or_not:
             # stc_lcmv.data = stc_lcmv.data.astype('float64') 
@@ -106,5 +106,6 @@ for run in runs:
     # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group' + run + '_stc_rs_lcmv_mag6pT_roi.npy',group_stc_lcmv_roi)
     # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group' + run + '_stc_rs_mne_mag6pT_morph.npy',group_stc_mne) # n = 26
     # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis//data/7mo_group' + run + '_stc_rs_mne_mag6pT_roi.npy',group_stc_mne_roi) # n = 26
-    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group31' + run + '_stc_rs_mne_mag6pT_morph.npy',group_stc_mne) # n = 31
-    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis//data/7mo_group31' + run + '_stc_rs_mne_mag6pT_roi.npy',group_stc_mne_roi) # n = 31
+    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group31' + run + '_stc_rs_mne_mag6pT.npy',group_stc_mne) # n = 31
+    # np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group31' + run + '_stc_rs_mne_mag6pT_roi.npy',group_stc_mne_roi) # n = 31
+    np.save('/media/tzcheng/storage/ME2_MEG/Zoe_analyses/me2_meg_analysis/data/7mo_group31' + run + '_stc_rs_mne_nonmorph_mag6pT_roi.npy',group_stc_mne_roi) # n = 31
