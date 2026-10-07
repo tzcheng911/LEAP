@@ -42,7 +42,7 @@ np.save('/media/tzcheng/storage/scripts_zoe/ROI_lookup_ANTS6-0Months3T.npy',np.a
 label_v_ind = np.load('/media/tzcheng/storage/scripts_zoe/ROI_lookup.npy', allow_pickle=True)
 
 #%%
-nv = 25052
+nv = 27745
 
 v_ind = np.where(src[0]['vertno'] == nv)
 for nlabel in np.arange(0,len(label_names),1):
